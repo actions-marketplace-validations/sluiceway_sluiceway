@@ -1,0 +1,15 @@
+# "Stack" is Sluiceway's own word, and a stack's id is derived, never chosen
+
+The brief uses Pulumi's words, and the OpenTofu research asked whether the core needs a tool-neutral one such as "unit". We keep "stack" and define it ourselves: the smallest thing Sluiceway can preview and deploy on its own, with its own state, one row and one checkbox. A Pulumi stack is a stack. So is an OpenTofu root module with a chosen workspace and var files. A neutral word would have to be explained to every user, while "stack" already means this in Terragrunt, Spacelift, Terramate and Pulumi, and it is already in the config, the rows and the deployment record tag.
+
+The risk was never the word. It is `core/` quietly assuming Pulumi semantics, so the rule is on the code: in `core/` a stack is a path, an optional name and an options bag that only its adapter reads. No tool words (`urn`, `workspace`, `tfvars`, `Pulumi.yaml`) appear outside `adapters/`.
+
+## Consequences
+
+- The stack id is `path`, or `path:name` when the stack has a name. The path is relative to the repo root, with forward slashes, no leading `./` and no trailing slash. For Pulumi the name is always present and is the Pulumi stack name, so ids look like `apps/grafana:prod`. A later OpenTofu directory per environment is just `envs/prod`.
+- The id is always derived. There is no `id:` key in `sluiceway.yaml` in v1. An override was rejected for now because it is a second source of identity that has to be kept unique and validated, and nobody has needed it. It can be added later without breaking anything, since it would only be another way to set the same string.
+- The id is fixed in four places once a stack has deployed: the row marker, the deployment record tag `sluiceway:<stackId>`, `dependsOn` in config, and the per-stack concurrency group. Moving a directory or renaming a Pulumi stack therefore makes a new stack with no deploy history. Its first row cannot attribute pending changes to merges. It still deploys. The old records stay in GitHub and nothing reads them.
+- Core hands the adapter `path` and `name` as separate fields and never splits an id back apart. A `:` inside a path or a name is harmless. Discovery fails with a clear error when two stacks derive the same id.
+- In the config, the brief's required `stack:` key becomes an optional `name:` plus an optional block of adapter options. Pulumi zero config is unchanged.
+
+Research: https://github.com/sluiceway/sluiceway/blob/research/opentofu-adapter-fit/docs/research/opentofu-adapter-fit.md
