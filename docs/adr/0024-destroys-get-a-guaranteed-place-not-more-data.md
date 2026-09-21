@@ -4,6 +4,8 @@ A person judging a replace or a delete wants to know more than for an update: wh
 
 What a destroy gets is priority. The data is what 0007 already carries: a replace names the changed properties and which of them forced the replace, a delete shows type and name. The rule is about never losing that under pressure from the size budget, from truncation or from redact.
 
+Decided in 0027 and 0028: delete and replace lines sit open under the row, outside the fold, and under the size budget they are all listed or none are.
+
 ## Consequences
 
 - Inside a row's details, changes are listed destroys first: deletes, then replaces, then everything else, each group sorted by address. Output stays deterministic.
