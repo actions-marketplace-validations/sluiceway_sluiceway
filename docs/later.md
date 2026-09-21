@@ -35,6 +35,12 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | A rotating set of good-news lines | One fixed line per state to launch. A set needs a stable pick rule so the same input still gives the same body. | 0032, 0004 |
 | Header states for drift and for queued stacks | They arrive with drift detection and dependencies. A new state is a new file pair and a new line in the precedence table, not a breaking change. | 0031 |
 | Final art for Penny | The files in `assets/mascot/` are concept art, good enough to build and test the header against. Final art keeps the character, the colour pair, the states and the file rules. | 0030, 0033 |
+| Showing a change that touches only a stack's outputs | `pulumi preview --json` does not report it. It needs a second parser for the tool's event stream. The shape is fixed already: one `update` change per stack with the output names as changed keys. Until then such a stack is in sync and is deployed from outside. | 0036, 0007 |
+| Deploying the exact plan that was previewed | Pulumi's update plans are still experimental. The adapter interface has room for an optional plan handle, which OpenTofu would use. The hash check on a fresh preview is the v1 answer. | 0001, 0008 |
+| A strict mode input that turns the scan job red on any preview failure | A job that is red for one broken stack on every push teaches people to ignore red. It can be added without breaking anything. | 0012 |
+| Default globs for `scan.unrelated` (such as `**/*.md`) | A program can read any file, and a wasted full scan costs far less than a stale row on a fresh install. | 0010 |
+| A size budget level for the summary beyond its two, or the full diffs as a file to download | The job log already holds every diff in full. | 0037 |
+| A live example dashboard in this repo | CI tests the loop against a fake GitHub, so nothing writes a real issue here. A public demo is launch work. | Build plan |
 
 ## Rejected on principle
 
@@ -56,6 +62,19 @@ Not planned. Bringing one of these back means reopening the decision named here,
 | A header that shows what is happening now before bad news (deploying above failing) | A failure would vanish from the picture for the length of every deploy. | 0031 |
 | Per-resource selection (`--target`) | Granularity is one checkbox per stack. | Brief non-goals |
 | Plan comments on pull requests | Other tools do that well already. | Brief non-goals |
+| An `env` key, or an environment per stack, in `sluiceway.yaml` | Programs may read any variable, so Sluiceway cannot know the names. The workflow prepares one environment for the job. | 0013 |
+| The tool's native diff text in the summary, or an excerpt of the tool's error on a row | Native text prints unmarked values, and an error can quote a connection string. Only words Sluiceway wrote leave the job log. | 0021, 0022 |
+| Values shown for deletes and replaces only | The one exception that brings back every risk, on the rows people read most closely. If values ever come, they come for every op by one rule. | 0024 |
+| A redacted summary | The ticker would approve bare numbers with no way on GitHub to see what is behind them. Redact is about reach, not access. | 0023 |
+| A digest of values, or the commit SHA, in the diff hash | A digest of a low-entropy value can be guessed offline. A commit SHA would void every outstanding tick on every merge. | 0008 |
+| A retry through "Re-run failed jobs", checked against the person who pressed it | Two ways to start a deploy, and a record that names the wrong ticker. A fresh tick is the only retry. | 0019 |
+| A tick level below `write` | People with read or triage access cannot edit a bot's issue, so the level would promise something it cannot do. | 0018 |
+| A list in the tick rule that grants access on its own | A typo or a removed collaborator would keep deploy rights that the repo no longer gives. A list only narrows. | 0018 |
+| A comment on the dashboard for a failed deploy | The failure line on the row says it, and a comment is a notification in every subscriber's inbox. The one comment Sluiceway writes is for a refused tick. | 0004, 0018, 0032 |
+| A global write lock on the dashboard | Actions concurrency works per job, so a lock would hold ticks hostage for the length of a scan. Late read, write, verify instead. | 0004 |
+| The last scan's results kept as a workflow artifact | A second store with its own expiry. The live body already is the cache. | 0004, 0011 |
+| One job per stack (a matrix) for scans | Every job pays the setup again, and a small runner pool starves. One job with a bounded pool. | 0012 |
+| Working out a stack's inputs from an import graph or workspace dependencies | Per-language knowledge in the adapter, and it still misses what programs read at run time. The claim rule fails open instead. | 0010 |
 
 ## Bigger efforts, each its own plan
 
@@ -65,3 +84,4 @@ Not planned. Bringing one of these back means reopening the decision named here,
 | GitLab and Bitbucket | The UI is a GitHub issue, so this is a different product surface. |
 | Slack and other notifications, a policy engine, cost estimation | Non-goals for v1 in the brief. |
 | Docs site and Marketplace launch | Part of the public launch, after the core loop is proven. |
+| Launch material: screenshots, a note on merge queues, the JSON schema in SchemaStore, the 1.0.0 tag and the `v1` moving tag | Same. Until then the moving tag is `v0`. |

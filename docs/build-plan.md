@@ -1,0 +1,292 @@
+# Build plan for v1
+
+This is the document to build Sluiceway from. It turns the decision records into an order of work: milestones cut into slices the size of one pull request, what each slice proves, and how it is tested.
+
+## 1. How to read this
+
+Read in this order, and stop reading the brief for instructions.
+
+1. This file, for what to build next and how to prove it.
+2. [CONTEXT.md](../CONTEXT.md), for the words. Use them in code, tests, logs and docs exactly as defined. Do not use the words listed under "Avoid".
+3. [docs/adr](adr), for every rule. Each slice below names the records it implements. Read those records in full before you start the slice. Where a record carries an "Amended by" or "Superseded by" note, the newer record wins.
+4. [docs/later.md](later.md), for what is not in v1. If something you are about to build is on that list, stop.
+
+[docs/brief.md](brief.md) is history. It was the starting point on 2026-09-20 and about half of its detail has been corrected since. Every outdated section in it is marked. Section 4 of this file lists each correction. Never copy code, config, a workflow or a row format from the brief.
+
+When two sources disagree, the order is: real GitHub or tool behavior, then the newest record, then this plan, then the brief. When real behavior disagrees with a record, do what is real, say so in the pull request description and amend the record in the same pull request.
+
+### Rules of work
+
+- One pull request per slice, in the order given. Small commits, conventional commit messages. A slice is done when its "done when" holds and CI is green.
+- Every pull request rebuilds `dist/` and says in its description what was verified and how.
+- Write for a general product. No file in this repo names a user's setup, except [docs/acceptance.md](acceptance.md).
+- No em-dashes in docs, comments or strings. Plain, direct wording. The voice exists in two fixed lines and nowhere else (0032).
+- New glossary terms go in `CONTEXT.md` in the same pull request. A decision that is hard to reverse gets a record in `docs/adr/`, numbered after the highest one there. Anything left out of v1 gets a line in `docs/later.md` in the same change.
+- Third-party actions in this repo's workflows are pinned by commit SHA with a version comment.
+
+### Ask the owner before
+
+- Changing the license.
+- Adding a runtime dependency that is not on the approved list in section 5, or letting `dist/index.js` grow past 3 MB.
+- Adding any network call that is not the GitHub API or the tool's own.
+- Building anything that `docs/later.md` lists, or that no record covers.
+
+Everything else is yours to decide. Decide, write down why in the pull request, and carry on.
+
+## 2. What v1 is
+
+The core loop and nothing else: a scan previews stacks and writes the dashboard, a person ticks a box, exactly that stack deploys, and the row returns to in sync or shows why it failed.
+
+Not in v1: drift detection, stack dependencies, a second adapter, teams in the tick rule, property values. `docs/later.md` has the full list. The marker format, the row states and the diff shape already leave room for them, so nothing in v1 needs a placeholder for them. Do not add empty drift or dependency code.
+
+The brief's milestone numbers change with that. M0 is merged. M1 is the scan, M2 is the tick and the deploy, M3 is proof and the first release. The brief's M3 (drift and dependencies) and M4 (launch) are not part of this plan.
+
+## 3. Names fixed for v1
+
+Collected here so nobody has to search the records. The record in the last column is the authority.
+
+### Action inputs and outputs
+
+| Name | Kind | Modes | Default | Meaning | Record |
+|---|---|---|---|---|---|
+| `mode` | input | all | required | `scan`, `resolve`, `apply` or `settle` | 0003 |
+| `concurrency` | input | `scan` | `4` | Size of the preview pool | 0012 |
+| `preview-timeout` | input | `scan`, `apply` | `10` | Time limit for one preview, whole minutes | 0012, 0035 |
+| `github-token` | input | all | the workflow token | Always the workflow's own `GITHUB_TOKEN` | 0017, 0035 |
+| `deployment-id` | input | `apply` | required there | The deployment record to deploy | 0035 |
+| `matrix` | output | `resolve` | `[]` | `[{ stack, environment, deployment }]` | 0035 |
+
+### `sluiceway.yaml`
+
+The file is optional and sits at the repo root. Unknown keys are an error, because a typo in `tickers` would change who can deploy.
+
+| Key | Default | Meaning | Record |
+|---|---|---|---|
+| `dashboard.title` | `Sluiceway dashboard` | Issue title | brief |
+| `dashboard.label` | `sluiceway` | Label the dashboard is found by | 0009, 0017 |
+| `dashboard.pin` | `true` | Pin the issue, best effort | Actions research |
+| `dashboard.redact` | `false` | Keep names out of the issue | 0023 |
+| `dashboard.personality` | `true` | Header image and the voice | 0034 |
+| `tickers` | `write` | Default tick rule: `write`, `maintain`, `admin` or a list of usernames | 0018 |
+| `ignore` | `[]` | Globs matched against the stack id | 0010 |
+| `scan.unrelated` | `[]` | Globs for files that claim nothing and force nothing | 0010 |
+| `stacks[].path` | required per entry | Directory of the stack, relative to the repo root | 0006 |
+| `stacks[].name` | none | Name of the stack. Without it the entry covers every stack in `path` | 0006 |
+| `stacks[].environment` | `sluiceway` | Label on the deployment record, and the GitHub Environment where one is used | 0003 |
+| `stacks[].tickers` | the top level value | Tick rule for this stack | 0018 |
+| `stacks[].inputs` | `[]` | Extra globs this stack claims | 0010 |
+| `stacks[].previewTimeout` | the input | Time limit for this stack, whole minutes | 0012, 0035 |
+| `stacks[].options` | `{}` | Named adapter options. None exist in v1 | 0006, 0015 |
+
+Rules for config loading:
+
+- A `stacks[]` entry adds settings to stacks that discovery found. It never creates a stack. An entry that matches no discovered stack is a config error.
+- A `tickers` entry with a slash fails with the message that teams are not supported yet (0018).
+- `dependsOn` and `drift` fail with a message that says they are not in this version yet. They are never ignored.
+- The JSON schema is generated from the Zod schema into `schema/sluiceway.schema.json`, committed, and checked in CI the way `dist/` is.
+
+### Fixed strings and numbers
+
+| What | Value | Record |
+|---|---|---|
+| Bot | `github-actions[bot]`, type `Bot` | 0017 |
+| Deployment `task` | `sluiceway:<stack id>` | 0003 |
+| Deployment payload | `{ "v": 1, "hash", "ticker", "run" }` | 0003 |
+| Default environment label | `sluiceway` | 0003 |
+| Concurrency groups | `sluiceway-scan`, `sluiceway-resolve`, `sluiceway-apply-<stack id>` | 0004, 0025, 0035 |
+| Marker version | `1` | 0009 |
+| Row states | `pending`, `deploying`, `in-sync`, `preview-failed` | 0009 |
+| Diff hash | SHA-256 of the canonical document, first 16 hex characters | 0008 |
+| Body target, hard limits | 58,000 characters, 65,536 characters, 262,144 bytes | 0028 |
+| Summary budget | 1,000,000 bytes | 0037 |
+| Write loop | at most 3 tries | 0004 |
+| Lookback, names on a row, recently deployed | 100 commits, 5, 10 | 0026, 0029 |
+| Minimum Pulumi CLI | v3.229.0 | 0001 |
+| Minimum self-hosted runner | v2.328.0, no ARM32 | Actions research |
+| API budget | 1,000 requests per hour per repo | 0017 |
+
+### The action's own version and the image URLs
+
+The header images are served from the exact release tag of the running action, or its commit SHA, never from a moving tag (0033). The glue works the ref out once per job and hands it to the renderer as data:
+
+1. If `GITHUB_ACTION_REF` is a full commit SHA or an exact version tag (`v1.2.3`), use it.
+2. Otherwise read `version` from the `package.json` next to the action (`GITHUB_ACTION_PATH`) and use `v<version>`.
+3. For `uses: ./` there is no action ref. Use `GITHUB_SHA`.
+
+The version is read at run time and is not compiled into `dist/`. release-please changes `package.json` in its release pull request and cannot rebuild `dist/`, so a compiled-in version would turn every release pull request red. The footer's version line uses the same value.
+
+## 4. Corrections to the brief
+
+Each line is something in `docs/brief.md` that must not be built as written.
+
+| Brief | What is true now | Record |
+|---|---|---|
+| Principle 3, "never hold credentials, only passes env through" | Five promises that can be checked | 0014 |
+| Principle 5 and section 3, "adapter interface" | `urn` is an opaque `address`, the stack name is optional, five ops plus tracking changes, `changedKeys` and `replaceKeys`, no `summary`, no `rendered`. `detectDrift` is not in v1 | 0006, 0007, 0002 |
+| Section 2, "moving major tag (`v1`)" | First release is 0.1.0 and the first moving tag is `v0`. `v1` appears with a deliberate 1.0.0 | PR 35 |
+| Section 2, Zod "or Valibot" | Zod | section 5 |
+| Section 3, Pulumi driver spike | Done: the CLI with `--json`, minimum v3.229.0 | 0001 |
+| Section 3, "Sluiceway passes env through (`PULUMI_ACCESS_TOKEN`, ...)" | The whole job environment minus `INPUT_*`. No name is ever read | 0013, 0014 |
+| Section 3, discovery of `Pulumi.yaml` and `Pulumi.<stack>.yaml` | `Pulumi.yaml`, `Pulumi.yml` or `Pulumi.json`, and stack files with the same extension | Pulumi research |
+| Section 3, `docs/decisions/` | `docs/adr/` | PR 33 |
+| Section 4, "the three modes" | Four. `settle` was added | 0003 |
+| `scan` step 2, drift | Not in v1 | later.md |
+| `scan` step 2, every stack on every push | A push gives a narrowed scan. Schedule, dispatch and rescan are full | 0010, 0011 |
+| `scan` step 3, hash of URNs, ops and keys | A canonical document of the whole diff | 0008 |
+| `scan` step 4, attribution by commits that touched the path | Pull requests the stack claims, the rest counted | 0026 |
+| `scan` step 5, "full untruncated diffs" in the summary | The summary has a budget. The job log holds the full list | 0037 |
+| `scan`, "error row" | A preview failure row with a failure reason from a fixed list. The job stays green | 0012, 0022 |
+| `resolve` step 2, diff `changes.body.from` against the body | The event is only a wake-up. `resolve` acts on every ticked row in the live body | 0025 |
+| `resolve` step 3, `sender` is checked | The ticker comes from the issue's edit history | 0025 |
+| `resolve` step 3, `approvers`, users or teams | `tickers`: a level or usernames. It narrows and never widens. No teams | 0018 |
+| `resolve` step 5, matrix of `{ stack, environment, expectedHash }` | `{ stack, environment, deployment }`. The hash is on the deployment record | 0003, 0035 |
+| `resolve` step 6, re-render as deploying | Yes, and before that `resolve` creates the deployment record as `queued` | 0003 |
+| `apply` inputs `stack` and `expected-hash` | One input, `deployment-id`. `apply` runs only on an open record | 0019, 0035 |
+| `apply` step 3, records a deployment | `resolve` creates it, `apply` moves it on | 0003 |
+| `apply` step 3, "comment on the dashboard only on failure" | No comment. A failure is a failure line on the row. The only comment Sluiceway writes is for a refused tick | 0004, 0018 |
+| The example consumer workflow | Replaced. The one in the README is the only valid example | README, 0035 |
+| "Environments are the real approval gate. The checkbox is the trigger" | The tick is always a gate, and Environments make it a stronger one | 0020 |
+| Section 5, config keys `stack`, `approvers`, `dependsOn`, `drift` | `name`, `tickers`. `dependsOn` and `drift` are not in v1. New keys: `inputs`, `scan.unrelated`, `previewTimeout`, `dashboard.redact`, `dashboard.personality` | section 3 |
+| Section 6, the sections and the header line | Pending, Deploying, Preview failed, In sync, Recently deployed. No Drift section in v1. Failed is a line on a row, not a section | 0029 |
+| Section 6, the row format with `+2 ~1 -0`, `from #123 by @robbe` and a marker on the second line | Word counts, the marker at the end of the first line, a closing marker, attribution on its own line with plain logins | 0009, 0026, 0027 |
+| Section 6, alert blocks on rows with a replace or delete | They do not render inside a list. Delete and replace lines sit open under the row | 0027 |
+| Section 6, "never render values the tool marks as secret" | No value is ever shown, marked or not | 0021 |
+| Section 6, truncate per stack diffs first | Biggest rows first, destroys cut last and all or none, small rows get their details back | 0024, 0028 |
+| Section 6, root marker `<!-- sluiceway:dashboard v1 -->` | `key="value"` pairs, with the scan facts on it | 0009 |
+| Section 7, `dashboard.redact` as "summary counts only" | Names leave the issue, the summary stays full, the hash still covers everything | 0023 |
+| Section 7, "mask anything that looks like a token" | Dropped. The tool's own words never leave the job log | 0022 |
+| Section 8, M3 and M4 | Not part of v1 | later.md |
+| Section 9, e2e against the example | Yes, and it runs against a fake GitHub API so the whole loop can be tested without a person | section 6 |
+| Section 11, homelab details | Only in `docs/acceptance.md` | map |
+
+## 5. How the code is laid out
+
+The bootstrap made the directories. This is what goes in them. File names are a starting point, the boundaries are not.
+
+| Path | Holds | Pure |
+|---|---|---|
+| `src/core/` | Types (`Stack`, `Change`, `Diff`), config, the diff hash, the claim rule, the tick rule, the walk through the edit history, attribution, the scan plan (which stacks to preview) | Yes |
+| `src/adapters/adapter.ts` | The interface: `discover`, `preview`, `apply`, and a version check | Yes |
+| `src/adapters/pulumi/` | Discovery, the command lines, the process runner, the schema that parses tool output, folding steps into changes | Yes |
+| `src/render/` | Markers, rows, the body, the header state, the voice strings, the size budget, the summary, the log text of a diff | Yes |
+| `src/github/` | The port (one interface with every GitHub call Sluiceway makes), its Octokit implementation, the write loop, reading the event, the action ref, inputs and outputs, annotations | No |
+| `src/modes/` | One file per mode. A mode wires core, adapter, render and the port together and holds no rules of its own | No |
+| `test/fake-github/` | An in-memory implementation of the port, and a small HTTP server around it for the e2e workflow | |
+
+"Pure" means: no import of `@actions/*`, `@octokit/*`, `src/github/**` or `src/modes/**`, and no reading of a GitHub event. The first slice adds `src/render/` to the boundary rule in `biome.json` and to `test/boundary.test.ts`, because record 0002 makes rendering the core's job and a hosted version would reuse it.
+
+Four seams keep everything testable without a network or a tool:
+
+- **The GitHub port.** Modes only talk to GitHub through it. Tests use the fake.
+- **The process runner.** The adapter starts the tool through one function that takes a command, a working directory, an environment and a time limit. Tests replay recorded output through it.
+- **The clock.** Every time on the dashboard comes from one injected function, so output is byte-identical in tests (0029).
+- **The environment.** Read once in the glue and passed down as data. Nothing in `core/`, `adapters/` or `render/` reads `process.env`, with one exception: the adapter passes the whole environment to the tool minus `INPUT_*` (0013).
+
+### Approved runtime dependencies
+
+`@actions/core` (already there), `@actions/github`, `zod`, `yaml`, and one small glob matcher such as `picomatch`. The bootstrap measured 0.72 MB for `@actions/core` alone, so the brief's line of 1 MB is passed by design. The new line is 3 MB for `dist/index.js`. CI fails above it.
+
+## 6. How it is tested
+
+| Layer | What | Where |
+|---|---|---|
+| Unit | Hash, config, claim rule, tick rule, history walk, attribution, header state, budget steps, marker encode and decode | next to the code's area under `test/` |
+| Snapshot | Every kind of row, the body in every header state, redact on and off, personality on and off, a 58 stack body, a 100 stack body over budget, the summary | `test/render/` |
+| Adapter | The schema and the folding, against recorded tool output only | `test/adapters/pulumi/` |
+| Mode | Each mode against the fake GitHub and a replayed tool | `test/modes/` |
+| E2E | The committed bundle on a real runner, with the real CLI, the example project and the fake GitHub server | `.github/workflows/e2e.yml` |
+| Live | A short manual pass in a scratch repo on real GitHub before a release | `docs/acceptance.md`, part 1 |
+
+### The example project
+
+`examples/pulumi-basic/` needs no cloud account. It uses a local file backend and the providers `random`, `command` and `local`.
+
+- `network/`: YAML runtime, `Pulumi.yaml`, two stacks (`dev` and `prod`). Proves two stacks in one directory and `path:name` ids.
+- `app/`: YAML runtime, `Pulumi.yml` with `Pulumi.prod.yml`. Proves the second spelling, plus a stray `Pulumi.dev.yaml` that must be ignored.
+- `site/`: TypeScript, one stack. Proves a program with an install step. The research saw step order change between identical runs only with TypeScript.
+- A `sluiceway.yaml` that uses `inputs`, a per stack `tickers` and `ignore`.
+- Every program holds at least one property whose value is the string `CANARY-VALUE` and one secret config value. See the canary test below.
+
+### Recorded fixtures
+
+`scripts/record-fixtures.ts` drives the example project through a list of scenarios against a fresh file backend and saves what the tool printed: stdout, stderr and the exit code, one directory per scenario under `test/fixtures/pulumi/<cli version>/`. Fixtures are never written by hand (0001). The script records with the minimum CLI version and with the newest one, and CI replays both sets.
+
+Scenarios: a new stack (all creates), no changes, an update, a replace with replace reasons, a delete, a mix of all ops, a change that touches only outputs (0036), an import, a resource that is dropped from state but kept, a changed secret, a program error, a missing stack, a missing config value, the same preview twice (step order), `pulumi version`, and a generated stack of several hundred resources.
+
+The build agent settles the table from Pulumi's step ops to `op` and `tracking` from these recordings. A step op that the table does not hold fails that stack's preview (0007).
+
+### The canary test
+
+One test runs every fixture through the adapter, the renderers and the log text, and fails if the string `CANARY-VALUE` or the secret shows up anywhere in the result. This is the proof of record 0021. It stays in the suite forever.
+
+### The fake GitHub
+
+The fake implements the port in memory and copies the real behavior that the lab tests found, because those are the things a naive fake gets wrong:
+
+- A body over 65,536 characters is refused on create. On update a body over the limit answers success and stores nothing (issue 17).
+- An edit by the bot starts no event. An edit by a person does.
+- The edit history keeps the original body and the newest 99 edits, each with its editor, time and full body. An entry's body can be deleted (0025).
+- An `issues.edited` payload carries the newest body, not the body of its own edit (issue 28).
+- Deployments: with the default `auto_inactive`, a later success flips every earlier success in the same environment to `inactive`, whatever its `task`, and a moment later, not at once (issue 27). Only the list filters that GitHub has.
+- The fake counts requests, so a test can hold a scan of 100 stacks to the API budget.
+
+Because the fake can add a history entry by a person, the whole loop (scan, tick, `resolve`, `apply`, `settle`) runs in CI with no human and no stored token. The risk is a fake that drifts from GitHub. The live pass before a release is the check on that.
+
+## 7. Milestones and slices
+
+### M1: the scan, read only
+
+Done when: a push to a repo with the example project gives a correct dashboard, in CI against the fake and once by hand on real GitHub. Nothing can be deployed yet.
+
+| # | Slice | Records | Proves | Tests |
+|---|---|---|---|---|
+| 1.1 | Core types and the diff hash. Add `render/` to the boundary | 0006, 0007, 0008 | The same diff always gives the same hash | Key order, duplicate keys, absent optional fields, code unit sorting, and fixed vectors: known documents with their known hashes, so a change of algorithm cannot go unnoticed |
+| 1.2 | Config loading and the JSON schema | 0006, 0010, 0018, 0023, 0034, section 3 | Zero config works and a bad file fails loudly | Defaults, every error message, username case, the reserved keys, schema freshness check in CI |
+| 1.3 | The example project and the fixture recorder | 0001, section 6 | The fixtures are real | The recorder runs in CI with the real CLI and its output parses as JSON where expected |
+| 1.4 | Pulumi discovery | 0006, 0010, Pulumi research | Stacks are found from files alone, with no backend call | Both spellings, mismatched extension ignored, `stackConfigDir`, `ignore` on the stack id, two stacks with one id is an error, nested directories |
+| 1.5 | Pulumi preview: version check, command line, process runner with the time limit, schema, folding, failure reasons | 0001, 0007, 0012, 0013, 0021, 0022, 0036 | Tool output becomes a `Diff` with no value in it | Every fixture, the canary test, `INPUT_*` removed from the child, a timeout kills the process group, the temp directory is removed, parse errors name a path and never a value |
+| 1.6 | Markers and rows | 0009, 0023, 0024, 0027 | One row renderer for every writer, and a tick is one regex on one line | Snapshots of every row kind, HTML escaping, percent-encoding round trips, unknown kinds, keys and states carried through byte for byte |
+| 1.7 | The body: header state, picture, counts, scan line, sections, footer, voice, personality off. CI check that each image is at most 10 KB | 0029, 0030 to 0034 | The body is a pure function of the root facts, the row blocks and the deployment records | Snapshots per header state, precedence table, same input gives the same bytes, the action ref rule of section 3 |
+| 1.8 | The size budget | 0024, 0028 | A body is never over the limit and destroys are cut last | The 58 and 100 stack fixtures, ties broken by stack id, give-back, all-or-none destroys, the scan fails cleanly when nothing fits |
+| 1.9 | The summary and the log text | 0021, 0026, 0037 | A shortened row always has a full version to point at | Snapshot, the budget, the note at the top, the canary test again |
+| 1.10 | The GitHub port, the Octokit implementation, the fake, finding or creating the dashboard, the write loop | 0004, 0009, 0017 | A write is verified, a lost write is retried, a duplicate dashboard is closed | The fake's silent drop, three tries then a red job, skip when identical, reopen the newest closed match, pin is best effort |
+| 1.11 | The full scan: the pool, job result, annotations, wiring | 0011, 0012 | One broken stack never stops the others, and the job is green unless the scan itself failed | Pool order and size, all previews failing turns the job red after the write, a failed summary does not stop the scan |
+| 1.12 | The narrowed scan: claim rule, compare call, fall back to full, row swap, the one row per stack rule | 0010, 0011 | A push previews only what it has to, and never loses a row | Every fall back case, a renamed file, nested stack directories, a row deleted by hand comes back, `full-scan-*` keys carried through |
+| 1.13 | E2E workflow, and the README's warning updated | section 6 | The committed bundle works on a real runner with the real CLI | The smoke job's expectation changes here, as the bootstrap said it would |
+
+After M1 the owner runs the read-only trial on real repos at a pinned commit (acceptance, part 2). It gives the first real preview timings, which confirm or change the defaults of `concurrency` and `preview-timeout` before anything is released. The scan logs how long each preview took and the total, so the numbers can be read from the job log.
+
+### M2: the tick and the deploy
+
+Done when: ticking a box deploys exactly that stack and the dashboard returns to in sync, in CI against the fake, with every refusal path covered.
+
+| # | Slice | Records | Proves | Tests |
+|---|---|---|---|---|
+| 2.1 | Deployment records: create, statuses, bounded reads, `inactive`. The scan shows deploying rows, failure lines and recently deployed, defers at its late read, and ends an open record whose run is over | 0003, 0004, 0027, 0029 | Deploy facts live in GitHub and nowhere else | Payload version, one GraphQL page plus the REST fall back, another stack's success does not flip this one, a record of a finished run becomes `error` |
+| 2.2 | The edit history walk | 0025 | The ticker is the person whose edit made the tick | The recorded race from issue 28, bot entries inside the stretch, an entry without a body, the 100 entry cap, paging stops early |
+| 2.3 | The tick rule and the refused tick | 0018, 0020 | One live rule that only narrows | Levels from the three booleans, a list that does not widen, a bot or `ghost`, one comment for several refusals, fail closed when the lookup fails |
+| 2.4 | `resolve`: the cheap payload check, body and history in one read, records created as `queued`, the row swap with `destroys` copied, the `matrix` output, the rescan box, a body of another version | 0009, 0014, 0017, 0025, 0031, 0035 | The job that an issue edit starts holds no tool credentials and never runs the tool | No API call for an ordinary issue, a second tick on a deploying stack is dropped, output set before the body write, 256 cap, dispatch needs `actions: write` |
+| 2.5 | The adapter's `apply`, and `apply` mode: record first, fresh preview, hash check, deploy, status, row swap, the apply summary | 0008, 0015, 0019, 0021, 0035 | Only what the row showed goes out, and a re-run deploys nothing | A moved change ends as `error` and a fresh row, a closed record costs one API call and no tool call, the job is green only on success, outputs never in the summary |
+| 2.6 | `settle` | 0003, 0035 | A cancelled or rejected deploy never stays "deploying" | Finds the records of its own run, leaves others alone, a run with nothing open does nothing |
+| 2.7 | The orphan tick sweep in every scan | 0025 | A scan clears a tick that nothing picked up and never deploys it | A waiting `resolve` run means hands off, the note on the row |
+| 2.8 | Attribution | 0026 | A row says which merges made it pending, and never blocks | The walk with merge commits, squash and rebase merges, direct pushes, `and earlier changes`, a failed lookup leaves the line out, budget level 1 |
+| 2.9 | E2E of the whole loop on the fake: scan, tick, `resolve`, `apply` with the real tool, `settle`. Plus a refused tick, a moved change and a re-run | all of M2 | The loop closes with the committed bundle | The example stack really deploys to the file backend and the next scan shows it in sync |
+| 2.10 | Docs: the README without its warning, the config reference, `docs/security.md` (the three setups of 0020), `docs/credentials.md` (the pattern of 0013, then recipes, and running next to your own tooling), what a tick promises (0008), the outputs limit (0036), and a line that says not to add `merge_group` to this workflow | 0013, 0014, 0016, 0020 | A stranger can set it up from the README alone | The README's workflow is parsed in a test and checked against `action.yml`: every input it uses exists |
+
+### M3: proof and the first release
+
+| # | Slice | Proves |
+|---|---|---|
+| 3.1 | The 100 stack run: body size, API calls counted against the budget, time of a scan with a replayed tool | The numbers in the records hold in code |
+| 3.2 | The live pass in a scratch repo (acceptance, part 1), with fixes | The fake did not lie about GitHub |
+| 3.3 | Release 0.1.0 (section 8) | The tag, `v0` and the image URLs work |
+| 3.4 | Acceptance against the first real user (acceptance, parts 3 and 4), with fixes | The destination of the map |
+
+## 8. The first release
+
+- The first release is `0.1.0` (`initial-version` in the release-please config, PR 35). The first moving tag is `v0`. Examples say `sluiceway/sluiceway@v0` until a deliberate 1.0.0.
+- Nothing is released after M1. A dashboard with boxes that do nothing is not a version. The read-only trial runs at a pinned commit SHA, which the image rule of 0033 allows.
+- 0.1.0 is cut when M2 is merged and the live pass is done. Passing the acceptance test is the gate for telling anyone, not for tagging.
+- The owner has to turn on "Allow GitHub Actions to create and approve pull requests" before release-please can open its pull request. It is still off. Pull requests it opens start no CI run. Closing and reopening the release pull request starts one.
+- After the tag exists, check by hand that one image URL at the exact tag loads, and that the e2e body names that tag.
+- Still open for the owner, and needed before anything is announced: the `sluiceway` npm name and the `sluiceway.dev` domain are not reserved.

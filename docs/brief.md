@@ -1,4 +1,11 @@
-> Original project brief, kept as written on 2026-09-20. Where research or later decisions correct it, the correction wins. See the planning map: https://github.com/sluiceway/sluiceway/issues/1
+> [!CAUTION]
+> **Do not build from this file.** It is the original project brief of 2026-09-20, kept as history. About half of its detail has been corrected since by research and by the decision records.
+>
+> Build from [build-plan.md](build-plan.md). Its section 4 lists every correction. The rules are in [docs/adr](adr), the words in [CONTEXT.md](../CONTEXT.md), and what is left out of v1 in [later.md](later.md).
+>
+> The text below is unchanged. Every outdated part carries a note like this one, added on 2026-09-21. Never copy code, config, a workflow or a row format from here.
+>
+> Planning map: https://github.com/sluiceway/sluiceway/issues/1
 
 # Sluiceway: agent brief
 
@@ -18,6 +25,9 @@ A sluiceway is a channel with a gate where someone controls what flows through. 
 
 Existing tools (Atlantis, Terrateam, Digger/OpenTaco, Terramate, Pulumi Cloud) are PR-centric: plan on PR, apply on comment or auto-apply on merge. They treat issues as drift alerts at best. Nobody models "merged but not yet deployed" as a first-class queue you pick from, and nobody uses a GitHub issue as the actual control panel. That is the gap.
 
+> [!CAUTION]
+> Principle 3 is replaced by five promises that can be checked (record 0014). Principle 5 stands, with a changed interface (records 0006, 0007).
+
 Principles that follow from this:
 
 1. **The issue is the product.** Its readability and UX matter more than any other feature.
@@ -35,6 +45,9 @@ Principles that follow from this:
 
 ## 2. Tech stack and conventions
 
+> [!CAUTION]
+> Mostly still true and already built (PR 33). Corrected: the first release is 0.1.0 and the first moving tag is `v0`, not `v1`. Validation is Zod. The action runs on `node24`.
+
 - TypeScript, strict mode. ESM.
 - **Bun** for install, scripts, tests (`bun test`) and bundling. The action itself runs on GitHub's Node runtime, so bundle with `bun build --target=node` into `dist/`. Verify the current recommended `runs.using` Node version for JavaScript actions and use it.
 - `dist/` is committed (required for JS actions). CI must fail if `dist/` is out of date.
@@ -46,6 +59,9 @@ Principles that follow from this:
 - Add a Renovate config for the repo itself.
 
 ## 3. Architecture
+
+> [!CAUTION]
+> The boundary stands and now also covers `render/`. The file list is a sketch: there is no `graph.ts` and no `event.ts` in v1, the action has four modes, and decision records live in `docs/adr/`. See build-plan.md, section 5.
 
 Keep a hard boundary between pure core logic and GitHub/Actions glue. A hosted version may reuse the core later, so `core/` and `adapters/` must not import `@actions/*` or read GitHub event payloads.
 
@@ -82,6 +98,9 @@ sluiceway/
 
 ### Adapter interface
 
+> [!CAUTION]
+> **Outdated, do not copy.** `urn` is an opaque `address`. The stack name is optional. There are five ops plus tracking changes, and a replace carries `replaceKeys`. `summary` and `rendered` are gone: the core counts and renders. `detectDrift` is not in v1. The real types are in records 0006 and 0007.
+
 ```ts
 interface Adapter {
   id: "pulumi" | "opentofu";
@@ -107,6 +126,9 @@ interface NormalizedDiff {
 
 ### Pulumi adapter: decide this first (spike)
 
+> [!CAUTION]
+> **Decided.** The CLI with `--json`, minimum v3.229.0 (record 0001), in `docs/adr/`. The discovery rule below is wrong: project files are `Pulumi.yaml`, `Pulumi.yml` or `Pulumi.json`, and a stack file must have the same extension. Sluiceway reads no variable by name. It passes the whole job environment to the tool, minus `INPUT_*` (records 0013, 0014).
+
 Two options. Do a short spike and write the decision into `docs/decisions/0001-pulumi-driver.md`.
 
 - **A. Shell out to the `pulumi` CLI with `--json`.** Small bundle, no native deps. Default choice unless the spike shows a blocker.
@@ -120,7 +142,13 @@ Discovery: find `Pulumi.yaml` files, then `Pulumi.<stack>.yaml` next to them. Ze
 
 ## 4. The three modes
 
+> [!CAUTION]
+> **Four modes.** Record 0003 added `settle`. All three descriptions below are outdated in ways that matter for safety. See the notes under each.
+
 ### `scan` (on push to default branch, on schedule, on manual dispatch)
+
+> [!CAUTION]
+> **Outdated.** No drift in v1. A push gives a narrowed scan (records 0010, 0011). The hash is a canonical document of the whole diff (0008). Attribution names claimed pull requests (0026). The summary has a budget (0037). A failed preview is a preview failure row with a fixed failure reason, and the job stays green (0012, 0022).
 
 1. Load config, discover stacks.
 2. For each stack: `preview`. On schedule (or when `drift: true`): also `detectDrift`.
@@ -131,6 +159,9 @@ Discovery: find `Pulumi.yaml` files, then `Pulumi.<stack>.yaml` next to them. Ze
 A failing preview for one stack must not abort the scan. Show it on the dashboard as an error row with a link to the run.
 
 ### `resolve` (on `issues: edited`)
+
+> [!CAUTION]
+> **Outdated, and unsafe as written.** The event payload carries the newest body, so a tick cannot be tied to its event, and `sender` is not the ticker. The event is only a wake-up. The ticker comes from the issue's edit history (record 0025). The rule is `tickers`, it only narrows, and there are no teams (0018). `resolve` creates the deployment record before it hands anything on (0003), and hands on `{ stack, environment, deployment }` (0035).
 
 1. Ignore unless the edited issue is the dashboard (label + hidden root marker + authored by the bot identity).
 2. Diff `changes.body.from` against the current body. Only boxes that went from unchecked to checked count.
@@ -145,6 +176,9 @@ Also support a Renovate-style "rescan" checkbox at the bottom of the issue that 
 
 ### `apply` (matrix job, one per selected stack)
 
+> [!CAUTION]
+> **Outdated.** `apply` takes one input, `deployment-id`, and deploys only when that record is still open, so a re-run deploys nothing (records 0019, 0035). The approved hash is on the record. `apply` creates no record and writes no comment: a failure is a failure line on the row (0003, 0004).
+
 1. Preview again. Compute hash. If it differs from `expectedHash`: abort, do not apply, re-render with the new diff and a note that the change moved since it was approved.
 2. Apply.
 3. Record a GitHub Deployment + status for the stack's environment, write a job summary, comment on the dashboard only on failure.
@@ -153,6 +187,9 @@ Also support a Renovate-style "rescan" checkbox at the bottom of the issue that 
 This design is intentionally stateless: the hash lives in the issue marker, and the real check is always a fresh preview. A forged hash can only ever approve what the current preview actually shows, and only by someone who already has permission.
 
 ### Example consumer workflow (ship this in the README)
+
+> [!CAUTION]
+> **Do not ship this. Do not copy it.** It lacks `actions: write`, has no concurrency groups for `scan` and `resolve`, has no `settle` job, records two deployments per deploy, passes inputs that no longer exist and pins old versions. The only valid example is the one in the [README](../README.md).
 
 ```yaml
 name: sluiceway
@@ -211,9 +248,15 @@ jobs:
 
 GitHub Environments (required reviewers, branch rules, scoped secrets) are the real approval gate for production. The checkbox is the trigger, not the security boundary. Say this clearly in the docs.
 
+> [!CAUTION]
+> **False for many users, never say this.** Required reviewers are plan-gated. The tick is always a gate, and Environments make it a stronger one (record 0020).
+
 ## 5. Config: `sluiceway.yaml`
 
 Optional. Everything has defaults.
+
+> [!CAUTION]
+> **Outdated, do not copy.** `stack` is `name` and optional. `approvers` is `tickers`, with no teams. `dependsOn` and `drift` are not in v1 and fail with a clear message. New keys exist. The full list is in build-plan.md, section 3.
 
 ```yaml
 dashboard:
@@ -239,6 +282,9 @@ drift:
 Generate a JSON schema from the Zod schema and publish it so editors autocomplete.
 
 ## 6. The dashboard issue (spend the most care here)
+
+> [!CAUTION]
+> **The care stands, the details do not.** Sections, row format, markers, warnings, the size budget and the header were all redesigned against rendered issues. Alert blocks do not render inside a list. No value is ever shown. An oversized body is dropped without an error, so every write is verified. See records 0009, 0021, 0024 and 0027 to 0034.
 
 Sections, in this order:
 
@@ -273,6 +319,9 @@ Rules:
 
 ## 7. Security checklist
 
+> [!CAUTION]
+> Corrected: the ticker comes from the edit history, not from `sender` (record 0025). Redact strips names from the issue and keeps the summary full (0023). There is no token pattern mask. The tool's own words never leave the job log (0022).
+
 - Actor permission check in `resolve` (see above). Test the unauthorized path.
 - Trust nothing from the issue body except: which row was ticked, and the hash. Both are validated against discovery and a fresh preview.
 - Minimal `permissions:` in all example workflows.
@@ -281,6 +330,9 @@ Rules:
 - Never log env vars. Mask anything that looks like a token in captured tool output.
 
 ## 8. Milestones
+
+> [!CAUTION]
+> **Replaced by build-plan.md, section 7.** M0 is merged. M3 (drift and dependencies) and M4 (launch) are not part of v1.
 
 **M0: repo bootstrap**
 Repo scaffold, Bun + Biome + tsconfig, `action.yml`, CI (lint, typecheck, test, dist-up-to-date check), release workflow, README skeleton, LICENSE, CONTRIBUTING, SECURITY.md, issue templates, Renovate config.
@@ -301,6 +353,9 @@ Docs site or solid README, screenshots/GIF of the dashboard, redact mode, 100-st
 
 ## 9. Testing
 
+> [!CAUTION]
+> Still the right spirit. The concrete plan, with the fake GitHub that lets the whole loop run in CI, is in build-plan.md, section 6. There is no graph and no event diffing to test.
+
 - Unit: config, discovery, hashing (order independence), graph, marker encode/decode, event diffing (which boxes changed), truncation.
 - Snapshot: dashboard renderer across fixtures (empty, all in sync, mixed, errors, huge).
 - Adapter: parse recorded real `pulumi` JSON output stored in `test/fixtures`. Record them from the example project, don't hand-write them.
@@ -309,12 +364,18 @@ Docs site or solid README, screenshots/GIF of the dashboard, redact mode, 100-st
 
 ## 10. How to work
 
+> [!CAUTION]
+> Replaced by build-plan.md, section 1. The spike is done, records live in `docs/adr/`, and the size line for the bundle moved.
+
 1. Start with M0 and the Pulumi driver spike, nothing else. Open a PR per milestone chunk, small commits.
 2. Write the decision records in `docs/decisions/` as you go (driver choice, stateless hash design, dependency handling).
 3. When something in this brief conflicts with how GitHub or Pulumi actually behave today, the real behavior wins. Note the deviation in the PR description.
 4. Ask the owner before: changing the license, adding a runtime dependency heavier than ~1 MB bundled, adding any network call that isn't the GitHub API or the IaC tool, or expanding scope beyond the current milestone.
 
 ## 11. Owner setup (manual, outside the agent's reach)
+
+> [!CAUTION]
+> The org and the repo exist. The npm name and the domain are still not reserved. The first real user appears only in [acceptance.md](acceptance.md).
 
 - Create the `sluiceway` GitHub org and the `sluiceway/sluiceway` repo. Reserve the `sluiceway` npm name with a placeholder package.
 - Check `sluiceway.dev` / `.sh`.

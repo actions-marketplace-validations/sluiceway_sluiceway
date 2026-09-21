@@ -1,5 +1,7 @@
 # No property value ever leaves the adapter
 
+> Amended by 0037: the summary is not without a budget. GitHub drops a step summary over 1 MiB, so the summary shortens too, and the job log holds every diff in full.
+
 Sluiceway renders the diff itself (0002), so it chooses what a person sees. In v1 it shows what changes and never what it changes to: addresses by type and name, ops, tracking changes and property names. No old value, no new value, no digest of a value. This holds for every place Sluiceway writes to: the issue body, comments, markers, deployment records, job summaries and its own lines in the job log.
 
 Showing values the way PR-comment tools do, trusting the tool's own masking, was rejected for four reasons.
@@ -23,7 +25,7 @@ An opt-in list of property names whose values are shown was also rejected for v1
 - Names are shown, so names must not be secrets. Resource names, types and property names come from the user's code and the provider's schema. The docs say this in one line: do not put a secret in a resource name.
 - The brief's rule "never render property values that the tool marks as secret, when in doubt show keys only" becomes simply: keys only.
 - The promise of a tick stays the one in 0008: change these properties on these resources, at whatever value the code has when the deploy runs. The docs say so next to the explanation of the diff hash.
-- How a change that touches only a stack's outputs is shown is still open (0007). Whatever the answer, it shows output names and never output values.
+- How a change that touches only a stack's outputs is shown is still open (0007). Whatever the answer, it shows output names and never output values. Decided in 0036: not shown in v1.
 
 Research:
 - https://github.com/sluiceway/sluiceway/blob/research/pulumi-cli/docs/research/pulumi-cli.md
