@@ -4,3 +4,6 @@ coverage/
 .DS_Store
 
 # dist/ is committed on purpose. GitHub runs a JavaScript action straight from the repo.
+
+# Written by a deploy of the example project.
+examples/pulumi-basic/*/out/

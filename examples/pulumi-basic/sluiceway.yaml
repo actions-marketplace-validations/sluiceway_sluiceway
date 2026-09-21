@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schema/sluiceway.schema.json
+#
+# Every key here is optional. Without this file Sluiceway still finds the
+# stacks below and gives each one a row.
+
+# Globs matched against the stack id. The playground stack never gets a row.
+ignore:
+  - "playground:*"
+
+stacks:
+  # Settings for every stack in network/.
+  - path: network
+    environment: network
+
+  # Only the people named here may tick the prod stack of network/. They also
+  # need write access to the repo. The list narrows who may tick, never widens it.
+  - path: network
+    name: prod
+    tickers:
+      - alice
+      - bob
+
+  # The program in app/ reads a file outside its own directory. Naming it as an
+  # input makes a push that changes the file preview this stack again.
+  - path: app
+    inputs:
+      - shared/**

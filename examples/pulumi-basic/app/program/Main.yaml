@@ -1,0 +1,30 @@
+config:
+  tier:
+    type: string
+  token:
+    type: string
+    secret: true
+variables:
+  motd:
+    fn::readFile: ${pulumi.cwd}/../../shared/motd.txt
+resources:
+  release:
+    type: random:RandomPet
+    properties:
+      length: 2
+      prefix: app
+    options:
+      version: 4.21.2
+  start:
+    type: command:local:Command
+    properties:
+      create: echo app started
+      environment:
+        NOTE: CANARY-VALUE
+        MOTD: ${motd}
+        TIER: ${tier}
+        TOKEN: ${token}
+    options:
+      version: 1.2.1
+outputs:
+  releaseName: ${release.id}

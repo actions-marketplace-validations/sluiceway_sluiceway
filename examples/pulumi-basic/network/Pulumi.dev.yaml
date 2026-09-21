@@ -1,0 +1,5 @@
+encryptionsalt: v1:E++iqdvXYaI=:v1:iIhlJ9J5pVGtSka9:/F8U3nmw3qlLjJZXW9iNR6UNTW784w==
+config:
+  network:token:
+    secure: v1:DDGdBJvPTCXC2pYH:PjCPT5CYGDJ2cFKvISsMZeF/zi0dQATTgfHe0a0=
+  network:zone: dev-a

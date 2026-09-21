@@ -1,0 +1,8 @@
+encryptionsalt: v1:vhBmPe04MgE=:v1:fBx4Pufnjqgzf8wB:G7rByZNUYWEnGkNAPyHrkQSMuoYymw==
+config:
+  site:token:
+    secure: v1:sbZmlsVYdT4Z3ecS:MMjpWel5J/IW0/XS7/t7WyACa+MUrqj34l+2rqc=
+  site:pages:
+    - home
+    - about
+    - contact

@@ -1,0 +1,5 @@
+# A stray file. The project file here is spelled Pulumi.yml, so the tool only
+# reads stack files that end in .yml and passes this one over. There is no
+# stack named dev in this directory.
+config:
+  app:tier: small

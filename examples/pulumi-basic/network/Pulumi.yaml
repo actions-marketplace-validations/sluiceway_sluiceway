@@ -1,0 +1,43 @@
+name: network
+runtime: yaml
+description: Two stacks in one directory. Needs no cloud account.
+config:
+  zone:
+    type: string
+  token:
+    type: string
+    secret: true
+resources:
+  name:
+    type: random:RandomPet
+    properties:
+      length: 2
+      prefix: net
+    options:
+      version: 4.21.2
+  subnet:
+    type: random:RandomString
+    properties:
+      length: 8
+      special: false
+    options:
+      version: 4.21.2
+  banner:
+    type: command:local:Command
+    properties:
+      create: echo network ready
+      environment:
+        NOTE: CANARY-VALUE
+        ZONE: ${zone}
+        TOKEN: ${token}
+    options:
+      version: 1.2.1
+  notes:
+    type: local:File
+    properties:
+      filename: ${pulumi.cwd}/out/notes.txt
+      content: Managed by the network stack.
+    options:
+      version: 0.1.6
+outputs:
+  networkName: ${name.id}
