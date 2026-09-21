@@ -181,3 +181,37 @@ _Avoid_: Private mode, mask, hide
 **Destroy**:
 A change whose op is replace or delete: a real object goes away. Destroys are listed first, cut last, and always carry a warning, also on a redacted dashboard.
 _Avoid_: Destructive change, dangerous change, removal
+
+### Personality
+
+**Penny**:
+The mascot: a sluice gate with a face, drawn next to the wordmark. The name is short for penstock. It is used in docs and never on the dashboard.
+_Avoid_: The otter, the logo (the logo is Penny without a state), Sluicy
+
+**Header**:
+The image at the top of the dashboard that shows Penny in one header state, in a light and a dark variant.
+_Avoid_: Banner, hero, badge
+
+**Header state**:
+Which of six pictures the header shows: plain, failing, deploying, pending, first run or in sync. The first that applies wins, in that order. It is computed from the row markers and decides nothing.
+_Avoid_: Mood, dashboard status, health
+
+**Plain**:
+The header state with no face, no colour and no motion. It is shown whenever a pending or deploying row has a delete or replace.
+_Avoid_: Serious mode, warning header, danger state
+
+**Voice**:
+Wording with a water image in it. It is allowed in exactly two lines, the good-news line and the first-run line. Everything else Sluiceway writes is plain.
+_Avoid_: Tone, copy, humour
+
+**Good-news line**:
+The line under the Pending heading when nothing is pending.
+_Avoid_: Empty state, all clear message
+
+**First-run line**:
+The line under the Pending heading when the scan found no stacks.
+_Avoid_: Onboarding message, welcome text
+
+**Personality**:
+The header and the voice together. `dashboard.personality: false` removes both.
+_Avoid_: Branding, theme, fun mode
