@@ -1,0 +1,19 @@
+{
+  "scenario": "version",
+  "description": "What the version check reads.",
+  "cliVersion": "v3.263.0",
+  "commands": [
+    {
+      "id": "version",
+      "argv": [
+        "pulumi",
+        "version"
+      ],
+      "cwd": ".",
+      "exitCode": 0,
+      "stdout": "version.stdout",
+      "stderr": "version.stderr",
+      "stdoutFormat": "text"
+    }
+  ]
+}

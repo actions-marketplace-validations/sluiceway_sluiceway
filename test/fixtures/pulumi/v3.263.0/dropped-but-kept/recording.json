@@ -1,0 +1,25 @@
+{
+  "scenario": "dropped-but-kept",
+  "description": "A resource deployed with retainOnDelete and then taken out of the program. The tool stops tracking it and the real object stays.",
+  "cliVersion": "v3.263.0",
+  "commands": [
+    {
+      "id": "preview",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "dev"
+      ],
+      "cwd": "network",
+      "exitCode": 0,
+      "stdout": "preview.stdout",
+      "stderr": "preview.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}

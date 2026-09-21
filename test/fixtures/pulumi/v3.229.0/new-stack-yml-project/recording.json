@@ -1,0 +1,25 @@
+{
+  "scenario": "new-stack-yml-project",
+  "description": "The same for app/, whose project file is spelled Pulumi.yml and which reads a file outside its directory.",
+  "cliVersion": "v3.229.0",
+  "commands": [
+    {
+      "id": "preview",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "prod"
+      ],
+      "cwd": "app",
+      "exitCode": 0,
+      "stdout": "preview.stdout",
+      "stderr": "preview.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}
