@@ -1,0 +1,31 @@
+name: Sluiceway
+description: One GitHub issue that shows which infrastructure stacks have changes waiting, and deploys a stack when someone ticks its box.
+author: Sluiceway
+
+inputs:
+  mode:
+    description: >-
+      What this step does. One of: scan, resolve, apply, settle.
+    required: true
+  concurrency:
+    description: >-
+      How many previews a scan runs at the same time. It belongs to the runner, not to the repo,
+      so it is an input and not a config key.
+    required: false
+    default: "4"
+  preview-timeout:
+    description: >-
+      Time limit for one preview, in minutes. A preview that runs longer is stopped and its stack
+      gets a preview failure row.
+    required: false
+    default: "10"
+  github-token:
+    description: >-
+      The GITHUB_TOKEN of the workflow run. Leave it at the default. Sluiceway always acts as the
+      workflow's own token, and a GitHub App token or a personal access token is not supported.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: node24
+  main: dist/index.js

@@ -1,0 +1,70 @@
+name: Bug report
+description: Something does not work as the docs say it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a vulnerability here. See the [security policy](https://github.com/sluiceway/sluiceway/blob/main/SECURITY.md).
+
+        Before you paste anything: remove property values, tokens and anything else that should not be public. Tool output such as a preview in JSON contains plain values.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what did Sluiceway do?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      description: Which mode was running?
+      options:
+        - scan
+        - resolve
+        - apply
+        - settle
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sluiceway version
+      description: The tag or commit SHA in your workflow's `uses:` line.
+      placeholder: sluiceway/sluiceway@v1.2.3
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Infrastructure tool and version
+      placeholder: Pulumi 3.x
+  - type: dropdown
+    id: runner
+    attributes:
+      label: Runner
+      options:
+        - GitHub-hosted
+        - Self-hosted
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow and config
+      description: The Sluiceway part of your workflow file, and `sluiceway.yaml` if you have one.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Job log
+      description: The part of the job log that shows the problem. Check it for values and tokens first.
+      render: text

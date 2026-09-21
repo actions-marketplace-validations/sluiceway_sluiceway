@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits",
+    ":pinAllExceptPeerDependencies"
+  ],
+  "timezone": "Etc/UTC",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Runtime dependencies end up in dist/. The pull request stays red until someone runs 'bun run build' on the branch and commits the result, so these never merge on their own.",
+      "matchDepTypes": ["dependencies"],
+      "semanticCommitType": "fix",
+      "automerge": false,
+      "prBodyNotes": [
+        "This changes the bundled action. Check out the branch, run `bun run build` and commit `dist/`."
+      ]
+    },
+    {
+      "description": "The Bun version decides the bytes of dist/, so a bump needs a rebuild too.",
+      "matchManagers": ["bun-version"],
+      "automerge": false,
+      "prBodyNotes": [
+        "A new Bun version can change the bundle. Check out the branch, run `bun run build` and commit `dist/` if it changed."
+      ]
+    },
+    {
+      "description": "Group the tooling that never reaches dist/.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev tooling"
+    }
+  ]
+}
