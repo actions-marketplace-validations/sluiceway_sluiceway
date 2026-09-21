@@ -77,7 +77,7 @@ A person checking the box on a stack's row: a request to deploy that stack exact
 _Avoid_: Approval, selection, click
 
 **Ticker**:
-The person whose edit made a tick. The only identity a deploy is authorized against and attributed to. Always a person, never a bot.
+The person whose edit made a tick, as the issue's edit history names them. The only identity a deploy is authorized against and attributed to. Always a person, never a bot. A tick whose ticker cannot be named deploys nothing.
 _Avoid_: Approver, actor, sender, deployer
 
 **Tick rule**:
@@ -89,7 +89,7 @@ A tick by a person the stack's tick rule does not allow. Nothing deploys, the bo
 _Avoid_: Unauthorized tick, rejected tick, denied tick
 
 **Orphan tick**:
-A tick that nothing picked up, so the box is checked but no deploy exists for it.
+A tick that nothing picked up, so the box is checked but no deploy exists for it and none is on its way. A scan clears it and never deploys it.
 _Avoid_: Stale tick, missed tick, lost tick
 
 **Reviewer**:
