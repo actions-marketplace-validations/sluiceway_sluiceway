@@ -1,0 +1,6 @@
+node_modules/
+coverage/
+*.tsbuildinfo
+.DS_Store
+
+# dist/ is committed on purpose. GitHub runs a JavaScript action straight from the repo.
