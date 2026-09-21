@@ -90,7 +90,8 @@ function typeAndName(urn: string): Pick<Change, "type" | "name"> | undefined {
 // names otherwise. Creates, deletes and tracking changes list no keys.
 function keys(step: PreviewStep, op: Op): Pick<Change, "changedKeys" | "replaceKeys"> {
   if (op !== "update" && op !== "replace") return { changedKeys: [], replaceKeys: [] };
-  const changed = step.detailedDiff?.map(firstSegment) ?? step.diffReasons ?? [];
+  const paths = step.detailedDiff ?? [];
+  const changed = paths.length > 0 ? paths.map(firstSegment) : (step.diffReasons ?? []);
   const replaceKeys = op === "replace" ? sortedSet(step.replaceReasons ?? []) : [];
   // What forced a replace is a changed key too, also when the tool leaves it
   // out of its own list.

@@ -256,4 +256,14 @@ describe("the paths of a detailed diff", () => {
       'with "quotes"',
     ]);
   });
+
+  // The names are the only source then, as on a replace.
+  test("fall back to the tool's list of names when there are none", async () => {
+    const runner = changedOutput((document) => {
+      theUpdateStep(document).detailedDiff = {};
+    });
+    const result = await previewWith(NETWORK_DEV, runner);
+
+    expect(result.ok && result.diff.changes[0]?.changedKeys).toEqual(["environment"]);
+  });
 });
