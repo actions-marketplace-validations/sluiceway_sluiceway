@@ -87,21 +87,21 @@ export interface RowOptions {
 
 const INDENT = "  ";
 
-function byCodeUnit(a: string, b: string): number {
+export function byCodeUnit(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function isDestroy(change: Change): boolean {
+export function isDestroy(change: Change): boolean {
   return change.op === "replace" || change.op === "delete";
 }
 
-function plural(count: number, word: string): string {
+export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 // Words with zeros left out, in a fixed order. Replaces and deletes are bold,
 // so the first line alone says that a row destroys something.
-function counts(changes: Change[]): string {
+export function counts(changes: Change[]): string {
   const of = (op: Change["op"]) => changes.filter((change) => change.op === op).length;
   const trackingOnly = changes.filter((change) => change.op === "none" && change.tracking).length;
   return [
@@ -119,13 +119,13 @@ function codes(keys: string[]): string {
   return keys.map((key) => `<code>${escapeText(key)}</code>`).join(", ");
 }
 
-function sortedKeys(keys: string[]): string[] {
+export function sortedKeys(keys: string[]): string[] {
   return [...new Set(keys)].sort(byCodeUnit);
 }
 
 // One change as one line of plain HTML: the op as a key cap, the type, the
 // name in bold, then the names of the changed properties. Never a value.
-function changeLine(change: Change): string {
+export function changeLine(change: Change): string {
   const word = [change.op === "none" ? undefined : change.op, change.tracking]
     .filter((part) => part !== undefined)
     .join(" + ");
@@ -150,7 +150,7 @@ function failureLine(failure: FailureLine): string {
 }
 
 // `deletes 1, replaces 1`, for the warning on a row that lists no destroys.
-function destroyWords(deletes: number, replaces: number): string {
+export function destroyWords(deletes: number, replaces: number): string {
   return [deletes && `deletes ${deletes}`, replaces && `replaces ${replaces}`]
     .filter(Boolean)
     .join(", ");
