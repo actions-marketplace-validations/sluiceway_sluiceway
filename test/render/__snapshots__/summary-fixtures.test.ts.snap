@@ -1,0 +1,1417 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`snapshots the summary of the 58 stack fixture, in full 1`] = `
+"## Sluiceway scan
+
+56 stacks previewed: 11 pending, 2 preview failed, 43 in sync.
+
+### Pending
+
+#### apps/api:prod
+
+1 update
+
+<details><summary>1 change</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>api</b> · <code>spec</code>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/billing:staging
+
+9 creates
+
+<details><summary>9 changes</summary>
+
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-external-4</b>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-public-5</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>billing-webhook-2</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-default-backend-8</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-external-9</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-admission-7</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-leader-election-6</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-public-3</b>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>billing-canary-1</b>
+
+</details>
+
+#### apps/legacy-worker:prod
+
+**3 deletes**, 1 tracking only
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>legacy-jobs</b>
+- :warning: <kbd>DELETE</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>legacy-worker</b>
+- :warning: <kbd>DELETE</kbd> <code>kubernetes:core/v1:Service</code> <b>legacy-worker</b>
+
+<details><summary>1 other change</summary>
+
+- <kbd>forget</kbd> <code>aws:iam/role:Role</code> <b>legacy-worker</b>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/notifications:prod
+
+1 create, 1 update
+
+<details><summary>2 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>notifications</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:batch/v1:CronJob</code> <b>digest</b>
+
+</details>
+
+#### apps/search:prod
+
+2 updates
+
+<details><summary>2 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:StatefulSet</code> <b>search</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>search-config</b> · <code>data</code>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/web:prod
+
+2 creates, 1 update
+
+<details><summary>3 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>web</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:autoscaling/v2:HorizontalPodAutoscaler</code> <b>web</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>web-feature-flags</b>
+
+</details>
+
+#### data/postgres:prod
+
+2 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>aws:rds/instance:Instance</code> <b>main</b> · forced by <code>engineVersion</code>, <code>storageType</code> · also changes <code>instanceClass</code>
+
+<details><summary>2 other changes</summary>
+
+- <kbd>update</kbd> <code>aws:cloudwatch/metricAlarm:MetricAlarm</code> <b>main-cpu</b> · <code>dimensions</code>
+- <kbd>update</kbd> <code>aws:rds/parameterGroup:ParameterGroup</code> <b>main</b> · <code>parameters</code>
+
+</details>
+
+#### infra/dns:prod
+
+1 update, 2 tracking only
+
+<details><summary>3 changes</summary>
+
+- <kbd>update</kbd> <code>cloudflare:index/record:Record</code> <b>api</b> · <code>ttl</code>
+- <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>docs</b>
+- <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>status-page</b>
+
+</details>
+
+#### monitoring/dashboards:prod
+
+46 creates, 74 updates
+
+<details><summary>120 changes</summary>
+
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-admission-12</b>
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-31</b>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-71</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-78</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-104</b>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-26</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-55</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-internal-118</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-internal-82</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-leader-election-105</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-leader-election-33</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-private-36</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-public-13</b>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-public-9</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-tcp-services-60</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-udp-services-97</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-admission-1</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-admission-41</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-config-56</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-controller-95</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-58</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-77</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-90</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-92</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-internal-29</b>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-39</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-8</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-86</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-metrics-43</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-public-89</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-udp-services-98</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-webhook-117</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-admission-120</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-admission-7</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-112</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-17</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-50</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-config-28</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-37</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-67</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-80</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-87</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-external-74</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-internal-42</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-107</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-2</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-75</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-metrics-44</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-metrics-62</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-113</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-116</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-22</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-public-20</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-tcp-services-47</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-udp-services-27</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-webhook-30</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-admission-4</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-canary-35</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-canary-64</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-config-10</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-controller-83</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-default-backend-108</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-external-45</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-external-52</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-leader-election-59</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-metrics-111</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-metrics-73</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-private-81</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-tcp-services-11</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-tcp-services-115</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-udp-services-49</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-udp-services-66</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-internal-40</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-internal-72</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-leader-election-38</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-leader-election-84</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-private-85</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-private-96</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-public-119</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-public-79</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-tcp-services-5</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-14</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-3</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-61</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-88</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-101</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-21</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-23</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-68</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-admission-57</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-admission-65</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-canary-19</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-canary-63</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-config-109</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-controller-15</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-controller-93</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-default-backend-94</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-external-46</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-metrics-70</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-private-102</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-public-16</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-udp-services-110</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-webhook-32</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-webhook-53</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-admission-48</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-admission-91</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-canary-51</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-canary-69</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-default-backend-103</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-default-backend-106</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-external-25</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-external-34</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-internal-54</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-metrics-99</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-private-100</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-114</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-24</b>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-6</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-webhook-18</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-webhook-76</b>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### platform/ingress:prod
+
+13 creates, 32 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>kubernetes:batch/v1:Job</code> <b>ingress-admission-patch</b> · forced by <code>spec</code>
+
+<details><summary>45 other changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-metrics-17</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-public-21</b>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-tcp-services-34</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-tcp-services-43</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-default-backend-37</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-external-40</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-internal-18</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-leader-election-45</b>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-webhook-10</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-admission-22</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-canary-30</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-controller-25</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-controller-6</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-internal-15</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-internal-27</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-private-7</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-24</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-32</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-39</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>ingress-canary-29</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>ingress-internal-1</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-external-19</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-internal-16</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-internal-33</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-leader-election-11</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-private-8</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-tcp-services-41</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-udp-services-42</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-admission-13</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-admission-28</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-canary-36</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-controller-31</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-external-4</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-metrics-3</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-private-23</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-webhook-20</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-canary-2</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-config-5</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-default-backend-35</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-default-backend-9</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-external-44</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-14</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-26</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-38</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-webhook-12</b> · <code>rules</code>
+
+</details>
+
+#### storage/buckets:prod
+
+1 create, 1 update, **1 replace**, **1 delete**, 1 tracking only
+
+- :warning: <kbd>DELETE</kbd> <code>aws:s3/bucketPolicy:BucketPolicy</code> <b>uploads-public-read</b>
+- :warning: <kbd>REPLACE</kbd> <code>aws:s3/bucket:Bucket</code> <b>uploads</b> · forced by <code>bucket</code> · also changes <code>tags</code>
+
+<details><summary>3 other changes</summary>
+
+- <kbd>move</kbd> <code>aws:s3/bucket:Bucket</code> <b>archive</b>
+- <kbd>update</kbd> <code>aws:s3/bucketLifecycleConfiguration:BucketLifecycleConfiguration</code> <b>logs</b> · <code>rules</code>
+- <kbd>create</kbd> <code>aws:s3/bucketVersioning:BucketVersioning</code> <b>uploads</b>
+
+</details>
+
+### Preview failed
+
+- **data/redis:staging** · the tool exited with an error (exit code 255)
+- **monitoring/loki:prod** · the preview timed out after 10 minutes
+
+### In sync
+
+- apps/admin:prod
+- apps/admin:staging
+- apps/api:staging
+- apps/auth:prod
+- apps/auth:staging
+- apps/billing:prod
+- apps/docs:prod
+- apps/notifications:staging
+- apps/search:staging
+- apps/worker:prod
+- apps/worker:staging
+- data/kafka:prod
+- data/kafka:staging
+- data/postgres:staging
+- data/redis:prod
+- data/warehouse:prod
+- infra/bastion:prod
+- infra/cluster:prod
+- infra/cluster:staging
+- infra/dns:staging
+- infra/iam:prod
+- infra/kms:prod
+- infra/network:prod
+- infra/network:staging
+- infra/registry:prod
+- infra/vpn:prod
+- monitoring/alertmanager:prod
+- monitoring/grafana:prod
+- monitoring/prometheus:prod
+- monitoring/prometheus:staging
+- monitoring/tempo:prod
+- monitoring/uptime:prod
+- platform/argo-workflows:prod
+- platform/cert-manager:staging
+- platform/external-dns:prod
+- platform/external-secrets:prod
+- platform/ingress:staging
+- platform/karpenter:prod
+- platform/policy:prod
+- platform/service-mesh:prod
+- storage/backups:prod
+- storage/buckets:staging
+- storage/cdn:prod
+"
+`;
+
+exports[`snapshots the summary of the 100 stack fixture over a budget of 60,000 bytes 1`] = `
+"## Sluiceway scan
+
+> **This summary is shortened: 42 of 53 pending stacks show less than their whole diff.** Every diff is in full in the job log of this run, in the group that has the stack id as its title. Deletes and replaces are cut last.
+
+98 stacks previewed: 53 pending, 2 preview failed, 43 in sync.
+
+### Pending
+
+#### apps/api:prod
+
+1 update
+
+<details><summary>1 change</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>api</b> · <code>spec</code>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/billing:staging
+
+9 creates
+
+<details><summary>9 changes</summary>
+
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-external-4</b>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-public-5</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>billing-webhook-2</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-default-backend-8</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-external-9</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-admission-7</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-leader-election-6</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-public-3</b>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>billing-canary-1</b>
+
+</details>
+
+#### apps/legacy-worker:prod
+
+**3 deletes**, 1 tracking only
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>legacy-jobs</b>
+- :warning: <kbd>DELETE</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>legacy-worker</b>
+- :warning: <kbd>DELETE</kbd> <code>kubernetes:core/v1:Service</code> <b>legacy-worker</b>
+
+<details><summary>1 other change</summary>
+
+- <kbd>forget</kbd> <code>aws:iam/role:Role</code> <b>legacy-worker</b>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/notifications:prod
+
+1 create, 1 update
+
+<details><summary>2 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>notifications</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:batch/v1:CronJob</code> <b>digest</b>
+
+</details>
+
+#### apps/search:prod
+
+2 updates
+
+<details><summary>2 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:StatefulSet</code> <b>search</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>search-config</b> · <code>data</code>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### apps/web:prod
+
+2 creates, 1 update
+
+<details><summary>3 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>web</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:autoscaling/v2:HorizontalPodAutoscaler</code> <b>web</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>web-feature-flags</b>
+
+</details>
+
+#### data/postgres:prod
+
+2 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>aws:rds/instance:Instance</code> <b>main</b> · forced by <code>engineVersion</code>, <code>storageType</code> · also changes <code>instanceClass</code>
+
+<details><summary>2 other changes</summary>
+
+- <kbd>update</kbd> <code>aws:cloudwatch/metricAlarm:MetricAlarm</code> <b>main-cpu</b> · <code>dimensions</code>
+- <kbd>update</kbd> <code>aws:rds/parameterGroup:ParameterGroup</code> <b>main</b> · <code>parameters</code>
+
+</details>
+
+#### infra/dns:prod
+
+1 update, 2 tracking only
+
+<details><summary>3 changes</summary>
+
+- <kbd>update</kbd> <code>cloudflare:index/record:Record</code> <b>api</b> · <code>ttl</code>
+- <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>docs</b>
+- <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>status-page</b>
+
+</details>
+
+#### monitoring/dashboards:prod
+
+46 creates, 74 updates
+
+120 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### platform/ingress:prod
+
+13 creates, 32 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>kubernetes:batch/v1:Job</code> <b>ingress-admission-patch</b> · forced by <code>spec</code>
+
+45 other changes not listed here, see the job log.
+
+#### services/svc-01:prod
+
+22 creates, 34 updates
+
+56 changes not listed here, see the job log.
+
+#### services/svc-02:staging
+
+9 creates, 21 updates
+
+<details><summary>30 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>svc2-external-10</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>svc2-leader-election-23</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>svc2-tcp-services-20</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc2-admission-26</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc2-default-backend-2</b>
+- <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc2-public-14</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc2-udp-services-8</b>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-canary-15</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-config-11</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-external-13</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-public-21</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-tcp-services-12</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc2-udp-services-1</b> · <code>data</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc2-default-backend-19</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc2-tcp-services-30</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc2-webhook-4</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-admission-7</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-controller-25</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-controller-28</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-controller-9</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-private-5</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-tcp-services-16</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc2-webhook-3</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc2-canary-27</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc2-default-backend-24</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc2-leader-election-17</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc2-metrics-18</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc2-webhook-6</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc2-config-22</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc2-config-29</b>
+
+</details>
+
+From 2 pull requests and 1 direct push:
+
+- [#433 Rename the uploads bucket to &#96;uploads&#95;v2&#96;](https://github.com/example-org/infra/pull/433) by alice
+- [#429 chore(deps): update the provider](https://github.com/example-org/infra/pull/429) by renovate&#91;bot&#93;
+- [3fa9c1e Fix the lifecycle rule](https://github.com/example-org/infra/commit/3fa9c1e2aabbccdd3fa9c1e2aabbccdd3fa9c1e2)
+
+#### services/svc-03:prod
+
+20 creates, 40 updates
+
+60 changes not listed here, see the job log.
+
+#### services/svc-04:staging
+
+10 creates, 20 updates
+
+<details><summary>30 changes</summary>
+
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>svc4-controller-24</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>svc4-webhook-7</b> · <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc4-default-backend-22</b>
+- <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>svc4-webhook-15</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc4-canary-14</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc4-public-23</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>svc4-tcp-services-2</b> · <code>data</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-config-6</b>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-metrics-8</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-public-27</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-public-9</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-udp-services-10</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>svc4-webhook-26</b> · <code>spec</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc4-controller-28</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc4-default-backend-30</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc4-external-12</b> · <code>metadata</code>
+- <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc4-internal-5</b> · <code>metadata</code>
+- <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>svc4-udp-services-21</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-default-backend-25</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-external-17</b>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-external-4</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-internal-3</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-leader-election-19</b>
+- <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-private-11</b> · <code>metadata</code>, <code>spec</code>
+- <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>svc4-private-16</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc4-leader-election-13</b> · <code>rules</code>
+- <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc4-leader-election-18</b>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc4-private-20</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc4-public-1</b> · <code>rules</code>
+- <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>svc4-tcp-services-29</b> · <code>rules</code>
+
+</details>
+
+#### services/svc-05:prod
+
+25 creates, 54 updates
+
+79 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-06:staging
+
+17 creates, 37 updates, **1 delete**
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>svc6-dead-letter</b>
+
+54 other changes not listed here, see the job log.
+
+#### services/svc-07:prod
+
+15 creates, 23 updates
+
+38 changes not listed here, see the job log.
+
+#### services/svc-08:staging
+
+14 creates, 27 updates
+
+41 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-09:prod
+
+28 creates, 50 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>aws:elasticache/cluster:Cluster</code> <b>svc9-cache</b> · forced by <code>nodeType</code> · also changes <code>engineVersion</code>
+
+78 other changes not listed here, see the job log.
+
+#### services/svc-10:staging
+
+20 creates, 29 updates
+
+49 changes not listed here, see the job log.
+
+#### services/svc-11:prod
+
+30 creates, 49 updates
+
+79 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-12:staging
+
+14 creates, 25 updates, **451 deletes**
+
+:warning: **deletes 451, too many to list here.** Read the job log before you tick.
+
+39 other changes not listed here, see the job log.
+
+#### services/svc-13:prod
+
+19 creates, 60 updates
+
+79 changes not listed here, see the job log.
+
+#### services/svc-14:staging
+
+25 creates, 54 updates
+
+79 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-15:prod
+
+22 creates, 34 updates
+
+56 changes not listed here, see the job log.
+
+#### services/svc-16:staging
+
+26 creates, 51 updates
+
+77 changes not listed here, see the job log.
+
+#### services/svc-17:prod
+
+19 creates, 36 updates
+
+55 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-18:staging
+
+10 creates, 34 updates, **1 replace**, **1 delete**
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>svc18-dead-letter</b>
+- :warning: <kbd>REPLACE</kbd> <code>aws:elasticache/cluster:Cluster</code> <b>svc18-cache</b> · forced by <code>nodeType</code> · also changes <code>engineVersion</code>
+
+44 other changes not listed here, see the job log.
+
+#### services/svc-19:prod
+
+15 creates, 25 updates
+
+40 changes not listed here, see the job log.
+
+#### services/svc-20:staging
+
+27 creates, 38 updates
+
+65 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-21:prod
+
+21 creates, 29 updates
+
+50 changes not listed here, see the job log.
+
+#### services/svc-22:staging
+
+14 creates, 21 updates
+
+35 changes not listed here, see the job log.
+
+#### services/svc-23:prod
+
+10 creates, 23 updates
+
+33 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-24:staging
+
+13 creates, 19 updates, **451 deletes**
+
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-1</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-10</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-100</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-101</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-102</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-103</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-104</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-105</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-106</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-107</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-108</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-109</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-11</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-110</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-111</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-112</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-113</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-114</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-115</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-116</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-117</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-118</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-119</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-12</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-120</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-121</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-122</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-123</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-124</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-125</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-126</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-127</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-128</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-129</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-13</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-130</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-131</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-132</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-133</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-134</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-135</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-136</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-137</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-138</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-139</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-14</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-140</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-141</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-142</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-143</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-144</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-145</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-146</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-147</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-148</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-149</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-15</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-150</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-151</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-152</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-153</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-154</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-155</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-156</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-157</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-158</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-159</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-16</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-160</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-161</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-162</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-163</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-164</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-165</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-166</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-167</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-168</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-169</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-17</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-170</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-171</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-172</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-173</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-174</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-175</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-176</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-177</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-178</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-179</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-18</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-180</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-181</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-182</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-183</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-184</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-185</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-186</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-187</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-188</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-189</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-19</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-190</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-191</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-192</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-193</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-194</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-195</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-196</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-197</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-198</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-199</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-2</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-20</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-200</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-201</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-202</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-203</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-204</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-205</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-206</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-207</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-208</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-209</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-21</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-210</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-211</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-212</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-213</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-214</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-215</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-216</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-217</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-218</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-219</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-22</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-220</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-221</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-222</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-223</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-224</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-225</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-226</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-227</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-228</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-229</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-23</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-230</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-231</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-232</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-233</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-234</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-235</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-236</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-237</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-238</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-239</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-24</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-240</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-241</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-242</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-243</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-244</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-245</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-246</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-247</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-248</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-249</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-25</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-250</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-251</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-252</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-253</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-254</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-255</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-256</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-257</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-258</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-259</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-26</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-260</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-261</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-262</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-263</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-264</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-265</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-266</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-267</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-268</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-269</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-27</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-270</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-271</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-272</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-273</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-274</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-275</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-276</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-277</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-278</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-279</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-28</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-280</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-281</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-282</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-283</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-284</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-285</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-286</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-287</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-288</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-289</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-29</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-290</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-291</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-292</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-293</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-294</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-295</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-296</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-297</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-298</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-299</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-3</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-30</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-300</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-301</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-302</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-303</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-304</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-305</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-306</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-307</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-308</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-309</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-31</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-310</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-311</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-312</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-313</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-314</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-315</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-316</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-317</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-318</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-319</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-32</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-320</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-321</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-322</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-323</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-324</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-325</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-326</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-327</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-328</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-329</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-33</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-330</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-331</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-332</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-333</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-334</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-335</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-336</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-337</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-338</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-339</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-34</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-340</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-341</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-342</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-343</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-344</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-345</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-346</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-347</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-348</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-349</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-35</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-350</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-351</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-352</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-353</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-354</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-355</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-356</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-357</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-358</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-359</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-36</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-360</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-361</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-362</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-363</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-364</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-365</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-366</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-367</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-368</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-369</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-37</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-370</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-371</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-372</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-373</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-374</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-375</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-376</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-377</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-378</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-379</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-38</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-380</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-381</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-382</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-383</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-384</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-385</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-386</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-387</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-388</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-389</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-39</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-390</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-391</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-392</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-393</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-394</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-395</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-396</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-397</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-398</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-399</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-4</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-40</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-400</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-401</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-402</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-403</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-404</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-405</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-406</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-407</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-408</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-409</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-41</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-410</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-411</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-412</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-413</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-414</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-415</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-416</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-417</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-418</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-419</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-42</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-420</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-421</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-422</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-423</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-424</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-425</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-426</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-427</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-428</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-429</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-43</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-430</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-431</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-432</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-433</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-434</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-435</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-436</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-437</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-438</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-439</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-44</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-440</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-441</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-442</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-443</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-444</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-445</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-446</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-447</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-448</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-449</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-45</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-450</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-46</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-47</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-48</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-49</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-5</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-50</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-51</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-52</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-53</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-54</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-55</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-56</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-57</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-58</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-59</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-6</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-60</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-61</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-62</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-63</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-64</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-65</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-66</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-67</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-68</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-69</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-7</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-70</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-71</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-72</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-73</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-74</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-75</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-76</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-77</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-78</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-79</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-8</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-80</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-81</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-82</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-83</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-84</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-85</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-86</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-87</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-88</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-89</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-9</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-90</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-91</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-92</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-93</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-94</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-95</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-96</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-97</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-98</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:route53/record:Record</code> <b>tenant-99</b>
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>svc24-dead-letter</b>
+
+32 other changes not listed here, see the job log.
+
+#### services/svc-25:prod
+
+17 creates, 23 updates
+
+40 changes not listed here, see the job log.
+
+#### services/svc-26:staging
+
+8 creates, 22 updates
+
+30 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-27:prod
+
+23 creates, 47 updates, **1 replace**
+
+- :warning: <kbd>REPLACE</kbd> <code>aws:elasticache/cluster:Cluster</code> <b>svc27-cache</b> · forced by <code>nodeType</code> · also changes <code>engineVersion</code>
+
+70 other changes not listed here, see the job log.
+
+#### services/svc-28:staging
+
+23 creates, 21 updates
+
+44 changes not listed here, see the job log.
+
+#### services/svc-29:prod
+
+19 creates, 39 updates
+
+58 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-30:staging
+
+33 creates, 43 updates, **1 delete**
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>svc30-dead-letter</b>
+
+76 other changes not listed here, see the job log.
+
+#### services/svc-31:prod
+
+22 creates, 56 updates
+
+78 changes not listed here, see the job log.
+
+#### services/svc-32:staging
+
+26 creates, 52 updates
+
+78 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-33:prod
+
+13 creates, 31 updates
+
+44 changes not listed here, see the job log.
+
+#### services/svc-34:staging
+
+12 creates, 26 updates
+
+38 changes not listed here, see the job log.
+
+#### services/svc-35:prod
+
+11 creates, 23 updates
+
+34 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-36:staging
+
+13 creates, 33 updates, **1 replace**, **451 deletes**
+
+:warning: **deletes 451, replaces 1, too many to list here.** Read the job log before you tick.
+
+46 other changes not listed here, see the job log.
+
+#### services/svc-37:prod
+
+11 creates, 29 updates
+
+40 changes not listed here, see the job log.
+
+#### services/svc-38:staging
+
+21 creates, 21 updates
+
+42 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-39:prod
+
+24 creates, 38 updates
+
+62 changes not listed here, see the job log.
+
+#### services/svc-40:staging
+
+25 creates, 42 updates
+
+67 changes not listed here, see the job log.
+
+#### services/svc-41:prod
+
+19 creates, 55 updates
+
+74 changes not listed here, see the job log.
+
+From 2 pull requests and 1 direct push, not listed here.
+
+#### services/svc-42:staging
+
+16 creates, 43 updates, **1 delete**
+
+- :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>svc42-dead-letter</b>
+
+59 other changes not listed here, see the job log.
+
+#### storage/buckets:prod
+
+1 create, 1 update, **1 replace**, **1 delete**, 1 tracking only
+
+- :warning: <kbd>DELETE</kbd> <code>aws:s3/bucketPolicy:BucketPolicy</code> <b>uploads-public-read</b>
+- :warning: <kbd>REPLACE</kbd> <code>aws:s3/bucket:Bucket</code> <b>uploads</b> · forced by <code>bucket</code> · also changes <code>tags</code>
+
+<details><summary>3 other changes</summary>
+
+- <kbd>move</kbd> <code>aws:s3/bucket:Bucket</code> <b>archive</b>
+- <kbd>update</kbd> <code>aws:s3/bucketLifecycleConfiguration:BucketLifecycleConfiguration</code> <b>logs</b> · <code>rules</code>
+- <kbd>create</kbd> <code>aws:s3/bucketVersioning:BucketVersioning</code> <b>uploads</b>
+
+</details>
+
+### Preview failed
+
+- **data/redis:staging** · the tool exited with an error (exit code 255)
+- **monitoring/loki:prod** · the preview timed out after 10 minutes
+
+### In sync
+
+- apps/admin:prod
+- apps/admin:staging
+- apps/api:staging
+- apps/auth:prod
+- apps/auth:staging
+- apps/billing:prod
+- apps/docs:prod
+- apps/notifications:staging
+- apps/search:staging
+- apps/worker:prod
+- apps/worker:staging
+- data/kafka:prod
+- data/kafka:staging
+- data/postgres:staging
+- data/redis:prod
+- data/warehouse:prod
+- infra/bastion:prod
+- infra/cluster:prod
+- infra/cluster:staging
+- infra/dns:staging
+- infra/iam:prod
+- infra/kms:prod
+- infra/network:prod
+- infra/network:staging
+- infra/registry:prod
+- infra/vpn:prod
+- monitoring/alertmanager:prod
+- monitoring/grafana:prod
+- monitoring/prometheus:prod
+- monitoring/prometheus:staging
+- monitoring/tempo:prod
+- monitoring/uptime:prod
+- platform/argo-workflows:prod
+- platform/cert-manager:staging
+- platform/external-dns:prod
+- platform/external-secrets:prod
+- platform/ingress:staging
+- platform/karpenter:prod
+- platform/policy:prod
+- platform/service-mesh:prod
+- storage/backups:prod
+- storage/buckets:staging
+- storage/cdn:prod
+"
+`;

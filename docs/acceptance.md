@@ -29,6 +29,7 @@ This pass exists because CI runs against a fake GitHub. Each line checks somethi
 - [ ] Set `dashboard.personality: false`. The image is gone and the dry line shows.
 - [ ] A stack with a delete shows the plain header, the open `DELETE` line and bold counts.
 - [ ] A resource named `#1 @octocat www.example.com *x*` shows as that plain text on its row: no link, no mention, no emphasis. If GitHub links any of it, the escaping in `src/render/escape.ts` needs one more step (see `docs/later.md`).
+- [ ] Open the summary of a scan run. Key caps, folds, the warning sign and the links to pull requests render, and no list runs into the one before it. The job log holds one group per previewed stack, titled with the stack id, with the same changes in it.
 
 ## Part 2: what the owner prepares in the homelab repo
 

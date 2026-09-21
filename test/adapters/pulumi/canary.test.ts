@@ -9,7 +9,9 @@ import { canonicalDiff, diffHash } from "../../../src/core/diff-hash.ts";
 import { previewFailureText } from "../../../src/core/failure-reason.ts";
 import { type Stack, stackId } from "../../../src/core/stack.ts";
 import { renderBody, rowBlock } from "../../../src/render/body.ts";
+import { diffLogLines, logGroupTitle } from "../../../src/render/log-text.ts";
 import { renderRow } from "../../../src/render/row.ts";
+import { renderSummary } from "../../../src/render/summary.ts";
 import { FIXTURES, ROOT, readRecording, replay, scenarioNames, VERSIONS } from "./replay.ts";
 
 // The canary test of record 0021 (build plan, section 6). Every program of
@@ -41,6 +43,17 @@ function body(row: Parameters<typeof rowBlock>[0]): string {
     actionRef: "v0.1.0",
     personality: true,
   });
+}
+
+// The summary in full and cut as far as it goes, and the log text (record 0037).
+function annex(diff: Diff): string {
+  const stacks = [{ kind: "diff", diff } as const];
+  return [
+    renderSummary(stacks).text,
+    renderSummary(stacks, { budget: 0 }).text,
+    logGroupTitle(diff.stackId),
+    ...diffLogLines(diff),
+  ].join("\n");
 }
 
 function leaks(text: string): string[] {
@@ -87,8 +100,15 @@ for (const version of VERSIONS) {
           // Everything the adapter hands over, the tool's words included, and
           // what the core and the row renderer make of it.
           const made = result.ok
-            ? canonicalDiff(result.diff) + rows(result.diff)
-            : renderRow({
+            ? canonicalDiff(result.diff) + rows(result.diff) + annex(result.diff)
+            : renderSummary([
+                {
+                  kind: "preview-failed",
+                  stackId: stackId(stack),
+                  reason: previewFailureText(result.reason),
+                },
+              ]).text +
+              renderRow({
                 state: "preview-failed",
                 stackId: stackId(stack),
                 reason: previewFailureText(result.reason),
