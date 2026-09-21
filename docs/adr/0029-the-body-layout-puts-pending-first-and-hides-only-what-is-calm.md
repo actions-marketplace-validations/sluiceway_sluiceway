@@ -39,4 +39,13 @@ Pending comes first because ticking is what a person opens the dashboard for. Pu
 - The footer is a rule, the rescan box, and one small line with the version and a link to the docs.
 - The note about shortened rows (0028), when there is one, sits directly under the scan line.
 
+## Settled while building (slice 1.7)
+
+- The In sync section is left out when it has no rows, like the other three. An empty heading says nothing that `0 in sync` on the counts line does not. When every in sync row has a failure line there is no fold.
+- The fold's summary reads `43 stacks in sync`, or `1 stack in sync`, when no row sits above it.
+- The Preview failed section opens with one plain line, as the prototype did: `These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.`
+- Rows of a state the writer does not know (0009) come after the footer line, which keeps them apart from the rescan box. Two lists with only a blank line between them would render as one loose list.
+- The body does not end in a line break.
+- The scan line leaves out `last full scan` when the root marker does not hold it, and leaves out a time that does not parse. Writers other than the scan take these facts from the live body, which a person can edit.
+
 Prototype: the variant B issue in the private lab repo, generated from the `prototype/dashboard` branch.

@@ -146,6 +146,14 @@ _Avoid_: Tag, annotation, metadata comment
 A stack's complete entry on the dashboard, bounded so it can be moved or replaced as a unit without reading what is inside.
 _Avoid_: Entry, item, section
 
+**Counts line**:
+The first line of text on the dashboard: how many stacks are pending, deploying, preview failed and in sync, always all four. It adds how many pending stacks destroy resources and how many rows carry a failure line, each only when it is not 0.
+_Avoid_: Header line, stats, totals
+
+**Scan line**:
+The line under the counts line that says which commit the last scan checked out, when, in which run, and when the last full scan was.
+_Avoid_: Status line, timestamp, last updated
+
 **Row state**:
 Which group a stack's row belongs to: pending, deploying, in sync or preview failed. It is a label for placing and counting rows. Nothing about a deploy is ever decided from it. A scan may read it for one thing only: to pick stacks worth previewing again.
 _Avoid_: Status, stack state, phase
@@ -203,6 +211,10 @@ _Avoid_: The otter, the logo (the logo is Penny without a state), Sluicy
 **Header**:
 The image at the top of the dashboard that shows Penny in one header state, in a light and a dark variant.
 _Avoid_: Banner, hero, badge
+
+**Action ref**:
+The exact release tag of the running action, or its commit SHA. Never a moving tag. The header images are loaded from it and the footer shows it.
+_Avoid_: Action version, image tag, release
 
 **Header state**:
 Which of six pictures the header shows: plain, failing, deploying, pending, first run or in sync. The first that applies wins, in that order. It is computed from the row markers and decides nothing.
