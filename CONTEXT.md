@@ -138,6 +138,10 @@ _Avoid_: Secrets, env config, credentials config
 The one GitHub identity Sluiceway acts as. It creates and edits the dashboard, writes comments and records deploys. It is never a ticker.
 _Avoid_: App, service account, Sluiceway user
 
+**Write loop**:
+The one way any mode writes the dashboard body: read the live body, build the new one, skip the write when nothing would change, write, and read back to check. A write that did not stick is tried again from the read, at most three times.
+_Avoid_: Retry loop, save, sync, lock
+
 **Row block**:
 A stack's complete entry on the dashboard, bounded so it can be moved or replaced as a unit without reading what is inside.
 _Avoid_: Entry, item, section

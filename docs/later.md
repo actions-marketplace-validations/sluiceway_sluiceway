@@ -46,6 +46,10 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | A setting for which directories discovery never enters, or reading `.gitignore` for it | Discovery skips `.git` and `node_modules` and follows no symlink. `ignore` on the stack id covers every other case, since a false find costs a row and not a deploy. | PR 42 |
 | Checking discovered stacks against the backend (`pulumi stack ls`) | Discovery runs in jobs that hold no credentials. A stack with no stack file does not exist for Sluiceway, and a stack file with no backend stack is a preview failure on its row. | 0014, 0006 |
 | Reading a Pulumi project file for more than `stackConfigDir` | Discovery only needs to know where the stack files are. A project file that is wrong in another way is the tool's to refuse, as a preview failure on the row. | PR 42 |
+| Renaming an existing dashboard when `dashboard.title` changes | The title is used when the dashboard is created. The dashboard is found by label, root marker and author, so a title a person changed by hand does no harm. | Slice 1.10 |
+| Pinning a dashboard that already exists, on every scan | Only a new dashboard is pinned. Pinning again would undo a person's unpin after every scan and cost a request each time. | Slice 1.10 |
+| Trying a dashboard write again after an API error | The write loop tries again when a write did not stick. A call that GitHub answers with an error ends the job, and the next scan repairs the body. | Slice 1.10, 0004 |
+| A bound on how many closed issues are read when looking for a closed dashboard | They are only read when no open dashboard exists, which is rare, and only issues with the dashboard label are listed. | Slice 1.10, 0017 |
 
 ## Rejected on principle
 
