@@ -8,6 +8,7 @@ import type { Diff } from "../../../src/core/diff.ts";
 import { canonicalDiff, diffHash } from "../../../src/core/diff-hash.ts";
 import { previewFailureText } from "../../../src/core/failure-reason.ts";
 import { type Stack, stackId } from "../../../src/core/stack.ts";
+import { renderBody, rowBlock } from "../../../src/render/body.ts";
 import { renderRow } from "../../../src/render/row.ts";
 import { FIXTURES, ROOT, readRecording, replay, scenarioNames, VERSIONS } from "./replay.ts";
 
@@ -26,7 +27,20 @@ function rows(diff: Diff): string {
   return [
     ...([0, 1, 2, 3] as const).map((level) => renderRow(row, { level })),
     renderRow(row, { redact: true }),
+    body(row),
   ].join("\n");
+}
+
+// The whole body around that row, which is what reaches the issue.
+function body(row: Parameters<typeof rowBlock>[0]): string {
+  return renderBody({
+    root: { scanSha: "sha", scanRun: "1", scanAt: "2026-09-21T10:02:41Z" },
+    rows: [rowBlock(row)],
+    recentlyDeployed: [],
+    repoUrl: "repo-url",
+    actionRef: "v0.1.0",
+    personality: true,
+  });
 }
 
 function leaks(text: string): string[] {
