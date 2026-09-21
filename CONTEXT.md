@@ -142,6 +142,10 @@ _Avoid_: App, service account, Sluiceway user
 The one way any mode writes the dashboard body: read the live body, build the new one, skip the write when nothing would change, write, and read back to check. A write that did not stick is tried again from the read, at most three times.
 _Avoid_: Retry loop, save, sync, lock
 
+**Marker**:
+An HTML comment in the dashboard body that carries machine-readable facts as `key="value"` pairs. It is the only part of the body a writer ever reads. The visible text next to it is never parsed.
+_Avoid_: Tag, annotation, metadata comment
+
 **Row block**:
 A stack's complete entry on the dashboard, bounded so it can be moved or replaced as a unit without reading what is inside.
 _Avoid_: Entry, item, section

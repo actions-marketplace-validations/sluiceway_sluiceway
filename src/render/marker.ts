@@ -1,0 +1,198 @@
+// The marker format of record 0009: HTML comments in one namespace,
+// `sluiceway:<kind>`, with key="value" pairs.
+
+// Percent-encodes what could close the quote or the comment, and nothing else,
+// so an id such as `apps/grafana:prod` reads as itself in the raw body. Every
+// character in the set is one UTF-8 byte.
+export function encodeMarkerValue(value: string): string {
+  return value.replace(
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: the control characters are the point
+    /[%"<>\u0000- \u007f]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`,
+  );
+}
+
+const utf8 = new TextDecoder();
+
+// Reads any run of percent-encoded bytes as UTF-8, because another writer may
+// encode more than this one does. A percent sign that starts no byte stays.
+export function decodeMarkerValue(value: string): string {
+  return value.replace(/(?:%[0-9A-Fa-f]{2})+/g, (run) => {
+    const bytes = run
+      .split("%")
+      .slice(1)
+      .map((hex) => Number.parseInt(hex, 16));
+    return utf8.decode(new Uint8Array(bytes));
+  });
+}
+
+// It changes only when an older parser would misread the body, never for a
+// new key, state or kind.
+export const MARKER_VERSION = 1;
+
+// The v1 row states. A row whose state is not one of these is carried through
+// byte for byte and never acted on.
+export const ROW_STATES = ["pending", "deploying", "in-sync", "preview-failed"] as const;
+export type RowState = (typeof ROW_STATES)[number];
+
+// The scan facts the header shows. Writers other than `scan` have no scan of
+// their own to take them from, so they ride on the root marker.
+export interface RootFacts {
+  scanSha: string;
+  scanRun: string;
+  // ISO 8601, UTC.
+  scanAt: string;
+}
+
+export interface RowFacts {
+  stackId: string;
+  state: RowState;
+  // The diff hash. Only a row that was rendered from a diff has one.
+  hash?: string | undefined;
+  // Display caches (record 0027): the number of deletes and replaces in the
+  // diff, and whether the row carries a failure line.
+  destroys?: number | undefined;
+  failed?: boolean | undefined;
+}
+
+export const ROW_CLOSE_MARKER = "<!-- /sluiceway:row -->";
+export const RESCAN_MARKER = "<!-- sluiceway:rescan -->";
+
+function marker(kind: string, pairs: [key: string, value: string][]): string {
+  const payload = pairs.map(([key, value]) => ` ${key}="${encodeMarkerValue(value)}"`).join("");
+  return `<!-- sluiceway:${kind}${payload} -->`;
+}
+
+// Key order is fixed so output stays byte-identical. Parsers do not depend on it.
+export function rootMarker(facts: RootFacts): string {
+  return marker("dashboard", [
+    ["v", String(MARKER_VERSION)],
+    ["scan-sha", facts.scanSha],
+    ["scan-run", facts.scanRun],
+    ["scan-at", facts.scanAt],
+  ]);
+}
+
+export function rowMarker(facts: RowFacts): string {
+  const pairs: [string, string][] = [
+    ["stack", facts.stackId],
+    ["state", facts.state],
+  ];
+  if (facts.hash !== undefined) pairs.push(["hash", facts.hash]);
+  if (facts.destroys) pairs.push(["destroys", String(facts.destroys)]);
+  if (facts.failed) pairs.push(["failed", "true"]);
+  return marker("row", pairs);
+}
+
+export interface ParsedRoot {
+  // A writer that meets a version other than its own does not touch the body.
+  version: number;
+  scanSha: string | undefined;
+  scanRun: string | undefined;
+  scanAt: string | undefined;
+}
+
+// A row block: every line from the one that ends in the open marker through
+// the one that holds the closing marker. `text` is the block as it stands in
+// the body, so a writer can carry it through without reading what is inside.
+export type ParsedRow =
+  | {
+      known: true;
+      stackId: string;
+      state: RowState;
+      hash: string | undefined;
+      destroys: number;
+      failed: boolean;
+      ticked: boolean;
+      text: string;
+    }
+  // A state this version does not know. There is no tick to read on purpose:
+  // such a row is carried through and never acted on.
+  | { known: false; stackId: string; state: string; text: string };
+
+export interface ParsedDashboard {
+  // Absent when the first line of the body is not a root marker.
+  root: ParsedRoot | undefined;
+  rows: ParsedRow[];
+  rescanTicked: boolean;
+}
+
+const PAIRS = '((?: [^\\s="]+="[^"]*")*)';
+const ROOT_LINE = new RegExp(`^<!-- sluiceway:dashboard${PAIRS} -->[ \\t]*$`);
+// The tick: one regex on one line, anchored on the box at the start and the
+// marker at the end. The visible text between them is never parsed.
+const ROW_LINE = new RegExp(`^- (?:\\[([ xX])\\] )?.*<!-- sluiceway:row${PAIRS} -->[ \\t]*$`);
+const RESCAN_LINE = /^- \[[xX]\] .*<!-- sluiceway:rescan -->[ \t]*$/;
+
+function readPairs(payload: string): Map<string, string> {
+  const pairs = new Map<string, string>();
+  for (const [, key, value] of payload.matchAll(/ ([^\s="]+)="([^"]*)"/g)) {
+    if (key !== undefined && value !== undefined) pairs.set(key, decodeMarkerValue(value));
+  }
+  return pairs;
+}
+
+function readRoot(line: string): ParsedRoot | undefined {
+  const pairs = readPairs(ROOT_LINE.exec(line)?.[1] ?? "");
+  const version = pairs.get("v");
+  if (version === undefined || !/^\d+$/.test(version)) return undefined;
+  return {
+    version: Number(version),
+    scanSha: pairs.get("scan-sha"),
+    scanRun: pairs.get("scan-run"),
+    scanAt: pairs.get("scan-at"),
+  };
+}
+
+function isRowState(state: string): state is RowState {
+  return (ROW_STATES as readonly string[]).includes(state);
+}
+
+// Reads what every writer needs from a body: the root marker, the row blocks
+// and the rescan box. Marker kinds and keys it does not know are ignored.
+export function parseDashboard(body: string): ParsedDashboard {
+  const lines = body.replace(/\r\n?/g, "\n").split("\n");
+  const rows: ParsedRow[] = [];
+  let rescanTicked = false;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index] ?? "";
+    if (RESCAN_LINE.test(line)) rescanTicked = true;
+
+    const match = ROW_LINE.exec(line);
+    if (!match) continue;
+    const pairs = readPairs(match[2] ?? "");
+    const stackId = pairs.get("stack");
+    if (stackId === undefined) continue;
+
+    // The block ends at its closing marker. When the next row starts first,
+    // or the body ends, the block is its first line alone.
+    let end = index;
+    for (let next = index + 1; next < lines.length; next++) {
+      const candidate = lines[next] ?? "";
+      if (candidate.trim() === ROW_CLOSE_MARKER) end = next;
+      if (end === next || ROW_LINE.test(candidate)) break;
+    }
+    const text = lines.slice(index, end + 1).join("\n");
+    index = end;
+
+    const state = pairs.get("state") ?? "";
+    if (!isRowState(state)) {
+      rows.push({ known: false, stackId, state, text });
+      continue;
+    }
+    const destroys = pairs.get("destroys") ?? "";
+    rows.push({
+      known: true,
+      stackId,
+      state,
+      hash: pairs.get("hash"),
+      destroys: /^\d+$/.test(destroys) ? Number(destroys) : 0,
+      failed: pairs.get("failed") === "true",
+      ticked: match[1] === "x" || match[1] === "X",
+      text,
+    });
+  }
+
+  return { root: readRoot(lines[0] ?? ""), rows, rescanTicked };
+}

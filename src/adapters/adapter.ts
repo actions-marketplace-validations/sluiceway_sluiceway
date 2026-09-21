@@ -1,4 +1,54 @@
+import type { Diff } from "../core/diff.ts";
+import type { PreviewFailureReason } from "../core/failure-reason.ts";
 import type { Stack } from "../core/stack.ts";
+import type { ProcessRunner } from "./process.ts";
+
+// What an adapter needs in order to start its tool. All of it is handed in, so
+// an adapter reads no global and tests can replay recorded output.
+export interface ToolContext {
+  // The directory of the checked-out repo.
+  root: string;
+  // The environment of the job, as the glue read it once. The tool gets all of
+  // it except the INPUT_* variables (record 0013).
+  env: Record<string, string | undefined>;
+  run: ProcessRunner;
+}
+
+export interface PreviewOptions extends ToolContext {
+  // The time limit of this one preview, in whole minutes (record 0012).
+  timeoutMinutes: number;
+}
+
+export type PreviewResult = (
+  | { ok: true; diff: Diff }
+  | {
+      ok: false;
+      reason: PreviewFailureReason;
+      // Sluiceway's own words on what went wrong, for the job log. They name a
+      // place in the tool's output and what was expected there, never what was
+      // found (record 0021).
+      detail: string[];
+    }
+) & {
+  // The tool's own words: its stderr and its diagnostics, with ANSI escapes
+  // stripped. They can quote a value, so they go to the job log and nowhere
+  // else (record 0022).
+  toolLog: string;
+};
+
+// The tool is missing, too old, or did not say which version it is. The scan
+// cannot do its work, so this fails the job (records 0001 and 0012). The
+// message is Sluiceway's own. What the tool printed is in toolLog, for the
+// job log only (record 0022).
+export class ToolVersionError extends Error {
+  readonly toolLog: string;
+
+  constructor(message: string, toolLog = "") {
+    super(message);
+    this.name = "ToolVersionError";
+    this.toolLog = toolLog;
+  }
+}
 
 // What Sluiceway needs from an infrastructure tool. Everything the tool's own
 // words mean stays behind this interface (record 0006).
@@ -10,4 +60,14 @@ export interface Adapter {
   // same order every time. What cannot be worked out is a DiscoveryError.
   // Ignore is not the adapter's business: applyConfig drops ignored stacks.
   discover(root: string): Promise<Stack[]>;
+
+  // Checks once, before any preview, that the tool is there and new enough.
+  // Anything else is a ToolVersionError. No warn-and-continue (record 0001).
+  checkVersion(context: ToolContext): Promise<void>;
+
+  // Works out what deploying the stack would change. It always resolves: a
+  // preview that gave no diff is a preview failure with a reason, so one
+  // broken stack never stops the others (record 0012). No property value is in
+  // the diff, the reason or the detail (record 0021).
+  preview(stack: Stack, options: PreviewOptions): Promise<PreviewResult>;
 }

@@ -1,0 +1,49 @@
+// The diff of a stack as lines for the job log (record 0037). Every scan
+// prints every previewed stack's diff there, so whatever a row or the summary
+// had to cut, the log has in full. The lines hold what a row could show and
+// nothing more (record 0021): ops, tracking changes, types, names and property
+// names, in Sluiceway's own words. Never a value, never the tool's text.
+
+import type { Change, Diff } from "../core/diff.ts";
+import { orderChanges } from "./changes.ts";
+import { counts, isDestroy, sortedKeys } from "./row.ts";
+
+// A line of the job log that starts with `::` or `##[` is a command to the
+// runner. Text from outside is never trusted with a line of its own: a control
+// character, a line separator or a paragraph separator becomes a space, and
+// every line starts with a word of Sluiceway's.
+function oneLine(text: string): string {
+  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ");
+}
+
+// The title of the group that holds everything the log says about one stack.
+// The summary names it as the place where nothing is cut.
+export function logGroupTitle(stackId: string): string {
+  return oneLine(stackId);
+}
+
+function changeLogLine(change: Change): string {
+  const word = [change.op === "none" ? undefined : change.op, change.tracking]
+    .filter((part) => part !== undefined)
+    .join(" + ");
+  const forcing = sortedKeys(change.replaceKeys).map(oneLine);
+  const others = sortedKeys(change.changedKeys)
+    .map(oneLine)
+    .filter((key) => !forcing.includes(key));
+  const parts = [
+    `${isDestroy(change) ? word.toUpperCase() : word} ${oneLine(change.type)} ${oneLine(change.name)}`,
+  ];
+  if (forcing.length > 0) parts.push(`forced by ${forcing.join(", ")}`);
+  if (others.length > 0)
+    parts.push(`${forcing.length > 0 ? "also changes " : ""}${others.join(", ")}`);
+  return parts.join(" · ");
+}
+
+export function diffLogLines(diff: Diff): string[] {
+  const { deletes, replaces, others } = orderChanges(diff);
+  const changes = [...deletes, ...replaces, ...others];
+  if (changes.length === 0) return ["no changes"];
+  // The row's counts are Sluiceway's own words, so the only stars in them are
+  // the bold of a replace or a delete, which a log cannot show.
+  return [counts(changes).replaceAll("*", ""), ...changes.map(changeLogLine)];
+}
