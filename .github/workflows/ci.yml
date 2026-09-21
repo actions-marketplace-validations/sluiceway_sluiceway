@@ -36,6 +36,13 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: Check that schema/ is up to date
+        run: |
+          if ! bun run check:schema; then
+            echo "::error::schema/sluiceway.schema.json does not match src/core/config.ts. Run 'bun run build:schema' and commit the result."
+            exit 1
+          fi
+
       - name: Check that dist/ is up to date
         run: |
           if ! bun run check:dist; then

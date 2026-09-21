@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "sluiceway.yaml",
+  "description": "Configuration of Sluiceway. The file is optional and sits at the repo root.",
+  "type": "object",
+  "properties": {
+    "dashboard": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "title": {
+          "default": "Sluiceway dashboard",
+          "type": "string",
+          "minLength": 1,
+          "description": "Title of the dashboard issue."
+        },
+        "label": {
+          "default": "sluiceway",
+          "type": "string",
+          "minLength": 1,
+          "description": "Label the dashboard issue is found by."
+        },
+        "pin": {
+          "default": true,
+          "type": "boolean",
+          "description": "Pin the dashboard issue, best effort."
+        },
+        "redact": {
+          "default": false,
+          "type": "boolean",
+          "description": "Keep resource types, resource names and property names out of the issue. The summary stays full. Not access control."
+        },
+        "personality": {
+          "default": true,
+          "type": "boolean",
+          "description": "Show the header image and use the voice. false removes both."
+        }
+      },
+      "additionalProperties": false
+    },
+    "tickers": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "write",
+            "maintain",
+            "admin"
+          ]
+        },
+        {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        }
+      ],
+      "description": "Default tick rule: write, maintain, admin, or a list of usernames. A list narrows and never widens: a person on it still needs write access."
+    },
+    "ignore": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Globs matched against the stack id. An ignored stack has no row."
+    },
+    "scan": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "unrelated": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Globs for files that claim nothing and force nothing, such as **/*.md."
+        }
+      },
+      "additionalProperties": false
+    },
+    "stacks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "Directory of the stack, relative to the repo root.",
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Name of the stack. Without it the entry covers every stack in path."
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Label on the deployment record, and the GitHub Environment where one is used. Default: sluiceway."
+          },
+          "tickers": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "write",
+                  "maintain",
+                  "admin"
+                ]
+              },
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]+$"
+                }
+              }
+            ],
+            "description": "Tick rule for this stack. Default: the top level tickers."
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Extra globs this stack claims, relative to the repo root."
+          },
+          "previewTimeout": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Time limit for one preview of this stack, in whole minutes. Default: the preview-timeout input."
+          },
+          "options": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+            "description": "Named adapter options. None exist in this version."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Settings for stacks that discovery found. An entry never creates a stack."
+    }
+  },
+  "additionalProperties": false
+}

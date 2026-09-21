@@ -1,2 +1,3 @@
 dist/** linguist-generated=true
 bun.lock linguist-generated=true
+schema/** linguist-generated=true

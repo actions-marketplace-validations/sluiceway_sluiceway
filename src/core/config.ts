@@ -37,14 +37,33 @@ const stackPath = text
 
 // An entry adds settings to stacks that discovery found. It never creates one.
 const stackEntry = z.strictObject({
-  path: stackPath,
-  name: text.exactOptional(),
-  environment: text.exactOptional(),
-  tickers: tickers.exactOptional(),
-  inputs: globs.exactOptional(),
-  previewTimeout: z.int().min(1).exactOptional(),
+  path: stackPath.describe("Directory of the stack, relative to the repo root."),
+  name: text
+    .describe("Name of the stack. Without it the entry covers every stack in path.")
+    .exactOptional(),
+  environment: text
+    .describe(
+      "Label on the deployment record, and the GitHub Environment where one is used. Default: sluiceway.",
+    )
+    .exactOptional(),
+  tickers: tickers
+    .describe("Tick rule for this stack. Default: the top level tickers.")
+    .exactOptional(),
+  inputs: globs
+    .describe("Extra globs this stack claims, relative to the repo root.")
+    .exactOptional(),
+  previewTimeout: z
+    .int()
+    .min(1)
+    .describe(
+      "Time limit for one preview of this stack, in whole minutes. Default: the preview-timeout input.",
+    )
+    .exactOptional(),
   // Named adapter options (records 0006, 0015). None exist in v1.
-  options: z.strictObject({}).exactOptional(),
+  options: z
+    .strictObject({})
+    .describe("Named adapter options. None exist in this version.")
+    .exactOptional(),
 });
 
 const stackEntries = z.array(stackEntry).superRefine((entries, context) => {
@@ -68,17 +87,39 @@ const stackEntries = z.array(stackEntry).superRefine((entries, context) => {
 export const configSchema = z.strictObject({
   dashboard: z
     .strictObject({
-      title: text.default("Sluiceway dashboard"),
-      label: text.default("sluiceway"),
-      pin: z.boolean().default(true),
-      redact: z.boolean().default(false),
-      personality: z.boolean().default(true),
+      title: text.describe("Title of the dashboard issue.").default("Sluiceway dashboard"),
+      label: text.describe("Label the dashboard issue is found by.").default("sluiceway"),
+      pin: z.boolean().describe("Pin the dashboard issue, best effort.").default(true),
+      redact: z
+        .boolean()
+        .describe(
+          "Keep resource types, resource names and property names out of the issue. The summary stays full. Not access control.",
+        )
+        .default(false),
+      personality: z
+        .boolean()
+        .describe("Show the header image and use the voice. false removes both.")
+        .default(true),
     })
     .prefault({}),
-  tickers: tickers.default("write"),
-  ignore: globs.default([]),
-  scan: z.strictObject({ unrelated: globs.default([]) }).prefault({}),
-  stacks: stackEntries.default([]),
+  tickers: tickers
+    .describe(
+      "Default tick rule: write, maintain, admin, or a list of usernames. A list narrows and never widens: a person on it still needs write access.",
+    )
+    .default("write"),
+  ignore: globs
+    .describe("Globs matched against the stack id. An ignored stack has no row.")
+    .default([]),
+  scan: z
+    .strictObject({
+      unrelated: globs
+        .describe("Globs for files that claim nothing and force nothing, such as **/*.md.")
+        .default([]),
+    })
+    .prefault({}),
+  stacks: stackEntries
+    .describe("Settings for stacks that discovery found. An entry never creates a stack.")
+    .default([]),
 });
 
 export type Config = z.output<typeof configSchema>;
