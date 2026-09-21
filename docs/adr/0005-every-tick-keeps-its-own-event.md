@@ -1,5 +1,7 @@
 # Every tick keeps its own event, and nothing deploys without a named ticker
 
+> Superseded by 0025: the event payload carries the newest body, not the body right after its own edit, so a tick cannot be tied to its event. The edit history names the ticker, the event is only a wake-up, and `resolve` no longer needs `queue: max`. Still true and carried over: nothing deploys without a named ticker, scans clear orphan ticks and never deploy them, and a tick is a commit.
+
 The Renovate research recommended a fully level-triggered `resolve`: wake on the event, read the live body, act on every ticked row. That survives cancelled runs but loses attribution. A tick inherited from a cancelled run has no known ticker, so there is nobody to check permission against and nothing to record as "who ticked it". We chose a hybrid instead: `resolve` runs under `concurrency: { group: sluiceway-resolve, queue: max }`, so runs go one at a time and none is cancelled, and each run acts only on the ticks in its own event.
 
 A run acts on a row only when all of these hold: the tick is in this event's own diff (unticked in `changes.body.from`, ticked now), the row is still ticked in the live body with the same stack id and hash, discovery knows the stack, and the stack has no open deployment. The ticker is always the event's `sender`. Their permission is checked and their login is written into the deployment payload. One authorization rule covers every stack, including those limited to `admin` or to named users.

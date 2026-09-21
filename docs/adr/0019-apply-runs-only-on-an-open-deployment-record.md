@@ -1,5 +1,7 @@
 # Apply runs only on an open deployment record, so a fresh tick is the only retry
 
+> Amended by 0025: a re-run of the whole workflow is still harmless, but for a simpler reason. `resolve` takes nothing from the replayed event. It reads the body as it is now and finds nothing to do, or finds a real tick and handles it like any other run.
+
 GitHub lets anyone with write access press "Re-run failed jobs" on a workflow run. That runs the `apply` job again with its old inputs and skips `resolve`, and with it the whole authorization of 0018. On a stack whose tick rule is `admin`, a collaborator with write access could deploy it by re-running an admin's failed deploy. The hash check would still hold them to what the admin approved, but the rule would have a way around it, and the deployment record would name the wrong ticker.
 
 So `apply` deploys only when the deployment record it was handed is still open. `resolve` creates the record as `queued` and passes it on (0003). On a first attempt `apply` finds it open and goes ahead. On a re-run the record already has a result, `failure` from the first attempt or `error` from `settle`, and `apply` deploys nothing. It says so in the log and the job summary ("This deploy already ended. Tick the box on the dashboard to try again.") and the job goes red, so nobody reads it as a deploy that worked.
