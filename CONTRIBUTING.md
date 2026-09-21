@@ -43,7 +43,7 @@ CI fails when `dist/` does not match the source. Never edit `dist/` by hand.
 ## Rules for code
 
 - TypeScript, strict, ESM.
-- `src/core/` and `src/adapters/` never import `@actions/*`, `@octokit/*`, anything under `src/github/`, or the entry point. They never read a GitHub event payload. A lint rule and `test/boundary.test.ts` enforce this. See [src/README.md](src/README.md).
+- `src/core/`, `src/adapters/` and `src/render/` never import `@actions/*`, `@octokit/*`, anything under `src/github/` or `src/modes/`, or the entry point. They never read a GitHub event payload. A lint rule and `test/boundary.test.ts` enforce this. See [src/README.md](src/README.md).
 - No property value ever leaves an adapter. Do not add a field that could hold one.
 - Do not print, log or store anything from the environment.
 - Ask in an issue before you add a runtime dependency. Everything in `dependencies` ends up in the bundle that every user downloads on every run.

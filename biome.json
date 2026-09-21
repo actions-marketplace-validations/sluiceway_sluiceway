@@ -36,7 +36,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/core/**", "src/adapters/**"],
+      "includes": ["src/core/**", "src/adapters/**", "src/render/**"],
       "linter": {
         "rules": {
           "style": {
@@ -45,8 +45,17 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@actions/*", "@octokit/*", "**/github/**", "**/main.ts", "**/main"],
-                    "message": "core/ and adapters/ stay free of GitHub and Actions glue, so a hosted version can reuse them. Pass what you need in as plain data."
+                    "group": [
+                      "@actions/*",
+                      "@octokit/*",
+                      "**/github/**",
+                      "**/modes/**",
+                      "**/main.ts",
+                      "**/main",
+                      "**/mode.ts",
+                      "**/mode"
+                    ],
+                    "message": "core/, adapters/ and render/ stay free of GitHub and Actions glue, so a hosted version can reuse them. Pass what you need in as plain data."
                   }
                 ]
               }

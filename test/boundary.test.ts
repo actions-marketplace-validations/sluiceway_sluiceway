@@ -2,14 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-// core/ and adapters/ must stay free of GitHub and Actions glue, so a hosted
-// version can reuse them. Biome enforces the same rule while editing
+// core/, adapters/ and render/ must stay free of GitHub and Actions glue, so a
+// hosted version can reuse them. Biome enforces the same rule while editing
 // (noRestrictedImports in biome.json). This test is the net under it.
 
 const SRC = resolve(import.meta.dir, "../src");
-const PURE_DIRS = ["core", "adapters"];
+const PURE_DIRS = ["core", "adapters", "render"];
 const BANNED_PACKAGES = ["@actions/", "@octokit/"];
-const BANNED_PATHS = ["github", "main.ts", "mode.ts"];
+const BANNED_PATHS = ["github", "modes", "main.ts", "mode.ts"];
 
 const transpiler = new Bun.Transpiler({ loader: "ts" });
 
@@ -50,9 +50,14 @@ describe("the check itself", () => {
     expect(violations(file, code)).toEqual(["../github/issue.ts", "../main.ts", "../mode.ts"]);
   });
 
+  test("flags the modes directory", () => {
+    const code = 'import "../modes/scan.ts";';
+    expect(violations(file, code)).toEqual(["../modes/scan.ts"]);
+  });
+
   test("allows node built-ins, other packages and pure neighbours", () => {
     const code =
-      'import "node:fs";\nimport "zod";\nimport "./types.ts";\nimport "../adapters/x.ts";';
+      'import "node:fs";\nimport "zod";\nimport "./types.ts";\nimport "../adapters/x.ts";\nimport "../render/row.ts";';
     expect(violations(file, code)).toEqual([]);
   });
 });
