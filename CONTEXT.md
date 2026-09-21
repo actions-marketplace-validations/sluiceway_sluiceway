@@ -14,6 +14,24 @@ _Avoid_: Unit, project, workspace, module, target
 The one string that names a stack everywhere: on its row, on its deployment records and in config. It is derived from where the stack lives and what it is called, never chosen, so a stack that is moved or renamed is a new stack.
 _Avoid_: Stack name, slug, key
 
+### Scans
+
+**Scan**:
+One pass that previews stacks and brings the dashboard up to date with the results. Every scan ends with exactly one row for every stack.
+_Avoid_: Run, refresh, sync, plan
+
+**Full scan**:
+A scan that previews every stack.
+_Avoid_: Complete scan, deep scan, rescan (that is the checkbox that asks for one)
+
+**Narrowed scan**:
+A scan that previews only the stacks that claim a file changed since the last scan, and keeps every other stack's row as it is. It is a full scan whenever a changed file has no claimant.
+_Avoid_: Partial scan, incremental scan, affected scan, changed stacks
+
+**Claim**:
+A stack claims a changed file when the file lies inside the stack's directory or matches one of the inputs configured for that stack. Several stacks can claim one file.
+_Avoid_: Affects, owns, touches, depends on
+
 ### Diffs
 
 **Diff**:
@@ -87,7 +105,7 @@ A stack's complete entry on the dashboard, bounded so it can be moved or replace
 _Avoid_: Entry, item, section
 
 **Row state**:
-Which group a stack's row belongs to: pending, deploying, in sync or preview failed. It is a label for placing and counting rows. Nothing is ever decided from it.
+Which group a stack's row belongs to: pending, deploying, in sync or preview failed. It is a label for placing and counting rows. Nothing about a deploy is ever decided from it. A scan may read it for one thing only: to pick stacks worth previewing again.
 _Avoid_: Status, stack state, phase
 
 **Preview failure**:
