@@ -28,6 +28,7 @@ This pass exists because CI runs against a fake GitHub. Each line checks somethi
 - [ ] Set `dashboard.redact: true`. No resource type, resource name or property name is left in the issue, and the summary is still full.
 - [ ] Set `dashboard.personality: false`. The image is gone and the dry line shows.
 - [ ] A stack with a delete shows the plain header, the open `DELETE` line and bold counts.
+- [ ] A resource named `#1 @octocat www.example.com *x*` shows as that plain text on its row: no link, no mention, no emphasis. If GitHub links any of it, the escaping in `src/render/escape.ts` needs one more step (see `docs/later.md`).
 
 ## Part 2: what the owner prepares in the homelab repo
 

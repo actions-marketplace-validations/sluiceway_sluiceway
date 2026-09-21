@@ -46,6 +46,7 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | A setting for which directories discovery never enters, or reading `.gitignore` for it | Discovery skips `.git` and `node_modules` and follows no symlink. `ignore` on the stack id covers every other case, since a false find costs a row and not a deploy. | PR 42 |
 | Checking discovered stacks against the backend (`pulumi stack ls`) | Discovery runs in jobs that hold no credentials. A stack with no stack file does not exist for Sluiceway, and a stack file with no backend stack is a preview failure on its row. | 0014, 0006 |
 | Reading a Pulumi project file for more than `stackConfigDir` | Discovery only needs to know where the stack files are. A project file that is wrong in another way is the tool's to refuse, as a preview failure on the row. | PR 42 |
+| Stopping GitHub from linking a `#123`, an `@name` or a web address that sits inside a resource name or a stack id | Names are escaped as HTML and as Markdown, which a test proves. Whether GitHub still links such text afterwards can only be seen on a real issue. A name like that is rare, and a stack id holding `#123` is rarer. The live pass checks one. | 0009, 0027 |
 
 ## Rejected on principle
 

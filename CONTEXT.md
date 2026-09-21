@@ -138,6 +138,10 @@ _Avoid_: Secrets, env config, credentials config
 The one GitHub identity Sluiceway acts as. It creates and edits the dashboard, writes comments and records deploys. It is never a ticker.
 _Avoid_: App, service account, Sluiceway user
 
+**Marker**:
+An HTML comment in the dashboard body that carries machine-readable facts as `key="value"` pairs. It is the only part of the body a writer ever reads. The visible text next to it is never parsed.
+_Avoid_: Tag, annotation, metadata comment
+
 **Row block**:
 A stack's complete entry on the dashboard, bounded so it can be moved or replaced as a unit without reading what is inside.
 _Avoid_: Entry, item, section
