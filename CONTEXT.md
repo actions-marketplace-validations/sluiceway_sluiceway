@@ -38,6 +38,10 @@ _Avoid_: Affects, owns, touches, depends on
 What deploying one stack would change, told as addresses, ops, tracking changes and the names of changed properties. Never values.
 _Avoid_: Plan, preview output, changeset
 
+**Value**:
+What a property is set to, before or after a deploy. A value never leaves the tool's adapter: Sluiceway shows that a property changes and never what it changes to, whether or not the tool marks it secret.
+_Avoid_: Secret (a secret is only one kind of value, and all values are treated alike), content, setting
+
 **Pending**:
 Deploying the stack now would change something, because the code moved.
 _Avoid_: Out of sync, dirty, changed
@@ -141,3 +145,19 @@ _Avoid_: Error row, broken stack, failed stack
 **Failure line**:
 The note on a stack's row saying its last deploy failed. It rides on the row wherever the row sits and is not a row state.
 _Avoid_: Failed row, failed state, error row
+
+**Failure reason**:
+Why a preview or a deploy failed, in words from a short fixed list that Sluiceway owns. It never quotes the tool. The tool's own words stay in the job log, one link away.
+_Avoid_: Error message, error text, tool error
+
+**Summary**:
+The page of a scan's workflow run where every stack's diff is shown in full, without the dashboard's size limit. It shows the same kind of facts as a row and nothing more. Truncated and redacted rows link to it.
+_Avoid_: Full diff, report, native output
+
+**Redact**:
+The dashboard setting that keeps resource types, resource names and property names out of the issue, leaving stack ids, counts, warnings and links. The summary stays full. It limits how far names travel. It is not access control.
+_Avoid_: Private mode, mask, hide
+
+**Destroy**:
+A change whose op is replace or delete: a real object goes away. Destroys are listed first, cut last, and always carry a warning, also on a redacted dashboard.
+_Avoid_: Destructive change, dangerous change, removal

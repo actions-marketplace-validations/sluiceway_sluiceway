@@ -2,6 +2,8 @@
 
 The hash excludes values, so it has a blind spot. Someone ticks a row that says `grafana: update, image`. Before the apply job starts, a second merge moves the image from `v2` to `v3`. Address, op and keys are the same, the hash matches, and `v3` deploys. We accept this, and fix the rule that bounds it: the hash is taken over the whole diff, and the renderer may show nothing about a change that is not in the diff. What a person approved and what was hashed cannot drift apart, because they are the same data (see 0002).
 
+Amended by 0023: on a redacted dashboard the row shows less than the hash covers. The half of the rule that matters stays whole: nothing is shown that is not hashed.
+
 Two ways to close the blind spot were rejected. A digest of the values would sit in an issue that may be public, where a low-entropy value the user forgot to mark secret can be guessed offline, and a salt has nowhere to live without a store. Putting the commit SHA in the hash would make every merge void every outstanding tick until the next full scan ends, which on a repo where Renovate merges all day means ticks that mostly abort. Narrowing that to commits under the stack's path would miss changes that arrive through a shared package.
 
 ## Consequences

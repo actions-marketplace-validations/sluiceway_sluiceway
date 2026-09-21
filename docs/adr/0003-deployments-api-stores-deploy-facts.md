@@ -4,7 +4,7 @@ A preview can recompute what is pending, but not that a deploy is running, how t
 
 ## Consequences
 
-- One record per deploy attempt of one stack, tagged `task: sluiceway:<stackId>`. The payload is versioned (`v: 1`) and carries the approved hash, the ticker and the run id. The run link and a short failure reason go on the final status. Sluiceway only ever reads records whose task starts with `sluiceway:`.
+- One record per deploy attempt of one stack, tagged `task: sluiceway:<stackId>`. The payload is versioned (`v: 1`) and carries the approved hash, the ticker and the run id. The run link and a short failure reason go on the final status. The reason comes from Sluiceway's own fixed list, never from the tool's output (0022). Sluiceway only ever reads records whose task starts with `sluiceway:`.
 - `resolve` creates the record with status `queued` before it emits the matrix, not `apply`. Otherwise nothing durable says "this stack is taken" between the tick and the apply job starting, which can be hours on self-hosted runners. `apply` sets `in_progress`, then `success`, `failure`, or `error` when the hash moved.
 - In every mode, a stack whose latest record is `queued` or `in_progress` renders as deploying with no checkbox, whatever the preview says. A second tick for that stack is dropped.
 - A record is never ended by a timeout, because a job can wait on a reviewer for days. Liveness is tied to the workflow run: any render that meets an open deployment whose run has completed writes `error` ("the run ended without reporting a result"). A `settle` job (`needs: apply`, `if: always()`) does the same within seconds of a cancel or a rejection. This adds a fourth mode.
