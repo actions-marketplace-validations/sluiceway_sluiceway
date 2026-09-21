@@ -202,16 +202,17 @@ Four seams keep everything testable without a network or a tool:
 `examples/pulumi-basic/` needs no cloud account. It uses a local file backend and the providers `random`, `command` and `local`.
 
 - `network/`: YAML runtime, `Pulumi.yaml`, two stacks (`dev` and `prod`). Proves two stacks in one directory and `path:name` ids.
-- `app/`: YAML runtime, `Pulumi.yml` with `Pulumi.prod.yml`. Proves the second spelling, plus a stray `Pulumi.dev.yaml` that must be ignored.
+- `app/`: YAML runtime, `Pulumi.yml` with `Pulumi.prod.yml`. Proves the second spelling, plus a stray `Pulumi.dev.yaml` that must be ignored. The YAML runtime reads a program only from `Pulumi.yaml` or `Main.yaml`, so the project file sets `main: program` and the program is `app/program/Main.yaml`. It reads a file in `shared/`, which is what `inputs` is for.
 - `site/`: TypeScript, one stack. Proves a program with an install step. The research saw step order change between identical runs only with TypeScript.
+- `playground/`: YAML runtime, one stack. It exists so that `ignore` has a stack to leave out.
 - A `sluiceway.yaml` that uses `inputs`, a per stack `tickers` and `ignore`.
 - Every program holds at least one property whose value is the string `CANARY-VALUE` and one secret config value. See the canary test below.
 
 ### Recorded fixtures
 
-`scripts/record-fixtures.ts` drives the example project through a list of scenarios against a fresh file backend and saves what the tool printed: stdout, stderr and the exit code, one directory per scenario under `test/fixtures/pulumi/<cli version>/`. Fixtures are never written by hand (0001). The script records with the minimum CLI version and with the newest one, and CI replays both sets.
+`scripts/record-fixtures.ts` drives the example project through a list of scenarios against a fresh file backend and saves what the tool printed: stdout, stderr and the exit code, one directory per scenario under `test/fixtures/pulumi/<cli version>/`. Fixtures are never written by hand (0001). The script records with the minimum CLI version and with the newest one, and CI replays both sets. The tool prints absolute paths, so the sets in the repo are the ones a CI run recorded (CONTRIBUTING.md says how).
 
-Scenarios: a new stack (all creates), no changes, an update, a replace with replace reasons, a delete, a mix of all ops, a change that touches only outputs (0036), an import, a resource that is dropped from state but kept, a changed secret, a program error, a missing stack, a missing config value, the same preview twice (step order), `pulumi version`, and a generated stack of several hundred resources.
+Scenarios: a new stack (all creates), no changes, an update, a replace with replace reasons, a delete, a mix of all ops, a change that touches only outputs (0036), an import, a resource that is dropped from state but kept, a resource renamed with an alias, a changed secret, a program error, a missing stack, a missing config value, the same preview twice (step order), `pulumi version`, and a generated stack of several hundred resources.
 
 The build agent settles the table from Pulumi's step ops to `op` and `tracking` from these recordings. A step op that the table does not hold fails that stack's preview (0007).
 

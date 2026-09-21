@@ -1,0 +1,7 @@
+name: app
+# The YAML runtime only reads a program from a file named Pulumi.yaml or
+# Main.yaml. With the project file spelled Pulumi.yml, the program has to live
+# in its own directory.
+runtime: yaml
+main: program
+description: A project file spelled Pulumi.yml, with a stack file to match.

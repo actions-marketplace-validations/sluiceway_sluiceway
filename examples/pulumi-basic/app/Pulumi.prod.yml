@@ -1,0 +1,5 @@
+encryptionsalt: v1:7OwuOtluFOQ=:v1:hYjbDvwTVCc9QWvN:GpH189g0bAGAwnFJmRcRoqVntAIo0Q==
+config:
+  app:token:
+    secure: v1:b+v3TH9LazFQm/CW:A5FiSBVmIvdqS+9+muh1v0ZNYporuFGHMCnk9x0=
+  app:tier: standard

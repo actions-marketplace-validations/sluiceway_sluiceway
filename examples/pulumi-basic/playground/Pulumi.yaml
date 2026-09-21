@@ -1,0 +1,17 @@
+name: playground
+runtime: yaml
+description: A stack that sluiceway.yaml ignores, so it never gets a row.
+config:
+  token:
+    type: string
+    secret: true
+resources:
+  scratch:
+    type: command:local:Command
+    properties:
+      create: echo playground
+      environment:
+        NOTE: CANARY-VALUE
+        TOKEN: ${token}
+    options:
+      version: 1.2.1

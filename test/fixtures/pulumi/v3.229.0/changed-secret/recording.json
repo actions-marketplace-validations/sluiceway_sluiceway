@@ -1,0 +1,25 @@
+{
+  "scenario": "changed-secret",
+  "description": "The secret config value has a new value. It shows as a changed property and its value is masked.",
+  "cliVersion": "v3.229.0",
+  "commands": [
+    {
+      "id": "preview",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "dev"
+      ],
+      "cwd": "network",
+      "exitCode": 0,
+      "stdout": "preview.stdout",
+      "stderr": "preview.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}

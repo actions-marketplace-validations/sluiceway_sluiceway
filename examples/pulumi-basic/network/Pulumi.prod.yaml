@@ -1,0 +1,5 @@
+encryptionsalt: v1:W6W2YBrJXxk=:v1:BmzzNyoEuyhNlJEv:AKGmcq88j1fRtZNATRP2yCdkzC09jQ==
+config:
+  network:token:
+    secure: v1:gKI3BaGwHN8AYce/:X9WqIr2c+IVtWlYJzPH1n6vqMHhdBhdRASorn7I=
+  network:zone: prod-a

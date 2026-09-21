@@ -1,0 +1,78 @@
+{
+    "config": {
+        "network:token": "[secret]",
+        "network:zone": "dev-a"
+    },
+    "steps": [
+        {
+            "op": "create",
+            "urn": "urn:pulumi:dev::network::pulumi:pulumi:Stack::network-dev",
+            "newState": {
+                "urn": "urn:pulumi:dev::network::pulumi:pulumi:Stack::network-dev",
+                "custom": false,
+                "type": "pulumi:pulumi:Stack",
+                "sourcePosition": "project:///../../../../../../home/runner/work/pulumi-yaml/pulumi-yaml/pkg/server/server.go#316",
+                "stackTrace": [
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/work/pulumi-yaml/pulumi-yaml/pkg/server/server.go#316"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/github.com/pulumi/pulumi/sdk/v3@v3.262.0/proto/go/language_grpc.pb.go#588"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/github.com/pulumi/pulumi/sdk/v3@v3.262.0/go/common/util/rpcutil/interceptor.go#320"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1256"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/github.com/grpc-ecosystem/grpc-opentracing@v0.0.0-20180507213350-8e809c8a8645/go/otgrpc/server.go#57"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1256"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/github.com/pulumi/pulumi/sdk/v3@v3.262.0/go/common/util/rpcutil/interceptor.go#235"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1247"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/github.com/pulumi/pulumi/sdk/v3@v3.262.0/proto/go/language_grpc.pb.go#590"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1443"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1858"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../home/runner/go/pkg/mod/google.golang.org/grpc@v1.83.2/server.go#1078"
+                    },
+                    {
+                        "sourcePosition": "project:///../../../../../../opt/hostedtoolcache/go/1.26.6/x64/src/runtime/asm_amd64.s#1771"
+                    }
+                ]
+            },
+            "detailedDiff": null
+        }
+    ],
+    "diagnostics": [
+        {
+            "message": "\u001b[31mError\u001b[0m: error resolving type of resource subnet: unable to find resource type \"random:NoSuchThing\" in resource provider \"random\"\n\n",
+            "severity": "info#err"
+        },
+        {
+            "message": "  on Pulumi.yaml line 19:\n\n",
+            "severity": "info#err"
+        },
+        {
+            "message": "  19:     type: \u001b[1;4mrandom:NoSuchThing\u001b[0m\n\n",
+            "severity": "info#err"
+        }
+    ],
+    "duration": 10986762,
+    "changeSummary": {
+        "create": 1
+    }
+}

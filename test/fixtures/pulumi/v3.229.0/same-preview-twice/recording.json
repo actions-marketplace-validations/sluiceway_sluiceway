@@ -1,0 +1,43 @@
+{
+  "scenario": "same-preview-twice",
+  "description": "The TypeScript program of site/, never deployed, previewed twice in a row. The order of the steps may differ between the two.",
+  "cliVersion": "v3.229.0",
+  "commands": [
+    {
+      "id": "preview-1",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "prod"
+      ],
+      "cwd": "site",
+      "exitCode": 0,
+      "stdout": "preview-1.stdout",
+      "stderr": "preview-1.stderr",
+      "stdoutFormat": "json"
+    },
+    {
+      "id": "preview-2",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "prod"
+      ],
+      "cwd": "site",
+      "exitCode": 0,
+      "stdout": "preview-2.stdout",
+      "stderr": "preview-2.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ bun install
 | `bun run test` | Unit tests with `bun test`. |
 | `bun run build:schema` | Writes `schema/sluiceway.schema.json` from the Zod schema in `src/core/config.ts`. |
 | `bun run check:schema` | Generates, then fails if `schema/` differs from what is committed. |
+| `bun run record:fixtures` | Records `test/fixtures/pulumi/` with the `pulumi` CLI on your PATH. See below before you commit its output. |
 | `bun run build` | Bundles `src/main.ts` into `dist/index.js` for the Node runtime of GitHub Actions. |
 | `bun run check:dist` | Builds, then fails if `dist/` differs from what is committed. |
 | `bun run check` | All of the above, as CI runs them. |
@@ -50,6 +51,27 @@ git add schema
 ```
 
 Never edit `schema/sluiceway.schema.json` by hand.
+
+## Recorded fixtures
+
+The adapter tests parse what the real `pulumi` CLI printed, never text written by hand (record 0001). `scripts/record-fixtures.ts` drives `examples/pulumi-basic` through the scenarios in `scripts/fixtures/scenarios.ts` and saves stdout, stderr and the exit code of each recorded command, one directory per scenario, under `test/fixtures/pulumi/<cli version>/`.
+
+There are two sets: one recorded with the minimum CLI version that Sluiceway supports and one with the newest at the time. `scripts/fixtures/versions.ts` names both, and the `fixtures` job in CI runs the recorder with each on every pull request.
+
+The tool prints absolute paths, so the fixtures in the repo come from that CI job and not from a laptop. When you change the example project, a scenario or a version:
+
+1. Push the branch. The `check` job is red until the fixtures fit again, the `fixtures` job is what you need.
+2. Download what it recorded and commit it:
+
+```sh
+rm -rf test/fixtures/pulumi
+gh run download <run id> --pattern 'fixtures-*' --dir test/fixtures/pulumi
+mv test/fixtures/pulumi/fixtures-*/* test/fixtures/pulumi/ && rmdir test/fixtures/pulumi/fixtures-*
+```
+
+You can run the recorder yourself to try a scenario: `bun run record:fixtures --out /tmp/try --only replace`. It needs `pulumi` on your PATH, and Node.js for the TypeScript program. It runs the tool only in copies inside a temp directory, against a file backend it makes there, with an environment built from nothing. It cannot reach a stack, a backend or an account of yours, and it leaves `examples/` as it was.
+
+Never edit a file under `test/fixtures/pulumi/` by hand.
 
 ## Rules for code
 

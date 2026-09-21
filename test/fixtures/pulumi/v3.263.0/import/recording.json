@@ -1,0 +1,25 @@
+{
+  "scenario": "import",
+  "description": "A resource that the tool starts to track without creating it.",
+  "cliVersion": "v3.263.0",
+  "commands": [
+    {
+      "id": "preview",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "dev"
+      ],
+      "cwd": "network",
+      "exitCode": 0,
+      "stdout": "preview.stdout",
+      "stderr": "preview.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}

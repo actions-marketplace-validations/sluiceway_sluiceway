@@ -1,0 +1,6 @@
+name: site
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: A TypeScript program, so it has an install step.
