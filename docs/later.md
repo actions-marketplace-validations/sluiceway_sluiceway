@@ -43,6 +43,9 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | Default globs for `scan.unrelated` (such as `**/*.md`) | A program can read any file, and a wasted full scan costs far less than a stale row on a fresh install. | 0010 |
 | A size budget level for the summary beyond its two, or the full diffs as a file to download | The job log already holds every diff in full. | 0037 |
 | A live example dashboard in this repo | CI tests the loop against a fake GitHub, so nothing writes a real issue here. A public demo is launch work. | Build plan |
+| A setting for which directories discovery never enters, or reading `.gitignore` for it | Discovery skips `.git` and `node_modules` and follows no symlink. `ignore` on the stack id covers every other case, since a false find costs a row and not a deploy. | PR for slice 1.4 |
+| Checking discovered stacks against the backend (`pulumi stack ls`) | Discovery runs in jobs that hold no credentials. A stack with no stack file does not exist for Sluiceway, and a stack file with no backend stack is a preview failure on its row. | 0014, 0006 |
+| Reading a Pulumi project file for more than `stackConfigDir` | Discovery only needs to know where the stack files are. A project file that is wrong in another way is the tool's to refuse, as a preview failure on the row. | PR for slice 1.4 |
 
 ## Rejected on principle
 

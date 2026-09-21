@@ -14,6 +14,14 @@ _Avoid_: Unit, project, workspace, module, target
 The one string that names a stack everywhere: on its row, on its deployment records and in config. It is derived from where the stack lives and what it is called, never chosen, so a stack that is moved or renamed is a new stack.
 _Avoid_: Stack name, slug, key
 
+**Discovery**:
+Finding the stacks of a repo from its files alone. It never asks a backend and never starts the tool, so it can run in a job that holds no credentials. A stack that no file names does not exist for Sluiceway.
+_Avoid_: Detection, lookup, stack listing
+
+**Ignored stack**:
+A discovered stack whose stack id matches an `ignore` glob. It has no row, is never previewed and claims nothing, and config cannot give it settings.
+_Avoid_: Excluded stack, hidden stack, skipped stack
+
 ### Scans
 
 **Scan**:
