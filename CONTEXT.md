@@ -98,6 +98,16 @@ _Avoid_: Pending deployment, active deployment, lock
 To give an open deployment a result when its workflow run ended without reporting one.
 _Avoid_: Clean up, time out, expire
 
+**Outside deploy**:
+A deploy of a stack that did not go through a tick: from a laptop, a script or another pipeline. It is allowed, leaves no deployment record, and the next full scan brings the row back in line.
+_Avoid_: Manual deploy, rogue deploy, out-of-band deploy
+
+### Credentials
+
+**Tool environment**:
+Everything the infrastructure tool needs in order to run: credentials, the state backend, settings. The user's workflow prepares it before Sluiceway starts, and Sluiceway hands it to the tool whole without looking inside.
+_Avoid_: Secrets, env config, credentials config
+
 ### Dashboard
 
 **Row block**:
