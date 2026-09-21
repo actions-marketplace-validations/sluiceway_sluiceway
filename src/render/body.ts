@@ -1,0 +1,225 @@
+// Everything outside the row blocks (records 0009 and 0029): a pure function
+// of the root facts, the row blocks and the deployment records. Every writer
+// regenerates it, and nothing in it is ever patched or carried through.
+
+import { escapeText } from "./escape.ts";
+import { type HeaderState, headerState } from "./header-state.ts";
+import {
+  type ParsedRow,
+  parseDashboard,
+  RESCAN_MARKER,
+  type RootFacts,
+  rootMarker,
+} from "./marker.ts";
+import { type Row, type RowOptions, renderRow } from "./row.ts";
+import { utcMinute } from "./time.ts";
+import { DRY, INSTRUCTION_LINE, NOTHING_TO_DEPLOY, PREVIEW_FAILED_LINE, WARM } from "./voice.ts";
+
+// One successful deploy from the dashboard, from its deployment record
+// (record 0003).
+export interface RecentDeploy {
+  stackId: string;
+  ticker: string;
+  at: Date;
+  runUrl: string;
+}
+
+export interface BodyInput {
+  root: RootFacts;
+  // Every row block of the body, in any order. A writer hands over the blocks
+  // it carries through as `parseDashboard` read them, and its own through
+  // `rowBlock`.
+  rows: readonly ParsedRow[];
+  // Successful deployment records, in any order. The newest ten are listed.
+  recentlyDeployed: readonly RecentDeploy[];
+  // The repo the dashboard lives in, `https://github.com/<owner>/<repo>`.
+  repoUrl: string;
+  // The exact release tag of the running action, or its commit SHA (build
+  // plan, section 3). Never a moving tag.
+  actionRef: string;
+  // `dashboard.personality` (record 0034).
+  personality: boolean;
+  // The note about shortened rows (record 0028), already rendered. It is the
+  // size budget's to write and this function's to place.
+  shortenedNote?: string | undefined;
+}
+
+export const RECENTLY_DEPLOYED = 10;
+
+const ACTION_REPO = "sluiceway/sluiceway";
+const ACTION_URL = `https://github.com/${ACTION_REPO}`;
+
+// Plain and fixed per state. The counts line right under it carries the numbers.
+const ALT: Record<HeaderState, string> = {
+  plain: "Sluiceway",
+  failing: "Sluiceway: something failed",
+  deploying: "Sluiceway: deploying",
+  pending: "Sluiceway: changes are pending",
+  "first-run": "Sluiceway: no stacks yet",
+  "in-sync": "Sluiceway: everything is in sync",
+};
+
+type KnownRow = Extract<ParsedRow, { known: true }>;
+
+function byCodeUnit(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+// One piece of a url inside a Markdown link. `encodeURIComponent` leaves
+// `( ) * ! ' ~` alone, and a closing bracket would end the link early.
+function urlPart(text: string): string {
+  return encodeURIComponent(text).replace(
+    /[()*!'~]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+// A freshly rendered row as a row block. Its facts are read back from its own
+// marker, so they are the ones every later writer will read.
+export function rowBlock(row: Row, options: RowOptions = {}): ParsedRow {
+  const [block] = parseDashboard(renderRow(row, options)).rows;
+  if (!block) throw new Error("A rendered row did not read back as a row block.");
+  return block;
+}
+
+// One file per theme, because `<picture>` follows the reader's GitHub theme
+// and a media query inside an SVG follows the operating system (record 0033).
+function picture(state: HeaderState, actionRef: string): string[] {
+  const file = (theme: string) =>
+    `https://raw.githubusercontent.com/${ACTION_REPO}/${urlPart(actionRef)}/assets/mascot/${state}-${theme}.svg`;
+  return [
+    "<picture>",
+    `  <source media="(prefers-color-scheme: dark)" srcset="${file("dark")}">`,
+    `  <img alt="${ALT[state]}" width="440" src="${file("light")}">`,
+    "</picture>",
+  ];
+}
+
+// The four state counts always, so the line keeps its shape. Two more facts
+// only when they are not 0.
+function countsLine(rows: KnownRow[]): string {
+  const of = (state: KnownRow["state"]) => rows.filter((row) => row.state === state).length;
+  const destroying = rows.filter((row) => row.state === "pending" && row.destroys > 0).length;
+  const failed = rows.filter((row) => row.failed).length;
+  const parts = [
+    `**${of("pending")} pending**`,
+    `${of("deploying")} deploying`,
+    `${of("preview-failed")} preview failed`,
+    `${of("in-sync")} in sync`,
+  ];
+  if (destroying > 0) {
+    const words = destroying === 1 ? "stack destroys" : "stacks destroy";
+    parts.push(`:warning: **${destroying} pending ${words} resources**`);
+  }
+  if (failed > 0) parts.push(plural(failed, "failed deploy"));
+  return parts.join(" · ");
+}
+
+// A writer other than the scan takes these facts from the live body, which a
+// person can edit. A time that does not parse is left out, not thrown on.
+function time(iso: string | undefined): string | undefined {
+  const at = new Date(iso ?? "");
+  return Number.isNaN(at.getTime()) ? undefined : utcMinute(at);
+}
+
+function scanLine(root: RootFacts, repoUrl: string): string {
+  const sha = `[\`${escapeText(root.scanSha.slice(0, 7))}\`](${repoUrl}/commit/${urlPart(root.scanSha)})`;
+  const at = time(root.scanAt);
+  const fullAt = time(root.fullScanAt);
+  const parts = [
+    `Scanned ${sha}${at ? ` on ${at}` : ""}`,
+    `[run](${repoUrl}/actions/runs/${urlPart(root.scanRun)})`,
+  ];
+  if (fullAt) parts.push(`<sub>last full scan ${fullAt}</sub>`);
+  return parts.join(" · ");
+}
+
+// The one line under the Pending heading (records 0029, 0032 and 0034).
+function pendingLine(input: BodyInput, state: HeaderState, pending: number): string {
+  if (pending > 0) return INSTRUCTION_LINE;
+  const lines = input.personality ? WARM : DRY;
+  if (state === "first-run") return lines.firstRun;
+  // A row of a state this version does not know is not known to be calm.
+  if (state === "in-sync" && input.rows.every((row) => row.known))
+    return lines.goodNews(input.rows.length);
+  return NOTHING_TO_DEPLOY;
+}
+
+function blocks(rows: readonly ParsedRow[]): string {
+  return rows.map((row) => row.text).join("\n");
+}
+
+function recentLine(deploy: RecentDeploy): string {
+  return `- ${escapeText(deploy.stackId)} · ticked by ${escapeText(deploy.ticker)} · ${utcMinute(
+    deploy.at,
+  )} · [run](${deploy.runUrl})`;
+}
+
+// A `v1.2.3` tag reads as itself, a commit SHA as its first seven characters.
+function version(actionRef: string): string {
+  return /^[0-9a-f]{40,}$/.test(actionRef) ? `\`${actionRef.slice(0, 7)}\`` : escapeText(actionRef);
+}
+
+export function renderBody(input: BodyInput): string {
+  const rows = [...input.rows].sort((a, b) => byCodeUnit(a.stackId, b.stackId));
+  const known = rows.filter((row) => row.known);
+  const of = (state: KnownRow["state"]) => known.filter((row) => row.state === state);
+  const state = headerState(rows);
+
+  // Paragraphs, each followed by a blank line.
+  const out: string[] = [rootMarker(input.root)];
+  if (input.personality) out.push(picture(state, input.actionRef).join("\n"));
+  out.push(countsLine(known), scanLine(input.root, input.repoUrl));
+  if (input.shortenedNote) out.push(input.shortenedNote);
+
+  // Pending is always shown. The other sections are left out when empty.
+  const pending = of("pending");
+  out.push("## Pending", pendingLine(input, state, pending.length));
+  if (pending.length > 0) out.push(blocks(pending));
+
+  const deploying = of("deploying");
+  if (deploying.length > 0) out.push("## Deploying", blocks(deploying));
+
+  const previewFailed = of("preview-failed");
+  if (previewFailed.length > 0)
+    out.push("## Preview failed", PREVIEW_FAILED_LINE, blocks(previewFailed));
+
+  // In sync rows are calm and sit in a fold. One with a failure line is not
+  // calm: it is listed open, above the fold. Its state stays in sync.
+  const inSync = of("in-sync");
+  if (inSync.length > 0) {
+    const loud = inSync.filter((row) => row.failed);
+    const quiet = inSync.filter((row) => !row.failed);
+    out.push("## In sync");
+    if (loud.length > 0) out.push(blocks(loud));
+    if (quiet.length > 0) {
+      const summary =
+        loud.length > 0
+          ? `${quiet.length} more in sync`
+          : `${plural(quiet.length, "stack")} in sync`;
+      out.push(`<details><summary>${summary}</summary>`, blocks(quiet), "</details>");
+    }
+  }
+
+  const recent = [...input.recentlyDeployed]
+    .sort((a, b) => b.at.getTime() - a.at.getTime() || byCodeUnit(a.stackId, b.stackId))
+    .slice(0, RECENTLY_DEPLOYED);
+  if (recent.length > 0) out.push("## Recently deployed", recent.map(recentLine).join("\n"));
+
+  out.push(
+    "---",
+    `- [ ] Rescan all stacks ${RESCAN_MARKER}`,
+    `<sub>[Sluiceway](${ACTION_URL}) ${version(input.actionRef)} · [docs](${ACTION_URL}#readme)</sub>`,
+  );
+
+  // Rows of a state this version does not know: a plain list at the end of
+  // the body (record 0009). The footer line keeps it apart from the rescan box.
+  const unknown = rows.filter((row) => !row.known);
+  if (unknown.length > 0) out.push(blocks(unknown));
+
+  return out.join("\n\n");
+}

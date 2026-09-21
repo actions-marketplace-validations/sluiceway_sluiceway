@@ -1,0 +1,985 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`snapshots header state plain 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-dark.svg">
+  <img alt="Sluiceway" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-light.svg">
+</picture>
+
+**2 pending** · 1 deploying · 1 preview failed · 1 in sync · :warning: **1 pending stack destroys resources**
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **a:destroys** · 1 create, **1 delete** · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="a:destroys" state="pending" hash="3fa9c1e2aabbccdd" destroys="1" -->
+  :warning: <kbd>DELETE</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-1</b>
+  <details><summary>1 other change</summary>
+  <kbd>create</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **d:pending** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="d:pending" state="pending" hash="3fa9c1e2aabbccdd" -->
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **c:deploying** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="c:deploying" state="deploying" -->
+  <!-- /sluiceway:row -->
+
+## Preview failed
+
+These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+
+- **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+<details><summary>1 stack in sync</summary>
+
+- e:calm <!-- sluiceway:row stack="e:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots header state failing 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-dark.svg">
+  <img alt="Sluiceway: something failed" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-light.svg">
+</picture>
+
+**1 pending** · 1 deploying · 1 preview failed · 2 in sync · 1 failed deploy
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **d:pending** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="d:pending" state="pending" hash="3fa9c1e2aabbccdd" -->
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **c:deploying** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="c:deploying" state="deploying" -->
+  <!-- /sluiceway:row -->
+
+## Preview failed
+
+These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+
+- **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+- e:failed <!-- sluiceway:row stack="e:failed" state="in-sync" failed="true" -->
+  :x: last deploy failed: the run ended without reporting a result · ticked by bob · 2026-09-19 16:03 UTC · [run](https://github.com/example-org/infra/actions/runs/17019884120)
+  <!-- /sluiceway:row -->
+
+<details><summary>1 more in sync</summary>
+
+- f:calm <!-- sluiceway:row stack="f:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots header state deploying 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/deploying-dark.svg">
+  <img alt="Sluiceway: deploying" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/deploying-light.svg">
+</picture>
+
+**1 pending** · 1 deploying · 0 preview failed · 1 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **d:pending** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="d:pending" state="pending" hash="3fa9c1e2aabbccdd" -->
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **c:deploying** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="c:deploying" state="deploying" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+<details><summary>1 stack in sync</summary>
+
+- e:calm <!-- sluiceway:row stack="e:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots header state pending 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/pending-dark.svg">
+  <img alt="Sluiceway: changes are pending" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/pending-light.svg">
+</picture>
+
+**1 pending** · 0 deploying · 0 preview failed · 1 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **d:pending** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="d:pending" state="pending" hash="3fa9c1e2aabbccdd" -->
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## In sync
+
+<details><summary>1 stack in sync</summary>
+
+- e:calm <!-- sluiceway:row stack="e:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots header state first-run 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/first-run-dark.svg">
+  <img alt="Sluiceway: no stacks yet" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/first-run-light.svg">
+</picture>
+
+**0 pending** · 0 deploying · 0 preview failed · 0 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+The channel is dry. Add a stack to \`sluiceway.yaml\` and the next scan fills it.
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots header state in-sync 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/in-sync-dark.svg">
+  <img alt="Sluiceway: everything is in sync" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/in-sync-light.svg">
+</picture>
+
+**0 pending** · 0 deploying · 0 preview failed · 2 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Gate closed, water calm. Nothing to deploy.
+
+## In sync
+
+<details><summary>2 stacks in sync</summary>
+
+- e:calm <!-- sluiceway:row stack="e:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- f:calm <!-- sluiceway:row stack="f:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots personality off, in sync 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+**0 pending** · 0 deploying · 0 preview failed · 2 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Nothing to deploy. All 2 stacks are in sync.
+
+## In sync
+
+<details><summary>2 stacks in sync</summary>
+
+- e:calm <!-- sluiceway:row stack="e:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- f:calm <!-- sluiceway:row stack="f:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots personality off, first run 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+**0 pending** · 0 deploying · 0 preview failed · 0 in sync
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+No stacks found yet. Add one to \`sluiceway.yaml\` and the next scan lists it here.
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots personality off, failing 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+**1 pending** · 1 deploying · 1 preview failed · 2 in sync · 1 failed deploy
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **d:pending** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="d:pending" state="pending" hash="3fa9c1e2aabbccdd" -->
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **c:deploying** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="c:deploying" state="deploying" -->
+  <!-- /sluiceway:row -->
+
+## Preview failed
+
+These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+
+- **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+- e:failed <!-- sluiceway:row stack="e:failed" state="in-sync" failed="true" -->
+  :x: last deploy failed: the run ended without reporting a result · ticked by bob · 2026-09-19 16:03 UTC · [run](https://github.com/example-org/infra/actions/runs/17019884120)
+  <!-- /sluiceway:row -->
+
+<details><summary>1 more in sync</summary>
+
+- f:calm <!-- sluiceway:row stack="f:calm" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots the 58 stack body 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-dark.svg">
+  <img alt="Sluiceway" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-light.svg">
+</picture>
+
+**11 pending** · 2 deploying · 2 preview failed · 43 in sync · :warning: **4 pending stacks destroy resources** · 2 failed deploys
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **apps/api:prod** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/api:prod" state="pending" hash="962ea94dcf7ae8b4" -->
+  from #5 by alice, #4 by renovate[bot] · [compare](https://github.com/example-org/infra/compare/4193607...8c41f0e)
+  <details><summary>1 change</summary>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>api</b> · <code>spec</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **apps/billing:staging** · 9 creates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/billing:staging" state="pending" hash="97b512f9290de364" -->
+  not deployed from this dashboard yet
+  <details><summary>9 changes</summary>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-external-4</b><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>billing-public-5</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>billing-webhook-2</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-default-backend-8</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>billing-external-9</b><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-admission-7</b><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-leader-election-6</b><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>billing-public-3</b><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>billing-canary-1</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **apps/legacy-worker:prod** · **3 deletes**, 1 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/legacy-worker:prod" state="pending" hash="63a63bc225aca792" destroys="3" -->
+  from #427 by dave · [compare](https://github.com/example-org/infra/compare/284fd2d...8c41f0e)
+  :warning: <kbd>DELETE</kbd> <code>aws:sqs/queue:Queue</code> <b>legacy-jobs</b>
+  :warning: <kbd>DELETE</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>legacy-worker</b>
+  :warning: <kbd>DELETE</kbd> <code>kubernetes:core/v1:Service</code> <b>legacy-worker</b>
+  <details><summary>1 other change</summary>
+  <kbd>forget</kbd> <code>aws:iam/role:Role</code> <b>legacy-worker</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **apps/notifications:prod** · 1 create, 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/notifications:prod" state="pending" hash="abc0050a30343911" -->
+  from #428 by dave, and 3 changes outside this stack, and earlier changes · [compare](https://github.com/example-org/infra/compare/52798b7...8c41f0e)
+  :information_source: a tick on this row was not picked up. Tick again to deploy.
+  <details><summary>2 changes</summary>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>notifications</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:batch/v1:CronJob</code> <b>digest</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **apps/search:prod** · 2 updates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/search:prod" state="pending" hash="571e68c7e24a4543" failed="true" -->
+  from #432 by carol, #426 by carol · [compare](https://github.com/example-org/infra/compare/24988d1...8c41f0e)
+  :x: last deploy failed: the change moved since the tick · ticked by alice · 2026-09-21 08:52 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120077)
+  <details><summary>2 changes</summary>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:StatefulSet</code> <b>search</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>search-config</b> · <code>data</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **apps/web:prod** · 2 creates, 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/web:prod" state="pending" hash="3c2564c67a3d62b5" -->
+  from #418 by carol, and 2 changes outside this stack · [compare](https://github.com/example-org/infra/compare/1dfd7ad...8c41f0e)
+  <details><summary>3 changes</summary>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>web</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:autoscaling/v2:HorizontalPodAutoscaler</code> <b>web</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>web-feature-flags</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **data/postgres:prod** · 2 updates, **1 replace** · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/postgres:prod" state="pending" hash="620c897f92719080" destroys="1" -->
+  from #431 by bob · [compare](https://github.com/example-org/infra/compare/912fee8...8c41f0e)
+  :warning: <kbd>REPLACE</kbd> <code>aws:rds/instance:Instance</code> <b>main</b> · forced by <code>engineVersion</code>, <code>storageType</code> · also changes <code>instanceClass</code>
+  <details><summary>2 other changes</summary>
+  <kbd>update</kbd> <code>aws:cloudwatch/metricAlarm:MetricAlarm</code> <b>main-cpu</b> · <code>dimensions</code><br>
+  <kbd>update</kbd> <code>aws:rds/parameterGroup:ParameterGroup</code> <b>main</b> · <code>parameters</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **infra/dns:prod** · 1 update, 2 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="infra/dns:prod" state="pending" hash="58731081e177634d" -->
+  from 4 changes outside this stack · [compare](https://github.com/example-org/infra/compare/5bef5d8...8c41f0e)
+  <details><summary>3 changes</summary>
+  <kbd>update</kbd> <code>cloudflare:index/record:Record</code> <b>api</b> · <code>ttl</code><br>
+  <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>docs</b><br>
+  <kbd>import</kbd> <code>cloudflare:index/record:Record</code> <b>status-page</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **monitoring/dashboards:prod** · 46 creates, 74 updates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="monitoring/dashboards:prod" state="pending" hash="0e2b9558a96aa3f5" -->
+  from #435 by erin · [compare](https://github.com/example-org/infra/compare/2b772f2...8c41f0e)
+  <details><summary>120 changes</summary>
+  <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-admission-12</b><br>
+  <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-31</b><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-71</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-config-78</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-104</b><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-26</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-external-55</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-internal-118</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-internal-82</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-leader-election-105</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-leader-election-33</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-private-36</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-public-13</b><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-public-9</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-tcp-services-60</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>dashboard-udp-services-97</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-admission-1</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-admission-41</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-config-56</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-controller-95</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-58</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-77</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-90</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-external-92</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-internal-29</b><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-39</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-8</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-leader-election-86</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-metrics-43</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-public-89</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-udp-services-98</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>dashboard-webhook-117</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-admission-120</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-admission-7</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-112</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-17</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-canary-50</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-config-28</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-37</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-67</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-80</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-default-backend-87</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-external-74</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-internal-42</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-107</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-2</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-leader-election-75</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-metrics-44</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-metrics-62</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-113</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-116</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-private-22</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-public-20</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-tcp-services-47</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-udp-services-27</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>dashboard-webhook-30</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-admission-4</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-canary-35</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-canary-64</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-config-10</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-controller-83</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-default-backend-108</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-external-45</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-external-52</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-leader-election-59</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-metrics-111</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-metrics-73</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-private-81</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-tcp-services-11</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-tcp-services-115</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-udp-services-49</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:Service</code> <b>dashboard-udp-services-66</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-internal-40</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-internal-72</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-leader-election-38</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-leader-election-84</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-private-85</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-private-96</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-public-119</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-public-79</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-tcp-services-5</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-14</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-3</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-61</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-udp-services-88</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-101</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-21</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-23</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>dashboard-webhook-68</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-admission-57</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-admission-65</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-canary-19</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-canary-63</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-config-109</b><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-controller-15</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-controller-93</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-default-backend-94</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-external-46</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-metrics-70</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-private-102</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-public-16</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-udp-services-110</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-webhook-32</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>dashboard-webhook-53</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-admission-48</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-admission-91</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-canary-51</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-canary-69</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-default-backend-103</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-default-backend-106</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-external-25</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-external-34</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-internal-54</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-metrics-99</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-private-100</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-114</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-24</b><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-udp-services-6</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-webhook-18</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>dashboard-webhook-76</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **platform/ingress:prod** · 13 creates, 32 updates, **1 replace** · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="platform/ingress:prod" state="pending" hash="f46faa2cc8a9aa8c" destroys="1" -->
+  from #436 by renovate[bot], #434 by carol, #430 by renovate[bot], #425 by bob, #421 by renovate[bot], and 2 more, and 4 changes outside this stack · [compare](https://github.com/example-org/infra/compare/5990691...8c41f0e)
+  :warning: <kbd>REPLACE</kbd> <code>kubernetes:batch/v1:Job</code> <b>ingress-admission-patch</b> · forced by <code>spec</code>
+  <details><summary>45 other changes</summary>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-metrics-17</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-public-21</b><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-tcp-services-34</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition</code> <b>ingress-tcp-services-43</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-default-backend-37</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-external-40</b><br>
+  <kbd>update</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-internal-18</b> · <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-leader-election-45</b><br>
+  <kbd>create</kbd> <code>kubernetes:apps/v1:Deployment</code> <b>ingress-webhook-10</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-admission-22</b> · <code>data</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-canary-30</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-controller-25</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-controller-6</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-internal-15</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-internal-27</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-private-7</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-24</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-32</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ConfigMap</code> <b>ingress-tcp-services-39</b> · <code>data</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>ingress-canary-29</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:Service</code> <b>ingress-internal-1</b> · <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-external-19</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-internal-16</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-internal-33</b><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-leader-election-11</b><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-private-8</b> · <code>metadata</code><br>
+  <kbd>update</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-tcp-services-41</b> · <code>metadata</code><br>
+  <kbd>create</kbd> <code>kubernetes:core/v1:ServiceAccount</code> <b>ingress-udp-services-42</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-admission-13</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-admission-28</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-canary-36</b><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-controller-31</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-external-4</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-metrics-3</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>create</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-private-23</b><br>
+  <kbd>update</kbd> <code>kubernetes:networking.k8s.io/v1:Ingress</code> <b>ingress-webhook-20</b> · <code>metadata</code>, <code>spec</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-canary-2</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-config-5</b><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-default-backend-35</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-default-backend-9</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-external-44</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-14</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-26</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-leader-election-38</b> · <code>rules</code><br>
+  <kbd>update</kbd> <code>kubernetes:rbac.authorization.k8s.io/v1:ClusterRole</code> <b>ingress-webhook-12</b> · <code>rules</code><br>
+  </details>
+  <!-- /sluiceway:row -->
+- [ ] **storage/buckets:prod** · 1 create, 1 update, **1 replace**, **1 delete**, 1 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="storage/buckets:prod" state="pending" hash="ac75cd9db439bb8e" destroys="2" -->
+  from #433 by alice, #429 by alice, [3fa9c1e](https://github.com/example-org/infra/commit/3fa9c1e) by bob, and 1 change outside this stack · [compare](https://github.com/example-org/infra/compare/7008dda...8c41f0e)
+  :warning: <kbd>DELETE</kbd> <code>aws:s3/bucketPolicy:BucketPolicy</code> <b>uploads-public-read</b>
+  :warning: <kbd>REPLACE</kbd> <code>aws:s3/bucket:Bucket</code> <b>uploads</b> · forced by <code>bucket</code> · also changes <code>tags</code>
+  <details><summary>3 other changes</summary>
+  <kbd>move</kbd> <code>aws:s3/bucket:Bucket</code> <b>archive</b><br>
+  <kbd>update</kbd> <code>aws:s3/bucketLifecycleConfiguration:BucketLifecycleConfiguration</code> <b>logs</b> · <code>rules</code><br>
+  <kbd>create</kbd> <code>aws:s3/bucketVersioning:BucketVersioning</code> <b>uploads</b><br>
+  </details>
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **apps/web:staging** · waiting to start · ticked by alice · [run](https://github.com/example-org/infra/actions/runs/17034502113) <!-- sluiceway:row stack="apps/web:staging" state="deploying" -->
+  from #418 by carol, and 2 changes outside this stack · [compare](https://github.com/example-org/infra/compare/596eea8...8c41f0e)
+  <!-- /sluiceway:row -->
+- **platform/cert-manager:prod** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034501999) <!-- sluiceway:row stack="platform/cert-manager:prod" state="deploying" -->
+  from #437 by renovate[bot] · [compare](https://github.com/example-org/infra/compare/876b5b7...8c41f0e)
+  <!-- /sluiceway:row -->
+
+## Preview failed
+
+These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+
+- **data/redis:staging** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/redis:staging" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+- **monitoring/loki:prod** · preview failed: the preview timed out after 10 minutes · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="monitoring/loki:prod" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+- data/warehouse:prod <!-- sluiceway:row stack="data/warehouse:prod" state="in-sync" failed="true" -->
+  :x: last deploy failed: the run ended without reporting a result · ticked by bob · 2026-09-19 16:03 UTC · [run](https://github.com/example-org/infra/actions/runs/17019884120)
+  <!-- /sluiceway:row -->
+
+<details><summary>42 more in sync</summary>
+
+- apps/admin:prod <!-- sluiceway:row stack="apps/admin:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/admin:staging <!-- sluiceway:row stack="apps/admin:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/api:staging <!-- sluiceway:row stack="apps/api:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/auth:prod <!-- sluiceway:row stack="apps/auth:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/auth:staging <!-- sluiceway:row stack="apps/auth:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/billing:prod <!-- sluiceway:row stack="apps/billing:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/docs:prod <!-- sluiceway:row stack="apps/docs:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/notifications:staging <!-- sluiceway:row stack="apps/notifications:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/search:staging <!-- sluiceway:row stack="apps/search:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/worker:prod <!-- sluiceway:row stack="apps/worker:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/worker:staging <!-- sluiceway:row stack="apps/worker:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/kafka:prod <!-- sluiceway:row stack="data/kafka:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/kafka:staging <!-- sluiceway:row stack="data/kafka:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/postgres:staging <!-- sluiceway:row stack="data/postgres:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/redis:prod <!-- sluiceway:row stack="data/redis:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/bastion:prod <!-- sluiceway:row stack="infra/bastion:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/cluster:prod <!-- sluiceway:row stack="infra/cluster:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/cluster:staging <!-- sluiceway:row stack="infra/cluster:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/dns:staging <!-- sluiceway:row stack="infra/dns:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/iam:prod <!-- sluiceway:row stack="infra/iam:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/kms:prod <!-- sluiceway:row stack="infra/kms:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/network:prod <!-- sluiceway:row stack="infra/network:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/network:staging <!-- sluiceway:row stack="infra/network:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/registry:prod <!-- sluiceway:row stack="infra/registry:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/vpn:prod <!-- sluiceway:row stack="infra/vpn:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/alertmanager:prod <!-- sluiceway:row stack="monitoring/alertmanager:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/grafana:prod <!-- sluiceway:row stack="monitoring/grafana:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/prometheus:prod <!-- sluiceway:row stack="monitoring/prometheus:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/prometheus:staging <!-- sluiceway:row stack="monitoring/prometheus:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/tempo:prod <!-- sluiceway:row stack="monitoring/tempo:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/uptime:prod <!-- sluiceway:row stack="monitoring/uptime:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/argo-workflows:prod <!-- sluiceway:row stack="platform/argo-workflows:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/cert-manager:staging <!-- sluiceway:row stack="platform/cert-manager:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/external-dns:prod <!-- sluiceway:row stack="platform/external-dns:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/external-secrets:prod <!-- sluiceway:row stack="platform/external-secrets:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/ingress:staging <!-- sluiceway:row stack="platform/ingress:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/karpenter:prod <!-- sluiceway:row stack="platform/karpenter:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/policy:prod <!-- sluiceway:row stack="platform/policy:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/service-mesh:prod <!-- sluiceway:row stack="platform/service-mesh:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/backups:prod <!-- sluiceway:row stack="storage/backups:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/buckets:staging <!-- sluiceway:row stack="storage/buckets:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/cdn:prod <!-- sluiceway:row stack="storage/cdn:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
+
+exports[`snapshots the 58 stack body, redacted 1`] = `
+"<!-- sluiceway:dashboard v="1" scan-sha="8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c" scan-run="17034455121" scan-at="2026-09-21T10:02:41Z" full-scan-at="2026-09-21T06:00:12Z" full-scan-run="17031200455" -->
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-dark.svg">
+  <img alt="Sluiceway" width="440" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/plain-light.svg">
+</picture>
+
+**11 pending** · 2 deploying · 2 preview failed · 43 in sync · :warning: **4 pending stacks destroy resources** · 2 failed deploys
+
+Scanned [\`8c41f0e\`](https://github.com/example-org/infra/commit/8c41f0e7d2b94a6f1e3c5d7a9b0c2e4f6a8b1d3c) on 2026-09-21 10:02 UTC · [run](https://github.com/example-org/infra/actions/runs/17034455121) · <sub>last full scan 2026-09-21 06:00 UTC</sub>
+
+## Pending
+
+Tick a box to deploy that stack exactly as its row shows it.
+
+- [ ] **apps/api:prod** · 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/api:prod" state="pending" hash="962ea94dcf7ae8b4" -->
+  from #5 by alice, #4 by renovate[bot] · [compare](https://github.com/example-org/infra/compare/4193607...8c41f0e)
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **apps/billing:staging** · 9 creates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/billing:staging" state="pending" hash="97b512f9290de364" -->
+  not deployed from this dashboard yet
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **apps/legacy-worker:prod** · **3 deletes**, 1 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/legacy-worker:prod" state="pending" hash="63a63bc225aca792" destroys="3" -->
+  from #427 by dave · [compare](https://github.com/example-org/infra/compare/284fd2d...8c41f0e)
+  :warning: **deletes 3.** Read the [summary](https://github.com/example-org/infra/actions/runs/17034455121) before you tick.
+  <!-- /sluiceway:row -->
+- [ ] **apps/notifications:prod** · 1 create, 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/notifications:prod" state="pending" hash="abc0050a30343911" -->
+  from #428 by dave, and 3 changes outside this stack, and earlier changes · [compare](https://github.com/example-org/infra/compare/52798b7...8c41f0e)
+  :information_source: a tick on this row was not picked up. Tick again to deploy.
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **apps/search:prod** · 2 updates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/search:prod" state="pending" hash="571e68c7e24a4543" failed="true" -->
+  from #432 by carol, #426 by carol · [compare](https://github.com/example-org/infra/compare/24988d1...8c41f0e)
+  :x: last deploy failed: the change moved since the tick · ticked by alice · 2026-09-21 08:52 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120077)
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **apps/web:prod** · 2 creates, 1 update · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="apps/web:prod" state="pending" hash="3c2564c67a3d62b5" -->
+  from #418 by carol, and 2 changes outside this stack · [compare](https://github.com/example-org/infra/compare/1dfd7ad...8c41f0e)
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **data/postgres:prod** · 2 updates, **1 replace** · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/postgres:prod" state="pending" hash="620c897f92719080" destroys="1" -->
+  from #431 by bob · [compare](https://github.com/example-org/infra/compare/912fee8...8c41f0e)
+  :warning: **replaces 1.** Read the [summary](https://github.com/example-org/infra/actions/runs/17034455121) before you tick.
+  <!-- /sluiceway:row -->
+- [ ] **infra/dns:prod** · 1 update, 2 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="infra/dns:prod" state="pending" hash="58731081e177634d" -->
+  from 4 changes outside this stack · [compare](https://github.com/example-org/infra/compare/5bef5d8...8c41f0e)
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **monitoring/dashboards:prod** · 46 creates, 74 updates · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="monitoring/dashboards:prod" state="pending" hash="0e2b9558a96aa3f5" -->
+  from #435 by erin · [compare](https://github.com/example-org/infra/compare/2b772f2...8c41f0e)
+  Changes are listed in the [summary](https://github.com/example-org/infra/actions/runs/17034455121)
+  <!-- /sluiceway:row -->
+- [ ] **platform/ingress:prod** · 13 creates, 32 updates, **1 replace** · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="platform/ingress:prod" state="pending" hash="f46faa2cc8a9aa8c" destroys="1" -->
+  from #436 by renovate[bot], #434 by carol, #430 by renovate[bot], #425 by bob, #421 by renovate[bot], and 2 more, and 4 changes outside this stack · [compare](https://github.com/example-org/infra/compare/5990691...8c41f0e)
+  :warning: **replaces 1.** Read the [summary](https://github.com/example-org/infra/actions/runs/17034455121) before you tick.
+  <!-- /sluiceway:row -->
+- [ ] **storage/buckets:prod** · 1 create, 1 update, **1 replace**, **1 delete**, 1 tracking only · [preview](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="storage/buckets:prod" state="pending" hash="ac75cd9db439bb8e" destroys="2" -->
+  from #433 by alice, #429 by alice, [3fa9c1e](https://github.com/example-org/infra/commit/3fa9c1e) by bob, and 1 change outside this stack · [compare](https://github.com/example-org/infra/compare/7008dda...8c41f0e)
+  :warning: **deletes 1, replaces 1.** Read the [summary](https://github.com/example-org/infra/actions/runs/17034455121) before you tick.
+  <!-- /sluiceway:row -->
+
+## Deploying
+
+- **apps/web:staging** · waiting to start · ticked by alice · [run](https://github.com/example-org/infra/actions/runs/17034502113) <!-- sluiceway:row stack="apps/web:staging" state="deploying" -->
+  from #418 by carol, and 2 changes outside this stack · [compare](https://github.com/example-org/infra/compare/596eea8...8c41f0e)
+  <!-- /sluiceway:row -->
+- **platform/cert-manager:prod** · deploying · ticked by carol · [run](https://github.com/example-org/infra/actions/runs/17034501999) <!-- sluiceway:row stack="platform/cert-manager:prod" state="deploying" -->
+  from #437 by renovate[bot] · [compare](https://github.com/example-org/infra/compare/876b5b7...8c41f0e)
+  <!-- /sluiceway:row -->
+
+## Preview failed
+
+These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+
+- **data/redis:staging** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/redis:staging" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+- **monitoring/loki:prod** · preview failed: the preview timed out after 10 minutes · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="monitoring/loki:prod" state="preview-failed" -->
+  <!-- /sluiceway:row -->
+
+## In sync
+
+- data/warehouse:prod <!-- sluiceway:row stack="data/warehouse:prod" state="in-sync" failed="true" -->
+  :x: last deploy failed: the run ended without reporting a result · ticked by bob · 2026-09-19 16:03 UTC · [run](https://github.com/example-org/infra/actions/runs/17019884120)
+  <!-- /sluiceway:row -->
+
+<details><summary>42 more in sync</summary>
+
+- apps/admin:prod <!-- sluiceway:row stack="apps/admin:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/admin:staging <!-- sluiceway:row stack="apps/admin:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/api:staging <!-- sluiceway:row stack="apps/api:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/auth:prod <!-- sluiceway:row stack="apps/auth:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/auth:staging <!-- sluiceway:row stack="apps/auth:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/billing:prod <!-- sluiceway:row stack="apps/billing:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/docs:prod <!-- sluiceway:row stack="apps/docs:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/notifications:staging <!-- sluiceway:row stack="apps/notifications:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/search:staging <!-- sluiceway:row stack="apps/search:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/worker:prod <!-- sluiceway:row stack="apps/worker:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- apps/worker:staging <!-- sluiceway:row stack="apps/worker:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/kafka:prod <!-- sluiceway:row stack="data/kafka:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/kafka:staging <!-- sluiceway:row stack="data/kafka:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/postgres:staging <!-- sluiceway:row stack="data/postgres:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- data/redis:prod <!-- sluiceway:row stack="data/redis:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/bastion:prod <!-- sluiceway:row stack="infra/bastion:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/cluster:prod <!-- sluiceway:row stack="infra/cluster:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/cluster:staging <!-- sluiceway:row stack="infra/cluster:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/dns:staging <!-- sluiceway:row stack="infra/dns:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/iam:prod <!-- sluiceway:row stack="infra/iam:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/kms:prod <!-- sluiceway:row stack="infra/kms:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/network:prod <!-- sluiceway:row stack="infra/network:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/network:staging <!-- sluiceway:row stack="infra/network:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/registry:prod <!-- sluiceway:row stack="infra/registry:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- infra/vpn:prod <!-- sluiceway:row stack="infra/vpn:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/alertmanager:prod <!-- sluiceway:row stack="monitoring/alertmanager:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/grafana:prod <!-- sluiceway:row stack="monitoring/grafana:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/prometheus:prod <!-- sluiceway:row stack="monitoring/prometheus:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/prometheus:staging <!-- sluiceway:row stack="monitoring/prometheus:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/tempo:prod <!-- sluiceway:row stack="monitoring/tempo:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- monitoring/uptime:prod <!-- sluiceway:row stack="monitoring/uptime:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/argo-workflows:prod <!-- sluiceway:row stack="platform/argo-workflows:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/cert-manager:staging <!-- sluiceway:row stack="platform/cert-manager:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/external-dns:prod <!-- sluiceway:row stack="platform/external-dns:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/external-secrets:prod <!-- sluiceway:row stack="platform/external-secrets:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/ingress:staging <!-- sluiceway:row stack="platform/ingress:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/karpenter:prod <!-- sluiceway:row stack="platform/karpenter:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/policy:prod <!-- sluiceway:row stack="platform/policy:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- platform/service-mesh:prod <!-- sluiceway:row stack="platform/service-mesh:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/backups:prod <!-- sluiceway:row stack="storage/backups:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/buckets:staging <!-- sluiceway:row stack="storage/buckets:staging" state="in-sync" -->
+  <!-- /sluiceway:row -->
+- storage/cdn:prod <!-- sluiceway:row stack="storage/cdn:prod" state="in-sync" -->
+  <!-- /sluiceway:row -->
+
+</details>
+
+## Recently deployed
+
+- apps/auth:prod · ticked by alice · 2026-09-21 09:41 UTC · [run](https://github.com/example-org/infra/actions/runs/17034388102)
+- apps/auth:staging · ticked by alice · 2026-09-21 09:12 UTC · [run](https://github.com/example-org/infra/actions/runs/17034120455)
+- platform/external-dns:prod · ticked by carol · 2026-09-20 17:30 UTC · [run](https://github.com/example-org/infra/actions/runs/17029910331)
+
+---
+
+- [ ] Rescan all stacks <!-- sluiceway:rescan -->
+
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>
+"
+`;
