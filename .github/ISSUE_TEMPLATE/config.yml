@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/sluiceway/sluiceway/security/advisories/new
+    about: Report security problems in private, never in a public issue.
