@@ -42,6 +42,10 @@ export interface RootFacts {
   scanRun: string;
   // ISO 8601, UTC.
   scanAt: string;
+  // The last full scan (record 0011). A full scan writes both, every other
+  // writer carries them through.
+  fullScanAt?: string | undefined;
+  fullScanRun?: string | undefined;
 }
 
 export interface RowFacts {
@@ -65,12 +69,15 @@ function marker(kind: string, pairs: [key: string, value: string][]): string {
 
 // Key order is fixed so output stays byte-identical. Parsers do not depend on it.
 export function rootMarker(facts: RootFacts): string {
-  return marker("dashboard", [
+  const pairs: [string, string][] = [
     ["v", String(MARKER_VERSION)],
     ["scan-sha", facts.scanSha],
     ["scan-run", facts.scanRun],
     ["scan-at", facts.scanAt],
-  ]);
+  ];
+  if (facts.fullScanAt !== undefined) pairs.push(["full-scan-at", facts.fullScanAt]);
+  if (facts.fullScanRun !== undefined) pairs.push(["full-scan-run", facts.fullScanRun]);
+  return marker("dashboard", pairs);
 }
 
 export function rowMarker(facts: RowFacts): string {
@@ -90,6 +97,8 @@ export interface ParsedRoot {
   scanSha: string | undefined;
   scanRun: string | undefined;
   scanAt: string | undefined;
+  fullScanAt?: string | undefined;
+  fullScanRun?: string | undefined;
 }
 
 // A row block: every line from the one that ends in the open marker through
@@ -141,6 +150,8 @@ function readRoot(line: string): ParsedRoot | undefined {
     scanSha: pairs.get("scan-sha"),
     scanRun: pairs.get("scan-run"),
     scanAt: pairs.get("scan-at"),
+    fullScanAt: pairs.get("full-scan-at"),
+    fullScanRun: pairs.get("full-scan-run"),
   };
 }
 
