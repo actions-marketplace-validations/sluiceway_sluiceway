@@ -22,6 +22,10 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | Spreading one scan over several runners (sharding) | One job with a bounded pool is enough for now. A shard would be a narrowed scan, so no new merge rule is needed. | 0011, 0012 |
 | An `id:` override for a stack in `sluiceway.yaml` | A second source of identity that has to be kept unique. The id is always derived in v1. | 0006 |
 | Starting a deploy without a person ticking (unattended deploys of chosen stacks) | If it comes, it is a real entry point such as `workflow_dispatch` with a stack input, where GitHub records who started it. Not a bot ticking boxes. | 0018 |
+| Telling authors that their merge is waiting for a deploy | An `@` mention in the issue body notifies and subscribes every author, with no way to opt out. If it comes, it is an opt-in setting or a comment on the pull request, not a mention on the row. | 0026 |
+| Shipped pull requests under recently deployed | Needs the list stored on the deployment record at tick time, or a walk between two successful records that may lie outside the lookback. The record already carries the deployed commit. | 0026, 0003 |
+| A configurable lookback, or number of pull requests named on a row | Fixed at 100 commits and five names to launch. The compare link and the summary page already give the full list. | 0026 |
+| Naming changes outside a stack on its row (shared package, lockfile) | They are counted and one compare link away. Naming them puts the same long list on every row. Needs real inputs per stack first, which 0010 rejected. | 0026, 0010 |
 | An off-switch for the dashboard's personality | Not decided yet. Waits on the mascot and voice work. | Map, not yet specified |
 
 ## Rejected on principle

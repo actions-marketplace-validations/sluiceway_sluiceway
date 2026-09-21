@@ -154,6 +154,18 @@ _Avoid_: Error message, error text, tool error
 The page of a scan's workflow run where every stack's diff is shown in full, without the dashboard's size limit. It shows the same kind of facts as a row and nothing more. Truncated and redacted rows link to it.
 _Avoid_: Full diff, report, native output
 
+**Attribution**:
+The line on a stack's row that names the merged pull requests, and the direct pushes, that the stack claims since its last successful deploy from the dashboard. It explains why a row is pending and never decides that it is. Changes the stack does not claim are counted, not named.
+_Avoid_: Blame, changelog, history, provenance
+
+**Author**:
+The person who opened a pull request that a row names, or who made a direct push. Written as a plain login that notifies no one. An author is never the ticker by role, even when they are the same person.
+_Avoid_: Committer, merger, owner, contributor
+
+**Lookback**:
+How many of the newest commits on the default branch a job walks to work out attribution. A stack whose last deploy lies further back gets a line that says earlier changes exist.
+_Avoid_: History depth, window, range
+
 **Redact**:
 The dashboard setting that keeps resource types, resource names and property names out of the issue, leaving stack ids, counts, warnings and links. The summary stays full. It limits how far names travel. It is not access control.
 _Avoid_: Private mode, mask, hide
