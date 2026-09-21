@@ -227,7 +227,7 @@ The fake implements the port in memory and copies the real behavior that the lab
 - An edit by the bot starts no event. An edit by a person does.
 - The edit history keeps the original body and the newest 99 edits, each with its editor, time and full body. An entry's body can be deleted (0025).
 - An `issues.edited` payload carries the newest body, not the body of its own edit (issue 28).
-- Deployments: `auto_inactive`, `inactive` after a later success in the same environment, and only the list filters that GitHub has.
+- Deployments: with the default `auto_inactive`, a later success flips every earlier success in the same environment to `inactive`, whatever its `task`, and a moment later, not at once (issue 27). Only the list filters that GitHub has.
 - The fake counts requests, so a test can hold a scan of 100 stacks to the API budget.
 
 Because the fake can add a history entry by a person, the whole loop (scan, tick, `resolve`, `apply`, `settle`) runs in CI with no human and no stored token. The risk is a fake that drifts from GitHub. The live pass before a release is the check on that.

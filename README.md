@@ -160,6 +160,8 @@ The tick is always a gate. Where your plan has environments, they make it a stro
       deployment: false # Sluiceway already records the deploy
 ```
 
+GitHub lists an environment for every name a deployment record uses, so your repo settings will show one named `sluiceway` (or the names you configured) even if you never use the feature. That entry is only a label.
+
 Without `deployment: false` GitHub records every deploy a second time. Custom deployment protection rules do not work with `deployment: false`. If you use them, leave it out and accept the second record. Sluiceway ignores it.
 
 ## Configuration
