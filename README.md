@@ -169,7 +169,7 @@ Without `deployment: false` GitHub records every deploy a second time. Custom de
 <!-- PLACEHOLDER: sluiceway.yaml reference. -->
 
 > [!NOTE]
-> **Placeholder.** Sluiceway will read an optional `sluiceway.yaml`. Its reference arrives with config loading. The keys are already fixed in [docs/build-plan.md](docs/build-plan.md), section 3.
+> **Placeholder.** Sluiceway reads an optional `sluiceway.yaml` at the repo root. The full reference arrives with the docs of M2. Until then the keys are listed in [docs/build-plan.md](docs/build-plan.md), section 3, and [schema/sluiceway.schema.json](schema/sluiceway.schema.json) describes them for editors. Unknown keys are an error.
 
 ## Credentials
 

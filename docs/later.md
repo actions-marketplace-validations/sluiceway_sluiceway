@@ -20,6 +20,8 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | Teams in the tick rule | The workflow token cannot read team membership, and a second stored token breaks the credential promises. The `org/team` syntax is reserved and fails with a clear message. | 0018, 0017 |
 | A GitHub App token or PAT as the bot identity | One identity in v1. It would arrive as a new optional input, together with an identity input and a loop guard. | 0017 |
 | Spreading one scan over several runners (sharding) | One job with a bounded pool is enough for now. A shard would be a narrowed scan, so no new merge rule is needed. | 0011, 0012 |
+| An empty `tickers` list, as a way to get a dashboard that nobody can tick | Config loading refuses it, because in a rule about who may deploy an empty list is far more likely a mistake than a wish. A read-only mode, if it comes, gets its own key. | Slice 1.2 |
+| `sluiceway.yml` as a second spelling of the config file | One name. A file under the other spelling is refused, not skipped, because skipping it would drop its tick rule without a word. | Slice 1.2 |
 | An `id:` override for a stack in `sluiceway.yaml` | A second source of identity that has to be kept unique. The id is always derived in v1. | 0006 |
 | Starting a deploy without a person ticking (unattended deploys of chosen stacks) | If it comes, it is a real entry point such as `workflow_dispatch` with a stack input, where GitHub records who started it. Not a bot ticking boxes. | 0018 |
 | Telling authors that their merge is waiting for a deploy | An `@` mention in the issue body notifies and subscribes every author, with no way to opt out. If it comes, it is an opt-in setting or a comment on the pull request, not a mention on the row. | 0026 |

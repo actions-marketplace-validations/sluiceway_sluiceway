@@ -25,6 +25,8 @@ bun install
 | `bun run lint:fix` | The same, and writes the fixes. |
 | `bun run typecheck` | TypeScript, strict, no emit. |
 | `bun run test` | Unit tests with `bun test`. |
+| `bun run build:schema` | Writes `schema/sluiceway.schema.json` from the Zod schema in `src/core/config.ts`. |
+| `bun run check:schema` | Generates, then fails if `schema/` differs from what is committed. |
 | `bun run build` | Bundles `src/main.ts` into `dist/index.js` for the Node runtime of GitHub Actions. |
 | `bun run check:dist` | Builds, then fails if `dist/` differs from what is committed. |
 | `bun run check` | All of the above, as CI runs them. |
@@ -39,6 +41,15 @@ git add dist
 ```
 
 CI fails when `dist/` does not match the source. Never edit `dist/` by hand.
+
+The JSON schema of `sluiceway.yaml` works the same way. It is generated from the Zod schema that config loading uses, committed, and checked in CI. When you change `src/core/config.ts`:
+
+```sh
+bun run build:schema
+git add schema
+```
+
+Never edit `schema/sluiceway.schema.json` by hand.
 
 ## Rules for code
 

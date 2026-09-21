@@ -15,11 +15,15 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "build": "bun build src/main.ts --target=node --format=esm --outfile=dist/index.js",
+    "build:schema": "bun run scripts/generate-schema.ts",
+    "check:schema": "bun run build:schema && git diff --exit-code -- schema && test -z \"$(git status --porcelain -- schema)\"",
     "check:dist": "bun run build && git diff --exit-code -- dist && test -z \"$(git status --porcelain -- dist)\"",
-    "check": "bun run lint && bun run typecheck && bun run test && bun run check:dist"
+    "check": "bun run lint && bun run typecheck && bun run test && bun run check:schema && bun run check:dist"
   },
   "dependencies": {
-    "@actions/core": "3.0.1"
+    "@actions/core": "3.0.1",
+    "yaml": "2.9.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

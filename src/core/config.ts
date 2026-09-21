@@ -1,0 +1,376 @@
+import { LineCounter, parseDocument } from "yaml";
+import { z } from "zod";
+import { type Stack, stackId } from "./stack.ts";
+
+// Loose on purpose: old logins break today's rules, and managed accounts
+// carry an underscore. What matters is that a slash or an "@" never passes.
+const username = z.string().regex(/^[A-Za-z0-9_-]+$/);
+
+// The tick rule (record 0018). A level, or a list of usernames. Logins are
+// compared without regard to case, so they are kept in lower case, once each.
+const tickers = z.union([
+  z.enum(["write", "maintain", "admin"]),
+  z
+    .array(username)
+    .min(1)
+    .transform((names) => [...new Set(names.map((name) => name.toLowerCase()))]),
+]);
+
+const text = z.string().min(1);
+const globs = z.array(text);
+
+// A person typed this path. It leaves here in the form a stack id uses (record
+// 0006): forward slashes, no leading "./", no trailing slash. The repo root
+// itself is ".".
+const stackPath = text
+  .superRefine((path, context) => {
+    const refuse = (message: string) => context.addIssue({ code: "custom", message });
+    if (path.includes("\\")) refuse(`${show(path)} must use forward slashes.`);
+    else if (path.startsWith("/")) refuse(`${show(path)} must be relative to the repo root.`);
+    else if (path.split("/").includes(".."))
+      refuse(`${show(path)} must stay inside the repo, so ".." is not allowed.`);
+  })
+  .transform((path) => {
+    const segments = path.split("/").filter((segment) => segment !== "" && segment !== ".");
+    return segments.length === 0 ? "." : segments.join("/");
+  });
+
+// An entry adds settings to stacks that discovery found. It never creates one.
+const stackEntry = z.strictObject({
+  path: stackPath.describe("Directory of the stack, relative to the repo root."),
+  name: text
+    .describe("Name of the stack. Without it the entry covers every stack in path.")
+    .exactOptional(),
+  environment: text
+    .describe(
+      "Label on the deployment record, and the GitHub Environment where one is used. Default: sluiceway.",
+    )
+    .exactOptional(),
+  tickers: tickers
+    .describe("Tick rule for this stack. Default: the top level tickers.")
+    .exactOptional(),
+  inputs: globs
+    .describe("Extra globs this stack claims, relative to the repo root.")
+    .exactOptional(),
+  previewTimeout: z
+    .int()
+    .min(1)
+    .describe(
+      "Time limit for one preview of this stack, in whole minutes. Default: the preview-timeout input.",
+    )
+    .exactOptional(),
+  // Named adapter options (records 0006, 0015). None exist in v1.
+  options: z
+    .strictObject({})
+    .describe("Named adapter options. None exist in this version.")
+    .exactOptional(),
+});
+
+const stackEntries = z.array(stackEntry).superRefine((entries, context) => {
+  const seen = new Map<string, number>();
+  entries.forEach((entry, index) => {
+    const id = stackId(entry);
+    const first = seen.get(id);
+    if (first === undefined) seen.set(id, index);
+    else
+      context.addIssue({
+        code: "custom",
+        path: [index],
+        message: `says the same path and name as stacks[${first}] (${show(id)}). Put the settings in one entry.`,
+      });
+  });
+});
+
+// The shape of sluiceway.yaml (build-plan.md, section 3). Unknown keys are an
+// error, because a typo in "tickers" would change who can deploy. The JSON
+// schema in schema/ is generated from this.
+export const configSchema = z.strictObject({
+  dashboard: z
+    .strictObject({
+      title: text.describe("Title of the dashboard issue.").default("Sluiceway dashboard"),
+      label: text.describe("Label the dashboard issue is found by.").default("sluiceway"),
+      pin: z.boolean().describe("Pin the dashboard issue, best effort.").default(true),
+      redact: z
+        .boolean()
+        .describe(
+          "Keep resource types, resource names and property names out of the issue. The summary stays full. Not access control.",
+        )
+        .default(false),
+      personality: z
+        .boolean()
+        .describe("Show the header image and use the voice. false removes both.")
+        .default(true),
+    })
+    .prefault({}),
+  tickers: tickers
+    .describe(
+      "Default tick rule: write, maintain, admin, or a list of usernames. A list narrows and never widens: a person on it still needs write access.",
+    )
+    .default("write"),
+  ignore: globs
+    .describe("Globs matched against the stack id. An ignored stack has no row.")
+    .default([]),
+  scan: z
+    .strictObject({
+      unrelated: globs
+        .describe("Globs for files that claim nothing and force nothing, such as **/*.md.")
+        .default([]),
+    })
+    .prefault({}),
+  stacks: stackEntries
+    .describe("Settings for stacks that discovery found. An entry never creates a stack.")
+    .default([]),
+});
+
+export type Config = z.output<typeof configSchema>;
+
+// A sluiceway.yaml that cannot be used. It holds every problem found, not only
+// the first, so a person fixes the file in one go.
+export class ConfigError extends Error {
+  readonly problems: string[];
+
+  constructor(problems: string[]) {
+    super(
+      ["sluiceway.yaml is not valid:", ...problems.map((problem) => `- ${problem}`)].join("\n"),
+    );
+    this.name = "ConfigError";
+    this.problems = problems;
+  }
+}
+
+// Takes the text of sluiceway.yaml, or undefined when the repo has no such
+// file. The file is optional, so no text and an empty file both give defaults.
+export function parseConfig(text: string | undefined): Config {
+  const raw = text === undefined ? null : readYaml(text);
+  const result = configSchema.safeParse(raw ?? {});
+  if (!result.success) {
+    const problems = result.error.issues.flatMap((issue) => describe(issue, raw));
+    throw new ConfigError(inFileOrder(problems, raw).map((problem) => problem.text));
+  }
+  return result.data;
+}
+
+function readYaml(text: string): unknown {
+  const lineCounter = new LineCounter();
+  const document = parseDocument(text, { lineCounter, prettyErrors: false });
+  if (document.errors.length > 0) {
+    throw new ConfigError(
+      document.errors.map((error) => {
+        const { line, col } = lineCounter.linePos(error.pos[0]);
+        return `line ${line}, column ${col}: not valid YAML. ${error.message}`;
+      }),
+    );
+  }
+  return document.toJS();
+}
+
+type Issue = z.core.$ZodIssue;
+
+interface Problem {
+  // Where in the file the problem is, down to the key it is about.
+  path: PropertyKey[];
+  text: string;
+}
+
+// The wording is ours, not the schema library's, so an upgrade of the library
+// cannot change what a person reads.
+function describe(issue: Issue, raw: unknown): Problem[] {
+  const at = where(issue.path);
+  const value = valueAt(raw, issue.path);
+  const problem = (text: string): Problem[] => [{ path: issue.path, text: `${at}${text}` }];
+  const key = issue.path.at(-1);
+  if (issue.code === "unrecognized_keys") {
+    const known = knownKeys(issue.path);
+    const unknown = (name: string): string => {
+      if (RESERVED_KEYS.includes(name))
+        return `"${name}" is not in this version of Sluiceway yet. Remove it.`;
+      if (key === "options")
+        return `unknown option "${name}". No adapter options exist in this version.`;
+      return `unknown key "${name}". Known keys here: ${known.join(", ")}.`;
+    };
+    return issue.keys.map((name) => ({
+      path: [...issue.path, name],
+      text: `${at}${unknown(name)}`,
+    }));
+  }
+  if (value === undefined && key === "path") {
+    return problem("is required. It is the directory of the stack, relative to the repo root.");
+  }
+  if (key === "previewTimeout" && issue.code !== "custom") {
+    return problem(`expected a whole number of minutes, 1 or more, got ${show(value)}.`);
+  }
+  // The only union in the schema is the tick rule.
+  if (issue.code === "invalid_union") {
+    if (!Array.isArray(value)) {
+      return problem(
+        `expected "write", "maintain", "admin" or a list of usernames, got ${show(value)}.`,
+      );
+    }
+    return (issue.errors[1] ?? []).flatMap((inner) =>
+      describe({ ...inner, path: [...issue.path, ...inner.path] }, raw),
+    );
+  }
+  // The only pattern in the schema is the username.
+  if (issue.code === "invalid_format") {
+    return problem(
+      String(value).includes("/")
+        ? `${show(value)} looks like a team. Teams are not supported yet. Use a level ("write", "maintain", "admin") or usernames.`
+        : `${show(value)} is not a GitHub username. Write the login alone, without "@".`,
+    );
+  }
+  if (issue.code === "too_small") {
+    return problem(
+      issue.origin === "array"
+        ? "the list is empty, so nobody could tick. Name at least one username or use a level."
+        : key === "path"
+          ? 'must not be empty. Use "." for the repo root.'
+          : "must not be empty.",
+    );
+  }
+  if (issue.code === "invalid_type") {
+    return problem(`expected ${EXPECTED[issue.expected] ?? issue.expected}, got ${show(value)}.`);
+  }
+  // What is left are the checks written in this file, in their own words.
+  return problem(issue.message);
+}
+
+const EXPECTED: Record<string, string> = {
+  string: "text",
+  boolean: "true or false",
+  array: "a list",
+  object: "a mapping",
+};
+
+function valueAt(raw: unknown, path: PropertyKey[]): unknown {
+  let value = raw;
+  for (const segment of path) {
+    if (typeof value !== "object" || value === null) return undefined;
+    value = (value as Record<PropertyKey, unknown>)[segment];
+  }
+  return value;
+}
+
+// A value from the file, as a person would recognise it. Config holds no
+// secrets, so quoting it back is fine.
+function show(value: unknown): string {
+  if (value === null || value === undefined) return "nothing";
+  if (Array.isArray(value)) return "a list";
+  if (typeof value === "object") return "a mapping";
+  return JSON.stringify(value);
+}
+
+// Problems are listed top to bottom as the file has them, whatever order the
+// schema library found them in.
+function inFileOrder(problems: Problem[], raw: unknown): Problem[] {
+  const position = (path: PropertyKey[]): number[] => {
+    let value = raw;
+    return path.map((segment) => {
+      const keys = typeof value === "object" && value !== null ? Object.keys(value) : [];
+      const index = keys.indexOf(String(segment));
+      value = index === -1 ? undefined : (value as Record<string, unknown>)[String(segment)];
+      // A key that is missing from the file sorts after the ones that are there.
+      return index === -1 ? keys.length : index;
+    });
+  };
+  const compare = (a: number[], b: number[]): number => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      const difference = (a[i] ?? 0) - (b[i] ?? 0);
+      if (difference !== 0) return difference;
+    }
+    return a.length - b.length;
+  };
+  return problems
+    .map((problem) => ({ problem, at: position(problem.path) }))
+    .sort((a, b) => compare(a.at, b.at))
+    .map(({ problem }) => problem);
+}
+
+// Keys of features that are planned and not in v1. They fail with their own
+// message and are never ignored (build-plan.md, section 3).
+const RESERVED_KEYS = ["dependsOn", "drift"];
+
+// "stacks[0].path: ", or nothing for the top level.
+function where(path: PropertyKey[]): string {
+  const text = path
+    .map((segment) => (typeof segment === "number" ? `[${segment}]` : `.${String(segment)}`))
+    .join("")
+    .replace(/^\./, "");
+  return text === "" ? "" : `${text}: `;
+}
+
+// The keys the schema allows at a path, in the order the schema lists them.
+function knownKeys(path: PropertyKey[]): string[] {
+  let schema: z.core.$ZodType = configSchema;
+  for (const segment of path) {
+    schema = unwrap(schema);
+    if (schema instanceof z.ZodObject) schema = schema.shape[String(segment)];
+    else if (schema instanceof z.ZodArray) schema = schema.element;
+  }
+  schema = unwrap(schema);
+  return schema instanceof z.ZodObject ? Object.keys(schema.shape) : [];
+}
+
+function unwrap(schema: z.core.$ZodType): z.core.$ZodType {
+  let inner = schema;
+  while (inner instanceof z.ZodDefault || inner instanceof z.ZodPrefault) {
+    inner = inner.def.innerType;
+  }
+  return inner;
+}
+
+export type TickRule = z.output<typeof tickers>;
+
+// A discovered stack with the settings that config gives it.
+export interface ConfiguredStack {
+  stack: Stack;
+  environment: string;
+  tickers: TickRule;
+  inputs: string[];
+  // Whole minutes. Absent means the time limit of the action's input.
+  previewTimeout?: number;
+}
+
+const DEFAULT_ENVIRONMENT = "sluiceway";
+
+// Lays the stacks entries over the stacks that discovery found. An entry with
+// a name sets one stack, an entry without covers every stack in its path, and
+// the entry with a name wins key by key. Inputs only ever add up (record 0010).
+export function applyConfig(config: Config, stacks: Stack[]): ConfiguredStack[] {
+  const problems = config.stacks.flatMap((entry, index) => {
+    const inPath = stacks.filter((stack) => stack.path === entry.path);
+    if (inPath.some((stack) => covers(entry, stack))) return [];
+    return [`stacks[${index}]: ${describeMiss(entry, inPath)}`];
+  });
+  if (problems.length > 0) throw new ConfigError(problems);
+
+  return stacks.map((stack) => {
+    const entries = config.stacks
+      .filter((entry) => covers(entry, stack))
+      .sort((a, b) => Number(a.name !== undefined) - Number(b.name !== undefined));
+    const previewTimeout = entries.findLast((entry) => entry.previewTimeout)?.previewTimeout;
+    return {
+      stack,
+      environment:
+        entries.findLast((entry) => entry.environment)?.environment ?? DEFAULT_ENVIRONMENT,
+      tickers: entries.findLast((entry) => entry.tickers)?.tickers ?? config.tickers,
+      inputs: [...new Set(entries.flatMap((entry) => entry.inputs ?? []))],
+      ...(previewTimeout === undefined ? {} : { previewTimeout }),
+    };
+  });
+}
+
+type StackEntry = Config["stacks"][number];
+
+function covers(entry: StackEntry, stack: Stack): boolean {
+  return entry.path === stack.path && (entry.name === undefined || entry.name === stack.name);
+}
+
+function describeMiss(entry: StackEntry, inPath: Stack[]): string {
+  if (entry.name === undefined || inPath.length === 0) {
+    return `no stack was found in ${show(entry.path)}. An entry adds settings to a stack that exists, it never creates one.`;
+  }
+  const names = inPath.flatMap((stack) => (stack.name === undefined ? [] : [stack.name]));
+  const found =
+    names.length === 0 ? "The stack found there has no name." : `Found there: ${names.join(", ")}.`;
+  return `no stack named ${show(entry.name)} was found in ${show(entry.path)}. ${found}`;
+}
