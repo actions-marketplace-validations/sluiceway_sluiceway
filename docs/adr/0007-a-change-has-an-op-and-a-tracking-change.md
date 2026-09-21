@@ -36,7 +36,7 @@ interface Diff {
 - All folding is the adapter's job. It drops steps that change nothing (`same`, `no-op`, data source reads, refresh steps) and folds both replace orders into `replace`. A step it does not recognise fails that stack's preview and gives a preview failure row. It is never rendered as in sync.
 - Row counts such as `+2 ~1 -0` come from `op` only. Changes that have only a tracking change get their own count, so they stay visible.
 - The summary counts and the rendered text from the brief leave the type. Both are derived from `changes` by the core (see 0002).
-- Not decided here: how to show a change that touches only a stack's outputs. The address is opaque and may name something that is not a resource, so either answer fits this shape.
+- Not decided here: how to show a change that touches only a stack's outputs. The address is opaque and may name something that is not a resource, so either answer fits this shape. Decided in 0036: not shown in v1, and the shape it would take later is fixed there.
 
 Research:
 - https://github.com/sluiceway/sluiceway/blob/research/opentofu-adapter-fit/docs/research/opentofu-adapter-fit.md

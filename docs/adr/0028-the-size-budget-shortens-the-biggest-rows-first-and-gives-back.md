@@ -24,7 +24,7 @@ Rows do not all drop to the same level. That was rejected because one stack with
 - Only pending rows are shortened. Every other kind of row is one to three lines. If the body is still over the hard limit with every pending row at level 3, the scan fails with a clear message and the old body stays. A level 3 row is about 550 characters, most of it links and the marker, and an in sync row about 110. So that point lies at roughly 100 stacks that are all pending at once. A further level that also drops links was left out of v1 (`docs/later.md`).
 - A writer that swaps rows (0004, 0011) has a diff only for its own rows. If its body comes out over the hard limit it shortens its own rows and never touches a carried row. If that is not enough it dispatches a scan, which can shorten everything.
 - A redacted dashboard (0023) has nothing to shorten. Its rows are already about the size of level 3.
-- The summary has no budget and is never shortened (0021).
+- The summary has no budget and is never shortened (0021). Amended by 0037: it has a budget of its own, far larger than the body's, and the job log holds what does not fit.
 - The 58 stack fixture with two very large rows used 57 percent of the hard limit, so a dashboard of that size normally shows every row in full. Shortening is for the day a shared change makes everything pending at once (0010).
 
 Prototype: the over budget issue in the private lab repo, generated from the `prototype/dashboard` branch.
