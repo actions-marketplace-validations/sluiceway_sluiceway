@@ -154,6 +154,14 @@ _Avoid_: Error message, error text, tool error
 The page of a scan's workflow run where every stack's diff is shown in full, without the dashboard's size limit. It shows the same kind of facts as a row and nothing more. Truncated and redacted rows link to it.
 _Avoid_: Full diff, report, native output
 
+**Size budget**:
+How large the dashboard body may get before rows are shortened. It exists because an issue body that is too large is dropped without an error.
+_Avoid_: Limit, cap, quota
+
+**Shortened row**:
+A pending row that shows less than its whole diff because of the size budget, and links to the summary for the rest. It keeps its checkbox, its counts and its warning. Its delete and replace lines are all listed or none are.
+_Avoid_: Truncated row, collapsed row, summary row
+
 **Attribution**:
 The line on a stack's row that names the merged pull requests, and the direct pushes, that the stack claims since its last successful deploy from the dashboard. It explains why a row is pending and never decides that it is. Changes the stack does not claim are counted, not named.
 _Avoid_: Blame, changelog, history, provenance

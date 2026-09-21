@@ -26,6 +26,10 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | Shipped pull requests under recently deployed | Needs the list stored on the deployment record at tick time, or a walk between two successful records that may lie outside the lookback. The record already carries the deployed commit. | 0026, 0003 |
 | A configurable lookback, or number of pull requests named on a row | Fixed at 100 commits and five names to launch. The compare link and the summary page already give the full list. | 0026 |
 | Naming changes outside a stack on its row (shared package, lockfile) | They are counted and one compare link away. Naming them puts the same long list on every row. Needs real inputs per stack first, which 0010 rejected. | 0026, 0010 |
+| Failed deploys in the recently deployed list | A failure already has its failure line on the stack's own row. The list stays a log of what went out. | 0029 |
+| A configurable length for recently deployed | Fixed at 10 to launch. | 0029 |
+| A shortening level that also drops a row's links, for more than about 100 stacks pending at once | Past what one issue can usefully show. The scan fails with a clear message instead. | 0028 |
+| One alert block above the pending list that names the stacks with a delete or replace | The open delete and replace lines under each row won. The `destroys` marker key keeps this possible for every writer. | 0027, 0029 |
 | An off-switch for the dashboard's personality | Not decided yet. Waits on the mascot and voice work. | Map, not yet specified |
 
 ## Rejected on principle
@@ -41,6 +45,9 @@ Not planned. Bringing one of these back means reopening the decision named here,
 | Detecting deploys made outside Sluiceway | They are legal. The next scan simply shows the truth. | 0016 |
 | Holding or storing any credential | The five credential promises. | 0014 |
 | The Pulumi Automation API as the driver | 13.9 MB bundle, still needs the CLI, and its preview result lacks per-resource steps. | 0001 |
+| A partial list of a row's deletes and replaces ("the first 20, and 431 more") | Which ones show would be an accident of sort order, and a partial list can be taken for the whole. All or none, with the full count in the warning. | 0028, 0024 |
+| Relative times on the dashboard ("2 hours ago") | The body must be byte-identical for the same input, or every render is a write. | 0029, 0004 |
+| A fenced diff block or a table for a row's changes | Both make every list loose and scroll sideways on a phone. | 0027 |
 | Per-resource selection (`--target`) | Granularity is one checkbox per stack. | Brief non-goals |
 | Plan comments on pull requests | Other tools do that well already. | Brief non-goals |
 
