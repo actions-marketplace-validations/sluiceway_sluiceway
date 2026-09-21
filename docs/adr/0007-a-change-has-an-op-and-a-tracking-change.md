@@ -38,6 +38,29 @@ interface Diff {
 - The summary counts and the rendered text from the brief leave the type. Both are derived from `changes` by the core (see 0002).
 - Not decided here: how to show a change that touches only a stack's outputs. The address is opaque and may name something that is not a resource, so either answer fits this shape. Decided in 0036: not shown in v1, and the shape it would take later is fixed there.
 
+## The Pulumi table, settled from the recordings
+
+The build plan left the table from Pulumi's step ops to `op` and `tracking` to the build. Slice 1.5 settled it from what CLI v3.229.0 and v3.263.0 printed for every scenario of the example project.
+
+| Step op | Becomes |
+|---|---|
+| `same` | dropped |
+| `read`, `refresh` | dropped. No recording holds one. They are here because this record names them as steps that change nothing |
+| `create` | `create` |
+| `update` | `update` |
+| `replace` | `replace`. The tool prints one step for either replace order, because the adapter never passes `--show-replacement-steps` |
+| `delete` | `delete`, or `none` with `forget` when the old state of the resource says `retainOnDelete` |
+| `import` | `none` with `import` |
+| anything else | the preview fails with the reason "the tool reported a step Sluiceway does not know" |
+
+What the recordings showed that this record did not expect:
+
+- The Pulumi adapter never gives `move`. A resource renamed with an alias has no step in the document at all, so such a stack is in sync (`docs/later.md`). `move` and `previousAddress` stay in the shape for OpenTofu's `moved` blocks.
+- The tool calls a forget a `delete`. Only `retainOnDelete` on the old state tells the two apart, so that one flag is read from the state. It is an option of the resource, not a property value (0021).
+- A replace of a resource with `retainOnDelete` stays a `replace`. No recording holds one, and a destroy warning too many is the safe side.
+- On a replace the tool's `diffReasons` also names computed properties that will differ, such as the hashes of a file's content and its `id`. They are listed as changed keys, as the rule above says. `replaceKeys` holds what forced the replace, and every replace key is also a changed key.
+- Two changes at one address are refused as output that cannot be read. Steps that are dropped do not count.
+
 Research:
 - https://github.com/sluiceway/sluiceway/blob/research/opentofu-adapter-fit/docs/research/opentofu-adapter-fit.md
 - https://github.com/sluiceway/sluiceway/blob/research/pulumi-cli/docs/research/pulumi-cli.md

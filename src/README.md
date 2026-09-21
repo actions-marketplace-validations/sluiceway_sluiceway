@@ -5,7 +5,7 @@
 | `main.ts` | Entry point of the action. Reads the `mode` input and dispatches. | Yes |
 | `mode.ts` | The list of modes and the dispatch table. | Yes |
 | `core/` | Pure logic: types, config, which discovered stacks exist (`ignore`, one id per stack), the diff hash, the claim rule, the tick rule, attribution. | No |
-| `adapters/` | The adapter interface and one directory per infrastructure tool. | No |
+| `adapters/` | The adapter interface, the process runner every tool is started through, the tool environment, and one directory per infrastructure tool. | No |
 | `github/` | Everything that talks to GitHub: the issue, permissions, deployment records, event parsing. | Yes |
 | `render/` | Turns scan results into the dashboard body: rows, markers, the size budget. | No |
 
