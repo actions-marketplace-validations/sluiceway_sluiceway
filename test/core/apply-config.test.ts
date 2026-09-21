@@ -135,3 +135,41 @@ stacks:
     ]);
   });
 });
+
+describe("ignore", () => {
+  test("an ignored stack is dropped before any entry sees it", () => {
+    const configured = applyConfig(parseConfig('ignore: ["**/*:dev"]\n'), FOUND);
+    expect(configured.map((one) => one.stack)).toEqual([
+      stack("apps/grafana", "prod"),
+      stack("envs/prod"),
+    ]);
+  });
+
+  test("an entry for a path still works when only some of its stacks are ignored", () => {
+    const text =
+      'ignore: ["**/*:dev"]\nstacks:\n  - path: apps/grafana\n    environment: monitoring\n';
+    const configured = applyConfig(parseConfig(text), FOUND);
+    expect(configured.map((one) => one.environment)).toEqual(["monitoring", "sluiceway"]);
+  });
+
+  test("an entry that only names ignored stacks is a config error that says so", () => {
+    const text = [
+      'ignore: ["apps/grafana:dev", "envs/**"]',
+      "stacks:",
+      "  - path: apps/grafana",
+      "    name: dev",
+      "  - path: envs/prod",
+      "",
+    ].join("\n");
+    expect(problems(text, FOUND)).toEqual([
+      'stacks[0]: the stack "apps/grafana:dev" is left out by ignore, so these settings would do nothing. Remove the entry, or change ignore.',
+      'stacks[1]: the stack "envs/prod" is left out by ignore, so these settings would do nothing. Remove the entry, or change ignore.',
+    ]);
+  });
+
+  test("two stacks with one id are refused here too", () => {
+    expect(() =>
+      applyConfig(parseConfig(undefined), [stack("apps", "web:prod"), stack("apps:web", "prod")]),
+    ).toThrow('two stacks have the id "apps:web:prod"');
+  });
+});

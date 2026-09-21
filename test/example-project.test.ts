@@ -3,6 +3,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import { CANARY_SECRET, CANARY_VALUE, EXAMPLE_PROGRAMS } from "../scripts/fixtures/example.ts";
+import { pulumi } from "../src/adapters/pulumi/index.ts";
+import { applyConfig } from "../src/core/config.ts";
 import { loadConfig } from "../src/core/config-file.ts";
 
 // examples/pulumi-basic is what the fixtures are recorded from and what the
@@ -104,5 +106,34 @@ describe("the example sluiceway.yaml", () => {
   test("every entry names a directory of the example", () => {
     const dirs = EXAMPLE_PROGRAMS.map((program) => program.dir);
     for (const entry of config.stacks) expect(dirs).toContain(entry.path);
+  });
+
+  test("laid over the stacks that discovery finds, it leaves playground out and sets the rest", async () => {
+    expect(applyConfig(config, await pulumi.discover(ROOT))).toEqual([
+      {
+        stack: { path: "app", name: "prod", options: {} },
+        environment: "sluiceway",
+        tickers: "write",
+        inputs: ["shared/**"],
+      },
+      {
+        stack: { path: "network", name: "dev", options: {} },
+        environment: "network",
+        tickers: "write",
+        inputs: [],
+      },
+      {
+        stack: { path: "network", name: "prod", options: {} },
+        environment: "network",
+        tickers: ["alice", "bob"],
+        inputs: [],
+      },
+      {
+        stack: { path: "site", name: "prod", options: {} },
+        environment: "sluiceway",
+        tickers: "write",
+        inputs: [],
+      },
+    ]);
   });
 });

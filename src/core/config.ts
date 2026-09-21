@@ -1,5 +1,6 @@
 import { LineCounter, parseDocument } from "yaml";
 import { z } from "zod";
+import { knownStacks } from "./discovery.ts";
 import { type Stack, stackId } from "./stack.ts";
 
 // Loose on purpose: old logins break today's rules, and managed accounts
@@ -332,14 +333,18 @@ export interface ConfiguredStack {
 
 const DEFAULT_ENVIRONMENT = "sluiceway";
 
-// Lays the stacks entries over the stacks that discovery found. An entry with
-// a name sets one stack, an entry without covers every stack in its path, and
-// the entry with a name wins key by key. Inputs only ever add up (record 0010).
-export function applyConfig(config: Config, stacks: Stack[]): ConfiguredStack[] {
+// Takes the stacks an adapter found, drops the ignored ones, and lays the
+// stacks entries over the rest. An entry with a name sets one stack, an entry
+// without covers every stack in its path, and the entry with a name wins key by
+// key. Inputs only ever add up (record 0010). What comes back is every stack
+// that exists for Sluiceway, so no caller can forget ignore.
+export function applyConfig(config: Config, found: Stack[]): ConfiguredStack[] {
+  const stacks = knownStacks(found, config.ignore);
   const problems = config.stacks.flatMap((entry, index) => {
     const inPath = stacks.filter((stack) => stack.path === entry.path);
     if (inPath.some((stack) => covers(entry, stack))) return [];
-    return [`stacks[${index}]: ${describeMiss(entry, inPath)}`];
+    const ignored = found.filter((stack) => covers(entry, stack));
+    return [`stacks[${index}]: ${describeMiss(entry, inPath, ignored)}`];
   });
   if (problems.length > 0) throw new ConfigError(problems);
 
@@ -365,7 +370,12 @@ function covers(entry: StackEntry, stack: Stack): boolean {
   return entry.path === stack.path && (entry.name === undefined || entry.name === stack.name);
 }
 
-function describeMiss(entry: StackEntry, inPath: Stack[]): string {
+function describeMiss(entry: StackEntry, inPath: Stack[], ignored: Stack[]): string {
+  if (ignored.length > 0) {
+    const ids = ignored.map((stack) => show(stackId(stack))).join(", ");
+    const subject = ignored.length === 1 ? `the stack ${ids} is` : `the stacks ${ids} are`;
+    return `${subject} left out by ignore, so these settings would do nothing. Remove the entry, or change ignore.`;
+  }
   if (entry.name === undefined || inPath.length === 0) {
     return `no stack was found in ${show(entry.path)}. An entry adds settings to a stack that exists, it never creates one.`;
   }
