@@ -73,12 +73,24 @@ A person checking the box on a stack's row: a request to deploy that stack exact
 _Avoid_: Approval, selection, click
 
 **Ticker**:
-The person whose edit made a tick. The only identity a deploy is authorized against and attributed to.
+The person whose edit made a tick. The only identity a deploy is authorized against and attributed to. Always a person, never a bot.
 _Avoid_: Approver, actor, sender, deployer
+
+**Tick rule**:
+What a person needs in order to tick a stack: a level of access to the repo, or a place on a list of named people who also have write access. It can narrow who may tick, never widen it.
+_Avoid_: Approvers, reviewers, allowlist, access list
+
+**Refused tick**:
+A tick by a person the stack's tick rule does not allow. Nothing deploys, the box is cleared and the person is told why.
+_Avoid_: Unauthorized tick, rejected tick, denied tick
 
 **Orphan tick**:
 A tick that nothing picked up, so the box is checked but no deploy exists for it.
 _Avoid_: Stale tick, missed tick, lost tick
+
+**Reviewer**:
+A person who approves a waiting deploy in GitHub's own interface, where the repo's plan offers that. A second gate after the tick, owned by GitHub. Sluiceway only waits for it.
+_Avoid_: Approver, second ticker
 
 ### Deploys
 
@@ -109,6 +121,10 @@ Everything the infrastructure tool needs in order to run: credentials, the state
 _Avoid_: Secrets, env config, credentials config
 
 ### Dashboard
+
+**Bot**:
+The one GitHub identity Sluiceway acts as. It creates and edits the dashboard, writes comments and records deploys. It is never a ticker.
+_Avoid_: App, service account, Sluiceway user
 
 **Row block**:
 A stack's complete entry on the dashboard, bounded so it can be moved or replaced as a unit without reading what is inside.
