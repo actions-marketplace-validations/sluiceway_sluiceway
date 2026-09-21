@@ -51,6 +51,7 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | Previewing a Pulumi stack whose state holds a resource twice at one URN, such as a copy left waiting for deletion by a deploy that failed half way | An address is unique within a diff, so two changes at one address are refused and the row is a preview failure until the stack is repaired from outside. Folding the two needs a recording of what the tool prints. | 0007, 0008 |
 | Naming the step op that Sluiceway did not know, in the job log | It is a word the tool wrote at a place Sluiceway could not read, and a parse error never says what was found. The log names the place, `steps[3].op`. | 0021 |
 | A limit on how much tool output a preview may hold in memory | 300 resources are 1.5 MB of JSON. Writing it to disk instead would put raw values in a file that has to be removed. | 0021 |
+| Stopping GitHub from linking a `#123`, an `@name` or a web address that sits inside a resource name or a stack id | Names are escaped as HTML and as Markdown, which a test proves. Whether GitHub still links such text afterwards can only be seen on a real issue. A name like that is rare, and a stack id holding `#123` is rarer. The live pass checks one. | 0009, 0027 |
 
 ## Rejected on principle
 

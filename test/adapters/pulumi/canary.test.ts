@@ -4,9 +4,11 @@ import { join } from "node:path";
 import { CANARY_SECRET, CANARY_VALUE } from "../../../scripts/fixtures/example.ts";
 import { pulumi } from "../../../src/adapters/pulumi/index.ts";
 import { parsePreview } from "../../../src/adapters/pulumi/schema.ts";
-import { canonicalDiff } from "../../../src/core/diff-hash.ts";
+import type { Diff } from "../../../src/core/diff.ts";
+import { canonicalDiff, diffHash } from "../../../src/core/diff-hash.ts";
 import { previewFailureText } from "../../../src/core/failure-reason.ts";
-import type { Stack } from "../../../src/core/stack.ts";
+import { type Stack, stackId } from "../../../src/core/stack.ts";
+import { renderRow } from "../../../src/render/row.ts";
 import { FIXTURES, ROOT, readRecording, replay, scenarioNames, VERSIONS } from "./replay.ts";
 
 // The canary test of record 0021 (build plan, section 6). Every program of
@@ -17,6 +19,15 @@ import { FIXTURES, ROOT, readRecording, replay, scenarioNames, VERSIONS } from "
 // test stays in the suite forever.
 
 const FORBIDDEN = [CANARY_VALUE, CANARY_SECRET, "CANARY", "[secret]"];
+
+// The row of a diff at every level of the size budget, and redacted.
+function rows(diff: Diff): string {
+  const row = { state: "pending", diff, hash: diffHash(diff), runUrl: "run-url" } as const;
+  return [
+    ...([0, 1, 2, 3] as const).map((level) => renderRow(row, { level })),
+    renderRow(row, { redact: true }),
+  ].join("\n");
+}
 
 function leaks(text: string): string[] {
   return FORBIDDEN.filter((word) => text.includes(word));
@@ -60,8 +71,15 @@ for (const version of VERSIONS) {
           });
 
           // Everything the adapter hands over, the tool's words included, and
-          // what the core makes of it.
-          const made = result.ok ? canonicalDiff(result.diff) : previewFailureText(result.reason);
+          // what the core and the row renderer make of it.
+          const made = result.ok
+            ? canonicalDiff(result.diff) + rows(result.diff)
+            : renderRow({
+                state: "preview-failed",
+                stackId: stackId(stack),
+                reason: previewFailureText(result.reason),
+                runUrl: "run-url",
+              });
           expect(leaks(JSON.stringify(result) + made)).toEqual([]);
 
           // What the schema lets through has no place for a value at all.
