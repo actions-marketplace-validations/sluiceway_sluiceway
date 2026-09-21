@@ -23,6 +23,8 @@ The hard line: everything else Sluiceway writes is plain, always. Rows, counts, 
 
 One warm line on a deploy that succeeded was considered and rejected. A comment is a notification in someone's inbox, and a success for one reader sits next to a failure for another. Warm one-liners under the header in the pending and deploying states were rejected for the same reason the rows are dense: that is where people make a decision.
 
+Settled while building (slice 1.7): the Pending section is always shown (0029), so it always needs one line. `deploying` and `plain` with nothing pending get the same dry line without the count as `failing`: `Nothing to deploy.` So does an in sync dashboard that carries a row of a state the writer does not know (0009), because in sync is a claim about every stack. With exactly one stack the dry good-news line reads `Nothing to deploy. 1 stack is in sync.`
+
 ## Consequences
 
 - The warm lines never carry a number and never use the first person. Penny does not speak. The line describes the water.
