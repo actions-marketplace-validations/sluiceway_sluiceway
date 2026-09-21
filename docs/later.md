@@ -30,7 +30,11 @@ Left out of v1 on purpose, and v1 was shaped so these can be added without a bre
 | A configurable length for recently deployed | Fixed at 10 to launch. | 0029 |
 | A shortening level that also drops a row's links, for more than about 100 stacks pending at once | Past what one issue can usefully show. The scan fails with a clear message instead. | 0028 |
 | One alert block above the pending list that names the stacks with a delete or replace | The open delete and replace lines under each row won. The `destroys` marker key keeps this possible for every writer. | 0027, 0029 |
-| An off-switch for the dashboard's personality | Not decided yet. Waits on the mascot and voice work. | Map, not yet specified |
+| A finer personality switch (the header without the voice, or the reverse) | One boolean, `dashboard.personality`, is enough to launch. | 0034 |
+| A custom header image, or a palette setting | The header is Sluiceway's brand, and a user image brings back every file rule as something to validate. Turning it off is the v1 answer. | 0034, 0033 |
+| A rotating set of good-news lines | One fixed line per state to launch. A set needs a stable pick rule so the same input still gives the same body. | 0032, 0004 |
+| Header states for drift and for queued stacks | They arrive with drift detection and dependencies. A new state is a new file pair and a new line in the precedence table, not a breaking change. | 0031 |
+| Final art for Penny | The files in `assets/mascot/` are concept art, good enough to build and test the header against. Final art keeps the character, the colour pair, the states and the file rules. | 0030, 0033 |
 
 ## Rejected on principle
 
@@ -48,6 +52,8 @@ Not planned. Bringing one of these back means reopening the decision named here,
 | A partial list of a row's deletes and replaces ("the first 20, and 431 more") | Which ones show would be an accident of sort order, and a partial list can be taken for the whole. All or none, with the full count in the warning. | 0028, 0024 |
 | Relative times on the dashboard ("2 hours ago") | The body must be byte-identical for the same input, or every render is a write. | 0029, 0004 |
 | A fenced diff block or a table for a row's changes | Both make every list loose and scroll sideways on a phone. | 0027 |
+| Playful wording anywhere but the good-news line and the first-run line (rows, comments, a line for a successful deploy, the pending and deploying states) | A comment is a notification in someone's inbox, and rows are where people decide. Anything with a delete or replace is plain twice over. | 0032, 0024 |
+| A header that shows what is happening now before bad news (deploying above failing) | A failure would vanish from the picture for the length of every deploy. | 0031 |
 | Per-resource selection (`--target`) | Granularity is one checkbox per stack. | Brief non-goals |
 | Plan comments on pull requests | Other tools do that well already. | Brief non-goals |
 
