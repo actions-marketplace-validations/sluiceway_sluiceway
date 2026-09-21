@@ -33,20 +33,24 @@ const MERGES: SummaryMerge[] = [
 
 // A scan previews every stack but the ones that are deploying. Every third
 // pending stack gets the list of what it claims.
+function previewedStack(row: Row, withMerges: boolean): SummaryStack | undefined {
+  switch (row.state) {
+    case "pending":
+      return { kind: "diff", diff: row.diff, merges: withMerges ? MERGES : undefined };
+    case "in-sync":
+      return { kind: "diff", diff: { stackId: row.stackId, changes: [] } };
+    case "preview-failed":
+      return { kind: "preview-failed", stackId: row.stackId, reason: row.reason };
+    case "deploying":
+      return undefined;
+  }
+}
+
 function previewed(rows: Row[]): SummaryStack[] {
   let pending = 0;
-  return rows.flatMap((row): SummaryStack[] => {
-    switch (row.state) {
-      case "pending":
-        return [{ kind: "diff", diff: row.diff, merges: pending++ % 3 === 0 ? MERGES : undefined }];
-      case "in-sync":
-        return [{ kind: "diff", diff: { stackId: row.stackId, changes: [] } }];
-      case "preview-failed":
-        return [{ kind: "preview-failed", stackId: row.stackId, reason: row.reason }];
-      case "deploying":
-        return [];
-    }
-  });
+  return rows
+    .map((row) => previewedStack(row, row.state === "pending" && pending++ % 3 === 0))
+    .filter((stack) => stack !== undefined);
 }
 
 describe("snapshots", () => {

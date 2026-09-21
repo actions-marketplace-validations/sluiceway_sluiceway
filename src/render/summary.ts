@@ -80,7 +80,7 @@ function mergeCounts(merges: SummaryMerge[]): string {
   const of = (kind: SummaryMerge["kind"]) => merges.filter((merge) => merge.kind === kind).length;
   return [
     of("pull-request") && plural(of("pull-request"), "pull request"),
-    of("push") && plural(of("push"), "direct push").replace(/pushs$/, "pushes"),
+    of("push") && `${of("push")} direct push${of("push") === 1 ? "" : "es"}`,
   ]
     .filter(Boolean)
     .join(" and ");

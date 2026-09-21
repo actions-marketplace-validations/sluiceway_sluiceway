@@ -181,6 +181,22 @@ describe("the summary of a scan", () => {
     expect(text).not.toContain("fake row");
     expect(text).toContain("- **&lt;b&gt;:prod** · made &#42;up&#42;\n");
   });
+
+  test("several direct pushes and no pull request", () => {
+    const push = (sha: string): SummaryMerge => ({
+      kind: "push",
+      sha,
+      message: "Tidy up",
+      url: `${REPO_URL}/commit/${sha}`,
+    });
+    const { text } = renderSummary([
+      diff("a:prod", [change("create", "t", "n")], {
+        merges: [push("aaaaaaa1"), push("bbbbbbb2")],
+      }),
+    ]);
+
+    expect(text).toContain("From 2 direct pushes:\n\n- [aaaaaaa Tidy up]");
+  });
 });
 
 const bytes = (text: string) => new TextEncoder().encode(text).length;
