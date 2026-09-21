@@ -1,4 +1,6 @@
 import type { Adapter } from "../adapter.ts";
 import { discover } from "./discover.ts";
+import { preview } from "./preview.ts";
+import { checkVersion } from "./version.ts";
 
-export const pulumi: Adapter = { discover };
+export const pulumi: Adapter = { discover, checkVersion, preview };
