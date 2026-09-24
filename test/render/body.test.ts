@@ -1496,7 +1496,7 @@ describe("snapshots", () => {
     ).toMatchSnapshot();
   });
 
-  // A queued row starts with the crate standing still (record 0093).
+  // A queued row starts with the crate standing still (record 0098).
   test("queued, with the still crate", () => {
     expect(
       `${renderBody({
@@ -1593,7 +1593,7 @@ describe("the image urls in the snapshots", () => {
     );
     const files = readdirSync(MASCOT).filter((name) => name.endsWith(".svg"));
     // The 702 header files, and the row spinner and the queued row's still
-    // crate in both themes (records 0063, 0066, 0075 and 0093).
+    // crate in both themes (records 0063, 0066, 0075 and 0098).
     expect(files).toHaveLength(706);
     expect([...new Set(own.map((url) => url.split("/").at(-1) ?? ""))].sort()).toEqual(
       files.sort(),

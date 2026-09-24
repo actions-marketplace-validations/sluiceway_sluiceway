@@ -520,7 +520,7 @@ function outsideFold(attribution: AttributionLines | undefined, level: RowLevel)
 
 // A small animated picture at the start of a deploying row (record 0063): the
 // thing a person just ticked is visibly moving. A queued row gets the same
-// crate standing still (record 0093), as the queued header ties it up at the
+// crate standing still (record 0098), as the queued header ties it up at the
 // gate, so motion on a row always means that stack is deploying now. A light
 // and a dark file through `<picture>`, which follows the reader's GitHub
 // theme, as the header does (record 0033). The alt text is empty because the

@@ -1,5 +1,7 @@
 # The example dashboard is made up, published at a release tag, and written on the release pull request
 
+> Amended by 0097: the README's copy keeps the header picture and the counts line open above the fold, and ends each continued row line in `<br>`.
+
 > Built as slice 5.24. Replaces the line of build plan section 8 that pinned the README's example to `v0.1.1`.
 
 The owner looked at sluiceway.dev on 2026-09-23 and found that its example dashboard was not what Sluiceway ships: the deploying rows at the bottom instead of the top (0063), old pictures, and none of what came after (drift, merge and deploy, the bulk boxes, the trail's shipped lines). The landing site kept its own copy by hand, so it drifted with every release. The README's copy, made by the renderer since slice 2.15, had drifted too: it named `v0.1.1`, whose tag holds no `pending-4-deletes-*.svg` (the delete sign came with 0075), so its header picture did not load, and its attribution lines were hand-written with seven character compare links where the core writes twelve.

@@ -19,7 +19,7 @@ const REPO_URL = "https://github.com/example-org/infra";
 const RUN_URL = `${REPO_URL}/actions/runs/17034455121`;
 const SPINNER = "https://raw.githubusercontent.com/sluiceway/sluiceway/v0.11.0/assets/mascot";
 const PICTURE = `<picture><source media="(prefers-color-scheme: dark)" srcset="${SPINNER}/spinner-dark.svg"><img alt="" width="16" height="16" src="${SPINNER}/spinner-light.svg"></picture>`;
-// A queued row's crate stands still (record 0093).
+// A queued row's crate stands still (record 0098).
 const STILL_PICTURE = `<picture><source media="(prefers-color-scheme: dark)" srcset="${SPINNER}/spinner-queued-dark.svg"><img alt="" width="16" height="16" src="${SPINNER}/spinner-queued-light.svg"></picture>`;
 
 function pending(stackId: string, ops: ("update" | "delete")[] = ["update"]): PendingRow {
@@ -200,7 +200,7 @@ describe("the spinner", () => {
     );
   });
 
-  // Record 0093: a queued crate is tied up and still, as in the queued header,
+  // Record 0098: a queued crate is tied up and still, as in the queued header,
   // so motion on a row always means that stack is deploying now.
   test("a queued row starts with the crate standing still", () => {
     expect(firstLine(deploying("b", { behind: ["a"] }), "v0.11.0")).toStartWith(

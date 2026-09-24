@@ -33,7 +33,7 @@ const PICTURES = [...STATE_PICTURES, ...SIGNED];
 const FILES = PICTURES.flatMap((picture) => [`${picture}-light.svg`, `${picture}-dark.svg`]);
 // The small picture at the start of a deploying or queued row (record 0063):
 // square, and under 1 KB, because a dashboard can show several at once. The
-// queued row's crate stands still (record 0093).
+// queued row's crate stands still (record 0098).
 const MOVING_SPINNER_FILES = ["spinner-light.svg", "spinner-dark.svg"];
 const STILL_SPINNER_FILES = ["spinner-queued-light.svg", "spinner-queued-dark.svg"];
 const SPINNER_FILES = [...MOVING_SPINNER_FILES, ...STILL_SPINNER_FILES];

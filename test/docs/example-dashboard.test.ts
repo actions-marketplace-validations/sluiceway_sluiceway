@@ -59,7 +59,7 @@ describe("what the example shows", () => {
   });
 
   // Record 0063: deploying sits at the top, each row with the spinner. The
-  // queued row's crate stands still (record 0093).
+  // queued row's crate stands still (record 0098).
   test("lists the deploying rows first, each with the spinner", () => {
     expect(headings(body)).toEqual([
       "Deploying",
@@ -145,7 +145,7 @@ describe("the example dashboard in the README", () => {
     expect(shown).toBe(readmeExample());
   });
 
-  // Record 0092: a reader who never opens the fold still sees the crates, the
+  // Record 0097: a reader who never opens the fold still sees the crates, the
   // signs and the counts.
   test("keeps the header picture and the counts line open, above the fold", () => {
     const open = shown.slice(0, shown.indexOf("<details>"));
@@ -161,7 +161,7 @@ describe("the example dashboard in the README", () => {
     );
   });
 
-  // Record 0092: an issue breaks every line and a README does not, so a row's
+  // Record 0097: an issue breaks every line and a README does not, so a row's
   // lines would run into one paragraph without the `<br>`.
   test("breaks a row's lines as the issue does", () => {
     const lines = folded.split("\n");

@@ -403,7 +403,7 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 // goes one level down under "What it looks like", and `#N` links to the
 // example repo instead of this repo's own pull requests. The header picture
 // and the counts line stay open, so a reader who never clicks still sees the
-// crates and the signs; the rows sit in a closed <details> (record 0092).
+// crates and the signs; the rows sit in a closed <details> (record 0097).
 export function readmeExample(actionRef = exampleActionRef()): string {
   const readme = exampleBody(actionRef)
     .replace(/^<!-- sluiceway:dashboard [^\n]*-->\n\n/, "")
@@ -426,7 +426,7 @@ export function readmeExample(actionRef = exampleActionRef()): string {
 }
 
 // An issue body renders every line break as a break, and a README does not
-// (record 0092). So a line of a row that goes on in an indented line ends in
+// (record 0097). So a line of a row that goes on in an indented line ends in
 // `<br>`, as the issue shows it: the `from` line under a row, and each
 // `:warning:` line on its own. A line that already ends in `<br>`, and the
 // fold of a row's changes, need none.
