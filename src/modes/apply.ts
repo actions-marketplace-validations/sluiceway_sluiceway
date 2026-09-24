@@ -64,7 +64,8 @@ import {
   PUBLIC_LOG_DIFF,
   toolDiffLogLines,
 } from "../render/log-text.ts";
-import { movedComment } from "../render/moved-comment.ts";
+import { parseDashboard } from "../render/marker.ts";
+import { movedComment, valueChangedComment } from "../render/moved-comment.ts";
 import { previewRow } from "../render/preview-result.ts";
 import { type ApplyResultOutcome, applyResultFile } from "../render/result-file.ts";
 import { type AttributionLines, type FailureLine, isDestroy, type Row } from "../render/row.ts";
@@ -368,19 +369,23 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     // A moved change is told to the ticker in one comment (record 0051). It
     // says that the row shows the fresh diff, so it is written only once
     // that is true.
-    if (written !== undefined && reason?.kind === "moved") {
+    // So is a value that changed since the tick (record 0102).
+    if (written !== undefined && (reason?.kind === "moved" || reason?.kind === "value-changed")) {
+      const tick = {
+        login: payload.ticker,
+        stackId: id_,
+        ...(payload.onMerge ? { onMerge: true } : {}),
+      };
       try {
         await github.createComment(
           written,
-          movedComment({
-            login: payload.ticker,
-            stackId: id_,
-            ...(payload.onMerge ? { onMerge: true } : {}),
-          }),
+          reason.kind === "moved"
+            ? movedComment(tick)
+            : valueChangedComment({ ...tick, everyRun: reason.everyRun }),
         );
       } catch (error) {
         failures.push(
-          `The comment to ${payload.ticker} about the moved change could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
+          `The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
         );
       }
     }
@@ -527,6 +532,7 @@ async function deploy(
     ...tool,
     timeoutMinutes: setup.stack.previewTimeout ?? context.previewTimeoutMinutes,
     showValues: shownValues(setup.config.dashboard),
+    valueFingerprint: setup.stack.valueFingerprint ?? setup.config.valueFingerprint,
   };
   const fresh =
     unprepared ?? (await adapter.preview(setup.stack.stack, { ...options, savePlan: true }));
@@ -572,10 +578,15 @@ async function afterFreshPreview(
     logDiff && previewed.ok && previewed.diff.changes.length > 0
       ? await adapter.toolDiff(setup.stack.stack, options)
       : undefined;
+  // The commit of the dashboard's last scan (record 0102): when it is this
+  // run's, a value fingerprint that differs is a value that differs between
+  // two previews of the same code, and the refusal says so.
+  const sameCommit = await lastScanWasOfThisCommit(context, setup);
   const asked = deployGate({
     approved: payload,
     fresh: previewed,
     dryRun: context.dryRun === true,
+    sameCommit,
   });
   const gate =
     asked.kind === "check-drift"
@@ -626,6 +637,25 @@ async function afterFreshPreview(
         failed: notDeployed(
           gate.end.reason,
           ` The fresh preview gives diff hash ${gate.hash} and the tick approved ${payload.hash}. The row on the dashboard shows the fresh diff. Tick it again to deploy that.`,
+        ),
+        row: gate.checked,
+        toolDiffInLog,
+        summary: notDeployedSummary(gate.end.reason, gate.checked),
+        setup,
+      };
+    case "value-changed":
+      // The hash matches, and a value the row does not show changed since
+      // the tick (record 0102). Nothing goes out, and the row shows the fresh
+      // diff, which a fresh tick can approve.
+      return {
+        end: gate.end,
+        failed: notDeployed(
+          gate.end.reason,
+          ` The fresh preview gives diff hash ${gate.hash}, the one the tick approved, and value fingerprint ${gate.fingerprint} where the tick approved ${payload.fingerprint ?? "none"}: a value the row does not show changed since the tick.${
+            gate.everyRun
+              ? " The dashboard's last scan was of this same commit, so the value differs between two previews of the same code, and no tick can approve it. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry in `sluiceway.yaml`."
+              : " The row on the dashboard shows the change as it is now. Look at it and tick it again to deploy that."
+          }`,
         ),
         row: gate.checked,
         toolDiffInLog,
@@ -794,6 +824,20 @@ async function writeSummary(context: ApplyContext, text: string): Promise<void> 
       "The summary of this run could not be written. The job log holds what happened.",
       "Summary not written",
     );
+  }
+}
+
+// Whether the dashboard's last scan was of the commit this run is of (record
+// 0102). One read of the dashboard, before the gate, because the record's end
+// is written before the row is. No dashboard, or one that cannot be read, is
+// not the same commit: the refusal then asks for a look and a fresh tick.
+async function lastScanWasOfThisCommit(context: ApplyContext, setup: Setup): Promise<boolean> {
+  try {
+    const dashboard = await findDashboard(context.github, setup.config.dashboard.label);
+    if (!dashboard) return false;
+    return parseDashboard(dashboard.body).root?.scanSha === context.sha;
+  } catch {
+    return false;
   }
 }
 

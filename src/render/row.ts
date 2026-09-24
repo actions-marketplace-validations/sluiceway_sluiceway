@@ -38,6 +38,9 @@ export interface PendingRow {
   diff: Diff;
   // The diff hash of `diff`. It covers the whole diff whatever the row shows.
   hash: string;
+  // The value fingerprint of `diff` (record 0102), for the marker. Absent when
+  // the diff carries none.
+  fingerprint?: string | undefined;
   // The attempt of the run whose summary shows this diff in full (record
   // 0044).
   runUrl: string;
@@ -58,6 +61,10 @@ export interface PendingRow {
   // log that holds the tool's own diff of the stack, when it holds one (record
   // 0048).
   pendingAgain?: { logUrl?: string | undefined } | undefined;
+  // A value the row does not show differed between two previews of the same
+  // commit (record 0102), so a tick would be refused. The line says so and
+  // names the switch.
+  valueEveryRun?: boolean | undefined;
   // The stacks its preview read from the program's stack references (record
   // 0059). They go on the marker and nowhere else.
   dependsOn?: readonly string[] | undefined;
@@ -74,6 +81,10 @@ export interface DriftRow {
   diff: Diff;
   // The diff hash of `diff`, which covers the drift.
   hash: string;
+  // The value fingerprint of `diff` (record 0102), for the marker.
+  fingerprint?: string | undefined;
+  // As on a pending row (record 0102).
+  valueEveryRun?: boolean | undefined;
   // The attempt of the run whose summary lists the drift (record 0044).
   runUrl: string;
   // The stack's preview page, which lists the drift (record 0059). The
@@ -344,6 +355,12 @@ function listWords(words: readonly string[]): string {
 export const PENDING_AGAIN_NOTE =
   ":information_source: pending again right after a deploy of this same change, a value in the program may differ on every run.";
 
+// The line on a row whose value fingerprint differed between two previews of
+// the same commit (record 0102). Fixed words of Sluiceway's own: it names no
+// value, and it names the switch a person needs.
+export const VALUE_EVERY_RUN_NOTE =
+  ":information_source: a value this row does not show differed between two previews of the same commit, so a tick would be refused: a value in the program may differ on every run. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry.";
+
 function pendingAgainLine({ logUrl }: { logUrl?: string | undefined }): string {
   return logUrl === undefined
     ? PENDING_AGAIN_NOTE
@@ -432,10 +449,12 @@ function driftRow(row: DriftRow, options: RowOptions): string[] {
         drift: true,
         gone: drift.filter((change) => change.op === "delete").length,
         dependsOn: row.dependsOn,
+        fingerprint: row.fingerprint,
       },
     )}`,
   ];
   if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
+  if (row.valueEveryRun) lines.push(VALUE_EVERY_RUN_NOTE);
   if (row.orphanTick && !options.readOnly) lines.push(ORPHAN_TICK_NOTE);
   lines.push(...driftLines(drift, summary, options));
   return lines;
@@ -467,12 +486,14 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
         shortened: level,
         drift: drift.length > 0,
         dependsOn: row.dependsOn,
+        fingerprint: row.fingerprint,
       },
     )}`,
   ];
   if (row.attribution) lines.push(level >= 1 ? row.attribution.counted : row.attribution.full);
   if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
   if (row.waitsOnMerge) lines.push(onMergeNote(row.waitsOnMerge));
+  if (row.valueEveryRun) lines.push(VALUE_EVERY_RUN_NOTE);
   if (row.pendingAgain) lines.push(pendingAgainLine(row.pendingAgain));
   if (row.orphanTick && !options.readOnly) lines.push(ORPHAN_TICK_NOTE);
 

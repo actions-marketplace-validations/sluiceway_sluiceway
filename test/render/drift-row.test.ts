@@ -151,3 +151,28 @@ describe("a pending row that also shows drift", () => {
     expect(text).not.toContain("drift=");
   });
 });
+
+// Record 0102: a drifted row carries the value fingerprint of its drift.
+describe("the value fingerprint on a drift row", () => {
+  test("is on the marker when a drift change carries one, and the line can sit on the row", () => {
+    const row = driftRow({
+      diff: {
+        stackId: "site:prod",
+        changes: [],
+        drift: [gone, { ...changed, fingerprint: "1111111111111111" }],
+      },
+      valueEveryRun: true,
+      fingerprint: "ddaa2268cce4c88d",
+    });
+    const text = renderRow(row);
+    const expected = "ddaa2268cce4c88d";
+    expect(text.split("\n")[0]).toEndWith(`gone="1" fingerprint="${expected}" -->`);
+    expect(text).toContain("differed between two previews of the same commit");
+    const [parsed] = parseDashboard(text).rows;
+    expect(parsed?.known && parsed.fingerprint).toBe(expected);
+  });
+
+  test("is left off when no drift change carries one", () => {
+    expect(renderRow(driftRow()).split("\n")[0]).not.toContain("fingerprint");
+  });
+});

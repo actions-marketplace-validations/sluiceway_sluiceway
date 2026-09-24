@@ -783,3 +783,55 @@ describe("text from outside is never markup", () => {
     );
   });
 });
+
+// Record 0102: a row carries the value fingerprint of its diff on its marker,
+// and says when a value differed between two previews of the same commit.
+describe("the value fingerprint on a row", () => {
+  const F1 = "1111111111111111";
+  const withFingerprints: PendingRow = {
+    ...BUCKETS,
+    fingerprint: "2f8143552ea1897d",
+    diff: {
+      ...BUCKETS.diff,
+      changes: BUCKETS.diff.changes.map((one, index) =>
+        index === 1 ? { ...one, fingerprint: F1 } : one,
+      ),
+    },
+  };
+
+  test("is the fingerprint of the diff, written last on the marker, and the hash stays", () => {
+    const first = renderRow(withFingerprints).split("\n")[0] ?? "";
+    const expected = "2f8143552ea1897d";
+    expect(first).toEndWith(
+      `hash="2b44350653e84a11" destroys="2" deletes="1" fingerprint="${expected}" -->`,
+    );
+    const [row] = parseDashboard(renderRow(withFingerprints)).rows;
+    expect(row?.known && row.fingerprint).toBe(expected);
+  });
+
+  test("is left off a row whose diff carries none", () => {
+    expect(renderRow(BUCKETS).split("\n")[0]).not.toContain("fingerprint");
+  });
+
+  test("stays on a redacted, a read-only and a fully shortened row", () => {
+    for (const options of [{ redact: true }, { readOnly: true }, { level: 3 as const }]) {
+      expect(renderRow(withFingerprints, options).split("\n")[0]).toContain(
+        `fingerprint="2f8143552ea1897d"`,
+      );
+    }
+  });
+
+  test("the every-run line sits after the failure line, before the pending-again line, and names the switch", () => {
+    const lines = renderRow({
+      ...withFingerprints,
+      failure: FAILURE,
+      pendingAgain: {},
+      valueEveryRun: true,
+    }).split("\n");
+    expect(lines.slice(3, 5)).toEqual([
+      "  :information_source: a value this row does not show differed between two previews of the same commit, so a tick would be refused: a value in the program may differ on every run. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry.",
+      "  :information_source: pending again right after a deploy of this same change, a value in the program may differ on every run.",
+    ]);
+    expect(lines[0]).toBe(renderRow({ ...withFingerprints, failure: FAILURE }).split("\n")[0]);
+  });
+});

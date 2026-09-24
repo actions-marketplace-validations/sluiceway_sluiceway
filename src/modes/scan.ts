@@ -75,6 +75,7 @@ import { everyPreviewFailed } from "../core/scan-result.ts";
 import { shownValues } from "../core/show-values.ts";
 import { type Stack, stackId } from "../core/stack.ts";
 import type { Deploy } from "../core/tick-judgement.ts";
+import { valueFingerprint } from "../core/value-fingerprint.ts";
 import { type RunOfTheWorkflow, waitingRun } from "../core/waiting-run.ts";
 import { attributionSource } from "../github/attribution.ts";
 import { type DashboardResult, findDashboard } from "../github/dashboard.ts";
@@ -429,6 +430,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
       next,
       logDiff,
       shownValues(config.dashboard),
+      config.valueFingerprint,
       prepared,
       sayPool,
       checkDrift,
@@ -972,6 +974,8 @@ async function previewAll(
   stacks: ConfiguredStack[],
   logDiff: boolean,
   showValues: readonly string[],
+  // The repo's `valueFingerprint` (record 0102). A stack entry may set its own.
+  valueFingerprint: boolean,
   prepared: Set<string>,
   // Says the size of the pool and where it came from. It speaks once a job,
   // however many rounds preview (record 0085).
@@ -1021,6 +1025,7 @@ async function previewAll(
       run: liveRun(tool.run, id, log),
       timeoutMinutes: configured.previewTimeout ?? context.previewTimeoutMinutes,
       showValues,
+      valueFingerprint: configured.valueFingerprint ?? valueFingerprint,
     };
     let previewedOnly: PreviewResult;
     try {
@@ -1518,6 +1523,8 @@ async function handOffMerges(
           hash,
           // The hash covers drift when this scan found some (record 0055).
           drift: (result.diff.drift ?? []).length > 0,
+          // And the record carries the value fingerprint (record 0102).
+          fingerprint: valueFingerprint(result.diff),
         });
         handedOn.push({ stack: id, environment: stack.environment, deployment: record.deployment });
         if (record.unfinished !== undefined) throw record.unfinished;
@@ -1615,6 +1622,7 @@ async function handOnMerged(
         hash: one.hash,
         behind: one.behind,
         onMerge: true,
+        fingerprint: one.fingerprint,
       });
       opened.add(one.stackId);
       if (one.behind === undefined) {
