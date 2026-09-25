@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { getOctokit } from "@actions/github";
+import { createGitHubClient } from "../../src/github/client.ts";
 import { createOctokitPort } from "../../src/github/octokit-port.ts";
 import type { GitHubPort } from "../../src/github/port.ts";
 import { BOT, FakeGitHub } from "./fake-github.ts";
@@ -22,7 +22,7 @@ async function served(fake = new FakeGitHub()): Promise<{
 }> {
   const server = await startFakeGitHubServer(fake);
   servers.push(server);
-  const octokit = getOctokit("a-token", { baseUrl: server.url });
+  const octokit = createGitHubClient("a-token", { baseUrl: server.url });
   return { fake, server, port: createOctokitPort(octokit, { owner: "acme", repo: "infra" }) };
 }
 
@@ -117,6 +117,12 @@ describe("the fake GitHub server", () => {
         { path: "app/new.txt", previousPath: "app/old.txt" },
       ],
     });
+  });
+
+  test("a comparison with a branch compares with the commit at its head (record 0111)", async () => {
+    const { fake, port } = await served();
+    fake.seedBranch("main", "aaa111");
+    expect(await port.compareCommits("aaa111", "main")).toEqual({ status: "identical", files: [] });
   });
 
   test("a person's permission is looked up, and a failing lookup keeps its status", async () => {

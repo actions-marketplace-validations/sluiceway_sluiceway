@@ -1,5 +1,6 @@
 import type { Stack } from "../core/stack.ts";
 import type { Adapter } from "./adapter.ts";
+import { credentialNeeds } from "./credentials.ts";
 import { discoverAll } from "./discover-all.ts";
 import { readsFiles } from "./file-references.ts";
 import { helm } from "./helm/index.ts";
@@ -8,6 +9,7 @@ import { kubectl } from "./kubectl/index.ts";
 import { isKubectlOptions } from "./kubectl/options.ts";
 import { opentofu } from "./opentofu/index.ts";
 import { isOpenTofuOptions } from "./opentofu/options.ts";
+import { explainRootModules } from "./opentofu/root-modules.ts";
 import { pulumi } from "./pulumi/index.ts";
 
 export { TOOLS } from "./discover-all.ts";
@@ -30,7 +32,11 @@ function adapterOf(stack: Stack): Adapter {
 
 export const tools: Adapter = {
   discover: discoverAll,
+  // Only root modules are found by a rule that can leave a directory out
+  // (record 0092).
+  explainDiscovery: async (root, config) => explainRootModules(root, config),
   readsFiles,
+  credentialNeeds,
 
   // The tools of these stacks, each once, Pulumi first.
   async checkVersion(context, stacks) {
@@ -45,8 +51,14 @@ export const tools: Adapter = {
     if (manifests.length > 0) await kubectl.checkVersion(context, manifests);
   },
 
-  prepare(stacks) {
+  // Pulumi first, as the version check goes: only a stack an entry asks to
+  // create in the backend gives it one (record 0107).
+  prepare(stacks, options) {
+    const isPulumi = (stack: Stack) => adapterOf(stack) === pulumi;
     return [
+      ...(pulumi.prepare?.(stacks.filter(isPulumi), {
+        createInBackend: (options?.createInBackend ?? []).filter(isPulumi),
+      }) ?? []),
       ...(opentofu.prepare?.(stacks.filter((stack) => isOpenTofuOptions(stack.options))) ?? []),
       ...(helm.prepare?.(stacks.filter((stack) => isHelmOptions(stack.options))) ?? []),
     ];

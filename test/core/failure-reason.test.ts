@@ -27,6 +27,14 @@ describe("why a preview failed, in Sluiceway's own words", () => {
     );
   });
 
+  // Slice 5.38 (record 0103): the file a stack names could not be loaded. A
+  // constant string; the path and the line number are detail in the job log.
+  test("the stack's env file could not be loaded", () => {
+    expect(previewFailureText({ kind: "env-file-not-loaded" })).toBe(
+      "the env file of the stack could not be loaded",
+    );
+  });
+
   // Record 0022 as amended: a constant string with nothing filled in, not the
   // stack's name and not the exit code the adapter picked it from.
   test("the stack does not exist in the backend", () => {
@@ -127,5 +135,21 @@ describe("why a deploy failed, in Sluiceway's own words", () => {
       reason: { kind: "unknown-step" },
     });
     expect(longest.length).toBeLessThanOrEqual(140);
+  });
+});
+
+// Record 0110: a reader that draws a row from the markers and the deployment
+// records alone holds no reason, so it writes this one and keeps the
+// action's sentence. Two constants with nothing filled in, one per list,
+// each naming where the reason is.
+describe("the reason word for a reason the reader does not hold", () => {
+  test("a deploy: the reason is on the deployment record", () => {
+    expect(deployFailureText({ kind: "on-record" })).toBe("the reason is on the deployment record");
+  });
+
+  test("a preview: the reason is in the summary of the run", () => {
+    expect(previewFailureText({ kind: "in-summary" })).toBe(
+      "the reason is in the summary of the run",
+    );
   });
 });

@@ -1,12 +1,17 @@
 // The one row renderer every writer uses (records 0009 and 0027). A row block
 // is a pure function of plain data: no clock, no environment, no GitHub.
 
+import type { CostEstimate } from "../core/cost.ts";
+import type { QueuedWindow } from "../core/deploy-window.ts";
 import type { Change, Diff } from "../core/diff.ts";
+import type { OnMergeWait } from "../core/on-merge.ts";
 import type { PhaseGroup } from "../core/phases.ts";
+import { type PolicyOutcome, policyRunFailureText } from "../core/policy.ts";
+import { amount, costLine } from "./cost.ts";
 import { escapeText } from "./escape.ts";
 import { mascotUrl } from "./images.ts";
 import { ROW_CLOSE_MARKER, rowMarker } from "./marker.ts";
-import { utcMinute } from "./time.ts";
+import { minuteAt } from "./time.ts";
 
 // The attribution line (record 0026), rendered by the core and placed here as
 // it is. `counted` is the line with its named pull requests replaced by a
@@ -27,6 +32,9 @@ export interface FailureLine {
   ticker: string;
   at: Date;
   runUrl: string;
+  // The deploy went out on merge, and `ticker` is whoever merged (record
+  // 0095).
+  onMerge?: boolean | undefined;
 }
 
 export interface PendingRow {
@@ -34,6 +42,9 @@ export interface PendingRow {
   diff: Diff;
   // The diff hash of `diff`. It covers the whole diff whatever the row shows.
   hash: string;
+  // The value fingerprint of `diff` (record 0102), for the marker. Absent when
+  // the diff carries none.
+  fingerprint?: string | undefined;
   // The attempt of the run whose summary shows this diff in full (record
   // 0044).
   runUrl: string;
@@ -54,9 +65,24 @@ export interface PendingRow {
   // log that holds the tool's own diff of the stack, when it holds one (record
   // 0048).
   pendingAgain?: { logUrl?: string | undefined } | undefined;
+  // A value the row does not show differed between two previews of the same
+  // commit (record 0102), so a tick would be refused. The line says so and
+  // names the switch.
+  valueEveryRun?: boolean | undefined;
   // The stacks its preview read from the program's stack references (record
   // 0059). They go on the marker and nowhere else.
   dependsOn?: readonly string[] | undefined;
+  // The stack is set to on-merge, and this change waits for a tick after all
+  // (record 0095). The row says why.
+  waitsOnMerge?: OnMergeWait | undefined;
+  // What the policies of the repo made of the change (record 0106). A
+  // failed policy takes the box off the row and is named on it; a run that
+  // failed is a warning line; a pass draws nothing.
+  policies?: PolicyOutcome | undefined;
+  // What the change does to the monthly bill (record 0105), when the stack's
+  // tool has an estimate and the repo asked for one. Never in the hash, and
+  // never on the marker.
+  cost?: CostEstimate | undefined;
 }
 
 // A stack with nothing to deploy from its code and drift in real
@@ -67,6 +93,10 @@ export interface DriftRow {
   diff: Diff;
   // The diff hash of `diff`, which covers the drift.
   hash: string;
+  // The value fingerprint of `diff` (record 0102), for the marker.
+  fingerprint?: string | undefined;
+  // As on a pending row (record 0102).
+  valueEveryRun?: boolean | undefined;
   // The attempt of the run whose summary lists the drift (record 0044).
   runUrl: string;
   // The stack's preview page, which lists the drift (record 0059). The
@@ -96,6 +126,13 @@ export interface DeployingRow {
   // The record is queued behind these stacks (record 0056). The row then says
   // so, and its marker state is `queued`.
   behind?: readonly string[] | undefined;
+  // The record was opened on merge, and `ticker` is whoever merged (record
+  // 0095). The row says so, so it never reads as a tick.
+  onMerge?: boolean | undefined;
+  // The record waits for the stack's deploy window (record 0104), or waits
+  // behind a stack while the window is closed. The row says when the window
+  // opens, in the dashboard zone, and its marker state is `queued`.
+  window?: QueuedWindow | undefined;
 }
 
 export interface PreviewFailedRow {
@@ -139,7 +176,21 @@ export interface RowOptions {
   // none. The row is written by one version and carried by the next as it
   // is, so it keeps the spinner of the version that wrote it.
   actionRef?: string | undefined;
+  // `dashboard.timeZone` (record 0089): the zone of the failure line's time,
+  // which says its offset. UTC when absent. The marker stays the same.
+  timeZone?: string | undefined;
+  // `dashboard.pendingDetail` (record 0114): how much a pending row shows
+  // under its first line. The marker is the same at every setting, and no
+  // setting drops a failure line or a delete or replace line. Full when
+  // absent.
+  detail?: PendingDetail | undefined;
 }
+
+// full: every line, as before record 0114. compact: the first line, and only
+// the lines no setting hides and the ones that say why a row has no box or a
+// tick would not go. names: the stack id and its counts, without the preview
+// link, and only the lines no setting hides.
+export type PendingDetail = "full" | "compact" | "names";
 
 export const INDENT = "  ";
 
@@ -155,17 +206,38 @@ export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
+// How many changes of each kind a diff holds: the numbers of the first line,
+// and since record 0110 the counts on the marker too.
+export interface ChangeCounts {
+  creates: number;
+  updates: number;
+  replaces: number;
+  deletes: number;
+  // Changes that only touch the tool's record of a resource (record 0007).
+  tracking: number;
+}
+
+export function changeCounts(changes: readonly Change[]): ChangeCounts {
+  const of = (op: Change["op"]) => changes.filter((change) => change.op === op).length;
+  return {
+    creates: of("create"),
+    updates: of("update"),
+    replaces: of("replace"),
+    deletes: of("delete"),
+    tracking: changes.filter((change) => change.op === "none" && change.tracking).length,
+  };
+}
+
 // Words with zeros left out, in a fixed order. Replaces and deletes are bold,
 // so the first line alone says that a row destroys something.
 export function counts(changes: Change[]): string {
-  const of = (op: Change["op"]) => changes.filter((change) => change.op === op).length;
-  const trackingOnly = changes.filter((change) => change.op === "none" && change.tracking).length;
+  const { creates, updates, replaces, deletes, tracking } = changeCounts(changes);
   return [
-    of("create") && plural(of("create"), "create"),
-    of("update") && plural(of("update"), "update"),
-    of("replace") && `**${plural(of("replace"), "replace")}**`,
-    of("delete") && `**${plural(of("delete"), "delete")}**`,
-    trackingOnly && `${trackingOnly} tracking only`,
+    creates && plural(creates, "create"),
+    updates && plural(updates, "update"),
+    replaces && `**${plural(replaces, "replace")}**`,
+    deletes && `**${plural(deletes, "delete")}**`,
+    tracking && `${tracking} tracking only`,
   ]
     .filter(Boolean)
     .join(", ");
@@ -250,6 +322,12 @@ export const ORPHAN_TICK_NOTE =
 export const DEPLOYS_OFF_NOTE =
   ":information_source: deploys are turned off in `sluiceway.yaml`, so this tick started nothing.";
 
+// The note on a row whose tick `resolve` cleared because a policy failed on
+// its change (record 0106). Such a row has no box, so the tick came from a
+// hand-edited body.
+export const POLICY_FAILED_NOTE =
+  ":information_source: this tick started nothing: a policy failed on this change, so its row has no box.";
+
 // The note on a row whose tick `resolve` cleared because a stack it depends on
 // has a change waiting that nobody ticked (record 0056). It names them, so a
 // refusal never stays silent.
@@ -257,10 +335,16 @@ export const DEPLOYS_OFF_NOTE =
 // stacks in it that have a change waiting, at most five of them, not every
 // stack of the phase.
 export function dependencyNote(ids: readonly string[], phases: readonly PhaseGroup[] = []): string {
+  return `:information_source: this tick started nothing: ${waitsOnWords(ids, phases)}`;
+}
+
+// The stacks and phases a stack waits on, and what a person can do about it:
+// the words a refused tick and a stack set to on-merge that waits share.
+function waitsOnWords(ids: readonly string[], phases: readonly PhaseGroup[]): string {
   const names = ids.map((id) => `**${escapeText(id)}**`).join(" and ");
   const one = ids.length === 1;
   if (phases.length === 0) {
-    return `:information_source: this tick started nothing: it depends on ${names}, which ${
+    return `it depends on ${names}, which ${
       one ? "has a change" : "have changes"
     } waiting. Tick ${one ? "both" : "them all"} to deploy them in order, or deploy ${names} first.`;
   }
@@ -277,9 +361,33 @@ export function dependencyNote(ids: readonly string[], phases: readonly PhaseGro
     ...ids.map((id) => `**${escapeText(id)}**`),
     ...phases.map(({ phase }) => `the **${escapeText(phase)}** phase`),
   ];
-  return `:information_source: this tick started nothing: ${clauses.join(", and ")}. Tick ${
+  return `${clauses.join(", and ")}. Tick ${
     count === 1 ? "both" : "them all"
   } to deploy them in order, or deploy ${listWords(first)} first.`;
+}
+
+// The note on a pending row of a stack set to on-merge whose change waits for
+// a tick after all (record 0095). Fixed words of Sluiceway's own, so a person
+// never has to guess why a stack that deploys on merge did not.
+export function onMergeNote(wait: OnMergeWait): string {
+  const lead = ":information_source: this stack deploys on merge";
+  const waits = `${lead}, and this change waits for a tick:`;
+  switch (wait.kind) {
+    case "deploys-off":
+      return `${lead}, and deploys are turned off in \`sluiceway.yaml\`.`;
+    case "destroy":
+      return `${waits} it deletes or replaces a resource.`;
+    case "drift":
+      return `${waits} the stack drifted, and a deploy would also put back what changed outside the code.`;
+    case "not-merged":
+      return `${waits} the scan that found it did not follow a merge.`;
+    case "cost":
+      return `${waits} it costs about **${amount(wait.monthly)} ${wait.currency}** more a month, above the threshold of ${amount(wait.threshold)} ${wait.currency}.`;
+    case "cost-unknown":
+      return `${waits} its cost could not be estimated, and \`cost.threshold\` is set to ${amount(wait.threshold)}.`;
+    case "depends-on":
+      return `${waits} ${waitsOnWords(wait.named, wait.phases)}`;
+  }
 }
 
 // A phase is named by its stacks up to this many, and the rest are counted,
@@ -305,16 +413,23 @@ function listWords(words: readonly string[]): string {
 export const PENDING_AGAIN_NOTE =
   ":information_source: pending again right after a deploy of this same change, a value in the program may differ on every run.";
 
+// The line on a row whose value fingerprint differed between two previews of
+// the same commit (record 0102). Fixed words of Sluiceway's own: it names no
+// value, and it names the switch a person needs.
+export const VALUE_EVERY_RUN_NOTE =
+  ":information_source: a value this row does not show differed between two previews of the same commit, so a tick would be refused: a value in the program may differ on every run. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry.";
+
 function pendingAgainLine({ logUrl }: { logUrl?: string | undefined }): string {
   return logUrl === undefined
     ? PENDING_AGAIN_NOTE
     : `${PENDING_AGAIN_NOTE} Compare the tool's own diff in the [job log](${logUrl}).`;
 }
 
-function failureLine(failure: FailureLine): string {
-  return `:x: last deploy failed: ${escapeText(failure.reason)} · ticked by ${escapeText(
+// Also the line `settle` puts on the row of a deploy it ended (record 0113).
+export function failureLine(failure: FailureLine, timeZone: string | undefined): string {
+  return `:x: last deploy failed: ${escapeText(failure.reason)} · ${failure.onMerge ? "merged" : "ticked"} by ${escapeText(
     failure.ticker,
-  )} · ${utcMinute(failure.at)} · [run](${failure.runUrl})`;
+  )} · ${minuteAt(failure.at, timeZone)} · [run](${failure.runUrl})`;
 }
 
 // `deletes 1, replaces 1`, for the warning on a row that lists no destroys.
@@ -392,14 +507,78 @@ function driftRow(row: DriftRow, options: RowOptions): string[] {
         shortened: level >= 2 ? level : 0,
         drift: true,
         gone: drift.filter((change) => change.op === "delete").length,
+        changed: drift.filter((change) => change.op === "update").length,
         dependsOn: row.dependsOn,
+        fingerprint: row.fingerprint,
       },
     )}`,
   ];
-  if (row.failure) lines.push(failureLine(row.failure));
+  if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
+  if (row.valueEveryRun) lines.push(VALUE_EVERY_RUN_NOTE);
   if (row.orphanTick && !options.readOnly) lines.push(ORPHAN_TICK_NOTE);
   lines.push(...driftLines(drift, summary, options));
   return lines;
+}
+
+// A row names this many failed policies, then counts the rest, as it names
+// at most five authors (record 0029). The page names them all.
+export const FAILURES_ON_A_ROW = 5;
+
+// A policy's message is cut here, in code points, so one policy cannot fill
+// the dashboard. The page shows it whole.
+export const POLICY_MESSAGE_LENGTH = 200;
+
+function policyWords(count: number): string {
+  return `${count} ${count === 1 ? "policy" : "policies"}`;
+}
+
+// One failure in the policy's own words, escaped as untrusted text (record
+// 0106): the message comes from a file of the repo, and is never markup.
+export function policyFailureLine(
+  failure: { namespace: string; message: string },
+  whole = false,
+): string {
+  const points = Array.from(failure.message);
+  const message =
+    whole || points.length <= POLICY_MESSAGE_LENGTH
+      ? failure.message
+      : `${points.slice(0, POLICY_MESSAGE_LENGTH).join("")}…`;
+  return `:no_entry: <code>${escapeText(failure.namespace)}</code> · ${escapeText(message)}`;
+}
+
+// The line of a row whose policies could not run (record 0106): a warning,
+// and the box stays. The reason is one of Sluiceway's own (record 0022).
+export function policiesNotRunLine(
+  outcome: Extract<PolicyOutcome, { kind: "not-run" }>,
+  runUrl: string,
+): string {
+  return `:warning: the policies did not run: ${policyRunFailureText(outcome.reason)}. Nothing was checked, see the [run](${runUrl}).`;
+}
+
+// The lines a pending row carries for its policies (record 0106). A failed
+// policy is never behind a click, like a destroy (record 0027): the lead line
+// says the box is gone, and each failure has a line, up to the cap. A
+// redacted or shortened row keeps the count and points at the page.
+function policyLines(row: PendingRow, options: RowOptions): string[] {
+  const { policies } = row;
+  const short = (options.detail ?? "full") !== "full";
+  if (policies === undefined || policies.kind === "passed") return [];
+  // A warning that decides nothing, so a shorter row leaves it to the page.
+  if (policies.kind === "not-run") return short ? [] : [policiesNotRunLine(policies, row.runUrl)];
+  const { failures } = policies.report;
+  const lead = `:no_entry: **${policyWords(failures.length)} failed**, so this change has no box until it passes`;
+  const preview = `[preview](${row.previewUrl ?? row.runUrl})`;
+  // A row with no box always says why, in one line at a shorter detail.
+  if (options.redact || short || (options.level ?? 0) >= 2) {
+    return [`${lead}. They are named on the ${preview}.`];
+  }
+  const named = failures.slice(0, FAILURES_ON_A_ROW);
+  const rest = failures.length - named.length;
+  return [
+    `${lead}:`,
+    ...named.map((failure) => policyFailureLine(failure)),
+    ...(rest > 0 ? [`:no_entry: and ${rest} more on the ${preview}`] : []),
+  ];
 }
 
 function pendingRow(row: PendingRow, options: RowOptions): string[] {
@@ -410,14 +589,23 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
   const folded = changes.filter((change) => !isDestroy(change));
   const destroys = deletes.length + replaces.length;
   const summary = `[summary](${row.runUrl})`;
-  const box = options.readOnly ? "" : `[${row.ticked ? "x" : " "}] `;
+  // A change that fails a policy has no box (record 0106), like a read-only
+  // dashboard: it holds no tick and asks for none.
+  const policyFailed = row.policies?.kind === "failed";
+  const box = options.readOnly || policyFailed ? "" : `[${row.ticked ? "x" : " "}] `;
   // Drift the row also shows (record 0055). A resource that is gone outside
   // the code is no destroy: a deploy creates it again.
   const drift = sortedDrift(row.diff);
   const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : "";
+  // The counts of the first line, on the marker as well (record 0110).
+  const { creates, updates, tracking } = changeCounts(changes);
+  // How much the row shows under its first line (record 0114).
+  const detail = options.detail ?? "full";
+  const full = detail === "full";
+  const preview = detail === "names" ? "" : ` · [preview](${row.previewUrl ?? row.runUrl})`;
 
   const lines = [
-    `- ${box}**${escapeText(row.diff.stackId)}** · ${counts(changes)}${driftCount} · [preview](${row.previewUrl ?? row.runUrl}) ${rowMarker(
+    `- ${box}**${escapeText(row.diff.stackId)}** · ${counts(changes)}${driftCount}${preview} ${rowMarker(
       {
         stackId: row.diff.stackId,
         state: "pending",
@@ -428,13 +616,29 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
         shortened: level,
         drift: drift.length > 0,
         dependsOn: row.dependsOn,
+        fingerprint: row.fingerprint,
+        policyFailed,
+        creates,
+        updates,
+        replaces: replaces.length,
+        tracking,
       },
     )}`,
   ];
-  if (row.attribution) lines.push(level >= 1 ? row.attribution.counted : row.attribution.full);
-  if (row.failure) lines.push(failureLine(row.failure));
-  if (row.pendingAgain) lines.push(pendingAgainLine(row.pendingAgain));
-  if (row.orphanTick && !options.readOnly) lines.push(ORPHAN_TICK_NOTE);
+  // The one number a person wants before ticking, right under the first line
+  // (record 0105). It names nothing, so redact and the size budget keep it.
+  if (row.cost && full) lines.push(costLine(row.cost));
+  if (row.attribution && full)
+    lines.push(level >= 1 ? row.attribution.counted : row.attribution.full);
+  // No setting hides a failure line (record 0114).
+  if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
+  lines.push(...policyLines(row, options));
+  // The notes that say why a tick would not go, or did not, stay at compact.
+  const notes = detail !== "names";
+  if (row.waitsOnMerge && notes) lines.push(onMergeNote(row.waitsOnMerge));
+  if (row.valueEveryRun && notes) lines.push(VALUE_EVERY_RUN_NOTE);
+  if (row.pendingAgain && full) lines.push(pendingAgainLine(row.pendingAgain));
+  if (row.orphanTick && notes && !options.readOnly && !policyFailed) lines.push(ORPHAN_TICK_NOTE);
 
   // A row that lists no delete or replace line still carries the warning, with
   // the counts that caused it. The lines are all there or none are.
@@ -446,17 +650,20 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
         ? `Read the ${summary}.`
         : `Read the ${summary} before you tick.`;
       lines.push(`:warning: **${warning}** ${read}`);
-    } else {
+    } else if (full) {
       lines.push(
         `Changes ${options.redact ? "are listed in the" : "not listed here, see the"} ${summary}`,
       );
     }
-    lines.push(...driftLines(drift, summary, options), ...outsideFold(row.attribution, level));
+    if (full)
+      lines.push(...driftLines(drift, summary, options), ...outsideFold(row.attribution, level));
     return lines;
   }
 
+  // Every delete and replace line, at every detail (record 0024).
   for (const change of [...deletes, ...replaces])
     lines.push(`:warning: ${changeLine(change, { row: true })}`);
+  if (!full) return lines;
   if (folded.length > 0) {
     const inside = plural(folded.length, destroys > 0 ? "other change" : "change");
     if (level >= 2) {
@@ -478,37 +685,54 @@ function outsideFold(attribution: AttributionLines | undefined, level: RowLevel)
   return level === 0 ? [...(attribution?.outside ?? [])] : [];
 }
 
-// A small animated picture at the start of a deploying or queued row (record
-// 0063): the thing a person just ticked is visibly moving. A light and a dark
-// file through `<picture>`, which follows the reader's GitHub theme, as the
-// header does (record 0033). The alt text is empty because the words right
-// after it say deploying.
+// A small animated picture at the start of a deploying row (record 0063): the
+// thing a person just ticked is visibly moving. A queued row gets the same
+// crate standing still (record 0098), as the queued header ties it up at the
+// gate, so motion on a row always means that stack is deploying now. A light
+// and a dark file through `<picture>`, which follows the reader's GitHub
+// theme, as the header does (record 0033). The alt text is empty because the
+// words right after it say deploying or queued.
 export const SPINNER_WIDTH = 16;
 
-function spinner(actionRef: string): string {
-  const file = (theme: string) => mascotUrl(actionRef, `spinner-${theme}.svg`);
+function spinner(actionRef: string, queued: boolean): string {
+  const name = queued ? "spinner-queued" : "spinner";
+  const file = (theme: string) => mascotUrl(actionRef, `${name}-${theme}.svg`);
   return `<picture><source media="(prefers-color-scheme: dark)" srcset="${file("dark")}"><img alt="" width="${SPINNER_WIDTH}" height="${SPINNER_WIDTH}" src="${file("light")}"></picture> `;
+}
+
+// What a row says of the deploy window it waits for (record 0104): when it
+// opens, in the dashboard zone with its offset as every time that stands
+// alone (record 0089), or that it is open and the next run starts it.
+function windowWords(window: QueuedWindow, timeZone: string | undefined): string {
+  return window.opens === undefined
+    ? "the deploy window, which is open: the next scheduled run starts it"
+    : `the deploy window, which opens ${minuteAt(window.opens, timeZone)}`;
 }
 
 function deployingRow(row: DeployingRow, options: RowOptions): string[] {
   const behind = row.behind ?? [];
+  const onMerge = row.onMerge ? " on merge" : "";
   const word =
     behind.length > 0
-      ? `queued behind ${behind.map((id) => `**${escapeText(id)}**`).join(" and ")}`
-      : row.waiting
-        ? "waiting to start"
-        : "deploying";
-  const state = behind.length > 0 ? "queued" : "deploying";
+      ? `queued behind ${behind.map((id) => `**${escapeText(id)}**`).join(" and ")}${
+          row.window ? `, and for ${windowWords(row.window, options.timeZone)}` : ""
+        }`
+      : row.window
+        ? `queued for ${windowWords(row.window, options.timeZone)}`
+        : row.waiting
+          ? `waiting to start${onMerge}`
+          : `deploying${onMerge}`;
+  const state = behind.length > 0 || row.window ? "queued" : "deploying";
   const lines = [
-    `- ${options.actionRef === undefined ? "" : spinner(options.actionRef)}**${escapeText(row.stackId)}** · ${word} · ticked by ${escapeText(row.ticker)} · [run](${
+    `- ${options.actionRef === undefined ? "" : spinner(options.actionRef, state === "queued")}**${escapeText(row.stackId)}** · ${word} · ${row.onMerge ? "merged" : "ticked"} by ${escapeText(row.ticker)} · [run](${
       row.runUrl
-    }) ${rowMarker({ stackId: row.stackId, state, destroys: row.destroys, deletes: row.deletes })}`,
+    }) ${rowMarker({ stackId: row.stackId, state, destroys: row.destroys, deletes: row.deletes, behind })}`,
   ];
   if (row.attribution) lines.push(row.attribution.full, ...outsideFold(row.attribution, 0));
   return lines;
 }
 
-function previewFailedRow(row: PreviewFailedRow): string[] {
+function previewFailedRow(row: PreviewFailedRow, options: RowOptions): string[] {
   const lines = [
     `- **${escapeText(row.stackId)}** · preview failed: ${escapeText(row.reason)} · [run](${
       row.runUrl
@@ -518,11 +742,11 @@ function previewFailedRow(row: PreviewFailedRow): string[] {
       failed: row.failure !== undefined,
     })}`,
   ];
-  if (row.failure) lines.push(failureLine(row.failure));
+  if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
   return lines;
 }
 
-function inSyncRow(row: InSyncRow): string[] {
+function inSyncRow(row: InSyncRow, options: RowOptions): string[] {
   const lines = [
     `- ${escapeText(row.stackId)} ${rowMarker({
       stackId: row.stackId,
@@ -531,7 +755,7 @@ function inSyncRow(row: InSyncRow): string[] {
       dependsOn: row.dependsOn,
     })}`,
   ];
-  if (row.failure) lines.push(failureLine(row.failure));
+  if (row.failure) lines.push(failureLine(row.failure, options.timeZone));
   return lines;
 }
 
@@ -544,9 +768,9 @@ function rowLines(row: Row, options: RowOptions): string[] {
     case "deploying":
       return deployingRow(row, options);
     case "preview-failed":
-      return previewFailedRow(row);
+      return previewFailedRow(row, options);
     case "in-sync":
-      return inSyncRow(row);
+      return inSyncRow(row, options);
   }
 }
 

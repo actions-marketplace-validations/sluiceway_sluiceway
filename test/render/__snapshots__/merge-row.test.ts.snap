@@ -23,7 +23,7 @@ Scanned [\`0123456\`](https://github.com/acme/infra/commit/0123456789abcdef01234
 Tick a box to merge that pull request. Its stack is then previewed again and deployed as that preview shows it.
 
 - [ ] **apps/odoo:prod** · Update Helm release odoo to v17.0.4 · #418 by renovate&#91;bot&#93; <!-- sluiceway:merge pr="418" stack="apps/odoo:prod" head="0123456789abcdef0123456789abcdef01234567" -->
-- [ ] **network:prod** · Update dependency @pulumi/aws to v7.9.0 · #421 by renovate&#91;bot&#93; <!-- sluiceway:merge pr="421" stack="network:prod" head="0123456789abcdef0123456789abcdef01234567" -->
+- [ ] **network:prod** · Update dependency <span>@</span>pulumi/aws to v7.9.0 · #421 by renovate&#91;bot&#93; <!-- sluiceway:merge pr="421" stack="network:prod" head="0123456789abcdef0123456789abcdef01234567" -->
 
 ## Pending
 
@@ -33,5 +33,5 @@ The channel is dry. Add a stack to \`sluiceway.yaml\` and the next scan fills it
 
 - [ ] Rescan all stacks <!-- sluiceway:rescan -->
 
-<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.4.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>"
+<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.4.0 · [docs](https://docs.sluiceway.dev/)</sub>"
 `;

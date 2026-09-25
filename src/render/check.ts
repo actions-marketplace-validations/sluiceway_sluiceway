@@ -14,6 +14,14 @@ import type {
   UnclaimedGroup,
 } from "../core/check.ts";
 import type { ConfiguredStack, IgnoreEntry } from "../core/config.ts";
+import {
+  type CredentialNeed,
+  type JobCredentials,
+  type JudgedNeed,
+  type StackNeeds,
+  wayWords,
+} from "../core/credentials.ts";
+import type { DiscoveryNote } from "../core/discovery.ts";
 import { previewFailureText } from "../core/failure-reason.ts";
 import { globOf } from "../core/glob.ts";
 import { type PhaseGroup, waitsByPhase } from "../core/phases.ts";
@@ -39,6 +47,8 @@ const CANNOT_TELL_WITH_BACKEND =
   "A check cannot say that a preview will work: a missing credential for a provider or a registry the runner cannot reach shows only in a scan.";
 const BACKEND_OFF =
   "With backend: true the check also asks the backend which stacks it holds, with the credentials of its job.";
+const PREVIEWED_PULL_REQUEST =
+  "With pull-request-preview: true the pull request preview above ran the tool for the stacks the pull request claims, and for no other stack.";
 const BACKEND_TITLE = "Stacks in the backend";
 const BACKEND_PASTE_TITLE = "Ready to paste into sluiceway.yaml, over ignore";
 const NOT_IN_BACKEND_TITLE = "A stack is not in the backend";
@@ -88,6 +98,11 @@ const READ_WARNING_TITLE = "A stack reads a file it does not claim";
 const READS_NOTE =
   "The stack's own files name these as read. The entries below add them to the stacks' inputs, and inputs of several entries add up, so they can go under stacks next to the entries you have. Sluiceway reads only what the files name plainly: a path a program builds at run time does not show here.";
 
+// The credentials part (record 0099).
+const NEEDS_TITLE = "Credentials each stack needs";
+const CREDENTIALS_NOTE =
+  "What each stack's own files say its tool will want from the job environment, as names, and which of them nothing in the workflow appears to provide. A program can read any variable, and a step that writes to the environment is opaque to the check, so this is a reading of the files and never a guarantee. No value is read or shown.";
+
 // The workflow part (record 0061).
 const WORKFLOW_WARNING_TITLE = "A workflow is missing something";
 export const NOTHING_MISSING = "Nothing is missing from the workflows.";
@@ -111,7 +126,8 @@ function settingsText(configured: ConfiguredStack, phases: readonly PhaseGroup[]
   const phase =
     configured.phase === undefined ? "" : `, phase ${phaseWords(configured, " (read from ", ")")}`;
   const waits = dependsOnWords(configured, phases);
-  return `environment ${environment}, tickers ${rule}, ${claims}${phase}${waits === undefined ? "" : `, depends on ${waits}`}`;
+  const onMerge = configured.deploy === "on-merge" ? ", deploys on merge" : "";
+  return `environment ${environment}, tickers ${rule}, ${claims}${phase}${waits === undefined ? "" : `, depends on ${waits}`}${onMerge}`;
 }
 
 function phaseWords({ phase, phaseFrom }: ConfiguredStack, before: string, after: string): string {
@@ -243,7 +259,9 @@ function backendText(check: BackendCheck): string {
     case true:
       return `${check.stackId} is in the backend.`;
     case false:
-      return `${check.stackId} is not in the backend.`;
+      return check.createInBackend
+        ? `${check.stackId} is not in the backend, and the first scan creates it (createInBackend).`
+        : `${check.stackId} is not in the backend.`;
     case "unknown":
       return `${check.stackId}: could not ask the backend, ${askFailureText(check.reason)}.`;
     case "unchecked":
@@ -281,7 +299,7 @@ function backendCell(check: BackendCheck): string {
     case true:
       return "Yes";
     case false:
-      return "No";
+      return check.createInBackend ? "No, the first scan creates it" : "No";
     case "unknown":
       return `Could not ask: ${askFailureText(check.reason)}`;
     case "unchecked":
@@ -313,6 +331,18 @@ function workflowJobText(path: string, job: SluicewayJob): string {
   return `${path}, job ${job.job}: ${mode}, ${refText(job)}.`;
 }
 
+// Who decides who may deploy, for one job that deploys (record 0093). Only
+// what the file shows: whether the job names an environment. Whether that
+// environment has required reviewers is a setting of the repo, and the check
+// makes no GitHub call, so the words say so rather than guess.
+function whoMayDeployText(path: string, job: SluicewayJob): string {
+  const { environment } = job;
+  if (environment === undefined) {
+    return `Who may deploy: ${path}, job ${job.job} names no GitHub Environment, so the tick rule alone decides who may deploy.`;
+  }
+  return `Who may deploy: ${path}, job ${job.job} deploys in the GitHub Environment ${environment}. The tick rule decides who may ask. If ${environment} has required reviewers, they decide who may deploy. Whether it has them is a setting of the repo, which the check cannot read.`;
+}
+
 // Auto runs several modes, and needs what all of them need (record 0077).
 function needsWho(mode: string): string {
   return mode === "auto" ? "the modes it runs need" : `${mode} needs`;
@@ -322,7 +352,7 @@ function needsWho(mode: string): string {
 // outside one, so the words do not offer it.
 const MODE_LIST = MODES.filter((mode) => mode !== "init").join(", ");
 
-function workflowWarningText(warning: WorkflowWarning): string {
+export function workflowWarningText(warning: WorkflowWarning): string {
   const { path } = warning;
   switch (warning.kind) {
     case "unreadable":
@@ -340,6 +370,8 @@ function workflowWarningText(warning: WorkflowWarning): string {
         return `${path} runs on ${warning.trigger}, and its Sluiceway job loads the credentials of your stacks before it. On ${warning.trigger} those steps would run code that is not on the default branch yet. Keep the check in a workflow of its own, which needs no credentials.`;
       }
       return `${path} runs on ${warning.trigger}. A scan would write the dashboard from code that is not on the default branch yet. Only the workflow of the check may run on pull requests or in a merge queue.`;
+    case "preview-on-target":
+      return `${path}, job ${warning.job}: pull-request-preview: true runs on pull_request_target, which Sluiceway never previews on: it runs with the secrets of the base branch against code that is not merged. Run it on pull_request, where a fork's pull request is refused.`;
     case "missing-job":
       return `${path} has no ${warning.mode} job. The four jobs scan, resolve, apply and settle stay in one file: a scan looks for waiting ticks among the runs of its own workflow, and the rescan box and settle start that same workflow again.`;
     case "boxes-do-nothing":
@@ -368,6 +400,8 @@ function workflowWarningText(warning: WorkflowWarning): string {
       return `${path}, job ${warning.job}: settle does not wait for the job ${warning.apply}. Add ${warning.apply} to its needs, so it ends the records of those deploys too.`;
     case "no-merged-apply":
       return `${path}: mergeAndDeploy is on, and no apply job takes the matrix of the scan. The scan after a merge hands the deploy on through its own matrix output, so a merged update would never deploy. Add a copy of the apply job that takes needs.scan.outputs.matrix.`;
+    case "no-on-merge-apply":
+      return `${path}: a stack is set to deploy: on-merge, and no apply job takes the matrix of the scan. The scan of a merge hands that deploy on through its own matrix output, so it would never start. Add a copy of the apply job that takes needs.scan.outputs.matrix.`;
     case "scan-no-matrix-output":
       return `${path}, job ${warning.job}: it takes the matrix of the job ${warning.scan}, which has no matrix output. Add outputs: matrix: \${{ steps.<id>.outputs.matrix }} to ${warning.scan}, with that id on its Sluiceway step.`;
   }
@@ -431,11 +465,18 @@ export interface CheckPart {
 // What the files say, before the backend is asked.
 export interface CheckFacts {
   report: CheckReport;
+  // What discovery made of the directories it looks at without an entry
+  // (record 0092).
+  discovery?: DiscoveryNote[];
   // What the workflow files say (record 0061).
   workflows: WorkflowReport;
+  // What each stack needs, and what each job hands it (record 0099).
+  credentials: { stacks: StackNeeds[]; jobs: JobCredentials[] };
   // The scan.unrelated globs the config has.
   unrelated: string[];
   hasConfigFile: boolean;
+  // The recordWriters the config names (record 0109).
+  recordWriters?: readonly string[] | undefined;
 }
 
 // The parts of a valid setup that come from the files, in the order the job
@@ -443,23 +484,33 @@ export interface CheckFacts {
 export function checkParts(facts: CheckFacts): CheckPart[] {
   const { report } = facts;
   return [
-    headerPart(facts.hasConfigFile),
+    headerPart(facts.hasConfigFile, facts.recordWriters ?? []),
     stacksPart(report),
+    discoveryPart(facts.discovery ?? []),
     phasesPart(report.phases),
     ignorePart(report.ignore),
     unclaimedPart(report, facts.unrelated),
     readsPart(report),
     workflowsPart(facts.workflows),
+    credentialsPart(facts.credentials),
   ];
 }
 
 // The verdict opens the summary. The job log says it last, in closingPart.
-function headerPart(hasConfigFile: boolean): CheckPart {
+function headerPart(hasConfigFile: boolean, recordWriters: readonly string[]): CheckPart {
   const noFile = hasConfigFile ? [] : [NO_CONFIG_FILE];
+  const writers = recordWriters.length === 0 ? [] : [recordWritersText(recordWriters)];
   return {
-    log: noFile.map((text) => ({ info: text })),
-    summary: ["## Sluiceway check", VALID, ...noFile],
+    log: [...noFile, ...writers].map((text) => ({ info: text })),
+    summary: ["## Sluiceway check", VALID, ...noFile, ...writers],
   };
+}
+
+// Who may open a deployment record that a dispatched or scheduled run
+// deploys (record 0109). Nothing is said when the list is empty, which is
+// the default and hands none on.
+function recordWritersText(recordWriters: readonly string[]): string {
+  return `Record writers: ${recordWriters.join(", ")}. A deployment record one of them opens that names a dispatched or scheduled run is deployed by that run, through the fresh preview and the hash check (recordWriters).`;
 }
 
 function stacksPart({ stacks, phases }: CheckReport): CheckPart {
@@ -472,6 +523,8 @@ function stacksPart({ stacks, phases }: CheckReport): CheckPart {
   );
   // The same for the phase (record 0067).
   const phased = stacks.some((configured) => configured.phase !== undefined);
+  // And for a stack that deploys on merge (record 0095).
+  const onMerge = stacks.some((configured) => configured.deploy === "on-merge");
   return {
     log: [
       { info: found },
@@ -486,8 +539,8 @@ function stacksPart({ stacks, phases }: CheckReport): CheckPart {
       "### Stacks",
       found,
       [
-        `| Stack | Environment | Tickers | Inputs |${phased ? " Phase |" : ""}${waits ? " Depends on |" : ""}`,
-        `|---|---|---|---|${phased ? "---|" : ""}${waits ? "---|" : ""}`,
+        `| Stack | Environment | Tickers | Inputs |${phased ? " Phase |" : ""}${waits ? " Depends on |" : ""}${onMerge ? " Deploys |" : ""}`,
+        `|---|---|---|---|${phased ? "---|" : ""}${waits ? "---|" : ""}${onMerge ? "---|" : ""}`,
         ...stacks.map((configured) => {
           const { environment, tickers, inputs } = configured;
           return row([
@@ -499,8 +552,53 @@ function stacksPart({ stacks, phases }: CheckReport): CheckPart {
               ? [configured.phase === undefined ? "none" : phaseWords(configured, ", from ", "")]
               : []),
             ...(waits ? [dependsOnCell(configured, phases)] : []),
+            ...(onMerge ? [configured.deploy === "on-merge" ? "on merge" : "on a tick"] : []),
           ]);
         }),
+      ].join("\n"),
+    ],
+  };
+}
+
+const DISCOVERY_TITLE = "Root modules found from their files";
+const DISCOVERY_HINT =
+  "A stacks entry with tool declares a directory it left out, and ignore or discovery.rootModules: false leaves out one it found.";
+
+// Every directory of OpenTofu or Terraform files, with what root module
+// discovery made of it and why (record 0092). A repo without such files has
+// no part.
+function discoveryPart(notes: DiscoveryNote[]): CheckPart {
+  if (notes.length === 0) return { log: [], summary: [] };
+  const found = notes.filter((note) => note.outcome === "found").length;
+  const left = notes.filter((note) => note.outcome === "left-out").length;
+  const count = `Discovery found ${found === 0 ? "no root module" : plural(found, "root module")}${left === 0 ? "" : ` and left out ${left} ${left === 1 ? "directory" : "directories"}`}.`;
+  return {
+    log: [
+      { info: count },
+      {
+        group: DISCOVERY_TITLE,
+        lines: notes.map(({ path, outcome, because }) =>
+          line(
+            outcome === "declared"
+              ? `${path}: ${because}`
+              : `${path}: ${outcome === "found" ? "found" : "left out"}, ${because}`,
+          ),
+        ),
+      },
+    ],
+    summary: [
+      `### ${DISCOVERY_TITLE}`,
+      `${count} ${DISCOVERY_HINT}`,
+      [
+        "| Directory | Stack | Why |",
+        "|---|---|---|",
+        ...notes.map(({ path, outcome, stackId, because }) =>
+          row([
+            path,
+            outcome === "found" ? (stackId ?? path) : outcome === "declared" ? "declared" : "none",
+            because,
+          ]),
+        ),
       ].join("\n"),
     ],
   };
@@ -612,6 +710,122 @@ function readsPart({ reads, inputs }: CheckReport): CheckPart {
   };
 }
 
+// The ways of a need: "A, B, or C", and "A or B" for two.
+function waysText(need: CredentialNeed): string {
+  const words = need.ways.map(wayWords);
+  if (words.length <= 1) return words[0] ?? "";
+  if (words.length === 2) return `${words[0]} or ${words[1]}`;
+  return `${words.slice(0, -1).join(", ")}, or ${words.at(-1)}`;
+}
+
+// One need of one stack, for the job log.
+function needText(stackId: string, need: CredentialNeed): string {
+  const ways =
+    need.ways.length === 0
+      ? `${need.what}, which the check has no table for`
+      : `${need.what}: ${waysText(need)}`;
+  return `${stackId} needs ${ways}. Named in ${need.namedIn}.`;
+}
+
+// The ways of a need in the line that says nothing provides it: the last
+// one joined with "or" and no comma, so the line reads as one breath.
+function unmetWays(need: CredentialNeed): string {
+  const words = need.ways.map(wayWords);
+  return words.length <= 1
+    ? (words[0] ?? "")
+    : `${words.slice(0, -1).join(", ")} or ${words.at(-1)}`;
+}
+
+// The needs nothing in a job names, one line each, stacks with the same
+// need together (record 0099). Never a warning: a guess is not a failure.
+function unmetLines({ path, job, judged }: JobCredentials): string[] {
+  const unmet = judged.filter(
+    (one): one is JudgedNeed & { stackId: string; met: false } => one.met === false,
+  );
+  const grouped = Map.groupBy(unmet, (one) => `${one.need.what}\n${unmetWays(one.need)}`);
+  return [...grouped.values()].map((ones) => {
+    const first = ones[0] as (typeof ones)[number];
+    const stacks = [...new Set(ones.map((one) => one.stackId))];
+    const who = `${listed(stacks)} ${stacks.length === 1 ? "needs" : "need"}`;
+    const maybe = [...new Set(ones.flatMap((one) => one.maybe))];
+    const opaque =
+      maybe.length === 0
+        ? ""
+        : maybe.length === 1
+          ? ` The step ${maybe[0]} may load it, and the check cannot see into it.`
+          : ` The steps ${listed(maybe)} may load it, and the check cannot see into them.`;
+    // The env files of the stacks the check cannot read (record 0103).
+    const unread = [...new Set(ones.flatMap((one) => one.unread))];
+    const files =
+      unread.length === 0
+        ? ""
+        : unread.length === 1
+          ? ` The envFile ${unread[0]} of the stack may list it, and the check cannot read it.`
+          : ` The envFiles ${listed(unread)} of the stacks may list it, and the check cannot read them.`;
+    return `Nothing in ${path}, job ${job} provides ${unmetWays(first.need)}, which ${who} for ${first.need.what}.${opaque}${files}`;
+  });
+}
+
+function providesLine({ path, job }: JobCredentials): string {
+  return `${path}, job ${job} names a way to every credential the stacks' files ask for.`;
+}
+
+// What each stack's files say its tool will want, and what each job that
+// runs the tool hands it (record 0099). Names only, and never a warning.
+function credentialsPart({ stacks, jobs }: CheckFacts["credentials"]): CheckPart {
+  if (stacks.length === 0) return { log: [], summary: [] };
+  const lines = stacks.map(({ stackId, needs }) =>
+    needs.length === 0
+      ? `${stackId} needs nothing that its files name.`
+      : needs.map((need) => needText(stackId, need)),
+  );
+  const rows = stacks.flatMap(({ stackId, needs }) =>
+    needs.length === 0
+      ? [row([stackId, "nothing that its files name", "", ""])]
+      : needs.map((need) =>
+          row([
+            stackId,
+            need.what,
+            need.ways.length === 0 ? "the check has no table for it" : waysText(need),
+            need.namedIn,
+          ]),
+        ),
+  );
+  const perJob = jobs.map((one) => {
+    const unmet = unmetLines(one);
+    return { one, lines: unmet.length === 0 ? [providesLine(one)] : unmet };
+  });
+  return {
+    log: [
+      { group: NEEDS_TITLE, lines: lines.flat().map(line) },
+      ...perJob.flatMap(({ one, lines: texts }): CheckLogEntry[] => [
+        {
+          group: `What ${one.path}, job ${one.job} provides`,
+          lines: one.judged
+            .filter(
+              (judged): judged is JudgedNeed & { stackId: string; met: true } =>
+                judged.met === true,
+            )
+            .map((judged) => line(`${judged.stackId}, ${judged.need.what}: ${judged.by}.`)),
+        },
+        ...texts.map((text) => ({ info: line(text) })),
+      ]),
+    ],
+    summary: [
+      "### Credentials",
+      CREDENTIALS_NOTE,
+      ["| Stack | Needs | Any one of | Named in |", "|---|---|---|---|", ...rows].join("\n"),
+      ...(perJob.length === 0
+        ? []
+        : [
+            perJob
+              .flatMap(({ lines: texts }) => texts.map((text) => `- ${escapeText(text)}`))
+              .join("\n"),
+          ]),
+    ],
+  };
+}
+
 // What the workflow files lack is a warning, never a red job: GitHub is the
 // one that validates and runs them (record 0061).
 function workflowsPart(workflows: WorkflowReport): CheckPart {
@@ -620,6 +834,9 @@ function workflowsPart(workflows: WorkflowReport): CheckPart {
   const warnings = workflows.warnings.map(workflowWarningText);
   const notes = workflows.notes.map(workflowNoteText);
   const nothingMissing = listed && warnings.length === 0 ? [NOTHING_MISSING] : [];
+  const deployers = workflows.workflows.flatMap(({ path, jobs }) =>
+    jobs.filter((job) => job.runs.includes("apply")).map((job) => whoMayDeployText(path, job)),
+  );
   const bullets = (texts: string[]) =>
     texts.length === 0 ? [] : [texts.map((text) => `- ${escapeText(text)}`).join("\n")];
   return {
@@ -634,6 +851,7 @@ function workflowsPart(workflows: WorkflowReport): CheckPart {
             },
           ]
         : []),
+      ...deployers.map((text) => ({ info: line(text) })),
       ...noScan.map((text) => ({ info: text })),
       ...warnings.map((text) => ({ warning: line(text), title: WORKFLOW_WARNING_TITLE })),
       ...notes.map((text) => ({ info: line(text) })),
@@ -652,6 +870,7 @@ function workflowsPart(workflows: WorkflowReport): CheckPart {
             ].join("\n"),
           ]
         : []),
+      ...bullets(deployers),
       ...noScan,
       ...bullets(warnings),
       ...bullets(notes),
@@ -669,9 +888,12 @@ export function backendPart(
   ignore: IgnoreEntry[],
   toolLog: string,
 ): CheckPart {
-  const missing = checks.filter((check) => check.found === false).map((check) => check.stackId);
+  const notThere = checks.filter((check) => check.found === false);
+  // A stack the first scan creates (record 0107) is no red row to come, so
+  // it is no warning and gets no ignore entry.
+  const missing = notThere.filter((check) => !check.createInBackend).map((check) => check.stackId);
   const block = missing.length === 0 ? [] : ignoreBlock(ignore, missing);
-  const allIn = missing.length === 0 && checks.some((check) => check.found === true);
+  const allIn = notThere.length === 0 && checks.some((check) => check.found === true);
   return {
     log: [
       ...(toolLog === ""
@@ -682,7 +904,7 @@ export function backendPart(
         if (check.found === "unknown") {
           return [{ warning: line(couldNotAskText(check)), title: COULD_NOT_ASK_TITLE }];
         }
-        if (check.found === false) {
+        if (check.found === false && !check.createInBackend) {
           return [{ warning: line(notInBackendText(check.stackId)), title: NOT_IN_BACKEND_TITLE }];
         }
         return [];
@@ -707,8 +929,11 @@ export function backendPart(
 
 // What a check cannot tell, with the one sentence record 0042 asks for. The
 // job log says the verdict here, after everything else.
-export function closingPart(askedBackend: boolean): CheckPart {
+export function closingPart(askedBackend: boolean, previewedPullRequest = false): CheckPart {
   const cannot = askedBackend ? [CANNOT_TELL_WITH_BACKEND] : [CANNOT_TELL, BACKEND_OFF];
+  // With pull-request-preview: true the tool ran for the claimed stacks, and
+  // for no other (record 0101).
+  if (previewedPullRequest) cannot.push(PREVIEWED_PULL_REQUEST);
   return {
     log: [VALID, ...cannot].map((text) => ({ info: text })),
     summary: ["### What a check cannot tell", ...cannot],

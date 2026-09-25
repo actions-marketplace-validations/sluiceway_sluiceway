@@ -1,10 +1,16 @@
 # "Never hold credentials" is five promises that can be checked
 
+> Amended by 0103: promise 2 now reads that the files Sluiceway reads on the user's word are the one the `env-file` input names and the ones `stacks[].envFile` name, every line of each the same way, for the tool, with every value masked first. Promise 1 holds: the key carries a path and never a value.
+>
+> Amended by 0105: promise 3 gains one more call, only when a repo opts in with `cost.enabled`: the Infracost CLI, which the workflow installs, asks its pricing API for prices with the resource types, regions and quantities of a change, never a value and never a credential.
+>
+> Amended by 0100: promise 2 now reads that no Sluiceway code reads a credential variable of the job environment, and that the one file Sluiceway reads is the one the `env-file` input names, every line of it the same way, for the tool, with every value masked first. Promise 1 gains that the input carries a path and never a value, promise 3 covers the file's values, and promise 4 gains that `resolve` and `settle` never open the file.
+>
 > Amended by 0078: promise 1 allows the opt-in notification channels (a Slack webhook address, a Telegram bot token and chat id, a webhook address) as inputs, from the repo's own secrets. They are credentials of the user's messaging, never of their infrastructure. Promise 3 gains the calls to those channels.
 >
 > Amended by 0077: in the one-step workflow one job previews and deploys, so the job an issue edit starts loads the credentials. Promise 4 still holds of the modes, and the gain named below holds of the split workflow only.
 
-The brief says Sluiceway never holds credentials and only passes env through. With 0013 the secrets sit in the environment of the same job, so the action's process could read them. Read as "Sluiceway cannot see them", the principle is false, and a false security claim is worse than none. It is restated as five promises that a reviewer can check against the code and the example workflow.
+The brief says Sluiceway never holds credentials and only passes env through. With 0013 the secrets sit in the environment of the same job, so the action's process could read them. Read as "Sluiceway cannot see them", the principle is false, and a reader would trust a protection that is not there. It is restated as five promises that a reviewer can check against the code and the example workflow.
 
 1. **No credential inputs.** The action takes one secret, the GitHub token. No input and no config key ever carries a cloud, backend or secret manager credential.
 2. **Never read by name.** No Sluiceway code reads a credential variable. The environment goes to the tool as one opaque block (0013).

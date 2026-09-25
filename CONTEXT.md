@@ -1,6 +1,6 @@
 # Sluiceway
 
-Sluiceway keeps one GitHub issue, the dashboard, that shows which infrastructure stacks have changes waiting, and deploys a stack when someone ticks its box. This glossary fixes the words used for that.
+Sluiceway keeps one GitHub issue, the dashboard, that shows which infrastructure stacks have changes waiting, and deploys a stack when someone ticks its box, or on merge for a stack the repo's config sets that way. This glossary fixes the words used for that.
 
 ## Language
 
@@ -18,8 +18,12 @@ _Avoid_: Stack name, slug, key
 Finding the stacks of a repo from its files alone. It never asks a backend and never starts the tool, so it can run in a job that holds no credentials. A stack that no file names does not exist for Sluiceway.
 _Avoid_: Detection, lookup, stack listing
 
+**Root module discovery**:
+Discovery of OpenTofu and Terraform root modules from the repo's own files. A directory of their files is a stack only when no other directory uses it as a local module source, it is not under a `modules` directory, a `terraform` block gives it a backend or a `cloud` block, its code names one workspace and no var file chooses anything, and its lock file or `.tofu` files say which of the two tools runs it. Such a stack is the default workspace and its stack id is its path. When the files do not say all of it, the directory is left out, and the check says why. A directory a `stacks` entry declares is the entry's, and `discovery.rootModules: false` turns it off.
+_Avoid_: Auto-detection, autodiscovery, heuristic, guess
+
 **Declared stack**:
-A stack that a `stacks` entry names with `tool`, because files alone cannot say what it is: an OpenTofu or Terraform root module, with the workspace and var files the entry gives, or with a wrapper in front of the tool a Terragrunt unit or the stack of a CDK for Terraform app the entry names, a Helm release in a namespace, with its chart and values files, or a directory of Kubernetes manifests or a kustomization, with the context and namespace the entry gives. Discovery still checks from the files that it can exist, and never starts the tool.
+A stack that a `stacks` entry names with `tool`, because files alone cannot say what it is, or because the repo wants it exactly as the entry says: an OpenTofu or Terraform root module that root module discovery leaves out or that runs in another workspace, with the workspace and var files the entry gives, or with a wrapper in front of the tool a Terragrunt unit or the stack of a CDK for Terraform app the entry names, a Helm release in a namespace, with its chart and values files, or a directory of Kubernetes manifests or a kustomization, with the context and namespace the entry gives. Discovery still checks from the files that it can exist, and never starts the tool.
 _Avoid_: Configured stack, manual stack, custom stack
 
 **Wrapper**:
@@ -45,7 +49,7 @@ A scan that previews only the stacks that claim a file changed since the last sc
 _Avoid_: Partial scan, incremental scan, affected scan, changed stacks
 
 **Pool**:
-The fixed number of previews a scan runs at the same time, in one job. It starts the next preview when one finishes, in stack id order, and never previews one stack twice at once. Its size is the `concurrency` input.
+The fixed number of previews a scan runs at the same time, in one job. It starts the next preview when one finishes, in stack id order, and never previews one stack twice at once. Its size is the `concurrency` input, or without it the number of cores of the machine, from 1 to 8. A preview's time limit counts from when it leaves the pool's queue and starts.
 _Avoid_: Workers, threads, matrix, batch
 
 **Claim**:
@@ -57,11 +61,19 @@ What a scan decides before it previews anything: a full scan with the reason for
 _Avoid_: Strategy, scan mode, selection
 
 **Preparation**:
-A step a tool needs before it can preview a stack, such as OpenTofu's init of a directory, CDK for Terraform's synth of an app, or Helm's build of a chart's dependencies. A scan runs every preparation one at a time and before the pool, and a failed one is a preview failure of each stack that needs it.
+A step a tool needs before it can preview a stack, such as OpenTofu's init of a directory, CDK for Terraform's synth of an app, or Helm's build of a chart's dependencies. A scan runs every preparation one at a time and before the pool, and a failed one is a preview failure of each stack that needs it. A Pulumi stack needs one only when its entry sets `createInBackend: true`: the scan then makes the stack in the backend when the backend lacks it, and previews it as all creates. A deploy never creates a stack.
 _Avoid_: Setup, init step, pre-hook
 
+**Policy**:
+A Rego rule set in a directory or file `policies` or `stacks[].policies` names, that Conftest runs over the preview document of every pending stack, right after its preview, in the same job. A policy that fails takes the box off the row until it passes, is named on the row in its own words, escaped as text, and stops a deploy on merge. A policy that could not run is a warning line, and the row keeps its box.
+_Avoid_: Rule, check (that is the pass over the repo's files), gate, guardrail
+
+**Preview document**:
+The tool's own preview of a stack, values and all: Pulumi's preview JSON, the plan JSON of OpenTofu and Terraform, the manifests a Helm chart or a directory of Kubernetes manifests renders. An adapter hands it back only when asked, the policy runner writes it to a file of its own for as long as conftest runs, and nothing else takes it.
+_Avoid_: Plan file (that is the saved plan), raw output, preview JSON
+
 **Auto mode**:
-What the action does when its step names no mode: it reads the event of the run and runs the modes that event asks for, one after the other in the same step. A push to the default branch and the schedule scan, an edit of the dashboard resolves and then deploys and settles what it started, a dispatch resolves and scans, a pull request checks, and any other event ends with a notice.
+What the action does when its step names no mode: it reads the event of the run and runs the modes that event asks for, one after the other in the same step. A push to the default branch scans, an edit of the dashboard resolves and then deploys and settles what it started, the schedule and a dispatch resolve and then scan, unless the dispatched run deployed outside records alone, a pull request checks, and any other event ends with a notice.
 _Avoid_: Default mode, smart mode, magic mode, router
 
 **One-step workflow**:
@@ -73,12 +85,16 @@ The same loop as four jobs, `scan`, `resolve`, `apply` and `settle`, each naming
 _Avoid_: Advanced workflow, full workflow, four-job workflow
 
 **Check**:
-A pass over the repo's files and nothing else that says whether Sluiceway understands the setup: the config, the stacks discovery finds, what `ignore` leaves out, which files no stack claims, which files a stack's own files name that it does not claim, and what the workflow files lack to run it. It holds no credentials and never starts the tool, so it can never say that a preview will work. The one exception is a workflow's own choice, `backend: true`: then it asks the backend which stacks it holds, with the credentials of its job, and nothing more.
+A pass over the repo's files and nothing else that says whether Sluiceway can read the setup: the config, the stacks discovery finds, what root module discovery found and left out and why, what `ignore` leaves out, which files no stack claims, which files a stack's own files name that it does not claim, and what the workflow files lack to run it. It holds no credentials and never starts the tool, so it can never say that a preview will work. The one exception is a workflow's own choice, `backend: true`: then it asks the backend which stacks it holds, with the credentials of its job, and nothing more.
 _Avoid_: Validate, lint, dry run, preflight
 
 **Init**:
-A pass over the repo's files that writes a first workflow and, when there is none, a `sluiceway.yaml` into the checkout, and lists what it could not know. It declares the stacks files alone cannot name as its best reading, for a person to correct. It never commits, never overwrites a file and holds the promise of the check: no credential, no tool, no GitHub call.
+A pass over the repo's files that writes a first workflow and, when there is none, a `sluiceway.yaml` into the checkout, and lists what it could not know. It declares the stacks files alone cannot name as its best reading, for a person to correct. It never commits, never overwrites a file but the workflow it writes when a person asks with `--force`, and holds the promise of the check: no credential, no tool, no GitHub call.
 _Avoid_: Scaffold, generator, bootstrap, wizard, setup
+
+**Command line**:
+The `sluiceway` command a person runs on their own machine, from the npm package of the same name: `npx sluiceway init` and `npx sluiceway check`, and nothing else. It reads its arguments, never the environment, holds no token and reaches no GitHub API. Every other mode needs the run's identity and the workflow token, so the command line refuses it and points at the workflow. The package is released with the action, from the same tag and with the same version.
+_Avoid_: CLI tool, npx mode, local mode, runner (that is the machine a workflow runs on)
 
 ### Diffs
 
@@ -87,7 +103,7 @@ What deploying one stack would change, told as addresses, ops, tracking changes 
 _Avoid_: Plan, preview output, changeset
 
 **Value**:
-What a property is set to, before or after a deploy. A value never leaves the tool's adapter: Sluiceway shows that a property changes and never what it changes to, whether or not the tool marks it secret. There are two exceptions, both a repo's own choice: the tool diff, which it may turn on for the job log, and the value list.
+What a property is set to, before or after a deploy. A value never leaves the tool's adapter: Sluiceway shows that a property changes and never what it changes to, whether or not the tool marks it secret. There are two exceptions, both a repo's own choice: the tool diff, which it may turn on for the job log, and the value list. A value fingerprint is a hash and not a value, and it leaves.
 _Avoid_: Secret (a secret is only one kind of value, and all values are treated alike), content, setting
 
 **Value list**:
@@ -131,8 +147,16 @@ Nothing to deploy and no known drift.
 _Avoid_: Clean, up to date, green
 
 **Diff hash**:
-A fingerprint of everything a stack's row shows about what a deploy would change. A tick approves that fingerprint, and a deploy goes ahead only if a fresh preview still gives the same one.
-_Avoid_: Checksum, signature, plan id
+A hash of everything a stack's row shows about what a deploy would change. A tick approves it, and a deploy goes ahead only if a fresh preview still gives the same one.
+_Avoid_: Checksum, signature, plan id, fingerprint (that is the value fingerprint's word)
+
+**Value fingerprint**:
+A hash of the values of a stack's diff that its row does not show, sixteen hex characters on the row next to the diff hash, and on the deployment record a tick opens. `apply` compares it after the hash: a value that changed since the tick stops the deploy, and the row and a comment say so without naming the value. A value the tool marks secret enters it as the tool's mark, never in the clear. On for every repo, off per repo or per stack with `valueFingerprint: false`, for a program whose values differ on every run.
+_Avoid_: Value hash, values digest, second hash
+
+**Cost line**:
+The line under the first line of a pending row that says what the change does to the monthly bill, as a delta and never the bill: `about **31.20 USD** more a month`, `less a month`, or `about the same cost a month`. Opt in with `cost.enabled`, and only an OpenTofu or Terraform stack gets one, because the Infracost CLI reads their plans and nothing else. It is an estimate against a price list, it is not in the diff hash, and an estimate that failed leaves the line out and never fails the scan.
+_Avoid_: Price, bill, cost report, budget
 
 **Address**:
 The string that identifies one resource within one stack's diff. The tool's adapter defines it and nothing else looks inside it. It is unique within a diff and the same across two identical previews.
@@ -149,11 +173,11 @@ _Avoid_: State change, state-only op, no-op
 ### Ticks
 
 **Tick**:
-A person checking the box on a stack's row: a request to deploy that stack exactly as the row shows it. A tick is a commit, not a toggle.
+A person checking the box on a stack's row: a request to deploy that stack exactly as the row shows it. Unticking after `resolve` has created the deployment record does not stop the deploy.
 _Avoid_: Approval, selection, click
 
 **Ticker**:
-The person whose edit made a tick, as the issue's edit history names them. The only identity a deploy is authorized against and attributed to. Always a person, never a bot. A tick whose ticker cannot be named deploys nothing.
+The person whose edit made a tick, as the issue's edit history names them. The only identity a deploy from a tick is authorized against and attributed to. Always a person, never a bot. A tick whose ticker cannot be named deploys nothing. A deploy on merge has no ticker: it is attributed to whoever merged.
 _Avoid_: Approver, actor, sender, deployer
 
 **Edit history**:
@@ -165,7 +189,7 @@ The unbroken run of edit history entries, from the newest one back, in which a r
 _Avoid_: Streak, window, range
 
 **Tick rule**:
-What a person needs in order to tick a stack: a level of access to the repo, or a place on a list of named people who also have write access. It can narrow who may tick, never widen it.
+What a person needs in order to tick a stack: a level of access to the repo, or a place on a list of named people who also have write access. It can narrow who may tick, never widen it. It decides who may ask for a deploy. Where the job that deploys runs in a GitHub Environment with required reviewers, the reviewers decide who may deploy; without one, the tick rule decides both.
 _Avoid_: Approvers, reviewers, allowlist, access list
 
 **Refused tick**:
@@ -184,12 +208,20 @@ _Avoid_: Stale tick, missed tick, lost tick
 A tick on a stack that already has an open deployment. Nothing new starts for it, nobody is checked or told, and the row is brought back to deploying.
 _Avoid_: Duplicate tick, ignored tick, second deploy
 
+**Deploy on merge**:
+A stack's own setting, `deploy: on-merge` in `sluiceway.yaml`, that lets it go out without a tick: the scan of a push to the default branch that finds it pending opens its deployment record, attributed to whoever pushed, and the same run deploys it through the fresh preview and the hash check of a tick. A delete or a replace, drift, a dependency that waits for a tick, any other scan, `deploys: false` and a read-only dashboard keep it waiting for a tick, and its row says why. The default is a tick. Its row says `deploying on merge · merged by`, and so does the trail, so it never reads as a tick.
+_Avoid_: Auto-deploy, continuous deployment, apply on merge, autopilot
+
+**Cost threshold**:
+The change to the monthly bill, `cost.threshold` in `sluiceway.yaml` for the repo or for a stack, above which a stack set to deploy on merge waits for a tick instead, with its row saying why. A change whose cost could not be estimated waits too while a threshold is set: the gate fails closed. It changes nothing for a stack on a tick, and nothing for a stack whose tool has no estimate.
+_Avoid_: Budget, cost gate, spend limit, guardrail
+
 **Rescan box**:
-The one checkbox on the dashboard that belongs to no stack. Ticked by a person with write access, it starts a full scan and deploys nothing. A read-only dashboard has none.
+The one checkbox on the dashboard that belongs to no stack. Ticked by a person with write access, it starts a full scan and deploys nothing. A read-only dashboard has none, and neither does one with `dashboard.rescanBox: false`.
 _Avoid_: Refresh button, rescan tick, scan trigger
 
 **Bulk box**:
-The box under the pending rows, `Deploy all N pending stacks`, or under the drifted rows, `Repair all N drifted stacks`, when the section has two rows or more. A tick on it deploys nothing: it asks for a confirm box. There is none while deploys are off or on a read-only dashboard.
+The box under the pending rows, `Deploy all N pending stacks`, or under the drifted rows, `Repair all N drifted stacks`, when the section has two rows or more. A tick on it deploys nothing: it asks for a confirm box. There is none while deploys are off, on a read-only dashboard, or where `dashboard.deployAll` or `dashboard.repairAll` turns it off.
 _Avoid_: Select all, deploy-all button, batch tick
 
 **Confirm box**:
@@ -197,7 +229,7 @@ The box that takes the place of a ticked bulk box, naming the stacks of its sect
 _Avoid_: Are-you-sure box, confirmation dialog, second tick
 
 **Reviewer**:
-A person who approves a waiting deploy in GitHub's own interface, where the repo's plan offers that. A second gate after the tick, owned by GitHub. Sluiceway only waits for it.
+A person who approves a waiting deploy in GitHub's own interface, where the repo's plan offers that. A second check after the tick, owned by GitHub. Sluiceway only waits for it. The reviewers of an environment decide who may deploy, where the tick rule only decides who may ask.
 _Avoid_: Approver, second ticker
 
 **Update waiting to merge**:
@@ -211,6 +243,10 @@ _Avoid_: Blocked update, pending merge, stuck pull request
 **Branch preview**:
 The preview of an update waiting to merge as it would be after the merge: a copy of the checkout with the files of the pull request's head commit in place. Its counts go on the update's row. It approves nothing and deploys nothing: the scan after the merge previews again.
 _Avoid_: PR preview, speculative plan, merge preview
+
+**Pull request preview**:
+The preview of the stacks a pull request claims, as they would be after the merge, for its reviewer: one check run per stack on the pull request's head commit, opt in with `pull-request-preview: true` on the check step of a job that holds credentials that read. It never deploys, never opens a deployment record and leaves no row. A pull request from a fork is refused outright, and `pull_request_target` is never used.
+_Avoid_: PR preview, plan comment, speculative run, proposed run
 
 **Merge record**:
 The deployment record `resolve` opens for a merge it made: on the merge commit, with the ticker and the pull request and no diff hash. It waits for a scan that holds the merge, which ends it and opens the record that deploys the fresh diff.
@@ -255,8 +291,12 @@ Pulumi's way for a program to read the outputs of another stack, by a name such 
 _Avoid_: Remote state (OpenTofu's word for something else), cross-stack link
 
 **Queued stack**:
-A ticked stack whose deployment record waits behind its dependencies, because they were ticked in the same run or are deploying. Its row says "queued behind" them, has no box and counts as deploying. It deploys in a later run once they went out, and never deploys when one of them did not.
+A ticked stack, or one that deploys on merge, whose deployment record waits behind its dependencies, because they were ticked in the same run or are deploying, or waits for its deploy window. Its row says "queued behind" them, or "queued for the deploy window" and when it opens, has no box and counts as deploying. It deploys in a later run once they went out and the window is open, under a record that carries what the tick approved, drift included, and never deploys when one of them did not.
 _Avoid_: Blocked stack, waiting stack, pending stack (pending is a row state)
+
+**Deploy window**:
+When a stack may go out, as `deployWindows` in `sluiceway.yaml` writes it for the repo or for a stack: days of the week with a start and an end, in the dashboard zone. A tick outside every window is not refused: its record is opened now with what the tick approved and waits as a queued stack does, and the run that falls inside the window, the scheduled one, deploys it through the fresh preview and the hash check. A deploy on merge waits for it too. It is what this repo's file says, not a change freeze for a company.
+_Avoid_: Maintenance window, freeze, blackout, schedule (that is the workflow's trigger)
 
 **Layer**:
 The stacks of a dependency chain that deploy in one workflow run, because nothing they wait behind is still to go out. `settle` starts the workflow again after a layer, and that run's `resolve` starts the next one.
@@ -266,6 +306,10 @@ _Avoid_: Wave, stage, batch, level
 A deploy of a stack that did not go through a tick: from a laptop, a script or another pipeline. It is allowed, leaves no deployment record, and the next full scan brings the row back in line. A tick on the stale row finds nothing to deploy, and its record ends as a success that says so. Where the tool keeps a history of its deploys (Pulumi), a full scan finds it there and lists it on the trail with when and from which commit, never who.
 _Avoid_: Manual deploy, rogue deploy, out-of-band deploy
 
+**Outside record**:
+A deployment record that a writer other than Sluiceway opened in the published shape, naming the run of a dispatch it made, and carrying neither `behind` nor `window`. The `resolve` of that run hands it to `apply` only when the login GitHub records as its creator is in `recordWriters`, the repo's reviewed list of who may open records; then the fresh preview and the hash check decide, the record is the lock, and the ticker on it is the writer's word. With the list empty, the default, every such record is left alone and the job log says so. A dispatched run that deployed outside records alone skips its scan.
+_Avoid_: External record, injected record, foreign record, manual deployment
+
 **Tool history**:
 The tool's own list of the deploys of one stack, whoever ran them, as Pulumi keeps it. A full scan reads the newest entries of it for every stack whose tool keeps one, and every deploy there that no deployment record of the stack ran is an outside deploy. Only when, what kind, the commit and the run are read, never a config value, a message or a person.
 _Avoid_: Update history, audit log, deploy log, state history
@@ -273,8 +317,16 @@ _Avoid_: Update history, audit log, deploy log, state history
 ### Credentials
 
 **Tool environment**:
-Everything the infrastructure tool needs in order to run: credentials, the state backend, settings. The user's workflow prepares it before Sluiceway starts, and Sluiceway hands it to the tool whole without looking inside.
+Everything the infrastructure tool needs in order to run: credentials, the state backend, settings. The user's workflow prepares it before Sluiceway starts, and Sluiceway hands it to the tool whole without looking inside, with the values of the env file on top when a step names one, and the values of the stack's own env file on top of that when its entry names one.
 _Avoid_: Secrets, env config, credentials config
+
+**Credential need**:
+What a stack's own files say its tool will want from the job environment: the credentials of a provider or a backend, a passphrase, a variable without a default, the cluster. Read from files as names with alternatives, never a value, and never a guarantee, because a program can read any variable. The check lists them per stack and says which of them nothing in the workflow appears to provide.
+_Avoid_: Required secrets, missing secrets, env requirements, secret list
+
+**Env file**:
+A file of `NAME=value` lines that the `env-file` input names, or that a `stacks` entry names with `envFile` for its stacks alone, which the modes that run the tool read once for the tool's process: every value is masked in the job log first, the file wins over a variable the job already has, a stack's file wins over the step's, and the log names what was loaded for which stacks and never a value. A stack's file that cannot be loaded is a preview failure of that stack and of nothing else. They are the only files on the runner that Sluiceway reads on the user's word, and it resolves nothing in them: a file of secret references is not one until a step has resolved it.
+_Avoid_: Dotenv, secrets file, `.env` (that is a name such a file may have), env config
 
 ### Dashboard
 
@@ -299,19 +351,31 @@ A row block that a writer takes from the live body and writes back as it is, bec
 _Avoid_: Kept row, old row, stale row
 
 **Counts line**:
-The first line of text on the dashboard: how many stacks are pending, deploying, preview failed and in sync, always all four. It adds how many stacks drifted, how many pending stacks destroy resources and how many rows carry a failure line, each only when it is not 0. Under a header it is centered and every count has a count dot.
+The first line of text on the dashboard: how many stacks are pending, deploying, preview failed and in sync, all four unless `dashboard.zeroCounts: false` leaves a 0 out, and the pending count always. It adds how many stacks drifted, how many pending stacks destroy resources and how many rows carry a failure line, each only when it is not 0. Under a header it is centered and every count has a count dot.
 _Avoid_: Header line, stats, totals
 
 **Scan line**:
 The line under the counts line that says which commit the last scan checked out, when, in which run, and when the last full scan was. Under a header it is centered with the counts line.
 _Avoid_: Status line, timestamp, last updated
 
+**Waiting run**:
+A run of the dashboard's own workflow that GitHub has kept queued for ten minutes or more before a scan started, because no runner took its job. The next scan that does get a runner says so in one line right under the scan line, naming how long it waited and linking it, and counts any others. It says that the run waits for a runner, never why, and decides nothing. The line goes as soon as that run starts, or with the next scan after it ends.
+_Avoid_: Stuck run, hung run, stalled scan, queued run (queued is a row state)
+
+**Scan-running line**:
+The line right under the scan line that says a scan is running, since when, and links its run. The scan writes it as its first act, before any preview, through the write loop, carrying every row as it is and the rescan box unticked, and takes it away when it writes the body at the end. Every other writer carries it. A scan that dies leaves it, and the next scan replaces it. It is a fact on the root marker and not a state: nothing is decided from it, and the header does not change for it.
+_Avoid_: Progress line, in-progress banner, scan status, spinner (that is the crate on a deploying row)
+
+**Dashboard zone**:
+The time zone every time on the dashboard is shown in: UTC, or the IANA zone `dashboard.timeZone` names. It belongs to the repo, not the reader. The line under the trail names it, and a time that stands alone, on the scan line, the scan-running line, the waiting-run line or a failure line, says its offset from UTC at that moment. The markers keep UTC.
+_Avoid_: Local time, user time zone, timezone setting
+
 **Row state**:
 Which group a stack's row belongs to: pending, drift, deploying, in sync, preview failed or queued. A queued row is placed and counted with the deploying ones. It is a label for placing and counting rows. Nothing about a deploy is ever decided from it, with one exception that only holds a deploy back and never starts one: `resolve` refuses a tick while a dependency's row is pending. A scan may read it for one thing only: to pick stacks worth previewing again.
 _Avoid_: Status, stack state, phase
 
 **Preview failure**:
-A stack whose preview did not produce a diff. Its row has no checkbox and links to the run that failed. One stack's preview failure never stops the others.
+A stack whose preview did not produce a diff. Its row has no checkbox and links to the run that failed. One stack's preview failure never stops the others. `settle` writes a row of the same state for a deploy it ended, which says there is no preview since the deploy ended and carries the failure line, until the next scan previews the stack.
 _Avoid_: Error row, broken stack, failed stack
 
 **Failure line**:
@@ -319,7 +383,7 @@ The note on a stack's row saying its last deploy failed. It rides on the row whe
 _Avoid_: Failed row, failed state, error row
 
 **Trail**:
-The Recently deployed list at the bottom of the dashboard: every deploy from the dashboard that ended, newest first, with who ticked it and when it went out, and the outside deploys a full scan found in the tool's history. A deploy that found nothing to deploy, a rehearsal and a failed deploy say so on their line. Its length is `dashboard.recentlyDeployed`. A deploy from the dashboard that went out has a shipped line. It is built from the deployment records and the tool's history, and decides nothing.
+The Recently deployed list at the bottom of the dashboard: every deploy from the dashboard that ended, newest first, with who ticked it, or who merged for a deploy on merge, and when it went out, and the outside deploys a full scan found in the tool's history. A deploy that found nothing to deploy, a drift repair that found the drift already gone, a rehearsal and a failed deploy say so on their line. Its length is `dashboard.recentlyDeployed`. A deploy from the dashboard that went out has a shipped line. It is built from the deployment records and the tool's history, and decides nothing.
 _Avoid_: History, audit log, deploy log, changelog
 
 **Pending-again line**:
@@ -329,6 +393,10 @@ _Avoid_: Flapping, drift, stuck row
 **Failure reason**:
 Why a preview or a deploy failed, in words from a short fixed list that Sluiceway owns. It never quotes the tool. The tool's own words stay in the job log, one link away.
 _Avoid_: Error message, error text, tool error
+
+**Reason word**:
+The failure reason a reader outside Sluiceway writes when it draws a row from the markers and the deployment records and holds no reason: `the reason is on the deployment record` on a failure line, `the reason is in the summary of the run` on a preview failure row. Both are on the fixed list, and Sluiceway itself never writes either, because a scan and an `apply` always hold the reason.
+_Avoid_: Placeholder reason, unknown reason, fallback text
 
 **Summary**:
 The page of a scan's workflow run where every stack's diff is shown, with far more room than the dashboard has. It shows the same kind of facts as a row and nothing more. It opens with an index of the stacks that rows link to, and every stack has its own anchor in it. Shortened and redacted rows link to it, and so does a pending row's preview link when the stack has no preview page. On the rare scan that does not fit even there, it says so and points at the job log, which holds every diff in full. An `apply` writes one too, about its one stack: what went out, or why nothing did.
@@ -342,6 +410,10 @@ _Avoid_: Check (that is the pass over the repo's files), check page, status chec
 A JSON file that a scan or an `apply` leaves in the job's temporary directory for a later step of the workflow, with what its summary holds and how long the job took, and nothing more. A published JSON schema describes it. Sluiceway never sends it anywhere: a step the user adds does, with its own secret.
 _Avoid_: Report, artifact, export, metrics
 
+**Published shape**:
+What Sluiceway writes for a machine to read and promises to keep: the markers, the payload of each deployment record, and the result file with the step outputs. Each has a version. A documented key keeps its meaning while its version stands, a change that would make a reader misread raises the version, and what the docs leave out on purpose may change in any release. The page is `docs/what-sluiceway-writes.md`, and its examples are taken from a run.
+_Avoid_: API, internals, public interface, protocol
+
 **Notification**:
 One short message Sluiceway posts to a channel the step names (Slack, Telegram or a webhook) when an event happens: stacks newly pending, drift newly found, a deploy that went out or failed, a tick that was refused. It holds stack ids and links and nothing else. Opt-in: each channel is an input of the step, from the repo's own secret, and `notify.events` picks the events. A send that fails is a warning and never changes a job.
 _Avoid_: Alert, ping, webhook event, message hook
@@ -354,12 +426,16 @@ _Avoid_: Target, sink, destination, integration
 A dashboard drawn with nothing to tick, for a workflow that only scans: pending rows have no box, there is no rescan box, and the line under the Pending heading says so. Set with `dashboard.readOnly`. It changes what is drawn, not who may deploy: what keeps a workflow from deploying is that it has no `resolve` job.
 _Avoid_: Dry run, view-only mode, preview mode, locked dashboard
 
+**Layout key**:
+One of the keys under `dashboard` in `sluiceway.yaml` that decide how the dashboard looks: the order of the sections, which of Deploying, Drifted and In sync are shown, the zero counts, the destroy alert, how much a pending row shows, the bulk boxes, the rescan box and the footer. Each defaults to the dashboard as it was, and every writer draws the same layout. A layout key never drops a row block and never changes a marker: a section that is off keeps its rows in one closed fold at the end of the sections. Pending and Preview failed are always shown, and no layout key hides a destroy, a preview failure or a failure line.
+_Avoid_: Template, theme, view, dashboard mode
+
 **Size budget**:
 How large the dashboard body may get before rows are shortened. It exists because an issue body that is too large is dropped without an error.
 _Avoid_: Limit, cap, quota
 
 **Shortened row**:
-A pending row that shows less than its whole diff because of the size budget, and links to the summary for the rest. It keeps its checkbox, its counts and its warning. Its delete and replace lines are all listed or none are.
+A pending or drifted row that shows less than its whole diff because of the size budget, and links to the summary for the rest. The note under the scan line counts them, section by section. It keeps its checkbox, its counts and its warning. Its delete and replace lines are all listed or none are.
 _Avoid_: Truncated row, collapsed row, summary row
 
 **Attribution**:
@@ -395,8 +471,12 @@ A change whose op is replace or delete: a real object goes away. Destroys are li
 _Avoid_: Destructive change, dangerous change, removal
 
 **Destroy alert**:
-The one caution block right above the pending list that names every pending stack with a destroy, and in a paragraph of its own every drifted stack with a resource gone outside the code. It is an index to the delete and replace lines, which stay open under each row. It is computed from the row markers and decides nothing, and it shows under redact and without personality too.
+The one caution block right above the pending list that names every pending stack with a destroy, and in a paragraph of its own every drifted stack with a resource gone outside the code. It is an index to the delete and replace lines, which stay open under each row. It is computed from the row markers and decides nothing, and it shows under redact, without personality and at every layout too. With `dashboard.destroyAlert: always` a note takes its place when nothing is destroyed.
 _Avoid_: Destroy warning (that is the line on the row and on the counts line), destroy banner, danger box
+
+**Example dashboard**:
+A whole dashboard body that the renderer gives for made-up rows, with every section at once, at the version of the checkout. It is committed as `assets/example-dashboard.md`, which other sites fetch raw at a release tag, and the README shows it made fit for a README. `bun run example` writes both and a test holds both to the renderer. It is never a real repo's body.
+_Avoid_: Demo dashboard, sample dashboard, mock-up, live example (that is a real issue, which `docs/later.md` lists)
 
 ### Personality
 
@@ -453,7 +533,7 @@ A count dot's colour in front of a result, so a person sees it at a glance: on a
 _Avoid_: Status emoji, icon, badge
 
 **Spinner**:
-The small animated crate, bobbing in the water, at the start of a deploying or queued row, so the stack a person ticked is visibly moving. A light and a dark file, served from the action ref like the header, and only shown when there is a header. It is the first thing the size budget drops.
+The small animated crate, bobbing in the water, at the start of a deploying row, so the stack a person ticked is visibly moving. A queued row gets the same crate standing still, so motion on a row always means deploying now. A light and a dark file each, served from the action ref like the header, and only shown when there is a header. It is the first thing the size budget drops.
 _Avoid_: Loader, loading icon, progress indicator, throbber
 
 **Voice**:

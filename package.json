@@ -1,25 +1,36 @@
 {
   "name": "sluiceway",
-  "version": "0.26.0",
+  "version": "0.43.0",
   "description": "One GitHub issue that shows which infrastructure stacks have changes waiting, and deploys a stack when someone ticks its box.",
-  "private": true,
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sluiceway/sluiceway.git"
   },
+  "bin": {
+    "sluiceway": "dist/cli.js"
+  },
+  "files": [
+    "dist/cli.js"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "build": "bun build src/main.ts --target=node --format=esm --outfile=dist/index.js",
+    "build": "bun build src/main.ts --target=node --format=esm --outfile=dist/index.js && bun build src/cli.ts --target=node --format=esm --outfile=dist/cli.js",
     "build:schema": "bun run scripts/generate-schema.ts",
     "record:fixtures": "bun run scripts/record-fixtures.ts",
+    "record:conftest": "bun run scripts/record-conftest-fixtures.ts",
     "e2e": "bun run scripts/e2e.ts",
     "e2e:mixed": "bun run scripts/e2e-mixed.ts",
     "roadmap": "bun run scripts/roadmap.ts",
+    "example": "bun run scripts/example-dashboard.ts",
+    "example:written": "bun run scripts/written-examples.ts",
     "check:schema": "bun run build:schema && git diff --exit-code -- schema && test -z \"$(git status --porcelain -- schema)\"",
     "check:dist": "bun run build && git diff --exit-code -- dist && test -z \"$(git status --porcelain -- dist)\"",
     "check": "bun run lint && bun run typecheck && bun run test && bun run check:schema && bun run check:dist"

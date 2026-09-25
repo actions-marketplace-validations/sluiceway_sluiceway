@@ -6,6 +6,7 @@
 // own edit (issue 28).
 
 import { MERGE_SCAN_INPUT, readMergeScanInput } from "../core/merge-scan.ts";
+import type { PullRequestFacts } from "../core/pull-request-preview.ts";
 import type { Issue } from "./port.ts";
 
 export type EventIssue = Pick<Issue, "number" | "state" | "body" | "labels" | "author">;
@@ -79,4 +80,45 @@ export function startedByPerson(payload: unknown): boolean {
 export function mergedBeforeDispatch(payload: unknown): number[] {
   if (startedByPerson(payload)) return [];
   return readMergeScanInput(record(record(payload)?.inputs)?.[MERGE_SCAN_INPUT]);
+}
+
+// Who merged, for a stack set to on-merge (record 0095): the sender of a push
+// to the default branch, the person who pressed merge or an app that merges,
+// as GitHub names them. Nobody for any other event or branch, or a payload
+// that does not say, so only the scan of a merge deploys on merge.
+export function mergedBy(eventName: string, payload: unknown): string | undefined {
+  if (eventName !== "push") return undefined;
+  const body = record(payload);
+  const branch = record(body?.repository)?.default_branch;
+  if (typeof branch !== "string" || branch === "" || body?.ref !== `refs/heads/${branch}`) {
+    return undefined;
+  }
+  const login = record(body?.sender)?.login;
+  return typeof login === "string" && login !== "" ? login : undefined;
+}
+
+// The pull request of a `pull_request` event, for the preview of it (record
+// 0101). Its head is from a fork when it lives in another repository than the
+// base, and when the payload does not say where it lives: a preview runs the
+// pull request's code with the job's credentials, so a doubt is a fork.
+export function pullRequestOf(payload: unknown): PullRequestFacts | undefined {
+  const pullRequest = record(record(payload)?.pull_request);
+  if (!pullRequest || typeof pullRequest.number !== "number") return undefined;
+  const head = record(pullRequest.head);
+  const base = record(pullRequest.base);
+  if (typeof head?.sha !== "string" || head.sha === "") return undefined;
+  if (typeof base?.sha !== "string" || base.sha === "") return undefined;
+  const headRepo = record(head.repo)?.full_name;
+  const baseRepo = record(base.repo)?.full_name ?? record(record(payload)?.repository)?.full_name;
+  return {
+    number: pullRequest.number,
+    head: head.sha,
+    base: base.sha,
+    baseRef: text(base.ref),
+    fromFork:
+      typeof headRepo !== "string" ||
+      headRepo === "" ||
+      typeof baseRepo !== "string" ||
+      headRepo !== baseRepo,
+  };
 }

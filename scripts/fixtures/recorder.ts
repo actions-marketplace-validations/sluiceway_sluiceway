@@ -69,6 +69,16 @@ export type Step =
       env?: Record<string, string>;
       // What it printed also becomes the plan file.
       stdoutToPlan?: boolean;
+      // What it printed is also written next to the plan file under this
+      // name, as the adapter writes a plan's JSON next to the plan for the
+      // cost estimate (record 0105).
+      stdoutBesidePlan?: string;
+      // Whether what it printed shows that the run raced a change made
+      // elsewhere while it ran, such as a controller writing the status of an
+      // object in the middle of a kubectl diff. Such a run is taken again, at
+      // most RUNS_WHILE_RACED times, and the recording is the first run that
+      // did not race (slice 5.26).
+      raced?: (stdout: string) => boolean;
     };
 
 // Stands for the path of the plan file in an argument, so that a recording
@@ -78,6 +88,11 @@ export const PLAN_FILE = "{plan}";
 
 // The same for the prune file of a kubectl stack (record 0070).
 export const PRUNE_FILE = "{prune}";
+
+// Stands for the directory of the plan file as a step's cwd, for a command
+// that runs next to the plan and not in the repo, as the cost estimate does
+// (record 0105).
+export const PLAN_DIR = "{plan-dir}";
 
 // What a recorded command has to show for the scenario to be worth keeping. A
 // scenario named "replace" whose preview holds no replace is a lie in waiting.
@@ -131,6 +146,12 @@ export interface RecordOptions {
 
 export const RECORDING_FILE = "recording.json";
 
+// How many times a command whose runs race is run before the scenario stops.
+// A run takes as long as the tool does, so there is no pause in between: a
+// controller writes an object's status a few times in the seconds after a
+// deploy, and a run only races when one of those writes lands inside it.
+export const RUNS_WHILE_RACED = 10;
+
 export async function recordScenario(
   scenario: Scenario,
   options: RecordOptions,
@@ -153,6 +174,7 @@ export async function recordScenario(
   const pruneFile = join(scenarioWork, "plan", "prune.yaml");
   const argvOf = (argv: string[]) =>
     argv.map((arg) => arg.replace(PLAN_FILE, planFile).replace(PRUNE_FILE, pruneFile));
+  const cwdOf = (cwd: string) => (cwd === PLAN_DIR ? join(planFile, "..") : join(project, cwd));
 
   for (const step of scenario.steps) {
     if (step.kind === "edit") {
@@ -185,7 +207,7 @@ export async function recordScenario(
     } else if (step.kind === "setup") {
       const result = await options.runner({
         argv: argvOf(step.argv),
-        cwd: join(project, step.cwd),
+        cwd: cwdOf(step.cwd),
         env: { ...env, ...step.env },
       });
       if (result.exitCode !== 0) {
@@ -195,11 +217,21 @@ export async function recordScenario(
       }
       if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
     } else {
-      const result = await options.runner({
-        argv: argvOf(step.argv),
-        cwd: join(project, step.cwd),
-        env: { ...env, ...step.env },
-      });
+      const run = () =>
+        options.runner({
+          argv: argvOf(step.argv),
+          cwd: cwdOf(step.cwd),
+          env: { ...env, ...step.env },
+        });
+      let result = await run();
+      for (let runs = 1; step.raced?.(result.stdout); runs++) {
+        if (runs === RUNS_WHILE_RACED) {
+          throw new Error(
+            `Scenario "${scenario.name}": every one of ${RUNS_WHILE_RACED} runs of "${step.id}" raced a change elsewhere, so none of them shows what the scenario is for. The cluster never held still.`,
+          );
+        }
+        result = await run();
+      }
       const command: RecordedCommand = {
         id: step.id,
         argv: step.argv,
@@ -214,6 +246,9 @@ export async function recordScenario(
       writeFileSync(join(target, command.stderr), result.stderr);
       commands.push(command);
       if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
+      if (step.stdoutBesidePlan !== undefined) {
+        writeFileSync(join(planFile, "..", step.stdoutBesidePlan), result.stdout);
+      }
     }
   }
 

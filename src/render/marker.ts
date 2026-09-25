@@ -65,6 +65,27 @@ export interface RootFacts {
   // writer carries them through.
   fullScanAt?: string | undefined;
   fullScanRun?: string | undefined;
+  // A run of the workflow that has waited long for a runner (record 0086).
+  // Only a scan finds one, and every other writer carries it.
+  waitingRun?: WaitingRunFacts | undefined;
+  // A scan that is running (record 0108): written by the scan as its first
+  // act, carried by every other writer, and taken away by the scan's own
+  // write of the body at the end.
+  scanRunning?: ScanRunningFacts | undefined;
+}
+
+// The run that waited longest, when it started waiting (ISO 8601, UTC), and
+// how many more runs waited as long.
+export interface WaitingRunFacts {
+  run: string;
+  since: string;
+  more: number;
+}
+
+// The run of the scan that is running, and when it started (ISO 8601, UTC).
+export interface ScanRunningFacts {
+  run: string;
+  since: string;
 }
 
 export interface RowFacts {
@@ -89,10 +110,34 @@ export interface RowFacts {
   // How many resources a drifted row's drift check found gone outside the
   // code (record 0075), for the destroy alert.
   gone?: number | undefined;
+  // How many resources a drifted row's drift check found changed outside the
+  // code (record 0110), next to `gone`, so a drifted row with nothing gone is
+  // not drawn as one change outside the code. A display cache like `gone`.
+  changed?: number | undefined;
   // The stacks this stack's preview read from its program's stack references,
   // for a stack with `dependsOn: auto` (record 0059). `resolve` never
   // previews, so the row is where it finds them.
   dependsOn?: readonly string[] | undefined;
+  // The value fingerprint of the row (record 0102): a hash of the values its
+  // diff holds that the row does not show. `resolve` copies it onto the
+  // record, and `apply` compares it after the hash.
+  fingerprint?: string | undefined;
+  // A policy failed on the change (record 0106), so the row has no box. A
+  // display cache like `failed`, and the one fact `resolve` and the bulk box
+  // read to refuse a tick on such a row.
+  policyFailed?: boolean | undefined;
+  // How many changes of each kind the diff of a pending row holds (record
+  // 0110): the counts of its first line, so a reader without the diff can
+  // draw them. `tracking` is the changes that only touch the tool's record.
+  // Display caches like `destroys`; each is left out at 0.
+  creates?: number | undefined;
+  updates?: number | undefined;
+  replaces?: number | undefined;
+  tracking?: number | undefined;
+  // The stacks a queued row waits behind (record 0110), so a reader can draw
+  // the row as it reads. A display cache: the fact is `behind` on the
+  // deployment record (record 0056), and nothing is decided from the row.
+  behind?: readonly string[] | undefined;
 }
 
 // A list of stack ids in one marker value, split on commas. An id is
@@ -183,8 +228,24 @@ export function rootMarker(facts: RootFacts): string {
   ];
   if (facts.fullScanAt !== undefined) pairs.push(["full-scan-at", facts.fullScanAt]);
   if (facts.fullScanRun !== undefined) pairs.push(["full-scan-run", facts.fullScanRun]);
+  if (facts.waitingRun !== undefined) {
+    pairs.push(
+      ["run-waiting", facts.waitingRun.run],
+      ["run-waiting-since", facts.waitingRun.since],
+    );
+    if (facts.waitingRun.more > 0) pairs.push(["run-waiting-more", String(facts.waitingRun.more)]);
+  }
+  if (facts.scanRunning !== undefined) {
+    pairs.push(
+      ["scan-running", facts.scanRunning.run],
+      ["scan-running-since", facts.scanRunning.since],
+    );
+  }
   return marker("dashboard", pairs);
 }
+
+// The counts of a pending row (record 0110), in the order of its first line.
+const COUNT_KEYS = ["creates", "updates", "replaces", "tracking"] as const;
 
 export function rowMarker(facts: RowFacts): string {
   const pairs: [string, string][] = [
@@ -198,9 +259,16 @@ export function rowMarker(facts: RowFacts): string {
   if (facts.shortened) pairs.push(["shortened", String(facts.shortened)]);
   if (facts.drift) pairs.push(["drift", "true"]);
   if (facts.gone) pairs.push(["gone", String(facts.gone)]);
+  if (facts.changed) pairs.push(["changed", String(facts.changed)]);
   if (facts.dependsOn && facts.dependsOn.length > 0) {
     pairs.push(["depends-on", encodeIds(facts.dependsOn)]);
   }
+  if (facts.fingerprint !== undefined) pairs.push(["fingerprint", facts.fingerprint]);
+  if (facts.policyFailed) pairs.push(["policy", "failed"]);
+  for (const key of COUNT_KEYS) {
+    if (facts[key]) pairs.push([key, String(facts[key])]);
+  }
+  if (facts.behind && facts.behind.length > 0) pairs.push(["behind", encodeIds(facts.behind)]);
   return marker("row", pairs);
 }
 
@@ -268,6 +336,8 @@ export interface ParsedRoot {
   scanAt: string | undefined;
   fullScanAt?: string | undefined;
   fullScanRun?: string | undefined;
+  waitingRun?: WaitingRunFacts | undefined;
+  scanRunning?: ScanRunningFacts | undefined;
 }
 
 // A row block: every line from the one that ends in the open marker through
@@ -291,9 +361,26 @@ export type ParsedRow =
       // Resources gone outside the code, on a drifted row (record 0075).
       // Absent when there are none.
       gone?: number;
+      // Resources changed outside the code, on a drifted row (record 0110).
+      // Absent when there are none.
+      changed?: number;
       // Read from the program's stack references (record 0059). Absent when
       // the marker names none.
       dependsOn?: string[];
+      // The value fingerprint (record 0102). Absent when the marker has none.
+      fingerprint?: string;
+      // A policy failed on the change, so the row has no box (record 0106).
+      // Absent when none did.
+      policyFailed?: true;
+      // The counts of a pending row (record 0110). Each absent when the
+      // marker has none, or when it is 0.
+      creates?: number;
+      updates?: number;
+      replaces?: number;
+      tracking?: number;
+      // The stacks a queued row waits behind (record 0110). Absent when the
+      // marker names none.
+      behind?: string[];
       ticked: boolean;
       text: string;
     }
@@ -363,7 +450,27 @@ function readRoot(line: string): ParsedRoot | undefined {
     scanAt: pairs.get("scan-at"),
     fullScanAt: pairs.get("full-scan-at"),
     fullScanRun: pairs.get("full-scan-run"),
+    waitingRun: readWaitingRun(pairs),
+    scanRunning: readScanRunning(pairs),
   };
+}
+
+// Both the run and the time, or no running scan.
+function readScanRunning(pairs: Map<string, string>): ScanRunningFacts | undefined {
+  const run = pairs.get("scan-running");
+  const since = pairs.get("scan-running-since");
+  if (run === undefined || since === undefined) return undefined;
+  return { run, since };
+}
+
+// Both the run and the time, or no waiting run. A count that is not a whole
+// number reads as no more runs.
+function readWaitingRun(pairs: Map<string, string>): WaitingRunFacts | undefined {
+  const run = pairs.get("run-waiting");
+  const since = pairs.get("run-waiting-since");
+  if (run === undefined || since === undefined) return undefined;
+  const more = pairs.get("run-waiting-more") ?? "0";
+  return { run, since, more: /^\d+$/.test(more) ? Number(more) : 0 };
 }
 
 function isRowState(state: string): state is RowState {
@@ -442,7 +549,9 @@ export function parseDashboard(body: string): ParsedDashboard {
       return /^\d+$/.test(value) ? Number(value) : 0;
     };
     const dependsOn = pairs.get("depends-on") ?? "";
+    const behind = pairs.get("behind") ?? "";
     const deletes = pairs.get("deletes") ?? "";
+    const fingerprint = pairs.get("fingerprint");
     rows.push({
       known: true,
       stackId,
@@ -454,7 +563,14 @@ export function parseDashboard(body: string): ParsedDashboard {
       shortened: count("shortened"),
       drift: pairs.get("drift") === "true",
       ...(count("gone") > 0 ? { gone: count("gone") } : {}),
+      ...(count("changed") > 0 ? { changed: count("changed") } : {}),
       ...(dependsOn === "" ? {} : { dependsOn: decodeIds(dependsOn) }),
+      ...(fingerprint === undefined ? {} : { fingerprint }),
+      ...(pairs.get("policy") === "failed" ? { policyFailed: true as const } : {}),
+      ...Object.fromEntries(
+        COUNT_KEYS.filter((key) => count(key) > 0).map((key) => [key, count(key)]),
+      ),
+      ...(behind === "" ? {} : { behind: decodeIds(behind) }),
       ticked: match[1] === "x" || match[1] === "X",
       text,
     });

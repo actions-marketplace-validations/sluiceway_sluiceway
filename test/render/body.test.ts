@@ -11,6 +11,7 @@ import type {
   InSyncRow,
   PendingRow,
   Row,
+  RowLevel,
 } from "../../src/render/row.ts";
 import { rows58, rows100 } from "./fixtures.ts";
 
@@ -137,7 +138,7 @@ describe("a body with drift (record 0055)", () => {
         "",
         "- [ ] Rescan all stacks <!-- sluiceway:rescan -->",
         "",
-        "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>",
+        "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://docs.sluiceway.dev/)</sub>",
       ].join("\n"),
     );
   });
@@ -189,7 +190,7 @@ describe("the body of record 0029", () => {
         "",
         "Tick a box to deploy that stack exactly as its row shows it.",
         "",
-        `- [ ] **apps/api:prod** · 1 update · [preview](${RUN_URL}) <!-- sluiceway:row stack="apps/api:prod" state="pending" hash="3fa9c1e2aabbccdd" -->`,
+        `- [ ] **apps/api:prod** · 1 update · [preview](${RUN_URL}) <!-- sluiceway:row stack="apps/api:prod" state="pending" hash="3fa9c1e2aabbccdd" updates="1" -->`,
         "  <details><summary>1 change</summary>",
         "  <kbd>update</kbd> <code>random:index/randomPet:RandomPet</code> <b>pet-0</b> · <code>length</code><br>",
         "  </details>",
@@ -208,7 +209,7 @@ describe("the body of record 0029", () => {
         "",
         "- [ ] Rescan all stacks <!-- sluiceway:rescan -->",
         "",
-        "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>",
+        "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) v0.1.0 · [docs](https://docs.sluiceway.dev/)</sub>",
       ].join("\n"),
     );
   });
@@ -568,7 +569,7 @@ describe("the picture", () => {
       `src="https://raw.githubusercontent.com/sluiceway/sluiceway/${sha}/assets/mascot/pending-1-light.svg"`,
     );
     expect(body).toEndWith(
-      "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) `0123456` · [docs](https://github.com/sluiceway/sluiceway#readme)</sub>",
+      "<sub>[Sluiceway](https://github.com/sluiceway/sluiceway) `0123456` · [docs](https://docs.sluiceway.dev/)</sub>",
     );
   });
 
@@ -638,7 +639,7 @@ describe("the counts line", () => {
   test("the 58 stack fixture", () => {
     const body = renderBody({ ...input([], OFF), rows: rows58().map((row) => rowBlock(row)) });
     expect(paragraphs(body)[1]).toBe(
-      "**11 pending** · 2 deploying · 2 preview failed · 43 in sync · :warning: **4 pending stacks destroy resources** · 2 failed deploys",
+      "**11 pending** · 2 deploying · 2 preview failed · 43 in sync · :warning: **4 pending stacks delete or replace resources** · 2 failed deploys",
     );
   });
 
@@ -650,7 +651,7 @@ describe("the counts line", () => {
 
   test("one of each", () => {
     expect(paragraphs(renderBody(input(ONE_OF_EACH, OFF)))[1]).toBe(
-      "**1 pending** · 1 deploying · 1 preview failed · 1 in sync · :warning: **1 pending stack destroys resources** · 1 failed deploy",
+      "**1 pending** · 1 deploying · 1 preview failed · 1 in sync · :warning: **1 pending stack deletes or replaces resources** · 1 failed deploy",
     );
   });
 
@@ -659,7 +660,7 @@ describe("the counts line", () => {
   test("the 58 stack fixture under a header has dots, and none on the destroy warning", () => {
     const big = renderBody({ ...input([]), rows: rows58().map((row) => rowBlock(row)) });
     expect(paragraphs(big)[3]).toBe(
-      "🟡&nbsp;**11 pending** · 🔵&nbsp;2 deploying · 🔴&nbsp;2 preview failed · 🟢&nbsp;43 in sync · :warning: **4 pending stacks destroy resources** · 🔴&nbsp;2 failed deploys",
+      "🟡&nbsp;**11 pending** · 🔵&nbsp;2 deploying · 🔴&nbsp;2 preview failed · 🟢&nbsp;43 in sync · :warning: **4 pending stacks delete or replace resources** · 🔴&nbsp;2 failed deploys",
     );
   });
 });
@@ -704,7 +705,7 @@ describe("the count dots", () => {
   // picture carries the destroy sign. The warning keeps its `:warning:`.
   test("the body with the sign has dots, the white dot at 0, and no dot on the warning", () => {
     expect(paragraphs(renderBody(input(SIGNED.pending)))[3]).toBe(
-      "🟡&nbsp;**2 pending** · ⚪&nbsp;0 deploying · ⚪&nbsp;0 preview failed · 🟢&nbsp;1 in sync · :warning: **1 pending stack destroys resources**",
+      "🟡&nbsp;**2 pending** · ⚪&nbsp;0 deploying · ⚪&nbsp;0 preview failed · 🟢&nbsp;1 in sync · :warning: **1 pending stack deletes or replaces resources**",
     );
     expect(paragraphs(renderBody(input(SIGNED.deploying)))[3]).toBe(
       "🟡&nbsp;**1 pending** · 🔵&nbsp;1 deploying · ⚪&nbsp;0 preview failed · 🟢&nbsp;1 in sync",
@@ -714,7 +715,7 @@ describe("the count dots", () => {
   test("the destroy warning gets no dot", () => {
     for (const personality of [true, false]) {
       const body = renderBody(input(SIGNED.pending, { personality }));
-      expect(body).toContain(" · :warning: **1 pending stack destroys resources**");
+      expect(body).toContain(" · :warning: **1 pending stack deletes or replaces resources**");
       expect(body).not.toMatch(/&nbsp;:warning:/);
     }
   });
@@ -791,6 +792,55 @@ describe("the scan line", () => {
       input([], { rows: [rowBlock(pending("a"), { level: 2 }), rowBlock(pending("b"))] }),
     );
     expect(paragraphs(two)[6]).toContain("so 1 of 2 pending rows is shortened.");
+  });
+
+  // Record 0084 (issue 188): the budget shortens drifted rows too, so the
+  // note counts them. It names each section that has a shortened row, so it
+  // is true for any mix, and with only pending rows it reads as it always did.
+  describe("names each section that has a shortened row", () => {
+    // Each row with the level the budget left it at.
+    const note = (rows: [Row, RowLevel][]) =>
+      paragraphs(
+        renderBody(input([], { rows: rows.map(([row, level]) => rowBlock(row, { level })) })),
+      )[6];
+    const words = (count: string) =>
+      `> [!NOTE]\n> This dashboard is too large for one issue, so ${count} shortened. The summary that a shortened row links to shows every change. Deletes and replaces are the last thing to be cut.`;
+
+    test("only pending rows shortened", () => {
+      expect(
+        note([
+          [pending("a"), 2],
+          [pending("b"), 0],
+          [drifted("c"), 0],
+        ]),
+      ).toBe(words("1 of 2 pending rows is"));
+    });
+
+    test("only drifted rows shortened", () => {
+      expect(
+        note([
+          [pending("a"), 0],
+          [drifted("b"), 2],
+          [drifted("c"), 0],
+        ]),
+      ).toBe(words("1 of 2 drifted rows is"));
+      expect(
+        note([
+          [drifted("b"), 2],
+          [drifted("c"), 2],
+        ]),
+      ).toBe(words("2 of 2 drifted rows are"));
+    });
+
+    test("both pending and drifted rows shortened", () => {
+      expect(
+        note([
+          [pending("a"), 3],
+          [pending("b"), 1],
+          [drifted("c"), 2],
+        ]),
+      ).toBe(words("2 of 2 pending rows and 1 of 1 drifted row are"));
+    });
   });
 
   test("a body with every row in full has no note", () => {
@@ -1446,6 +1496,16 @@ describe("snapshots", () => {
     ).toMatchSnapshot();
   });
 
+  // A queued row starts with the crate standing still (record 0098).
+  test("queued, with the still crate", () => {
+    expect(
+      `${renderBody({
+        ...input([], { recentlyDeployed: RECENT }),
+        rows: DASHBOARDS.queued.map((row) => rowBlock(row, { actionRef: "v0.1.0" })),
+      })}\n`,
+    ).toMatchSnapshot();
+  });
+
   // Slice 2.17: pending rows without boxes, the line that says so, and no
   // rescan box.
   test("read only, failing with rows pending", () => {
@@ -1532,9 +1592,9 @@ describe("the image urls in the snapshots", () => {
       readFileSync(join(import.meta.dir, "__snapshots__/body.test.ts.snap"), "utf8"),
     );
     const files = readdirSync(MASCOT).filter((name) => name.endsWith(".svg"));
-    // The 702 header files and the row spinner in both themes (records 0063,
-    // 0066 and 0075).
-    expect(files).toHaveLength(704);
+    // The 702 header files, and the row spinner and the queued row's still
+    // crate in both themes (records 0063, 0066, 0075 and 0098).
+    expect(files).toHaveLength(706);
     expect([...new Set(own.map((url) => url.split("/").at(-1) ?? ""))].sort()).toEqual(
       files.sort(),
     );

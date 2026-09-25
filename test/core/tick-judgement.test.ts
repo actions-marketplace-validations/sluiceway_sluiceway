@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ConfiguredStack } from "../../src/core/config.ts";
+import type { DeployWindow } from "../../src/core/deploy-window.ts";
 import type { NobodyReason, Tick } from "../../src/core/edit-history.ts";
 import type { OpenPullRequest } from "../../src/core/merge-and-deploy.ts";
 import { MAX_DEPLOYS_PER_RUN } from "../../src/core/resolve.ts";
@@ -85,6 +86,9 @@ function openFact(overrides: Partial<OpenDeployment> = {}): OpenDeployment {
   return { kind: "open", deployment: 9, waiting: false, ticker: "bob", run: "77", ...overrides };
 }
 
+// A Tuesday morning in Brussels, inside office hours.
+const TUESDAY = { now: new Date("2026-09-22T08:00:00Z"), timeZone: "Europe/Brussels" };
+
 function read(named: NamedTick[], overrides: Partial<TicksRead> = {}): TicksRead {
   return {
     named,
@@ -93,6 +97,7 @@ function read(named: NamedTick[], overrides: Partial<TicksRead> = {}): TicksRead
     rows: [],
     deploys: true,
     phases: [],
+    clock: TUESDAY,
     ...overrides,
   };
 }
@@ -813,5 +818,156 @@ describe("the bulk box and its confirm box (record 0083)", () => {
       ["a:prod", { hash: "h1", note: false, unticked: true }],
       ["b:prod", { hash: "h2", note: false }],
     ]);
+  });
+});
+
+// Record 0102: the value fingerprint of a ticked row goes on the deploy, from
+// the tick itself or, for a confirm box, from the live row.
+describe("the value fingerprint on a deploy (record 0102)", () => {
+  test("a row tick hands its fingerprint on", () => {
+    const tick: Tick = {
+      kind: "row",
+      stackId: "a:prod",
+      hash: "h1",
+      fingerprint: "f1f1f1f1f1f1f1f1",
+    };
+    expect(judged(read([by(tick)]))).toMatchObject({
+      deploys: [{ stackId: "a:prod", hash: "h1", fingerprint: "f1f1f1f1f1f1f1f1" }],
+    });
+  });
+
+  test("a tick without one hands none on", () => {
+    const tick: Tick = { kind: "row", stackId: "a:prod", hash: "h1" };
+    const [deploy] = judged(read([by(tick)])).deploys;
+    expect(deploy?.fingerprint).toBeUndefined();
+  });
+
+  test("a confirm box takes the fingerprint of each live row", () => {
+    const confirm: Tick = {
+      kind: "confirm",
+      section: "pending",
+      stacks: [{ stackId: "a:prod", hash: "hash-a:prod" }],
+    };
+    const rows = rowsIn("pending", "a:prod").map((row) =>
+      row.known ? { ...row, fingerprint: "a1a1a1a1a1a1a1a1" } : row,
+    );
+    const handed = handOnConfirms(read([by(confirm)], { rows }));
+    expect(handed.named[0]?.tick).toEqual({
+      kind: "row",
+      stackId: "a:prod",
+      hash: "hash-a:prod",
+      fingerprint: "a1a1a1a1a1a1a1a1",
+    });
+  });
+});
+
+// Deploy windows (record 0104): a tick outside the stack's window is not
+// refused. Its record waits for the window, as a queued record waits for a
+// stack, and a run inside the window starts it.
+describe("a tick outside the deploy window", () => {
+  const OFFICE_HOURS: DeployWindow[] = [
+    { days: ["monday", "tuesday", "wednesday", "thursday"], from: "09:00", to: "17:00" },
+  ];
+  const windowed = stacksOf(
+    stack("a:prod", { deployWindows: OFFICE_HOURS }),
+    stack("b:prod", { deployWindows: OFFICE_HOURS, dependsOn: ["a:prod"] }),
+    stack("c:prod"),
+  );
+  // Friday evening in Brussels.
+  const FRIDAY = { now: new Date("2026-09-25T16:00:00Z"), timeZone: "Europe/Brussels" };
+  const MONDAY_NINE = new Date("2026-09-28T07:00:00Z");
+
+  test("gets a record that waits for the window, and the finding says when it opens", () => {
+    const judgement = judged(read([by(row("a:prod", "ha"))], { stacks: windowed, clock: FRIDAY }));
+    expect(judgement.deploys).toEqual([
+      {
+        stackId: "a:prod",
+        environment: "sluiceway",
+        ticker: "alice",
+        hash: "ha",
+        drift: false,
+        behind: undefined,
+        window: true,
+      },
+    ]);
+    expect(judgement.findings).toContainEqual({
+      kind: "window-closed",
+      stackId: "a:prod",
+      opens: MONDAY_NINE,
+    });
+    expect(judgement.clear).toEqual([]);
+  });
+
+  test("inside the window the record is what it always was", () => {
+    const judgement = judged(read([by(row("a:prod", "ha"))], { stacks: windowed }));
+    expect(judgement.deploys).toEqual([expect.not.objectContaining({ window: expect.anything() })]);
+    expect(judgement.findings.map(({ kind }) => kind)).not.toContain("window-closed");
+  });
+
+  test("a stack without a window goes out at any hour", () => {
+    const judgement = judged(read([by(row("c:prod", "hc"))], { stacks: windowed, clock: FRIDAY }));
+    expect(judgement.deploys).toEqual([expect.objectContaining({ stackId: "c:prod" })]);
+    expect("window" in (judgement.deploys[0] ?? {})).toBe(false);
+  });
+
+  test("in a chain the first layer waits for the window, and the next waits behind it as always", () => {
+    const judgement = judged(
+      read([by(row("b:prod", "hb")), by(row("a:prod", "ha"))], {
+        stacks: windowed,
+        rows: rowsIn("pending", "a:prod", "b:prod"),
+        clock: FRIDAY,
+      }),
+    );
+    expect(judgement.deploys).toEqual([
+      expect.objectContaining({ stackId: "a:prod", behind: undefined, window: true }),
+      expect.objectContaining({ stackId: "b:prod", behind: ["a:prod"] }),
+    ]);
+    expect("window" in (judgement.deploys[1] ?? {})).toBe(false);
+    expect(judgement.findings.filter(({ kind }) => kind === "window-closed")).toHaveLength(1);
+  });
+
+  test("a drift repair waits for the window like any tick", () => {
+    const judgement = judged(
+      read([by({ kind: "row", stackId: "a:prod", hash: "ha", drift: true })], {
+        stacks: windowed,
+        clock: FRIDAY,
+      }),
+    );
+    expect(judgement.deploys).toEqual([
+      expect.objectContaining({ stackId: "a:prod", drift: true, window: true }),
+    ]);
+  });
+});
+
+// Record 0106: a row whose change fails a policy has no box. A tick on it can
+// only come from a hand-edited body, and deploys nothing: the box is cleared
+// with a note, nobody is looked up, and the job log says why.
+describe("a tick on a row a policy stopped", () => {
+  const stopped: ParsedRow[] = rowsIn("pending", "a:prod").map((one) => ({
+    ...one,
+    policyFailed: true,
+    ticked: true,
+  }));
+
+  test("is cleared with the note, and nobody is looked up", () => {
+    const input = read([by(row("a:prod", "hash-a:prod"))], { rows: stopped });
+    expect(ticksToLookUp(input)).toEqual([]);
+    expect(judged(input)).toMatchObject({
+      deploys: [],
+      clear: [["a:prod", { hash: "hash-a:prod", note: "policy-failed" }]],
+      findings: [{ kind: "policy-failed", tick: row("a:prod", "hash-a:prod") }],
+    });
+  });
+
+  test("deploys: false is said first, as it stops everything", () => {
+    const input = read([by(row("a:prod", "hash-a:prod"))], { rows: stopped, deploys: false });
+    expect(judged(input).findings).toEqual([
+      { kind: "deploys-off", tick: row("a:prod", "hash-a:prod") },
+    ]);
+  });
+
+  test("a tick on a row the policies passed is judged as always", () => {
+    const input = read([by(row("a:prod", "hash-a:prod"))], { rows: rowsIn("pending", "a:prod") });
+    expect(ticksToLookUp(input).length).toBe(1);
   });
 });

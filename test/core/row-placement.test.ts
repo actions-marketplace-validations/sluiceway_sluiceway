@@ -3,7 +3,6 @@
 // out, or the stacks to preview first. No scan, no fake GitHub, no tool.
 
 import { describe, expect, test } from "bun:test";
-import type { PreviewResult, ToolDeploy } from "../../src/adapters/adapter.ts";
 import type { DeployFact, DeployFacts } from "../../src/core/deployment.ts";
 import type { Change, Diff } from "../../src/core/diff.ts";
 import { diffHash } from "../../src/core/diff-hash.ts";
@@ -22,6 +21,7 @@ import {
   type RowsAtLateRead,
   type ScanSoFar,
 } from "../../src/core/row-placement.ts";
+import type { PreviewResult, ToolDeploy } from "../../src/core/tool-result.ts";
 import type { ParsedMerge, ParsedRow, RowState } from "../../src/render/marker.ts";
 import { mergeBlock, tickedMergeBlock } from "../../src/render/merge-row.ts";
 
@@ -119,6 +119,7 @@ function scanSoFar(more: Partial<ScanSoFar> = {}): ScanSoFar {
   return {
     ids: ["app", "db"],
     scan: { sha: "abc123", runId: "1000", at: "2026-09-22T10:10:00.000Z" },
+    windows: { byStack: new Map(), now: new Date("2026-09-22T10:10:00.000Z"), timeZone: "UTC" },
     repoUrl: REPO,
     links: {
       summary: `${REPO}/actions/runs/1000/attempts/1`,

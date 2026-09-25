@@ -1,5 +1,5 @@
 // The judgement of the ticks of one `resolve` run (records 0018, 0025, 0035,
-// 0051, 0054, 0056, 0064, 0067, 0071 and 0083). `resolve` hands over what it read:
+// 0051, 0054, 0056, 0064, 0067, 0071, 0083 and 0104). `resolve` hands over what it read:
 // the ticks the edit history names, the stacks discovery knows, the open
 // deployments, the pending rows and two lines of config. It gets back which
 // stacks deploy and which wait behind others, which merge ticks go on to their
@@ -23,6 +23,7 @@ import type { MergeNote } from "../render/merge-row.ts";
 import { type BulkAct, bulkRows, sectionChanges } from "./bulk.ts";
 import type { ConfiguredStack } from "./config.ts";
 import { planDeploys } from "./dependencies.ts";
+import { windowState } from "./deploy-window.ts";
 import type { DeployFact } from "./deployment.ts";
 import type { Tick as BodyTick, NobodyReason, Ticker } from "./edit-history.ts";
 import {
@@ -63,6 +64,10 @@ export interface TicksRead {
   // `deploys` and `phases` of sluiceway.yaml.
   deploys: boolean;
   phases: readonly string[];
+  // When the run judges, and the dashboard zone a deploy window is written in
+  // (record 0104). The clock is the mode's, so a test gives the same verdict
+  // on every run.
+  clock: { now: Date; timeZone: string };
 }
 
 // A tick and the ticker its permission lookup is for (record 0018).
@@ -97,14 +102,18 @@ export interface Clear {
 }
 
 // A deployment record to open. With `behind` it is queued behind those stacks
-// and not handed on (record 0056).
+// and not handed on (record 0056). With `window` it is queued for the stack's
+// deploy window and not handed on either (record 0104).
 export interface Deploy {
   stackId: string;
   environment: string;
   ticker: string;
   hash: string;
   drift: boolean;
+  // The value fingerprint of the ticked row (record 0102), when it has one.
+  fingerprint?: string | undefined;
   behind: string[] | undefined;
+  window?: true | undefined;
 }
 
 // A merge tick every stack of it allowed (record 0071).
@@ -121,6 +130,9 @@ export type Finding =
   | { kind: "taken"; tick: BodyTick; fact: OpenDeployment }
   // `deploys: false` (record 0051). The box is cleared.
   | { kind: "deploys-off"; tick: BodyTick }
+  // A policy failed on the change, so its row has no box (record 0106). A
+  // tick can only come from a hand-edited body, and is cleared with a note.
+  | { kind: "policy-failed"; tick: BodyTick }
   // The body moved under the walk after the last read. Left for the run that
   // edit woke (record 0025).
   | { kind: "moving"; tick: BodyTick }
@@ -153,6 +165,9 @@ export type Finding =
       named: string[];
       phases: PhaseGroup[];
     }
+  // The stack's deploy window is closed (record 0104). The record waits for
+  // it, and opens at `opens`, or at no known time when no window ever opens.
+  | { kind: "window-closed"; stackId: string; opens: Date | undefined }
   // A confirm box whose rows changed since it was drawn deploys nothing, and
   // the bulk box asks for a fresh tick (record 0083).
   | {
@@ -225,14 +240,18 @@ export function knownTicks<T extends BodyTick>(
 function indexTicks(named: readonly NamedTick[]) {
   const hashes = new Map<string, string>();
   const drifted = new Set<string>();
+  // The value fingerprint of each ticked row (record 0102).
+  const fingerprints = new Map<string, string>();
   for (const { tick } of named) {
     if (tick.kind !== "row") continue;
     hashes.set(tick.stackId, tick.hash);
     if (tick.drift) drifted.add(tick.stackId);
+    if (tick.fingerprint === undefined) fingerprints.delete(tick.stackId);
+    else fingerprints.set(tick.stackId, tick.fingerprint);
   }
   const mergeTicks = new Map<number, MergeTick>();
   for (const { tick } of named) if (tick.kind === "merge") mergeTicks.set(tick.pr, tick);
-  return { hashes, drifted, mergeTicks };
+  return { hashes, drifted, fingerprints, mergeTicks };
 }
 
 // What the confirm boxes of one run come to (record 0083).
@@ -297,12 +316,18 @@ export function handOnConfirms(
         continue;
       }
       handed.push(id);
+      // The confirm box names hashes only: the value fingerprint comes from
+      // the live row of the stack (record 0102).
+      const fingerprint = read.rows.find((row) => row.known && row.stackId === id);
       result.named.push({
         tick: {
           kind: "row",
           stackId: id,
           hash,
           ...(tick.section === "drift" ? { drift: true as const } : {}),
+          ...(fingerprint?.known && fingerprint.fingerprint !== undefined
+            ? { fingerprint: fingerprint.fingerprint }
+            : {}),
         },
         ticker,
         via: tick.section,
@@ -402,6 +427,9 @@ function triage(read: TicksRead): Triage {
     } else if (tick.kind === "row" && !read.deploys) {
       out.findings.push({ kind: "deploys-off", tick });
       out.clear.set(tick.stackId, { hash: tick.hash, note: "deploys-off" });
+    } else if (tick.kind === "row" && policyStopped(read.rows, tick.stackId)) {
+      out.findings.push({ kind: "policy-failed", tick });
+      out.clear.set(tick.stackId, { hash: tick.hash, note: "policy-failed" });
     } else if (ticker.named && tick.kind === "merge") {
       for (const id of tick.stackIds) {
         const stack = read.stacks.get(id);
@@ -432,6 +460,13 @@ function triage(read: TicksRead): Triage {
   return out;
 }
 
+// Whether the live row of the stack says a policy failed on its change
+// (record 0106). Of two blocks for one stack the first counts, as for a tick.
+function policyStopped(rows: readonly ParsedRow[], stackId: string): boolean {
+  const row = rows.find((one) => one.stackId === stackId);
+  return row?.known === true && row.policyFailed === true;
+}
+
 // The ticks that need a permission lookup, in the order they are judged. The
 // lookup of each ticker, and its one retry, is the caller's (record 0018).
 export function ticksToLookUp(read: TicksRead): TickToJudge[] {
@@ -441,7 +476,7 @@ export function ticksToLookUp(read: TicksRead): TickToJudge[] {
 // The verdict on every tick of the run, from what was read and the answers
 // of the lookups `ticksToLookUp` asked for, in that order.
 export function judgeTicks(read: TicksRead, lookedUp: readonly LookedUp[]): Judgement {
-  const { hashes, drifted, mergeTicks } = indexTicks(read.named);
+  const { hashes, drifted, fingerprints, mergeTicks } = indexTicks(read.named);
   const { findings, bulk, dropped, clear, clearMerges, ...triaged } = triage(read);
   let rescanHandled = triaged.rescanHandled;
 
@@ -564,8 +599,28 @@ export function judgeTicks(read: TicksRead, lookedUp: readonly LookedUp[]): Judg
     const hash = hashes.get(id);
     const ticker = tickers.get(id);
     if (!stack || hash === undefined || ticker === undefined) return [];
+    const fingerprint = fingerprints.get(id);
+    // A stack that would start now waits for its deploy window when that is
+    // closed (record 0104). A stack behind another is judged against the
+    // window when it is started.
+    const window =
+      behind === undefined
+        ? windowState(stack.deployWindows ?? [], read.clock.now, read.clock.timeZone)
+        : undefined;
+    if (window && !window.open) {
+      findings.push({ kind: "window-closed", stackId: id, opens: window.opens });
+    }
     return [
-      { stackId: id, environment: stack.environment, ticker, hash, drift: drifted.has(id), behind },
+      {
+        stackId: id,
+        environment: stack.environment,
+        ticker,
+        hash,
+        drift: drifted.has(id),
+        ...(fingerprint === undefined ? {} : { fingerprint }),
+        behind,
+        ...(window && !window.open ? { window: true as const } : {}),
+      },
     ];
   });
 

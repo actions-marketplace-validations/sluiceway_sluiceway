@@ -55,6 +55,100 @@
           "minimum": 0,
           "maximum": 50,
           "description": "How many deploys the Recently deployed list shows, newest first, failed ones included. 0 leaves the list out."
+        },
+        "timeZone": {
+          "default": "UTC",
+          "type": "string",
+          "description": "The IANA time zone every time on the dashboard is shown in, such as Europe/Brussels. A time that stands alone says its offset from UTC, and the line under Recently deployed names the zone. The markers keep UTC."
+        },
+        "sections": {
+          "default": [
+            "deploying",
+            "updates",
+            "pending",
+            "drifted",
+            "previewFailed",
+            "inSync",
+            "recentlyDeployed"
+          ],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "deploying",
+              "updates",
+              "pending",
+              "drifted",
+              "previewFailed",
+              "inSync",
+              "recentlyDeployed"
+            ]
+          },
+          "description": "The order of the sections, top to bottom: deploying, updates, pending, drifted, previewFailed, inSync, recentlyDeployed. The ones named come first in this order, and a section left out follows in the default order. Leaving a section out does not hide it."
+        },
+        "deployingSection": {
+          "default": true,
+          "type": "boolean",
+          "description": "false takes the Deploying section off the page: its rows move to one closed fold at the end of the sections. The counts line and the header still count them."
+        },
+        "driftedSection": {
+          "default": true,
+          "type": "boolean",
+          "description": "false takes the Drifted section off the page: its rows move to the closed fold at the end of the sections, with no repair all box. A drifted row with a failure line, or with a resource gone that the destroy alert names, stays open under the Drifted heading."
+        },
+        "inSyncSection": {
+          "default": "fold",
+          "type": "string",
+          "enum": [
+            "fold",
+            "list",
+            "off"
+          ],
+          "description": "fold: the in sync rows in a fold, the default. list: every in sync row open. off: the section is off the page and its rows move to the closed fold at the end of the sections. A row with a failure line always stays open under the In sync heading."
+        },
+        "zeroCounts": {
+          "default": true,
+          "type": "boolean",
+          "description": "false leaves a count of 0 out of the counts line. The pending count always stays."
+        },
+        "destroyAlert": {
+          "default": "destroys",
+          "type": "string",
+          "enum": [
+            "destroys",
+            "always"
+          ],
+          "description": "destroys: the caution block above the pending rows is drawn when a pending stack deletes or replaces something, or a drifted stack has a resource gone. always: it is drawn on every body, and says so when nothing is destroyed. It cannot be turned off."
+        },
+        "pendingDetail": {
+          "default": "full",
+          "type": "string",
+          "enum": [
+            "full",
+            "compact",
+            "names"
+          ],
+          "description": "How much a pending row shows under its first line. full: everything, the default. compact: the first line, and only the lines no setting hides (the failure line and every delete and replace line) and the ones that say why a row has no box or a tick would not go. names: the stack id and its counts, without the preview link, and only the lines no setting hides."
+        },
+        "deployAll": {
+          "default": true,
+          "type": "boolean",
+          "description": "false draws no deploy all box under the pending rows."
+        },
+        "repairAll": {
+          "default": true,
+          "type": "boolean",
+          "description": "false draws no repair all box under the drifted rows."
+        },
+        "rescanBox": {
+          "default": true,
+          "type": "boolean",
+          "description": "false draws no rescan box. A full scan is then started with Run workflow or the schedule."
+        },
+        "footer": {
+          "default": true,
+          "type": "boolean",
+          "description": "false leaves out the small line with the version and the docs link."
         }
       },
       "additionalProperties": false
@@ -84,6 +178,57 @@
       "default": true,
       "type": "boolean",
       "description": "false stops every deploy: resolve clears every ticked box with a note and starts nothing, and apply ends a deploy that was already started before the tool runs. Scans go on."
+    },
+    "recordWriters": {
+      "description": "Logins, an app as name[bot], whose open deployment records that name a dispatched or scheduled run are deployed by that run. The writer is who GitHub records as the creator of the record. Empty hands none on.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]+(\\[bot\\])?$"
+      }
+    },
+    "deployWindows": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday"
+              ]
+            },
+            "description": "The days of the week the window is on, in full and in lower case: monday to sunday."
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^(?:([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+            "description": "When the window opens on each of those days, as HH:MM on a 24 hour clock in the dashboard zone."
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^(?:([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+            "description": "When it closes, as HH:MM, after from. 24:00 is the end of the day."
+          }
+        },
+        "required": [
+          "days",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "description": "When the stacks of this repo may go out, in the dashboard zone: a list of windows, each with days of the week, a start and an end. A tick outside every window waits for the next one to open, and so does a deploy on merge. Empty, the default, is any time. A stacks entry sets its own with stacks[].deployWindows."
     },
     "ignore": {
       "default": [],
@@ -147,6 +292,36 @@
           "default": false,
           "type": "boolean",
           "description": "Check every stack for drift in each scan that a schedule starts, or that a person starts with Run workflow: changes made to real infrastructure outside the code. A stack with drift gets a row with a box, and a tick deploys the code as it is, which puts it back. Costs one more tool run per stack in those scans."
+        }
+      },
+      "additionalProperties": false
+    },
+    "valueFingerprint": {
+      "default": true,
+      "type": "boolean",
+      "description": "Cover the values a row does not show with a fingerprint on the row, so a tick approves them too: a value that changed between the tick and the deploy stops the deploy, and the row says so without naming the value. A value the tool marks secret never reaches the fingerprint. Turn it off, here or per stack, where a program makes a value that differs on every run."
+    },
+    "policies": {
+      "description": "Directories or files of Rego policies, relative to the repo root, that every pending stack's preview is tested against with conftest, which the workflow installs. A policy that fails takes the box off the row until it passes and stops a deploy on merge. Empty runs nothing.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "cost": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean",
+          "description": "Estimate what each pending change of an OpenTofu or Terraform stack costs a month, with the Infracost CLI the workflow installs, and show it on the row as a change to the monthly bill. The CLI sends resource types, regions and quantities to its pricing API, never a value or a credential. A Pulumi, Helm or Kubernetes manifests stack gets no estimate. An estimate that fails is a missing line, never a failed scan."
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "description": "The change to the monthly bill above which a stack set to deploy on merge waits for a tick instead, and its row says why. In the currency of the estimate, USD unless the workflow sets another. A change whose estimate failed waits too. Needs enabled: true."
         }
       },
       "additionalProperties": false
@@ -293,6 +468,56 @@
             ],
             "description": "The phase of these stacks, one of phases, or from: a key of the project file that names it. A stack in a phase depends on every stack in every earlier phase."
           },
+          "deploy": {
+            "type": "string",
+            "enum": [
+              "on-tick",
+              "on-merge"
+            ],
+            "description": "When these stacks deploy. on-tick: when a person ticks the row, the default. on-merge: by themselves after the scan of a merge that found them pending, through the same fresh preview and hash check as a tick, attributed to whoever merged. A change that deletes or replaces something, drift, and a stack it depends on that waits for a tick still wait for a tick."
+          },
+          "deployWindows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday"
+                    ]
+                  },
+                  "description": "The days of the week the window is on, in full and in lower case: monday to sunday."
+                },
+                "from": {
+                  "type": "string",
+                  "pattern": "^(?:([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                  "description": "When the window opens on each of those days, as HH:MM on a 24 hour clock in the dashboard zone."
+                },
+                "to": {
+                  "type": "string",
+                  "pattern": "^(?:([01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                  "description": "When it closes, as HH:MM, after from. 24:00 is the end of the day."
+                }
+              },
+              "required": [
+                "days",
+                "from",
+                "to"
+              ],
+              "additionalProperties": false
+            },
+            "description": "When these stacks may go out, in place of the top level deployWindows. An empty list lets them go out at any time."
+          },
           "drift": {
             "type": "object",
             "properties": {
@@ -306,6 +531,43 @@
             ],
             "additionalProperties": false,
             "description": "The drift check of these stacks. Default: the top level drift."
+          },
+          "valueFingerprint": {
+            "type": "boolean",
+            "description": "Cover the values these stacks' rows do not show with a fingerprint, or not, whatever valueFingerprint at the top level says. Turn it off for a stack whose program makes a value that differs on every run. Default: the top level valueFingerprint."
+          },
+          "envFile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A file of NAME=value lines, relative to the repo root or absolute, that the tool gets for these stacks alone, on top of the job environment and the step's env-file input. Every value is masked first. A file that cannot be loaded fails the preview of these stacks and no other."
+          },
+          "policies": {
+            "description": "Directories or files of Rego policies these stacks are tested against, relative to the repo root, on top of the top level policies.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "createInBackend": {
+            "type": "boolean",
+            "description": "true: a scan creates each Pulumi stack of the entry that the backend lacks, with pulumi stack init right before its first preview, and previews it as all creates. A deploy never creates a stack. Default: false."
+          },
+          "cost": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "description": "Estimate what a change of these stacks costs a month, or not, whatever cost.enabled at the top level says. Only an OpenTofu or Terraform stack gets an estimate."
+              },
+              "threshold": {
+                "type": "number",
+                "minimum": 0,
+                "description": "The change to the monthly bill above which these stacks, when set to deploy on merge, wait for a tick instead, whatever cost.threshold at the top level says. In the currency of the estimate."
+              }
+            },
+            "additionalProperties": false,
+            "description": "The cost estimate of these stacks. Default: the top level cost."
           },
           "options": {
             "description": "Named adapter options of the tool. Only an entry with tool takes them.",
@@ -406,7 +668,19 @@
         ],
         "additionalProperties": false
       },
-      "description": "Settings for stacks that discovery found. An entry never creates a stack."
+      "description": "Settings for stacks that discovery found. An entry never creates a stack, except an entry with tool, which declares one."
+    },
+    "discovery": {
+      "description": "Switches for what discovery finds on its own. Pulumi stacks are always found.",
+      "type": "object",
+      "properties": {
+        "rootModules": {
+          "type": "boolean",
+          "default": true,
+          "description": "Find OpenTofu and Terraform root modules from their files: a directory with a backend or cloud block, a lock file or .tofu files that say which tool runs it, and no other directory using it as a module source. Each is one stack in the default workspace. A directory a stacks entry declares keeps its entry. Default: true."
+        }
+      },
+      "additionalProperties": false
     },
     "mergeAndDeploy": {
       "default": {},

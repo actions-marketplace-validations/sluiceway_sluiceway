@@ -269,14 +269,15 @@ describe("the deploy facts of a stack", () => {
 
   // Slice 4.7 (record 0059): the trail says a deploy repaired drift. The
   // payload says the approved hash covered drift, and a success that did not
-  // end as nothing to deploy went out with the drift put back.
-  test("a success whose payload covers drift is listed as a drift repair", () => {
+  // end as nothing to deploy went out with the drift put back. One that did
+  // found the drift gone (record 0091).
+  test("a success whose payload covers drift is listed as a drift repair, or as drift gone", () => {
     const payload = { v: 1, hash: "2b44350653e84a11", ticker: "alice", run: "4242", drift: true };
     const repaired = record({ id: 1, state: "success", payload });
     const nothing = record({ id: 2, createdAt: "2026-09-21T09:00:00Z", state: "success", payload });
     nothing.status = { ...nothing.status, description: IN_SYNC_DESCRIPTION } as never;
     const results = deployFacts([repaired, nothing]).succeeded.map(({ result }) => result);
-    expect(results).toEqual(["drift-repaired", "in-sync"]);
+    expect(results).toEqual(["drift-repaired", "drift-gone"]);
   });
 
   test("every success is handed over for recently deployed, older ones of a stack too", () => {
@@ -534,5 +535,107 @@ describe("a record that deploys after a merge", () => {
     expect(MERGED_DESCRIPTION).toBe("merged, the deploy follows in a record of its own");
     expect(facts.byStack.get("apps/grafana:prod")).toMatchObject({ kind: "failed" });
     expect(facts.succeeded).toEqual([]);
+  });
+});
+
+// Record 0095: a record a stack set to on-merge opened after the scan of a
+// merge says so, so its deploying row, its failure line and its line on the
+// trail say "merged by" and never read as a tick.
+describe("a record opened on merge", () => {
+  const facts = { hash: "2b44350653e84a11", ticker: "alice", run: "4242" };
+
+  test("carries onMerge, an added key, so the version stays 1", () => {
+    expect(deploymentPayload({ ...facts, onMerge: true })).toEqual({
+      v: 1,
+      ...facts,
+      onMerge: true,
+    });
+    expect(readDeploymentPayload({ v: 1, ...facts, onMerge: true })).toEqual({
+      ...facts,
+      onMerge: true,
+    });
+  });
+
+  test("a record of a tick has no such key, byte for byte as before", () => {
+    expect(deploymentPayload(facts)).toEqual({ v: 1, ...facts });
+    expect(readDeploymentPayload({ v: 1, ...facts, onMerge: "yes" })).toEqual(facts);
+  });
+
+  test("an open, a failed and a succeeded record each say it, and so does the trail", () => {
+    const payload = { v: 1, ...facts, onMerge: true };
+    const open = deployFacts([record({ id: 1, task: "sluiceway:a", state: "queued", payload })]);
+    expect(open.byStack.get("a")).toMatchObject({ kind: "open", onMerge: true });
+    const failed = deployFacts([record({ id: 2, task: "sluiceway:b", state: "failure", payload })]);
+    expect(failed.byStack.get("b")).toMatchObject({ kind: "failed", onMerge: true });
+    expect(failed.trail[0]).toMatchObject({ result: "failed", onMerge: true });
+    const went = deployFacts([record({ id: 3, task: "sluiceway:c", state: "success", payload })]);
+    expect(went.byStack.get("c")).toMatchObject({ kind: "succeeded", onMerge: true });
+    expect(went.trail[0]?.onMerge).toBe(true);
+    const ticked = deployFacts([
+      record({ id: 4, task: "sluiceway:d", state: "success", payload: { v: 1, ...facts } }),
+    ]);
+    expect("onMerge" in (ticked.trail[0] ?? {})).toBe(false);
+  });
+});
+
+// Deploy windows (record 0104): a record that waits for the stack's deploy
+// window carries `window`, an added key, and is a queued record without a
+// stack to wait behind.
+describe("a record that waits for the deploy window", () => {
+  const facts = { hash: "2b44350653e84a11", ticker: "alice", run: "4242" };
+
+  test("carries window, an added key written last, so the version stays 1", () => {
+    const written = deploymentPayload({ ...facts, fingerprint: "f65a69fe79dd93c3", window: true });
+    expect(written).toEqual({ v: 1, ...facts, fingerprint: "f65a69fe79dd93c3", window: true });
+    expect(Object.keys(written).at(-1)).toBe("window");
+    expect(readDeploymentPayload({ v: 1, ...facts, window: true })).toEqual({
+      ...facts,
+      window: true,
+    });
+  });
+
+  test("a record of a tick inside the window has no such key, and only true is read", () => {
+    expect(deploymentPayload(facts)).toEqual({ v: 1, ...facts });
+    expect(readDeploymentPayload({ v: 1, ...facts, window: "soon" })).toEqual(facts);
+  });
+
+  test("may wait behind stacks and for the window at once", () => {
+    const both = deploymentPayload({ ...facts, behind: ["b:prod"], window: true });
+    expect(readDeploymentPayload(both)).toEqual({ ...facts, behind: ["b:prod"], window: true });
+  });
+
+  test("is an open deployment that waits, and the fact says for the window", () => {
+    const payload = { v: 1, ...facts, window: true };
+    const open = deployFacts([record({ id: 1, task: "sluiceway:a", state: "queued", payload })]);
+    expect(open.byStack.get("a")).toEqual({
+      kind: "open",
+      deployment: 1,
+      waiting: true,
+      ticker: "alice",
+      run: "4242",
+      window: true,
+    });
+    // Once it ended, whether it waited says nothing about the deploy.
+    const went = deployFacts([record({ id: 2, task: "sluiceway:c", state: "success", payload })]);
+    expect("window" in (went.byStack.get("c") ?? {})).toBe(false);
+  });
+
+  test("gives a queued row at the late read of a scan, as a record behind a stack does", () => {
+    const fact: DeployFact = {
+      kind: "open",
+      deployment: 7,
+      waiting: true,
+      ticker: "alice",
+      run: "4242",
+      window: true,
+    };
+    expect(rowAtLateRead({ previewedAt: undefined, liveState: "queued", fact })).toEqual({
+      row: "deploying",
+      from: "live",
+    });
+    expect(rowAtLateRead({ previewedAt: undefined, liveState: "deploying", fact })).toEqual({
+      row: "deploying",
+      from: "record",
+    });
   });
 });

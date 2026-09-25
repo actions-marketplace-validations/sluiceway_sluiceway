@@ -30,14 +30,26 @@
 //      `uses: sluiceway/sluiceway@v0`: from a copy of the action in a
 //      directory of its own, with the moving tag as its ref and no
 //      GITHUB_ACTION_PATH. Its images come from the tag of package.json.
-//  10. Three stacks in a chain (record 0056): sluiceway.yaml says app:prod
-//      depends on network:dev and site:prod on app:prod, a push changes all
-//      three, and alice ticks them in one edit. Each run deploys one layer
-//      with the real tool, settle starts the workflow again, and the resolve
-//      of that run starts the next stack.
+//  10. Three stacks in a chain (record 0056): sluiceway.yaml says network:dev
+//      depends on app:prod and site:prod on network:dev, a push changes
+//      app:prod and site:prod, and the file network:dev manages is removed by
+//      hand, so a scheduled scan shows it drifted (record 0055). alice ticks
+//      the three in one edit. Each run deploys one layer with the real tool,
+//      settle starts the workflow again, and the resolve of that run starts
+//      the next stack. The drift repair waited behind app:prod, and still
+//      repairs: the trail says drift fixed, not no changes (record 0091).
 //  11. Merge and deploy: Renovate's pull request is listed, alice ticks it,
 //      resolve merges it on the fake, and the scan it starts hands the fresh
 //      diff of app:prod to apply, which deploys it with the real tool.
+//  12. Deploy on merge (record 0095): site:prod is set to on-merge, alice
+//      merges a change to it, and the scan of the push hands it to apply in
+//      the same step, which deploys it with the real tool. Nobody ticks, and
+//      the trail says merged by alice.
+//  13. An outside record (record 0109): a record another writer opened, deployed
+//      by the run it dispatched, which skips its scan.
+//  14. A push between the tick and the deploy (record 0111): apply compares
+//      the commit it checked out with main, refuses as moved before the tool
+//      runs and starts a full scan, which shows the row pending with the push.
 //
 // The tool only runs in a copy inside the work directory, against a file
 // backend made there, with an environment built from nothing. `node` on PATH
@@ -47,6 +59,7 @@ import { spawn } from "node:child_process";
 import {
   appendFileSync,
   cpSync,
+  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -59,6 +72,7 @@ import { parseArgs } from "node:util";
 import { type FakeCheckRun, FakeGitHub } from "../test/fake-github/fake-github.ts";
 import { startFakeGitHubServer } from "../test/fake-github/server.ts";
 import {
+  checkEnvFile,
   checkFullScan,
   checkNarrowedScan,
   checkOutsideDeploys,
@@ -67,9 +81,13 @@ import {
 } from "./e2e/checks.ts";
 import {
   checkApply,
+  checkBranchMoved,
+  checkDriftRepair,
   checkHandOff,
   checkMergeTick,
   checkNothingLeaks,
+  checkOutsideRecord,
+  checkPendingAfterRefusal,
   checkQueued,
   checkRefusedTick,
   checkRehearsal,
@@ -78,11 +96,14 @@ import {
   checkRowFacts,
   checkSettle,
   checkStarted,
+  checkTrail,
   type LoopRecord,
   type LoopStep,
   type MatrixEntry,
   matrixEntries,
   mergeRows,
+  rowFingerprint,
+  rowHash,
   tickMerge,
   tickRow,
 } from "./e2e/loop.ts";
@@ -191,6 +212,10 @@ interface StepOptions {
   // How the step names the action, and the directory the runner downloaded
   // it to. Without it the step is `uses: ./`, the checked out repo.
   action?: { ref: string; dir: string };
+  // The commit at the head of main while the step runs. Without it the
+  // branch holds the commit the step checked out, as when nothing was pushed
+  // since (record 0111).
+  branchHead?: string;
 }
 
 interface Stepped extends Observed {
@@ -212,6 +237,7 @@ async function step(mode: string | undefined, options: StepOptions): Promise<Ste
     eventPath = join(temp, `event-${stepNumber}.json`);
     writeFileSync(eventPath, JSON.stringify(options.payload));
   }
+  fake.seedBranch("main", options.branchHead ?? options.sha);
   const server = await startFakeGitHubServer(fake);
   const requestsBefore = fake.requests.length;
   // A page the step writes has links of its own run, so a page it updated
@@ -280,7 +306,12 @@ async function step(mode: string | undefined, options: StepOptions): Promise<Ste
 // the one step with no mode, which scans on each of these events (record
 // 0077). On a dispatch it resolves first, and finds nothing to start.
 let runNumber = 0;
-function scanStep(sha: string, event = "push", action?: StepOptions["action"]): Promise<Stepped> {
+function scanStep(
+  sha: string,
+  event = "push",
+  action?: StepOptions["action"],
+  inputs?: Record<string, string>,
+): Promise<Stepped> {
   runNumber++;
   const from = action === undefined ? "" : `, from ${action.ref}`;
   return step(undefined, {
@@ -289,6 +320,7 @@ function scanStep(sha: string, event = "push", action?: StepOptions["action"]): 
     event,
     title: `Scan ${runNumber}${from}`,
     ...(action === undefined ? {} : { action }),
+    ...(inputs === undefined ? {} : { inputs }),
   });
 }
 
@@ -326,6 +358,9 @@ await deploy("network", "prod");
 console.log("::endgroup::");
 
 const FIRST_SHA = "1111111111111111111111111111111111111111";
+// The value of the env file the first scan loads (record 0100). Long enough
+// to be masked, and no test result may hold it.
+const ENV_CANARY = "CANARY-ENV-VALUE";
 const SECOND_SHA = "2222222222222222222222222222222222222222";
 
 const expected: Expected = {
@@ -340,7 +375,7 @@ const expected: Expected = {
   sha: FIRST_SHA,
   // A local action has no ref, so its images come from the commit of the run.
   actionRef: FIRST_SHA,
-  secrets: [CANARY_VALUE, CANARY_SECRET],
+  secrets: [CANARY_VALUE, CANARY_SECRET, ENV_CANARY],
 };
 
 // The history of the repo, for attribution (record 0026): the example came
@@ -366,9 +401,26 @@ fake.seedPullRequest({
   commits: [SECOND_SHA],
 });
 
-const first = await scanStep(FIRST_SHA);
+// The first scan names an env file (record 0100): a file a step before
+// Sluiceway would have resolved, with one value long enough to mask and one
+// too short. No program of the example reads either, so the proof is what
+// the step printed, and that the value reached nothing Sluiceway writes.
+const ENV_FILE = {
+  path: "ci/deploy.env",
+  masked: ENV_CANARY,
+  unmaskedName: "SLUICEWAY_E2E_SHORT",
+  unmaskedValue: "e2e",
+};
+mkdirSync(join(workspace, "ci"), { recursive: true });
+writeFileSync(
+  join(workspace, ENV_FILE.path),
+  `# Resolved by a step before Sluiceway.\nSLUICEWAY_E2E_TOKEN=${ENV_CANARY}\n${ENV_FILE.unmaskedName}=${ENV_FILE.unmaskedValue}\n`,
+);
+
+const first = await scanStep(FIRST_SHA, "push", undefined, { "env-file": ENV_FILE.path });
 let good = report("The full scan", [
   ...checkFullScan(first, expected),
+  ...checkEnvFile(first.log, ENV_FILE),
   // network:prod was deployed by hand above, so the tool's history holds a
   // deploy that no deployment record ran (record 0073).
   ...checkOutsideDeploys(first, ["network:prod"]),
@@ -471,6 +523,8 @@ interface TickOptions {
   inputs?: Record<string, string>;
   // What happens between the edit and the start of the run.
   beforeRun?: () => Promise<void>;
+  // The commit the run checks out. SECOND_SHA without it.
+  sha?: string;
 }
 
 // A person ticks the box of a stack, and the edit starts a run.
@@ -491,7 +545,7 @@ async function tick(
   const what = options.mode === undefined ? "the one step" : options.mode;
   const resolved = await loopStep(options.mode, {
     runId,
-    sha: SECOND_SHA,
+    sha: options.sha ?? SECOND_SHA,
     event: "issues",
     payload,
     ...(options.inputs === undefined ? {} : { inputs: options.inputs }),
@@ -505,13 +559,15 @@ function applyStep(
   deployment: number,
   runAttempt = "1",
   inputs: Record<string, string> = {},
+  commits: { sha?: string; branchHead?: string } = {},
 ): Promise<LoopStep> {
   const attempt = runAttempt === "1" ? "" : `, attempt ${runAttempt}`;
   return loopStep("apply", {
     inputs: { "deployment-id": String(deployment), ...inputs },
     runId: issuesRun.runId,
     runAttempt,
-    sha: SECOND_SHA,
+    sha: commits.sha ?? SECOND_SHA,
+    ...(commits.branchHead === undefined ? {} : { branchHead: commits.branchHead }),
     event: "issues",
     payload: issuesRun.payload,
     title: `Run ${issuesRun.runId}: apply of deployment record ${deployment}${attempt}${inputs["dry-run"] === "true" ? ", a rehearsal" : ""}`,
@@ -554,7 +610,7 @@ function checkDeploys(stack: string, found: number, expected: number): string[] 
     : [`The backend holds ${found} deploys of ${stack}, expected ${expected}.`];
 }
 
-const secrets = [CANARY_VALUE, CANARY_SECRET];
+const secrets = [CANARY_VALUE, CANARY_SECRET, ENV_CANARY];
 function reportStep(title: string, stepped: LoopStep, problems: string[]): boolean {
   return report(title, [...problems, ...checkNothingLeaks(stepped, secrets)]);
 }
@@ -748,18 +804,18 @@ good =
       : [`The footer does not name v${version}.`]),
   ]) && good;
 
-// 10. Three stacks in a chain (record 0056). The config and the three programs
-// change in one push, so all three are pending, and alice ticks them in one
-// edit.
+// 10. Three stacks in a chain (record 0056). The config and two programs
+// change in one push, so app:prod and site:prod are pending. The layer between
+// them, network:dev, is drifted instead: the file it manages is removed behind
+// the tool's back, and only its entry turns the drift check on. alice ticks
+// the three in one edit, so the drift repair waits behind app:prod and a later
+// run starts it (issue 209, record 0091).
 const THIRD_SHA = "3333333333333333333333333333333333333333";
-console.log("::group::Pushing a chain of dependencies and a change to three stacks");
+console.log("::group::Pushing a chain of dependencies, a change to two stacks, and drift");
 const configFile = join(workspace, "sluiceway.yaml");
 writeFileSync(
   configFile,
-  `${readFileSync(configFile, "utf8").replace(
-    "  - path: app\n    inputs:\n      - shared/**\n",
-    "  - path: app\n    inputs:\n      - shared/**\n    dependsOn:\n      - network:dev\n",
-  )}\n  - path: site\n    dependsOn:\n      - app:prod\n`,
+  `${readFileSync(configFile, "utf8")}\n  - path: network\n    name: dev\n    dependsOn:\n      - app:prod\n    drift:\n      enabled: true\n  - path: site\n    dependsOn:\n      - network:dev\n`,
 );
 const edit = (file: string, from: string, to: string) => {
   const path = join(workspace, file);
@@ -767,13 +823,15 @@ const edit = (file: string, from: string, to: string) => {
   if (!text.includes(from)) throw new Error(`${file} holds no "${from}".`);
   writeFileSync(path, text.replace(from, to));
 };
-edit("network/Pulumi.dev.yaml", "network:zone: dev-a", "network:zone: dev-b");
+// Both network stacks write this file, and only network:dev checks drift.
+const notesFile = join(workspace, "network", "out", "notes.txt");
+rmSync(notesFile);
 edit("app/Pulumi.prod.yml", "app:tier: standard", "app:tier: premium");
 edit("site/Pulumi.prod.yaml", "    - contact\n", "    - contact\n    - blog\n");
 console.log(readFileSync(configFile, "utf8"));
 console.log("::endgroup::");
 const chainScan = await scanStep(THIRD_SHA, "schedule");
-const chainRows = { "app:prod": "pending", "network:dev": "pending", "site:prod": "pending" };
+const chainRows = { "app:prod": "pending", "network:dev": "drift", "site:prod": "pending" };
 good =
   report(
     "The scan before the chain",
@@ -844,17 +902,18 @@ function deployLayer(layer: IssuesRun, stack: string, environment: string) {
 }
 
 const chainTick = await tickAll(["site:prod", "app:prod", "network:dev"]);
-const firstLayer = deployLayer(chainTick, "network:dev", "network");
+const firstLayer = deployLayer(chainTick, "app:prod", "sluiceway");
 good =
   reportStep("The chain: the first layer", chainTick.resolved, [
     ...firstLayer.problems,
     ...checkQueued(chainTick.resolved, [
-      { stack: "app:prod", behind: ["network:dev"] },
-      { stack: "site:prod", behind: ["app:prod"] },
+      { stack: "network:dev", behind: ["app:prod"] },
+      { stack: "site:prod", behind: ["network:dev"] },
     ]),
-    // app:prod and site:prod wait, and nothing of them went out yet.
-    ...checkDeploys("network:dev", await deploysOf("network", "dev"), 2),
-    ...checkDeploys("app:prod", await deploysOf("app", "prod"), 1),
+    ...checkDriftRepair(chainTick.resolved, "network:dev"),
+    // network:dev and site:prod wait, and nothing of them went out yet.
+    ...checkDeploys("app:prod", await deploysOf("app", "prod"), 2),
+    ...checkDeploys("network:dev", await deploysOf("network", "dev"), 1),
     ...checkDeploys("site:prod", await deploysOf("site", "prod"), 1),
     ...(firstLayer.settled?.newDispatches === 1
       ? []
@@ -862,12 +921,19 @@ good =
   ]) && good;
 
 const secondRun = await dispatchedRun();
-const secondLayer = deployLayer(secondRun, "app:prod", "sluiceway");
+const secondLayer = deployLayer(secondRun, "network:dev", "network");
 good =
   reportStep("The chain: the second layer", secondRun.resolved, [
     ...secondLayer.problems,
-    ...checkQueued(secondRun.resolved, [{ stack: "site:prod", behind: ["app:prod"] }]),
-    ...checkDeploys("app:prod", await deploysOf("app", "prod"), 2),
+    ...checkQueued(secondRun.resolved, [{ stack: "site:prod", behind: ["network:dev"] }]),
+    // The record this run started for the queued repair is still a drift
+    // repair, and the deploy put the file back (issue 209, record 0091).
+    ...checkDriftRepair(secondRun.resolved, "network:dev"),
+    ...checkTrail(secondRun.resolved.body, "network:dev", "drift fixed"),
+    ...(existsSync(notesFile)
+      ? []
+      : ["The drift repair of network:dev did not put its file back."]),
+    ...checkDeploys("network:dev", await deploysOf("network", "dev"), 2),
     ...checkDeploys("site:prod", await deploysOf("site", "prod"), 1),
     ...(secondLayer.settled?.newDispatches === 1
       ? []
@@ -999,6 +1065,204 @@ good =
         })),
     ...checkSettle(handingOn, { ended: undefined, before: handingOn.records }),
     ...checkDeploys("app:prod", await deploysOf("app", "prod"), appDeploys + 1),
+  ]) && good;
+
+// 12. Deploy on merge (record 0095). The repo sets site:prod to on-merge,
+// and alice merges a change to its program. The push starts the one step,
+// whose scan finds site:prod pending and hands it to apply in the same step,
+// which deploys it with the real tool. Nobody ticks. The record, the trail
+// and the row say it went out on merge and who merged it.
+console.log("::group::Setting site:prod to deploy on merge, and alice merges a change to it");
+edit(
+  "sluiceway.yaml",
+  "  - path: site\n    dependsOn:\n      - network:dev\n",
+  "  - path: site\n    dependsOn:\n      - network:dev\n    deploy: on-merge\n",
+);
+edit("site/Pulumi.prod.yaml", "    - blog\n", "    - blog\n    - shop\n");
+console.log(readFileSync(configFile, "utf8"));
+console.log("::endgroup::");
+const ON_MERGE_SHA = "6666666666666666666666666666666666666666";
+const siteDeploys = await deploysOf("site", "prod");
+runNumber++;
+const pushRun = String(runNumber);
+// GitHub knows the run of the push while it runs.
+fake.seedRun(pushRun, { completed: false });
+const onMerge = await loopStep(undefined, {
+  runId: pushRun,
+  sha: ON_MERGE_SHA,
+  event: "push",
+  payload: {
+    ref: "refs/heads/main",
+    repository: { default_branch: "main" },
+    sender: { login: ALICE.login, type: "User" },
+  },
+  title: `Run ${pushRun}: the one step, after alice merged a change to site:prod`,
+});
+fake.seedRun(pushRun, { completed: true });
+const [onMergeEntry] = matrixEntries(onMerge.outputs.matrix ?? "");
+const onMergeRecord = onMerge.records.find(({ id }) => id === onMergeEntry?.deployment);
+good =
+  reportStep("Deploy on merge: the push", onMerge, [
+    ...(onMergeEntry?.stack === "site:prod"
+      ? []
+      : [`The push handed on ${JSON.stringify(onMergeEntry)}, expected site:prod.`]),
+    ...(onMergeRecord &&
+    (onMergeRecord.payload as { onMerge?: unknown; ticker?: unknown }).onMerge === true &&
+    (onMergeRecord.payload as { ticker?: unknown }).ticker === ALICE.login
+      ? []
+      : [
+          `The record of site:prod says ${JSON.stringify(onMergeRecord?.payload)}, expected onMerge and ticker ${ALICE.login}.`,
+        ]),
+    ...(onMergeEntry === undefined
+      ? []
+      : checkApply(onMerge, {
+          stack: "site:prod",
+          deployment: onMergeEntry.deployment,
+          outcome: "deployed",
+        })),
+    // The fake's records keep times of their own, older than the tool's own
+    // history, so the line is looked for rather than taken as the newest.
+    ...(new RegExp(`^- (\\S+&nbsp;)?site:prod · merged by ${ALICE.login} · `, "m").test(
+      onMerge.body,
+    )
+      ? []
+      : ["Recently deployed has no line of site:prod that says merged by alice."]),
+    ...checkDeploys("site:prod", await deploysOf("site", "prod"), siteDeploys + 1),
+    ...(onMerge.newComments.length === 0
+      ? []
+      : [`The push wrote comments: ${JSON.stringify(onMerge.newComments)}.`]),
+  ]) && good;
+
+// 13. An outside record (record 0109). A reader of the published shape opens
+// a deployment record of app:prod itself, with the diff hash of the row and a
+// ticker of its own word, and starts the workflow with a dispatch, naming the
+// run in the record. The one step resolves, which hands the record on as it
+// is, deploys it with the real tool through the fresh preview and the hash
+// check, settles, and skips its scan.
+console.log("::group::A change to app:prod, for a record another writer opens");
+edit("app/Pulumi.prod.yml", "app:tier: premium", "app:tier: business");
+// The repo names the app that may open records (record 0109).
+appendFileSync(configFile, "\nrecordWriters:\n  - deploy-bot[bot]\n");
+console.log(readFileSync(configFile, "utf8"));
+console.log("::endgroup::");
+const OUTSIDE_SHA = "7777777777777777777777777777777777777777";
+const beforeOutside = await scanStep(OUTSIDE_SHA, "schedule");
+const outsideHash = rowHash(dashboardBody(beforeOutside), "app:prod");
+const outsideFingerprint = rowFingerprint(dashboardBody(beforeOutside), "app:prod");
+good =
+  report("The scan before the outside record", [
+    ...(beforeOutside.exitCode === 0
+      ? []
+      : [`The scan ended with exit code ${beforeOutside.exitCode}.`]),
+    ...(outsideHash === undefined ? ["The row of app:prod is not pending with a hash."] : []),
+  ]) && good;
+const appDeploysBefore = await deploysOf("app", "prod");
+runNumber++;
+const outsideRun = String(runNumber);
+// The writer found the run it started, and GitHub knows it while it runs.
+fake.seedRun(outsideRun, { completed: false });
+const outsideRecord = fake.seedDeployment({
+  task: "sluiceway:app:prod",
+  environment: "sluiceway",
+  sha: OUTSIDE_SHA,
+  // The writer is the app GitHub names as the creator. The ticker is its word.
+  creator: "deploy-bot[bot]",
+  payload: {
+    v: 1,
+    hash: outsideHash ?? "",
+    ticker: "dave",
+    run: outsideRun,
+    ...(outsideFingerprint === undefined ? {} : { fingerprint: outsideFingerprint }),
+  },
+  status: { state: "queued" },
+});
+const outsideStep = await loopStep(undefined, {
+  runId: outsideRun,
+  sha: OUTSIDE_SHA,
+  event: "workflow_dispatch",
+  payload: { ref: "refs/heads/main", inputs: {} },
+  title: `Run ${outsideRun}: the one step, dispatched by the writer of record ${outsideRecord.id}`,
+});
+fake.seedRun(outsideRun, { completed: true });
+good =
+  reportStep("The outside record: the run its writer dispatched", outsideStep, [
+    ...checkOutsideRecord(outsideStep, { stack: "app:prod", deployment: outsideRecord.id }),
+    ...checkApply(outsideStep, {
+      stack: "app:prod",
+      deployment: outsideRecord.id,
+      outcome: "deployed",
+    }),
+    ...checkSettle(outsideStep, { ended: undefined, before: outsideStep.records }),
+    // The trail is not checked here: the fake's records keep times of their
+    // own, older than the tool's own history, and by now the outside deploys
+    // of that history fill its ten lines. The record, the row and the tool's
+    // history above are the proof.
+    ...checkDeploys("app:prod", await deploysOf("app", "prod"), appDeploysBefore + 1),
+    ...(outsideStep.newComments.length === 0
+      ? []
+      : [`The run wrote comments: ${JSON.stringify(outsideStep.newComments)}.`]),
+  ]) && good;
+
+// 14. A push between the tick and the deploy (record 0111). alice ticks
+// app:prod in the split workflow, and before its apply job starts a push
+// changes the file app:prod reads its config from. The apply job checked out
+// the commit of the tick, so no fresh preview of it could show the push:
+// apply compares that commit with main, refuses as moved before the tool
+// runs, starts a full scan and tells alice. The scan of the newer commit
+// shows app:prod pending with the push, never in sync.
+console.log("::group::A change to app:prod, ticked, then a push to it before apply");
+edit("app/Pulumi.prod.yml", "app:tier: business", "app:tier: enterprise");
+console.log("::endgroup::");
+const TICKED_SHA = "8888888888888888888888888888888888888888";
+const PUSHED_SHA = "9999999999999999999999999999999999999999";
+const beforePush = await scanStep(TICKED_SHA, "schedule");
+good =
+  report("The scan before the tick of app:prod", [
+    ...(beforePush.exitCode === 0 ? [] : [`The scan ended with exit code ${beforePush.exitCode}.`]),
+    ...(rowHash(dashboardBody(beforePush), "app:prod") === undefined
+      ? ["The row of app:prod is not pending with a hash."]
+      : []),
+  ]) && good;
+const appDeploysBeforePush = await deploysOf("app", "prod");
+const tickedBeforePush = await tick("app:prod", ALICE, { mode: "resolve", sha: TICKED_SHA });
+const [pushedEntry] = tickedBeforePush.matrix;
+// The push: main moves on, and the working copy holds what it pushed, for the
+// scan after it.
+edit("app/Pulumi.prod.yml", "app:tier: enterprise", "app:tier: platinum");
+fake.seedComparison(TICKED_SHA, PUSHED_SHA, {
+  status: "ahead",
+  files: [{ path: "app/Pulumi.prod.yml" }],
+});
+const refusedForPush =
+  pushedEntry === undefined
+    ? undefined
+    : await applyStep(
+        tickedBeforePush,
+        pushedEntry.deployment,
+        "1",
+        {},
+        {
+          sha: TICKED_SHA,
+          branchHead: PUSHED_SHA,
+        },
+      );
+const settledAfterPush = await settleStep(tickedBeforePush);
+const afterPush = await scanStep(PUSHED_SHA, "workflow_dispatch");
+good =
+  report("A push between the tick and the deploy", [
+    ...(pushedEntry === undefined ? ["resolve handed nothing on for app:prod."] : []),
+    ...(refusedForPush === undefined || pushedEntry === undefined
+      ? []
+      : checkBranchMoved(refusedForPush, {
+          stack: "app:prod",
+          deployment: pushedEntry.deployment,
+        })),
+    ...(settledAfterPush.exitCode === 0
+      ? []
+      : [`settle ended with exit code ${settledAfterPush.exitCode}.`]),
+    ...checkDeploys("app:prod", await deploysOf("app", "prod"), appDeploysBeforePush),
+    ...(afterPush.exitCode === 0 ? [] : [`The scan ended with exit code ${afterPush.exitCode}.`]),
+    ...checkPendingAfterRefusal(dashboardBody(afterPush), "app:prod"),
   ]) && good;
 
 console.log("::group::The dashboard after the narrowed scan");

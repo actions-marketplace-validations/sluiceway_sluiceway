@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { PreviewFailureReason } from "../../core/failure-reason.ts";
 import { type Stack, stackId } from "../../core/stack.ts";
@@ -71,10 +72,20 @@ async function diff(
       "The tool's output: expected the objects that differ, as the exit code says there are.",
     ]);
   }
-  const folded = foldObjects(read.pairs, options.showValues ?? [], pruning?.inventory);
+  const folded = foldObjects(
+    read.pairs,
+    options.showValues ?? [],
+    pruning?.inventory,
+    options.valueFingerprint === true,
+  );
   if (!folded.ok) return failed({ kind: folded.reason }, log, folded.detail);
   const changes = [...folded.changes, ...(pruning?.deletes ?? [])].sort((a, b) =>
     a.address < b.address ? -1 : a.address > b.address ? 1 : 0,
   );
-  return { ok: true, diff: { stackId: stackId(stack), changes }, toolLog: log };
+  // The rendered set, for the policies alone (record 0106): the manifests as
+  // the deploy would apply them.
+  const document = options.keepDocument
+    ? { document: { text: await readFile(set.path, "utf8"), format: "yaml" as const } }
+    : {};
+  return { ok: true, diff: { stackId: stackId(stack), changes }, toolLog: log, ...document };
 }

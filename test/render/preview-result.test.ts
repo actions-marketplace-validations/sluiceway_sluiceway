@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { PreviewResult } from "../../src/adapters/adapter.ts";
+import type { PreviewResult } from "../../src/core/tool-result.ts";
 import { previewOutcome, previewRow } from "../../src/render/preview-result.ts";
 import { renderRow } from "../../src/render/row.ts";
 
@@ -137,7 +137,7 @@ describe("a preview that read what its stack depends on", () => {
       toolLog: "",
     };
     for (const result of [PENDING, inSync, drifted]) {
-      expect(marker(read(result))).toContain(' depends-on="network:prod" -->');
+      expect(marker(read(result))).toContain(' depends-on="network:prod"');
     }
   });
 

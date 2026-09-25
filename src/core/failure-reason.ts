@@ -22,7 +22,16 @@ export type PreviewFailureReason =
   | { kind: "unknown-step" }
   // An error thrown past the adapter: a bug of Sluiceway's own (slice 5.9).
   // The row says so, and the job still goes red.
-  | { kind: "internal-error" };
+  | { kind: "internal-error" }
+  // The env file the stack's entry names could not be loaded (record 0103):
+  // it is not there, or a line of it is refused. The tool never ran for the
+  // stack, and the job log has the path and the line number.
+  | { kind: "env-file-not-loaded" }
+  // Not a way a preview fails: the word a reader outside Sluiceway writes
+  // when it draws a preview failure row from the markers alone and holds no
+  // reason (record 0110). The reason is in the summary of the run, and in
+  // the result file. The scan never writes it.
+  | { kind: "in-summary" };
 
 // The reason as a row, the summary, an annotation or a deployment status shows
 // it. One form for all of them: lower case and no full stop, the wording of
@@ -55,6 +64,10 @@ export function previewFailureText(reason: PreviewFailureReason): string {
       return `the tool printed more than the ${reason.megabytes} MB Sluiceway holds`;
     case "internal-error":
       return "Sluiceway failed inside itself, which is a bug";
+    case "env-file-not-loaded":
+      return "the env file of the stack could not be loaded";
+    case "in-summary":
+      return "the reason is in the summary of the run";
   }
 }
 
@@ -67,6 +80,12 @@ export type DeployFailureReason =
   // The fresh preview of `apply` gave another diff hash than the tick
   // approved (record 0008). The record ends as `error`.
   | { kind: "moved" }
+  // The fresh preview gave the diff hash the tick approved and another value
+  // fingerprint (record 0102): a value the row does not show changed since
+  // the tick. `everyRun`: the dashboard's last scan was of this same commit,
+  // so the value differs between two previews of the same code. The record
+  // ends as `error`.
+  | { kind: "value-changed"; everyRun: boolean }
   // The deploy itself failed. exitCode is null when the tool could not be
   // started or a signal ended it.
   | { kind: "tool-error"; exitCode: number | null }
@@ -87,7 +106,12 @@ export type DeployFailureReason =
   | { kind: "dependency-failed" }
   // Anything else that stopped `apply` before the tool ran, such as a
   // broken `sluiceway.yaml`. The job log says what.
-  | { kind: "not-started" };
+  | { kind: "not-started" }
+  // Not a way a deploy fails: the word a reader outside Sluiceway writes
+  // when it draws a failure line from the markers and the deployment records
+  // and holds no reason, because the description of a status is not part of
+  // the published shape (records 0096 and 0110). `apply` never writes it.
+  | { kind: "on-record" };
 
 export function deployFailureText(reason: DeployFailureReason): string {
   switch (reason.kind) {
@@ -95,6 +119,10 @@ export function deployFailureText(reason: DeployFailureReason): string {
       return "the run ended without a result";
     case "moved":
       return "the change moved since the tick";
+    case "value-changed":
+      return reason.everyRun
+        ? "a value changed since the tick with no new commit, so it may differ on every run: see valueFingerprint in sluiceway.yaml"
+        : "a value changed since the tick";
     case "tool-error":
       return reason.exitCode === null
         ? "the tool exited with an error"
@@ -113,5 +141,7 @@ export function deployFailureText(reason: DeployFailureReason): string {
       return "the deploy stopped before the tool ran";
     case "dependency-failed":
       return "a stack it depends on did not deploy";
+    case "on-record":
+      return "the reason is on the deployment record";
   }
 }

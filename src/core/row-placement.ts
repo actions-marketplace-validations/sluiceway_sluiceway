@@ -7,7 +7,6 @@
 // first, and returns to its late read after that. Nothing here reads or
 // writes: the scan does the preview, the read and the write.
 
-import type { PreviewResult, ToolDeploy } from "../adapters/adapter.ts";
 import { type RunLinks, runUrl } from "../render/links.ts";
 import type {
   ParsedBulk,
@@ -16,6 +15,7 @@ import type {
   ParsedRow,
   ParsedWaiting,
   RootFacts,
+  WaitingRunFacts,
 } from "../render/marker.ts";
 import {
   type BranchPreview,
@@ -34,6 +34,7 @@ import {
 import { waitingBlock } from "../render/waiting-line.ts";
 import type { Attribution } from "./attribution.ts";
 import type { BulkState } from "./bulk.ts";
+import { type DeployWindow, queuedWindow } from "./deploy-window.ts";
 import {
   type DeployFact,
   type DeployFacts,
@@ -44,13 +45,20 @@ import {
   type TrailEntry,
 } from "./deployment.ts";
 import type { WaitingUpdate } from "./merge-and-deploy.ts";
+import type { OnMergeWait } from "./on-merge.ts";
 import { type TickAtLateRead, tickAtLateRead } from "./orphan-tick.ts";
 import { type OutsideDeploy, outsideDeploys, trailOutside } from "./outside-deploy.ts";
+import type { PolicyOutcome } from "./policy.ts";
 import { oneRowPerStack } from "./scan-plan.ts";
+import type { PreviewResult, ToolDeploy } from "./tool-result.ts";
+import { differsEveryRun, valueFingerprint } from "./value-fingerprint.ts";
 
 // One stack this scan previewed.
 export interface PreviewedStack {
   result: PreviewResult;
+  // What the policies made of the change (record 0106), when the scan ran
+  // them.
+  policies?: PolicyOutcome | undefined;
   // When the preview started. A deploy that ended after it is fresher than
   // the preview (record 0004).
   startedAt: Date;
@@ -71,7 +79,9 @@ export interface ScanSoFar {
   // Every discovered stack, in discovery order.
   ids: readonly string[];
   // The root marker a scan writes, less the keys of a full scan.
-  scan: { sha: string; runId: string; at: string };
+  // `waitingRun`: a run of the workflow that waits for a runner, as the scan
+  // found it (record 0086).
+  scan: { sha: string; runId: string; at: string; waitingRun?: WaitingRunFacts | undefined };
   // `https://github.com/<owner>/<repo>`.
   repoUrl: string;
   links: RunLinks;
@@ -90,6 +100,13 @@ export interface ScanSoFar {
   pageUrls: ReadonlyMap<string, string>;
   // The tools' own histories, once a full scan read them (record 0073).
   histories: ReadonlyMap<string, readonly ToolDeploy[]> | undefined;
+  // The deploy windows of each stack that has any, the scan's clock and the
+  // dashboard zone (record 0104), for what a queued row says of the window.
+  windows: {
+    byStack: ReadonlyMap<string, readonly DeployWindow[]>;
+    now: Date;
+    timeZone: string;
+  };
 }
 
 // The deploy facts of one late read (record 0003).
@@ -125,6 +142,9 @@ export interface LateRead {
   attributed: ReadonlyMap<string, Pick<Attribution, "lines">>;
   // What each deploy of the trail shipped (record 0072).
   shipped?: ReadonlyMap<TrailEntry, AttributionLines> | undefined;
+  // The stacks set to on-merge whose change waits for a tick after all, and
+  // why (record 0095). Their pending rows say so.
+  waitsOnMerge?: ReadonlyMap<string, OnMergeWait> | undefined;
 }
 
 // Why a stack is previewed at the late read: for its deployment records
@@ -265,6 +285,17 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
         toolDiffInLog: logDiff,
         pageUrl: so.pageUrls.get(id),
       });
+      // A value the row does not show differed between this preview and the
+      // live row's, at the commit of the live body's last scan (record 0102).
+      const everyRun =
+        (fresh.state === "pending" || fresh.state === "drift") &&
+        liveRow?.known === true &&
+        liveRow.hash !== undefined &&
+        differsEveryRun(
+          { hash: liveRow.hash, fingerprint: liveRow.fingerprint },
+          { hash: fresh.hash, fingerprint: valueFingerprint(fresh.diff) },
+          live.root?.scanSha === so.scan.sha,
+        );
       const row =
         fresh.state === "pending"
           ? {
@@ -273,15 +304,21 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
               pendingAgain: pendingAgain(fact, fresh.hash)
                 ? { logUrl: logDiff ? links.log : undefined }
                 : undefined,
+              ...(everyRun ? { valueEveryRun: true } : {}),
+              ...(late.waitsOnMerge?.has(id) ? { waitsOnMerge: late.waitsOnMerge.get(id) } : {}),
+              ...(mine.policies === undefined ? {} : { policies: mine.policies }),
             }
-          : fresh;
+          : fresh.state === "drift" && everyRun
+            ? { ...fresh, valueEveryRun: true }
+            : fresh;
       if (!ticked) {
         rows.set(id, row);
         continue;
       }
       // Only a pending or a drifted row has a box, for a tick or for the note
-      // (record 0055).
-      const box = row.state === "pending" || row.state === "drift";
+      // (record 0055), and not one a policy stopped (record 0106).
+      const box =
+        (row.state === "pending" && row.policies?.kind !== "failed") || row.state === "drift";
       const carry =
         tickAtLateRead({
           liveHash: liveTicks.get(id),
@@ -302,6 +339,8 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
         deletes: deletesOf(mine, liveRow),
         attribution: attributed.get(id)?.lines,
         behind: fact.behind,
+        ...(fact.onMerge ? { onMerge: true } : {}),
+        window: queuedWindow(fact, so.windows.byStack.get(id), so.windows.now, so.windows.timeZone),
       });
     } else if (liveRow) {
       if (ticked && decided.row === "live") {
@@ -333,6 +372,8 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
         // Written by a full scan, carried through by every other writer.
         fullScanAt: full ? so.scan.at : live.root?.fullScanAt,
         fullScanRun: full ? so.scan.runId : live.root?.fullScanRun,
+        // Only the scan lists the runs, so it writes what it found, or no line.
+        waitingRun: so.scan.waitingRun,
       },
       facts: deploys.facts,
       shipped: late.shipped ?? new Map(),
@@ -407,6 +448,7 @@ function failureLine(
     ticker: fact.ticker,
     at: fact.at,
     runUrl: runUrl(repoUrl, fact.run, fact.attempt),
+    ...(fact.onMerge ? { onMerge: true } : {}),
   };
 }
 

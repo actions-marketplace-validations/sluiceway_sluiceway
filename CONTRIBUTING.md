@@ -28,7 +28,8 @@ bun install
 | `bun run build:schema` | Writes `schema/sluiceway.schema.json` from the Zod schema in `src/core/config.ts`. |
 | `bun run check:schema` | Generates, then fails if `schema/` differs from what is committed. |
 | `bun run record:fixtures` | Records `test/fixtures/pulumi/` with the `pulumi` CLI on your PATH. With `--tool opentofu` it records `test/fixtures/opentofu/` with `tofu`, and with `--tool helm` `test/fixtures/helm/` with `helm` and its diff plugin against the cluster `KUBECONFIG` names. See below before you commit its output. |
-| `bun run build` | Bundles `src/main.ts` into `dist/index.js` for the Node runtime of GitHub Actions. |
+| `bun run example` | Writes the example dashboard to `assets/example-dashboard.md` and into the README, from the made-up rows of `scripts/example-dashboard.ts`. |
+| `bun run build` | Bundles `src/main.ts` into `dist/index.js` for the Node runtime of GitHub Actions, and `src/cli.ts` into `dist/cli.js`, the command line the npm package `sluiceway` runs (record 0094). |
 | `bun run check:dist` | Builds, then fails if `dist/` differs from what is committed. |
 | `bun run check` | All of the above, as CI runs them. |
 | `bun run e2e` | Scans a copy of `examples/pulumi-basic` with the committed bundle, the `pulumi` CLI on your PATH and the fake GitHub server: a full scan and a narrowed one, then the whole loop of ticks, `resolve`, `apply` with the real tool and `settle`, with a refused tick, a cancelled deploy, a moved change and a re-run. `node` on your PATH has to be Node 24, because it stands in for the runner's own. The `e2e` workflow runs it on every pull request. |
@@ -53,6 +54,15 @@ git add schema
 ```
 
 Never edit `schema/sluiceway.schema.json` by hand.
+
+The example dashboard works the same way too (record 0088). `assets/example-dashboard.md` and the example in the README are what the renderer gives for the made-up rows of `scripts/example-dashboard.ts`, at the version in `package.json`, and a test fails when either one is not. Other sites fetch the file raw at a release tag. When a change to `src/render/` changes the body, or you add a feature a reader should see:
+
+```sh
+bun run example
+git add assets/example-dashboard.md README.md
+```
+
+The release workflow runs it on the release pull request, because that is where the version changes. Never edit either copy by hand.
 
 ## Recorded fixtures
 
@@ -102,6 +112,16 @@ mv test/fixtures/kubectl/fixtures-kubectl-*/* test/fixtures/kubectl/ && rmdir te
 ```
 
 To try it on your machine, make a cluster for it and nothing else: `kind create cluster --name sluiceway-fixtures`, then `bun run record:fixtures --tool kubectl --out /tmp/try`.
+
+The cost estimate (record 0105) has a set of its own: `scripts/fixtures/infracost-scenarios.ts` drives tofu over a copy of `examples/opentofu-basic` with a root module of the AWS provider written into it, and the Infracost CLI, the open source 0.10 line, reads each plan's JSON against a fake pricing API the recorder starts on the machine (`scripts/fixtures/fake-pricing-api.ts`), so no recording asks Infracost's own service and the prices never change. `FIXTURE_INFRACOST_VERSIONS` names the version, and the `fixtures-infracost` job of CI records it. To take it from CI:
+
+```sh
+rm -rf test/fixtures/infracost
+gh run download <run id> --pattern 'fixtures-infracost-*' --dir test/fixtures/infracost
+mv test/fixtures/infracost/fixtures-infracost-*/* test/fixtures/infracost/ && rmdir test/fixtures/infracost/fixtures-infracost-*
+```
+
+To try it on your machine: `bun run record:fixtures --tool infracost --out /tmp/try`, with `tofu` and `infracost` 0.10 on your PATH. The recorder needs port 47831 for the fake pricing API.
 
 ## Rules for code
 

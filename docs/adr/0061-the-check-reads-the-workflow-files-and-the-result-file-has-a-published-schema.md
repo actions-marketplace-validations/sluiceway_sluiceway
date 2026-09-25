@@ -1,8 +1,14 @@
 # The check reads the workflow files, and the result file has a published schema
 
+> Amended by 0099: the check reads the names `env:` sets on the workflow, a job and the Sluiceway step, and the other steps of the job, to say which credentials each stack needs that nothing in the workflow provides.
+>
+> Amended by 0096: the schema's description says the file holds no secret, and the `values` of a change says it is the one field that may hold a property value. The payload of a deployment record gets a schema of its own next to it.
+>
 > Amended by 0074: the check also reads the concurrency groups, the status checks in the `if:` of `apply` and `settle`, the `needs` of `settle` and the second apply job of merge and deploy, each only where the text plainly lacks it. Still a warning, never a red job.
 >
 > Amended by 0077: a step with no mode is auto mode, and the check reads what it runs from the triggers of its file.
+>
+> Amended by 0093: the check reads the environment a Sluiceway job names, and gives each job that deploys one line on who decides who may deploy: the tick rule alone without an environment, or the environment's required reviewers if it has them, which the check cannot read.
 
 Record 0042 made the check a pass over the repo's files that says whether Sluiceway understands the setup: the config, the stacks, `ignore` and the files no stack claims. It left the workflow out, because GitHub validates a workflow. What GitHub does not validate is whether a workflow is the one Sluiceway needs: a missing `workflow_dispatch`, `actions: read` where a mode dispatches, a `resolve` job in a second file or a branch as the ref all run without an error and fail later, on the first tick or the first rescan. The workflow is a file in the checkout, so the check can read it with the same promise: no credentials, no tool, no GitHub API.
 

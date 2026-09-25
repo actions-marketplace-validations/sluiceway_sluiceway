@@ -12,6 +12,7 @@ import { runApply } from "./apply-job.ts";
 import { auto } from "./auto.ts";
 import { backendContext } from "./check-backend.ts";
 import { runCheck } from "./check-job.ts";
+import { pullRequestPreviewContext } from "./check-pull-request.ts";
 import { runResolve } from "./resolve-job.ts";
 import { runScan } from "./scan-job.ts";
 import { runSettle } from "./settle-job.ts";
@@ -37,9 +38,10 @@ export async function runAuto(directory: string): Promise<void> {
       scan: (step) => runScan(directory, step),
       resolve: (step) => runResolve(directory, step),
       apply: (deploymentId, step) => runApply(directory, { deploymentId, step }),
-      settle: (step) => runSettle(step),
-      // The check starts no tool unless backend: true (record 0074).
-      check: (step) => runCheck(backendContext, step.log),
+      settle: (step) => runSettle(directory, step),
+      // The check starts no tool unless backend: true (record 0074) or
+      // pull-request-preview: true (record 0101).
+      check: (step) => runCheck(backendContext, step.log, pullRequestPreviewContext),
     },
   });
 }

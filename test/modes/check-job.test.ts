@@ -45,7 +45,10 @@ describe("the check job never constructs the process runner or the GitHub port",
   test("it reaches neither the process runner nor anything that talks to GitHub", () => {
     expect(files).not.toContain("adapters/process.ts");
     // inputs.ts reads the backend input, as text, and imports nothing.
+    // env-file.ts reads the one file the env-file input names, only with
+    // backend: true (record 0100), and talks to nobody.
     expect(files.filter((file) => file.startsWith("github/"))).toEqual([
+      "github/env-file.ts",
       "github/inputs.ts",
       "github/job-log.ts",
     ]);
@@ -83,7 +86,45 @@ describe("the backend part of the check", () => {
   test("the part the dispatcher hands in starts the tool and talks to no GitHub API", () => {
     const { files } = reach("modes/check-backend.ts");
     expect(files).toContain("adapters/process.ts");
-    expect(files.filter((file) => file.startsWith("github/"))).toEqual([]);
+    // env-file.ts reads the env file a stack names, for the backend question
+    // of that stack (record 0103), and talks to nobody.
+    expect(files.filter((file) => file.startsWith("github/"))).toEqual(["github/env-file.ts"]);
+  });
+});
+
+// Record 0101: with pull-request-preview: true, and only then, the check
+// previews the pull request with the credentials of its job and writes its
+// pages through the port. That part is handed in the same way, so the check
+// job's own imports still reach neither.
+describe("the pull request preview part of the check", () => {
+  test("the part the dispatcher hands in starts the tool and reaches the port", () => {
+    const { files } = reach("modes/check-pull-request.ts");
+    expect(files).toContain("adapters/process.ts");
+    expect(files).toContain("github/octokit-port.ts");
+    expect(files).toContain("modes/pull-request-preview.ts");
+  });
+
+  test("without the input the part is never built", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sluiceway-check-job-"));
+    mkdirSync(join(root, "network"));
+    writeFileSync(join(root, "network/Pulumi.yaml"), "name: network\nruntime: yaml\n");
+    writeFileSync(join(root, "network/Pulumi.prod.yaml"), "");
+    const saved = { ...process.env };
+    process.env = { ...saved, GITHUB_WORKSPACE: root, GITHUB_STEP_SUMMARY: "" };
+    const realWrite = process.stdout.write;
+    process.stdout.write = (() => true) as typeof process.stdout.write;
+    try {
+      await runCheck(undefined, undefined, () => {
+        throw new Error("The check previews no pull request unless the input says so.");
+      });
+      process.env = { ...saved, ...process.env, "INPUT_PULL-REQUEST-PREVIEW": "true" };
+      await expect(runCheck(undefined, undefined, undefined)).rejects.toThrow(
+        "pull-request-preview: true needs the GitHub port and a runner for the tool, and this check has neither.",
+      );
+    } finally {
+      process.stdout.write = realWrite;
+      process.env = { ...saved };
+    }
   });
 });
 
@@ -173,10 +214,160 @@ describe("runCheck, as a step runs it", () => {
     expect(out).toContain("The setup is valid.");
   });
 
+  // Record 0092: the check lists what root module discovery found and left
+  // out. The job handed the check no way to ask, so a real run said nothing.
+  test("lists the root modules discovery found from their files", async () => {
+    const root = mkdtempSync(join(tmpdir(), "sluiceway-check-job-"));
+    mkdirSync(join(root, "infra"));
+    writeFileSync(join(root, "infra/main.tf"), 'terraform {\n  backend "s3" {}\n}\n');
+    writeFileSync(
+      join(root, "infra/.terraform.lock.hcl"),
+      'provider "registry.opentofu.org/hashicorp/null" {}\n',
+    );
+    process.env = { ...saved, GITHUB_WORKSPACE: root, GITHUB_STEP_SUMMARY: "" };
+    const written: string[] = [];
+    const realWrite = process.stdout.write;
+    process.stdout.write = ((chunk: string) =>
+      written.push(String(chunk)) > 0) as typeof process.stdout.write;
+    try {
+      await runCheck();
+    } finally {
+      process.stdout.write = realWrite;
+    }
+    expect(written.join("")).toContain("Root modules found from their files");
+  });
+
   test("fails with a clear message outside a job", async () => {
     process.env = { ...saved, GITHUB_WORKSPACE: "" };
     await expect(runCheck()).rejects.toThrow(
       "GITHUB_WORKSPACE is not set. Sluiceway runs as a step of a GitHub Actions job.",
     );
+  });
+});
+
+// Slice 5.35 (record 0100): the check with backend: true runs the tool, so
+// it reads the env file for it. Without backend: true the file is never
+// opened.
+describe("the env file in the check job", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  function checkRoot(files: Record<string, string>): string {
+    const root = mkdtempSync(join(tmpdir(), "sluiceway-check-job-"));
+    for (const [file, text] of Object.entries({
+      "network/Pulumi.yaml": "name: network\nruntime: yaml\n",
+      "network/Pulumi.prod.yaml": "",
+      ...files,
+    })) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      writeFileSync(join(root, file), text);
+    }
+    return root;
+  }
+
+  async function quietly(run: () => Promise<void>): Promise<string> {
+    const written: string[] = [];
+    const realWrite = process.stdout.write;
+    process.stdout.write = ((chunk: string) =>
+      written.push(String(chunk)) > 0) as typeof process.stdout.write;
+    try {
+      await run();
+    } finally {
+      process.stdout.write = realWrite;
+    }
+    return written.join("");
+  }
+
+  test("with backend: true the backend gets the file's values, masked first", async () => {
+    const root = checkRoot({ "ci/deploy.env": "PULUMI_ACCESS_TOKEN=pul-0123456789\nREGION=eu\n" });
+    process.env = {
+      ...saved,
+      GITHUB_WORKSPACE: root,
+      GITHUB_STEP_SUMMARY: "",
+      INPUT_BACKEND: "true",
+      "INPUT_ENV-FILE": "ci/deploy.env",
+      REGION: "us",
+    };
+    let handed: Record<string, string | undefined> | undefined;
+    // The backend part is handed the environment and starts no process here:
+    // a tool that is not there is a warning, and the test is about what it
+    // was handed.
+    const out = await quietly(() =>
+      runCheck((env, glue) => {
+        handed = env;
+        return {
+          adapter: backendContext(env, glue).adapter,
+          env,
+          stackEnvs: backendContext(env, glue).stackEnvs,
+          run: async () => ({ status: "not-started" }),
+        };
+      }),
+    );
+    expect(handed?.PULUMI_ACCESS_TOKEN).toBe("pul-0123456789");
+    expect(handed?.REGION).toBe("eu");
+    expect(handed?.GITHUB_WORKSPACE).toBe(root);
+    expect(out.indexOf("::add-mask::pul-0123456789")).toBeGreaterThanOrEqual(0);
+    expect(out.indexOf("::add-mask::pul-0123456789")).toBeLessThan(
+      out.indexOf("Loaded the env file ci/deploy.env"),
+    );
+    expect(out).not.toContain("::add-mask::eu");
+  });
+
+  // Record 0101: the pull request preview runs the tool too, so it gets the
+  // file the same way, read once.
+  test("with pull-request-preview: true the preview gets the file's values, masked first", async () => {
+    const root = checkRoot({ "ci/deploy.env": "PULUMI_ACCESS_TOKEN=pul-0123456789\nREGION=eu\n" });
+    process.env = {
+      ...saved,
+      GITHUB_WORKSPACE: root,
+      GITHUB_STEP_SUMMARY: "",
+      "INPUT_PULL-REQUEST-PREVIEW": "true",
+      "INPUT_ENV-FILE": "ci/deploy.env",
+      REGION: "us",
+    };
+    let handed: Record<string, string | undefined> | undefined;
+    const out = await quietly(() =>
+      runCheck(undefined, undefined, (env) => {
+        handed = env;
+        return async () => ({ log: [{ info: "previewed nothing here" }], summary: [] });
+      }),
+    );
+    expect(handed?.PULUMI_ACCESS_TOKEN).toBe("pul-0123456789");
+    expect(handed?.REGION).toBe("eu");
+    expect(out.indexOf("::add-mask::pul-0123456789")).toBeGreaterThanOrEqual(0);
+    expect(out.indexOf("::add-mask::pul-0123456789")).toBeLessThan(
+      out.indexOf("Loaded the env file ci/deploy.env"),
+    );
+    expect(out.match(/Loaded the env file ci\/deploy.env/g)?.length).toBe(1);
+    expect(out).toContain("previewed nothing here");
+  });
+
+  test("with backend: true a file that is not there fails the check before the tool", async () => {
+    const root = checkRoot({});
+    process.env = {
+      ...saved,
+      GITHUB_WORKSPACE: root,
+      GITHUB_STEP_SUMMARY: "",
+      INPUT_BACKEND: "true",
+      "INPUT_ENV-FILE": "ci/deploy.env",
+    };
+    await expect(quietly(() => runCheck(backendContext))).rejects.toThrow(
+      'The "env-file" input names ci/deploy.env, and there is no such file in the checkout.',
+    );
+  });
+
+  test("without backend: true the file is never opened", async () => {
+    const root = checkRoot({});
+    process.env = {
+      ...saved,
+      GITHUB_WORKSPACE: root,
+      GITHUB_STEP_SUMMARY: "",
+      "INPUT_ENV-FILE": "ci/deploy.env",
+    };
+    const out = await quietly(() => runCheck());
+    expect(out).toContain("The setup is valid.");
+    expect(out).not.toContain("env file");
   });
 });

@@ -26,6 +26,7 @@ import type {
   OpenPullRequest,
   OpenPullRequests,
   Permission,
+  RunOfTheWorkflow,
   WorkflowRun,
 } from "../../src/github/port.ts";
 import {
@@ -99,6 +100,8 @@ export class FakeGitHub implements GitHubPort {
   readonly #comments = new Map<number, string[]>();
   readonly #pinned: number[] = [];
   readonly #comparisons = new Map<string, Comparison>();
+  // The commit at the head of each branch, by name (record 0111).
+  readonly #branches = new Map<string, string>();
   readonly #trees = new Map<
     string,
     { entries: { path: string; sha: string; type: string }[]; truncated: boolean }
@@ -112,6 +115,10 @@ export class FakeGitHub implements GitHubPort {
   readonly #deployments = new FakeDeployments(() => this.#now());
   // The runs an issue edit started, by workflow file name, oldest first.
   readonly #issuesRuns = new Map<string, IssuesRun[]>();
+  // Runs of a workflow, whatever started them, by workflow file name, oldest
+  // first (record 0086).
+  readonly #workflowRuns = new Map<string, RunOfTheWorkflow[]>();
+  #queuedRunsFail: number | undefined;
   // The `issues.edited` events that were started and not delivered yet.
   readonly #events: { number: number; sender: IssueAuthor }[] = [];
   readonly #dispatches: { workflow: string; ref: string; inputs?: Record<string, string> }[] = [];
@@ -169,6 +176,12 @@ export class FakeGitHub implements GitHubPort {
 
   seedComparison(base: string, head: string, comparison: Comparison): void {
     this.#comparisons.set(`${base}...${head}`, comparison);
+  }
+
+  // Moves a branch to a commit, as a push does. A comparison that names the
+  // branch compares with that commit.
+  seedBranch(name: string, sha: string): void {
+    this.#branches.set(name, sha);
   }
 
   // A commit of the repo, newer than every commit seeded before it (record
@@ -271,6 +284,22 @@ export class FakeGitHub implements GitHubPort {
     else runs.push({ ...run });
     this.#issuesRuns.set(workflow, runs);
     this.seedRun(run.id, { completed: run.completed });
+  }
+
+  // A run of a workflow, with its status and when it started waiting. A run
+  // seeded later is newer. Seeding a run again changes it in place, as when
+  // it starts or ends.
+  seedWorkflowRun(workflow: string, run: RunOfTheWorkflow): void {
+    const runs = this.#workflowRuns.get(workflow) ?? [];
+    const known = runs.findIndex(({ id }) => id === run.id);
+    if (known >= 0) runs[known] = { ...run };
+    else runs.push({ ...run });
+    this.#workflowRuns.set(workflow, runs);
+  }
+
+  // Every later read of the queued runs is refused with this status.
+  failQueuedRuns(status: number): void {
+    this.#queuedRunsFail = status;
   }
 
   deployment(id: number): DeploymentRecord {
@@ -464,7 +493,13 @@ export class FakeGitHub implements GitHubPort {
 
   async compareCommits(base: string, head: string): Promise<Comparison> {
     this.#count("compareCommits");
-    const comparison = this.#comparisons.get(`${base}...${head}`);
+    // GitHub takes a branch name where it takes a commit.
+    const headSha = this.#branches.get(head) ?? head;
+    const comparison =
+      this.#comparisons.get(`${base}...${headSha}`) ??
+      (this.#branches.has(head) && base === headSha
+        ? { status: "identical", files: [] }
+        : undefined);
     if (!comparison) throw new FakeGitHubError(404, "Not Found");
     return {
       status: comparison.status,
@@ -543,6 +578,18 @@ export class FakeGitHub implements GitHubPort {
     this.#count("listIssuesRuns");
     const runs = this.#issuesRuns.get(workflow) ?? [];
     return runs
+      .slice(-PAGE_SIZE)
+      .reverse()
+      .map((run) => ({ ...run }));
+  }
+
+  async listQueuedRuns(workflow: string): Promise<RunOfTheWorkflow[]> {
+    this.#count("listQueuedRuns");
+    if (this.#queuedRunsFail !== undefined)
+      throw new FakeGitHubError(this.#queuedRunsFail, "Resource not accessible by integration");
+    const runs = this.#workflowRuns.get(workflow) ?? [];
+    return runs
+      .filter((run) => run.status === "queued")
       .slice(-PAGE_SIZE)
       .reverse()
       .map((run) => ({ ...run }));

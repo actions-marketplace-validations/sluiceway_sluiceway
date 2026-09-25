@@ -3,16 +3,18 @@
 
 import { readFileSync } from "node:fs";
 import * as core from "@actions/core";
-import { getOctokit } from "@actions/github";
 import { runProcess } from "../adapters/process.ts";
 import { tools } from "../adapters/tools.ts";
 import { readActionRef } from "../github/action-ref.ts";
+import { createGitHubClient } from "../github/client.ts";
+import { loadEnvFile } from "../github/env-file.ts";
 import { readEventPayload } from "../github/event.ts";
-import { readApplyInputs, readJobId } from "../github/inputs.ts";
+import { readApplyInputs, readEnvFileInput, readJobId } from "../github/inputs.ts";
 import { readJob } from "../github/job.ts";
 import { actionsLog } from "../github/job-log.ts";
 import { createOctokitPort } from "../github/octokit-port.ts";
 import { actionsOutputs } from "../github/outputs.ts";
+import { readWorkflowRef } from "../github/workflow-ref.ts";
 import { stepNotifier } from "../notify/step.ts";
 import { apply } from "./apply.ts";
 import type { AutoStep } from "./auto.ts";
@@ -33,11 +35,25 @@ export async function runApply(
   const log = handed?.step.log ?? actionsLog();
   await apply({
     root: job.root,
-    env,
+    // The tool's environment: the job's, with the env file on top (record
+    // 0100), masked before anything else is printed.
+    env: loadEnvFile({
+      input: readEnvFileInput(core.getInput),
+      root: job.root,
+      env,
+      mask: (value) => core.setSecret(value),
+      log,
+    }),
+    // The values of the env file the stack names are masked the same way
+    // (record 0103).
+    mask: (value) => core.setSecret(value),
     // Every tool, each stack to the adapter of its own (record 0053).
     adapter: tools,
     run: runProcess,
-    github: createOctokitPort(getOctokit(inputs.token), { owner: job.owner, repo: job.repo }),
+    github: createOctokitPort(createGitHubClient(inputs.token), {
+      owner: job.owner,
+      repo: job.repo,
+    }),
     log,
     previewTimeoutMinutes: inputs.previewTimeoutMinutes,
     deployTimeoutMinutes: inputs.deployTimeoutMinutes,
@@ -49,6 +65,7 @@ export async function runApply(
     sha: job.sha,
     actionRef: readActionRef(env, directory, (path) => readFileSync(path, "utf8")),
     deploymentId: inputs.deploymentId,
+    workflow: readWorkflowRef(env),
     dryRun: inputs.dryRun,
     event: readEventPayload(env, (path) => readFileSync(path, "utf8")),
     outputs: handed?.step.outputs ?? actionsOutputs(env.RUNNER_TEMP),

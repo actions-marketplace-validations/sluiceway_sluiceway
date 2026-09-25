@@ -24,11 +24,11 @@ Fixes go into the latest release of the current major version, which is 0.x (`v0
 
 These are the promises Sluiceway makes. A way to break one of them is a vulnerability.
 
-- A deploy starts only from a tick by a named person who was allowed to tick that stack at that moment.
-- A deploy changes only what the ticked row showed. If a fresh preview differs, nothing is deployed.
+- A deploy starts only from a tick by a named person who was allowed to tick that stack at that moment, or, for a stack the repo's own `sluiceway.yaml` sets to `deploy: on-merge`, from the scan of a push to the default branch. A change that deletes or replaces a resource, or that repairs drift, never deploys without a tick.
+- A deploy changes only what the ticked row, or that scan, showed. If a fresh preview differs, nothing is deployed.
 - Re-running a workflow job never deploys anything again.
 - No property value leaves the tool's adapter. Values never reach the issue, comments, deployment records, job summaries or logs written by Sluiceway.
-- Sluiceway never reads a credential by name, and never stores or sends anything from the environment.
+- Sluiceway reads no credential of the job environment by name, reads of the runner's files only the ones the `env-file` input and `stacks[].envFile` name and masks every value of them first, and never stores or sends anything from either.
 - The infrastructure tool and the stack programs it runs never receive the GitHub token that Sluiceway was given.
 - This repository's own release process: the committed `dist/` matches the source, and workflows pin third-party actions by commit SHA.
 

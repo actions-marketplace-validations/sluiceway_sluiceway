@@ -1,10 +1,16 @@
 import * as core from "@actions/core";
 import { isMode, MODES, type Mode } from "./core/auto-mode.ts";
-import { type GetInput, refuseDeploymentId, unusedNotifyInputs } from "./github/inputs.ts";
+import {
+  type GetInput,
+  refuseDeploymentId,
+  unusedEnvFileInput,
+  unusedNotifyInputs,
+} from "./github/inputs.ts";
 import { runApply } from "./modes/apply-job.ts";
 import { HANDED_ON_STATE, runAuto, SETTLED_STATE } from "./modes/auto-job.ts";
 import { backendContext } from "./modes/check-backend.ts";
 import { runCheck } from "./modes/check-job.ts";
+import { pullRequestPreviewContext } from "./modes/check-pull-request.ts";
 import { runInit } from "./modes/init-job.ts";
 import { runResolve } from "./modes/resolve-job.ts";
 import { runScan } from "./modes/scan-job.ts";
@@ -34,11 +40,13 @@ type Handler = (directory: string) => Promise<void>;
 const handlers: Record<Mode, Handler> = {
   auto: runAuto,
   scan: runScan,
-  resolve: runResolve,
+  // What resolve tells auto mode is for auto mode alone (record 0109).
+  resolve: async (directory) => void (await runResolve(directory)),
   apply: runApply,
-  settle: () => runSettle(),
-  // The check starts no tool unless backend: true (record 0074).
-  check: () => runCheck(backendContext),
+  settle: (directory) => runSettle(directory),
+  // The check starts no tool unless backend: true (record 0074) or
+  // pull-request-preview: true (record 0101).
+  check: () => runCheck(backendContext, undefined, pullRequestPreviewContext),
   init: runInit,
 };
 
@@ -59,6 +67,10 @@ export async function run(
       "Notification input not used",
     );
   }
+  // Only the modes that run the tool read the env file (record 0100). On
+  // any other step the input is a warning, and the file is never opened.
+  const envFile = unusedEnvFileInput(mode, getInput);
+  if (envFile !== undefined) warn(envFile, "Env file input not used");
   return handlers[mode](directory);
 }
 

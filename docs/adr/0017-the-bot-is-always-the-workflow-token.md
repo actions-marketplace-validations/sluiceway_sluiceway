@@ -1,5 +1,9 @@
 # The bot is always the workflow's own token
 
+> Amended by 0108: every scan also writes the dashboard once before its previews, to say it is running: five requests, so the worst case becomes 411 requests on the first try and 813 with three.
+>
+> Amended by 0086: every scan also lists the queued runs of its own workflow, one request, so the worst case becomes 406 requests on the first try and 808 with three.
+>
 > Amended by 0025: `resolve` no longer uses `queue: max`. The first reason below still holds in a weaker form: with another token every re-render would start a `resolve` run that finds nothing to do.
 >
 > Amended by 0050: the scan job also needs `checks: write`, for one preview page per pending stack. It adds one list request per 100 check runs on the commit and one write per pending stack, once per scan, so the worst case below becomes 405 requests on the first try and 807 with three.
@@ -49,3 +53,8 @@ Research:
 
 - Slice 5.9 adds three calls to the budget. A scan gives a dashboard that exists the title of `dashboard.title` when it has another, one request and only then, so a change of the key renames the dashboard and a title changed by hand is put back. With `dashboard.pin` on, a scan reads the pinned issues (one GraphQL query) and pins the dashboard when it is not among them, so a dashboard that exists costs one request per scan and a second only when it was unpinned. A person who wants it unpinned for good sets `dashboard.pin: false`: the key is the one place that decides, where slice 1.10 had let an unpin stand. A pin that fails on a dashboard that exists is a line of the log, not a warning on every run. When no open dashboard exists, the closed issues with the label are read as one page, the 100 that changed last, newest first, where slice 1.10 read every page: a closed dashboard is among them unless 100 other issues with its label changed after it was closed.
 - Every dispatch asks GitHub for the run it started (`return_run_details: true`, GitHub's REST docs of 2026-03-10: 200 with `workflow_run_id`, `run_url` and `html_url`, where it answered 204). `resolve` logs the page of the scan that the rescan box, a merge or a body of another version started, and its job summary links to it. It stays off the dashboard, for the reason slice 2.4 gave: a line for a scan on its way would be a fact outside the row blocks, and the scan shows itself on the dashboard when it is done. A GitHub that still answers 204 gives no page, and the line says only that a scan was started.
+
+## Settled while building (slice 5.47)
+
+- Every request names the REST API version `2026-03-10` in `X-GitHub-Api-Version`, set once on the client (issue 266). Without it GitHub ran every call under its default, `2022-11-28`, and answered the issue update with `Deprecation` and `Sunset` headers for 10 March 2028. The version adds no request to the budget.
+- That version always answers a dispatch with 200 and the run it started, and no longer takes `return_run_details`, so the dispatch above stops sending it and reads the same answer. A GitHub that answers 204 still gives no page.

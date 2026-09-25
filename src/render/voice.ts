@@ -76,9 +76,30 @@ export const PREVIEW_FAILED_LINE =
 // 0028). An alert renders there, because it is outside any list. It links
 // nothing itself: a row that a narrowed scan carried through links to the
 // summary of an earlier run, so every shortened row holds its own link.
-export function shortenedNote(shortened: number, pending: number): string {
-  const rows = `${pending} pending row${pending === 1 ? "" : "s"}`;
-  return `> [!NOTE]\n> This dashboard is too large for one issue, so ${shortened} of ${rows} ${
-    shortened === 1 ? "is" : "are"
+// It names each section that has a shortened row, in the order of the body,
+// so it is true for any mix and reads as it always did when only pending rows
+// are shortened (record 0084).
+export interface ShortenedSection {
+  section: "pending" | "drifted";
+  shortened: number;
+  // The rows of the section, shortened or not.
+  of: number;
+}
+
+export function shortenedNote(sections: readonly ShortenedSection[]): string {
+  const named = sections.filter((one) => one.shortened > 0);
+  const counts = named
+    .map(
+      ({ section, shortened, of }) => `${shortened} of ${of} ${section} row${of === 1 ? "" : "s"}`,
+    )
+    .join(" and ");
+  const one = named.length === 1 && named[0]?.shortened === 1;
+  return `> [!NOTE]\n> This dashboard is too large for one issue, so ${counts} ${
+    one ? "is" : "are"
   } shortened. The summary that a shortened row links to shows every change. Deletes and replaces are the last thing to be cut.`;
 }
+
+// The destroy alert of `dashboard.destroyAlert: always` on a body with nothing
+// to warn about (record 0114). A note and not a caution: a red block that
+// warns of nothing every day teaches people to read past it.
+export const NO_DESTROY_NOTE = "> [!NOTE]\n> No pending stack deletes or replaces resources.";

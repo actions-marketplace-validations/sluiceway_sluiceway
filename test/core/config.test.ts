@@ -12,15 +12,41 @@ const DEFAULTS: Config = {
     readOnly: false,
     showValues: [],
     recentlyDeployed: 10,
+    timeZone: "UTC",
+    sections: [
+      "deploying",
+      "updates",
+      "pending",
+      "drifted",
+      "previewFailed",
+      "inSync",
+      "recentlyDeployed",
+    ],
+    deployingSection: true,
+    driftedSection: true,
+    inSyncSection: "fold",
+    zeroCounts: true,
+    destroyAlert: "destroys",
+    pendingDetail: "full",
+    deployAll: true,
+    repairAll: true,
+    rescanBox: true,
+    footer: true,
   },
   tickers: "write",
   deploys: true,
+  recordWriters: [],
+  deployWindows: [],
   ignore: [],
   scan: { unrelated: [], logDiff: false },
   drift: { enabled: false },
+  valueFingerprint: true,
+  policies: [],
+  cost: { enabled: false },
   attribution: { lookback: 100, names: 5 },
   phases: [],
   stacks: [],
+  discovery: {},
   mergeAndDeploy: { authors: [], preview: false },
   notify: { events: ["pending", "drift", "failed", "refused"] },
 };
@@ -61,6 +87,11 @@ scan:
     - "**/*.md"
 drift:
   enabled: true
+valueFingerprint: false
+policies: [policies]
+cost:
+  enabled: true
+  threshold: 100
 phases: [infrastructure, applications]
 `);
     expect(config).toEqual({
@@ -73,15 +104,41 @@ phases: [infrastructure, applications]
         readOnly: true,
         showValues: [],
         recentlyDeployed: 10,
+        timeZone: "UTC",
+        sections: [
+          "deploying",
+          "updates",
+          "pending",
+          "drifted",
+          "previewFailed",
+          "inSync",
+          "recentlyDeployed",
+        ],
+        deployingSection: true,
+        driftedSection: true,
+        inSyncSection: "fold",
+        zeroCounts: true,
+        destroyAlert: "destroys",
+        pendingDetail: "full",
+        deployAll: true,
+        repairAll: true,
+        rescanBox: true,
+        footer: true,
       },
       tickers: "admin",
       deploys: true,
+      recordWriters: [],
+      deployWindows: [],
       ignore: ["**/*:dev"],
       scan: { unrelated: ["**/*.md"], logDiff: false },
       drift: { enabled: true },
+      valueFingerprint: false,
+      policies: ["policies"],
+      cost: { enabled: true, threshold: 100 },
       attribution: { lookback: 100, names: 5 },
       phases: ["infrastructure", "applications"],
       stacks: [],
+      discovery: {},
       mergeAndDeploy: { authors: [], preview: false },
       notify: { events: ["pending", "drift", "failed", "refused"] },
     });
@@ -104,12 +161,18 @@ const TOP_KEYS = [
   "dashboard",
   "tickers",
   "deploys",
+  "recordWriters",
+  "deployWindows",
   "ignore",
   "scan",
   "drift",
+  "valueFingerprint",
+  "policies",
+  "cost",
   "attribution",
   "phases",
   "stacks",
+  "discovery",
   "mergeAndDeploy",
   "notify",
 ];
@@ -289,6 +352,20 @@ stacks:
     ]);
   });
 
+  // Slice 5.38 (record 0103): one file per entry, named on one line.
+  test("envFile is one path on one line, and never empty", () => {
+    expect(issues('stacks:\n  - path: a\n    envFile: ""\n')).toEqual([
+      { kind: "empty", path: ["stacks", 0, "envFile"] },
+    ]);
+    expect(issues('stacks:\n  - path: a\n    envFile: "ci/a.env\\nci/b.env"\n')).toEqual([
+      {
+        kind: "worded",
+        text: "envFile names one file on one line. To load several files, join them in a step before Sluiceway.",
+        path: ["stacks", 0, "envFile"],
+      },
+    ]);
+  });
+
   test("previewTimeout is whole minutes, 1 or more", () => {
     const refused = (value: string) =>
       issues(`stacks:\n  - path: a\n    previewTimeout: ${value}\n`);
@@ -347,7 +424,14 @@ stacks:
       "previewTimeout",
       "dependsOn",
       "phase",
+      "deploy",
+      "deployWindows",
       "drift",
+      "valueFingerprint",
+      "envFile",
+      "policies",
+      "createInBackend",
+      "cost",
       "options",
     ];
     expect(issues("stacks:\n  - path: a\n    stack: prod\n    approvers: write\n")).toEqual([
@@ -411,6 +495,18 @@ describe("wrong types", () => {
           "readOnly",
           "showValues",
           "recentlyDeployed",
+          "timeZone",
+          "sections",
+          "deployingSection",
+          "driftedSection",
+          "inSyncSection",
+          "zeroCounts",
+          "destroyAlert",
+          "pendingDetail",
+          "deployAll",
+          "repairAll",
+          "rescanBox",
+          "footer",
         ],
         path: ["dashboard"],
       },
@@ -465,6 +561,32 @@ describe("wrong types", () => {
         },
       ]);
     }
+  });
+
+  // Record 0089: the zone every time on the dashboard is shown in.
+  test("dashboard.timeZone is an IANA zone name, UTC when left out", () => {
+    expect(parseConfig(undefined).dashboard.timeZone).toBe("UTC");
+    expect(parseConfig("dashboard:\n  timeZone: Europe/Brussels\n").dashboard.timeZone).toBe(
+      "Europe/Brussels",
+    );
+    expect(parseConfig("dashboard:\n  timeZone: Asia/Kolkata\n").dashboard.timeZone).toBe(
+      "Asia/Kolkata",
+    );
+    expect(parseConfig("dashboard:\n  timeZone: UTC\n").dashboard.timeZone).toBe("UTC");
+    for (const value of ["Europe/Brusels", "Mars/Olympus_Mons", "+02:00", "UTC+2", " "]) {
+      expect(issues(`dashboard:\n  timeZone: "${value}"\n`)).toEqual([
+        { kind: "not-a-time-zone", value, path: ["dashboard", "timeZone"] },
+      ]);
+    }
+    expect(issues("dashboard:\n  timeZone: 2\n")).toEqual([
+      { kind: "wrong-type", expected: "string", value: 2, path: ["dashboard", "timeZone"] },
+    ]);
+  });
+
+  test("a name that is not a zone is refused with a valid example", () => {
+    expect(() => parseConfig("dashboard:\n  timeZone: Europe/Brusels\n")).toThrow(
+      'sluiceway.yaml is not valid:\n- dashboard.timeZone: "Europe/Brusels" is not a time zone. Write an IANA name, such as Europe/Brussels or America/New_York, or leave the key out for UTC.',
+    );
   });
 
   test("attribution.names is a whole number from 0 to 20", () => {
@@ -534,7 +656,7 @@ describe("a file that is not a mapping", () => {
 describe("the error", () => {
   test("names the file and lists every problem in words, top to bottom", () => {
     expect(() => parseConfig("tickerz: admin\ndashboard:\n  pin: 1\n")).toThrow(
-      'sluiceway.yaml is not valid:\n- unknown key "tickerz". Known keys here: dashboard, tickers, deploys, ignore, scan, drift, attribution, phases, stacks, mergeAndDeploy, notify.\n- dashboard.pin: expected true or false, got 1.',
+      'sluiceway.yaml is not valid:\n- unknown key "tickerz". Known keys here: dashboard, tickers, deploys, recordWriters, deployWindows, ignore, scan, drift, valueFingerprint, policies, cost, attribution, phases, stacks, discovery, mergeAndDeploy, notify.\n- dashboard.pin: expected true or false, got 1.',
     );
   });
 
@@ -643,6 +765,29 @@ describe("deploys", () => {
   });
 });
 
+// Slice 5.44 (record 0109): the logins whose open deployment records a
+// dispatched or scheduled run deploys. Nobody by default.
+describe("recordWriters", () => {
+  test("names nobody unless the file does", () => {
+    expect(parseConfig(undefined).recordWriters).toEqual([]);
+    expect(parseConfig("recordWriters: []\n").recordWriters).toEqual([]);
+  });
+
+  test("takes logins of people and of apps, kept once each in lower case", () => {
+    expect(
+      parseConfig("recordWriters:\n  - Deploy-Bot[bot]\n  - alice\n  - deploy-bot[bot]\n")
+        .recordWriters,
+    ).toEqual(["deploy-bot[bot]", "alice"]);
+  });
+
+  test("a login with an @ or a slash is refused", () => {
+    expect(issues("recordWriters: ['@alice', org/bots]\n")).toEqual([
+      { kind: "not-a-login", value: "@alice", path: ["recordWriters", 0] },
+      { kind: "not-a-login", value: "org/bots", path: ["recordWriters", 1] },
+    ]);
+  });
+});
+
 // Slice 4.2 (record 0054): pull requests by these authors may be merged and
 // deployed with one tick. Off by default.
 describe("mergeAndDeploy", () => {
@@ -691,6 +836,206 @@ describe("mergeAndDeploy", () => {
         value: "yes please",
         path: ["mergeAndDeploy", "preview"],
       },
+    ]);
+  });
+});
+
+// Record 0102: the value fingerprint is on for every repo, and a repo or a
+// stack entry turns it off.
+describe("the value fingerprint switch", () => {
+  test("is on by default and can be turned off for the repo", () => {
+    expect(parseConfig("").valueFingerprint).toBe(true);
+    expect(parseConfig("valueFingerprint: false\n").valueFingerprint).toBe(false);
+  });
+
+  test("a stack entry takes it too, and leaves it out when unset", () => {
+    expect(parseConfig("stacks:\n  - path: apps/a\n    valueFingerprint: false\n").stacks).toEqual([
+      { path: "apps/a", valueFingerprint: false },
+    ]);
+    expect(parseConfig("stacks:\n  - path: apps/a\n").stacks).toEqual([{ path: "apps/a" }]);
+  });
+
+  test("anything but true or false is a config error at the key", () => {
+    expect(issues("valueFingerprint: maybe\n").map((issue) => issue.path)).toEqual([
+      ["valueFingerprint"],
+    ]);
+    expect(
+      issues("stacks:\n  - path: apps/a\n    valueFingerprint: 1\n").map((issue) => issue.path),
+    ).toEqual([["stacks", 0, "valueFingerprint"]]);
+  });
+});
+
+// Deploy windows (record 0104): when the stacks of a repo may go out, written
+// in the dashboard zone. A tick outside a window waits for it.
+describe("deployWindows", () => {
+  test("is empty unless the file names windows, and empty means always", () => {
+    expect(parseConfig(undefined).deployWindows).toEqual([]);
+    expect(parseConfig("deployWindows: []\n").deployWindows).toEqual([]);
+  });
+
+  test("takes windows of days, a start and an end, as written", () => {
+    expect(
+      parseConfig(
+        'deployWindows:\n  - days: [monday, tuesday, wednesday, thursday]\n    from: "09:00"\n    to: "17:00"\n  - days: [friday]\n    from: "09:00"\n    to: "12:00"\n',
+      ).deployWindows,
+    ).toEqual([
+      { days: ["monday", "tuesday", "wednesday", "thursday"], from: "09:00", to: "17:00" },
+      { days: ["friday"], from: "09:00", to: "12:00" },
+    ]);
+  });
+
+  test("a day is a full name of the week in lower case, and nothing else", () => {
+    expect(issues('deployWindows:\n  - days: [mon]\n    from: "09:00"\n    to: "17:00"\n')).toEqual(
+      [{ kind: "not-a-weekday", value: "mon", path: ["deployWindows", 0, "days", 0] }],
+    );
+    expect(issues('deployWindows:\n  - days: []\n    from: "09:00"\n    to: "17:00"\n')).toEqual([
+      { kind: "no-days", path: ["deployWindows", 0, "days"] },
+    ]);
+  });
+
+  test("a start and an end are HH:MM on a 24 hour clock, quoted or not, and a number is refused", () => {
+    expect(
+      issues('deployWindows:\n  - days: [monday]\n    from: "9am"\n    to: "17:00"\n'),
+    ).toEqual([{ kind: "not-a-clock-time", value: "9am", path: ["deployWindows", 0, "from"] }]);
+    // YAML 1.2 reads an unquoted 09:00 as text, so the quotes are a habit and
+    // not a need. A number is what an older parser would have made of it.
+    expect(
+      parseConfig("deployWindows:\n  - days: [monday]\n    from: 09:00\n    to: 17:00\n")
+        .deployWindows,
+    ).toEqual([{ days: ["monday"], from: "09:00", to: "17:00" }]);
+    expect(issues("deployWindows:\n  - days: [monday]\n    from: 540\n    to: 17:00\n")).toEqual([
+      { kind: "not-a-clock-time", value: 540, path: ["deployWindows", 0, "from"] },
+    ]);
+  });
+
+  test("the end comes after the start, so a window over midnight is two windows", () => {
+    expect(
+      issues('deployWindows:\n  - days: [monday]\n    from: "22:00"\n    to: "06:00"\n'),
+    ).toEqual([
+      { kind: "window-ends-first", from: "22:00", to: "06:00", path: ["deployWindows", 0] },
+    ]);
+    expect(
+      parseConfig(
+        'deployWindows:\n  - days: [monday]\n    from: "22:00"\n    to: "24:00"\n  - days: [tuesday]\n    from: "00:00"\n    to: "06:00"\n',
+      ).deployWindows,
+    ).toHaveLength(2);
+  });
+
+  test("a window takes no other key, and every key is required", () => {
+    expect(
+      issues(
+        'deployWindows:\n  - days: [monday]\n    from: "09:00"\n    to: "17:00"\n    zone: UTC\n',
+      ),
+    ).toEqual([
+      {
+        kind: "unknown-key",
+        key: "zone",
+        known: ["days", "from", "to"],
+        path: ["deployWindows", 0],
+      },
+    ]);
+    expect(issues("deployWindows:\n  - days: [monday]\n")).toEqual([
+      {
+        kind: "wrong-type",
+        expected: "string",
+        value: undefined,
+        path: ["deployWindows", 0, "from"],
+      },
+      {
+        kind: "wrong-type",
+        expected: "string",
+        value: undefined,
+        path: ["deployWindows", 0, "to"],
+      },
+    ]);
+  });
+
+  test("a stack entry takes the same list", () => {
+    expect(
+      parseConfig(
+        'stacks:\n  - path: apps/grafana\n    deployWindows:\n      - days: [saturday]\n        from: "10:00"\n        to: "11:00"\n',
+      ).stacks[0]?.deployWindows,
+    ).toEqual([{ days: ["saturday"], from: "10:00", to: "11:00" }]);
+    expect(
+      issues(
+        'stacks:\n  - path: apps/grafana\n    deployWindows:\n      - days: [monday]\n        from: "17:00"\n        to: "09:00"\n',
+      ),
+    ).toEqual([
+      {
+        kind: "window-ends-first",
+        from: "17:00",
+        to: "09:00",
+        path: ["stacks", 0, "deployWindows", 0],
+      },
+    ]);
+  });
+});
+
+// The cost estimate (record 0105): off unless a repo opts in, and a
+// threshold only next to the switch that turns it on.
+describe("cost (record 0105)", () => {
+  test("is off by default, and cost.enabled turns it on", () => {
+    expect(parseConfig(undefined).cost).toEqual({ enabled: false });
+    expect(parseConfig("cost:\n  enabled: true\n").cost).toEqual({ enabled: true });
+    expect(parseConfig("cost: {}\n").cost).toEqual({ enabled: false });
+  });
+
+  test("a threshold is an amount a month, 0 or more, next to enabled: true", () => {
+    expect(parseConfig("cost:\n  enabled: true\n  threshold: 100\n").cost).toEqual({
+      enabled: true,
+      threshold: 100,
+    });
+    expect(parseConfig("cost:\n  enabled: true\n  threshold: 0\n").cost).toEqual({
+      enabled: true,
+      threshold: 0,
+    });
+    expect(parseConfig("cost:\n  enabled: true\n  threshold: 12.5\n").cost).toEqual({
+      enabled: true,
+      threshold: 12.5,
+    });
+  });
+
+  test("a threshold without the switch is refused, so it never gates nothing in silence", () => {
+    expect(issues("cost:\n  threshold: 100\n")).toEqual([
+      { kind: "cost-threshold-without-enabled", path: ["cost", "threshold"] },
+    ]);
+    expect(issues("cost:\n  enabled: false\n  threshold: 100\n")).toEqual([
+      { kind: "cost-threshold-without-enabled", path: ["cost", "threshold"] },
+    ]);
+  });
+
+  test("a threshold that is not an amount is refused", () => {
+    expect(issues("cost:\n  enabled: true\n  threshold: -1\n")).toEqual([
+      { kind: "not-an-amount", value: -1, path: ["cost", "threshold"] },
+    ]);
+    expect(issues("cost:\n  enabled: true\n  threshold: cheap\n")).toEqual([
+      { kind: "not-an-amount", value: "cheap", path: ["cost", "threshold"] },
+    ]);
+  });
+
+  test("an unknown key under cost lists the known ones", () => {
+    expect(issues("cost:\n  enabled: true\n  currency: EUR\n")).toEqual([
+      { kind: "unknown-key", key: "currency", known: ["enabled", "threshold"], path: ["cost"] },
+    ]);
+  });
+
+  test("a stack entry takes the same mapping, key by key", () => {
+    expect(
+      parseConfig("stacks:\n  - path: apps/a\n    cost:\n      enabled: false\n").stacks,
+    ).toEqual([{ path: "apps/a", cost: { enabled: false } }]);
+    expect(
+      parseConfig("stacks:\n  - path: apps/a\n    cost:\n      threshold: 20\n").stacks,
+    ).toEqual([{ path: "apps/a", cost: { threshold: 20 } }]);
+    expect(issues("stacks:\n  - path: apps/a\n    cost: true\n")).toEqual([
+      { kind: "stack-cost-not-a-mapping", value: true, path: ["stacks", 0, "cost"] },
+    ]);
+    expect(
+      issues("stacks:\n  - path: apps/a\n    cost:\n      enabled: false\n      threshold: 5\n"),
+    ).toEqual([
+      { kind: "cost-threshold-without-enabled", path: ["stacks", 0, "cost", "threshold"] },
+    ]);
+    expect(issues("stacks:\n  - path: apps/a\n    cost:\n      threshold: -5\n")).toEqual([
+      { kind: "not-an-amount", value: -5, path: ["stacks", 0, "cost", "threshold"] },
     ]);
   });
 });

@@ -17,7 +17,10 @@
       "!test/fixtures/terragrunt",
       "!test/fixtures/cdktf",
       "!test/fixtures/helm",
-      "!test/fixtures/kubectl"
+      "!test/fixtures/kubectl",
+      "!test/fixtures/conftest",
+      "!test/fixtures/infracost",
+      "!scripts/fixtures/conftest"
     ]
   },
   "formatter": {
@@ -62,6 +65,8 @@
                       "**/github/**",
                       "**/modes/**",
                       "**/notify/**",
+                      "**/cli/**",
+                      "**/cli.ts",
                       "**/main.ts",
                       "**/main",
                       "**/mode.ts",

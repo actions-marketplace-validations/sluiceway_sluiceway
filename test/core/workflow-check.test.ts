@@ -14,9 +14,10 @@ function file(text: string, path = ".github/workflows/deploy-dashboard.yml"): Wo
   return { path, text };
 }
 
-// The complete workflows of the setup, in order: the check and the whole
-// workflow of docs/workflow.md, then the read-only trial. They were the
-// README's until the README rewrite.
+// The complete workflows of the setup, in order: the check, the check with
+// the pull request preview (record 0101) and the whole workflow of
+// docs/workflow.md, then the read-only trial. They were the README's until
+// the README rewrite.
 const complete = (path: string) =>
   fences(read(path))
     .filter(
@@ -24,6 +25,7 @@ const complete = (path: string) =>
     )
     .map(({ text }) => text);
 const README = [...complete("docs/workflow.md"), ...complete("docs/read-only-trial.md")];
+const [CHECK = "", PREVIEW = "", ONE_STEP = "", TRIAL = ""] = README;
 
 // The split workflow, to break one piece at a time. The one-step workflow
 // has tests of its own (workflow-check-auto.test.ts).
@@ -31,8 +33,10 @@ const WHOLE =
   complete("docs/split-workflow.md").find((text) => text.includes("mode: resolve")) ?? "";
 
 describe("the workflows the docs ship", () => {
-  test("the docs have a check, the whole workflow and the read-only trial", () => {
-    expect(README.length).toBe(3);
+  test("the docs have a check, a check that previews, the whole workflow and the read-only trial", () => {
+    expect(README.length).toBe(4);
+    expect(PREVIEW).toContain("pull-request-preview: true");
+    expect(ONE_STEP).toContain("issues:");
   });
 
   test.each(EXAMPLE_WORKFLOWS)("%s has nothing missing", (path) => {
@@ -42,9 +46,9 @@ describe("the workflows the docs ship", () => {
   });
 
   test("the docs' check and whole workflow have nothing missing", () => {
-    for (const whole of [README[1] ?? "", WHOLE]) {
+    for (const whole of [ONE_STEP, WHOLE]) {
       const report = checkWorkflows(
-        [file(README[0] ?? "", ".github/workflows/check.yml"), file(whole)],
+        [file(CHECK, ".github/workflows/check.yml"), file(whole)],
         DEFAULTS,
       );
       expect(report.warnings).toEqual([]);
@@ -56,13 +60,21 @@ describe("the workflows the docs ship", () => {
   });
 
   test("the read-only trial has nothing missing with dashboard.readOnly", () => {
-    const report = checkWorkflows([file(README[2] ?? "")], READ_ONLY);
+    const report = checkWorkflows([file(TRIAL)], READ_ONLY);
     expect(report.warnings).toEqual([]);
+  });
+
+  // Record 0101: the check that previews needs checks: write and no more.
+  test("the docs' check with the pull request preview has nothing missing", () => {
+    const report = checkWorkflows([file(PREVIEW, ".github/workflows/check.yml")], DEFAULTS);
+    expect(report.warnings).toEqual([]);
+    expect(report.workflows[0]?.jobs[0]?.previewsPullRequests).toBe(true);
   });
 
   test("lists every job that runs Sluiceway, with its mode and its ref", () => {
     const report = checkWorkflows([file(WHOLE)], DEFAULTS);
-    expect(report.workflows).toEqual([
+    // What each job hands the step is its own test (slice 5.34).
+    expect(report.workflows).toMatchObject([
       {
         path: ".github/workflows/deploy-dashboard.yml",
         jobs: [
@@ -224,7 +236,7 @@ describe("a broken workflow", () => {
   });
 
   test("a scan with no resolve and boxes on", () => {
-    expect(checkWorkflows([file(README[2] ?? "")], DEFAULTS).warnings).toEqual([
+    expect(checkWorkflows([file(TRIAL)], DEFAULTS).warnings).toEqual([
       { kind: "boxes-do-nothing", path: PATH },
     ]);
   });
@@ -517,5 +529,30 @@ describe("the permissions of each mode", () => {
 
   test("resolve merges with contents: write when merge and deploy is on", () => {
     expect(tokenNeeds("resolve", MERGES).contents).toBe("write");
+  });
+});
+
+// Record 0095: the scan of a merge hands a stack set to on-merge to `apply`
+// through its own matrix, as the scan after a merge from the dashboard does.
+// In the split workflow that takes the second apply job.
+describe("a stack set to on-merge in the split workflow", () => {
+  const ON_MERGE = parseConfig("stacks:\n  - path: app\n    deploy: on-merge\n");
+
+  test("without an apply job that takes the scan's matrix, the deploy on merge never starts", () => {
+    expect(checkWorkflows([file(WHOLE)], ON_MERGE).warnings).toEqual([
+      { kind: "no-on-merge-apply", path: PATH },
+    ]);
+  });
+
+  test("with the second apply job nothing is missing", () => {
+    expect(checkWorkflows([file(MERGED)], ON_MERGE).warnings).toEqual([]);
+  });
+
+  test("with merge and deploy on too, the one warning is merge and deploy's", () => {
+    const both = parseConfig(
+      'mergeAndDeploy:\n  authors: ["renovate[bot]"]\nstacks:\n  - path: app\n    deploy: on-merge\n',
+    );
+    const kinds = checkWorkflows([file(WHOLE)], both).warnings.map(({ kind }) => kind);
+    expect(kinds.filter((kind) => kind.endsWith("-apply"))).toEqual(["no-merged-apply"]);
   });
 });

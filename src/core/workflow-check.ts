@@ -43,6 +43,25 @@ export function readWorkflowFiles(root: string): WorkflowFile[] {
 //   other    anything else: a branch, a tag of two numbers, a short SHA
 export type RefKind = "moving" | "release" | "commit" | "other";
 
+// What a job hands the Sluiceway step, read from the file as text (record
+// 0099): the variable names its env: blocks set, and the other steps of the
+// job. Names only, never a value.
+export interface JobProvides {
+  // The names env: sets on the workflow, the job or the Sluiceway step, each
+  // with where. env: on another step reaches nothing but that step.
+  names: { name: string; where: string }[];
+  // Every other step of the job, in order, with what it does and whether it
+  // runs before the Sluiceway step. `secret` is a step whose with: or env:
+  // is handed a secret of the repo.
+  steps: {
+    step: string;
+    uses?: string;
+    run?: string;
+    secret?: boolean;
+    before: boolean;
+  }[];
+}
+
 export interface SluicewayJob {
   job: string;
   // Nothing when the step names a mode that does not exist. A step with no
@@ -53,6 +72,18 @@ export interface SluicewayJob {
   runs: Mode[];
   ref: string;
   refKind: RefKind;
+  // The GitHub Environment the job names, as written: a name or an
+  // expression only a run evaluates. Not there when it names none. Its rules,
+  // such as required reviewers, are a setting of the repo that no file shows
+  // (record 0093).
+  environment?: string;
+  // What the job hands the step (record 0099).
+  provides: JobProvides;
+  // The step sets pull-request-preview: true (record 0101): the check
+  // previews the stacks the pull request claims and writes a page per stack,
+  // which needs checks: write, and the file must not run on
+  // pull_request_target.
+  previewsPullRequests?: true;
 }
 
 // A workflow file that runs Sluiceway in at least one job.
@@ -89,6 +120,9 @@ export type WorkflowWarning =
   // repo's default, which a file cannot show.
   | { kind: "no-permissions"; path: string; job: string; mode: Mode; needs: string[] }
   | { kind: "missing-permissions"; path: string; job: string; mode: Mode; missing: string[] }
+  // Record 0101: pull-request-preview: true in a file that runs on
+  // pull_request_target, which is never previewed on.
+  | { kind: "preview-on-target"; path: string; job: string }
   // Record 0074 from here on. Scans run one at a time, ticks too, and deploys
   // one at a time per stack (records 0004, 0025, 0035).
   | {
@@ -116,6 +150,9 @@ export type WorkflowWarning =
   // Merge and deploy (records 0054, 0064): the scan after a merge hands its
   // deploy to a second apply job through its own matrix output.
   | { kind: "no-merged-apply"; path: string }
+  // A stack is set to on-merge, and no apply job takes the scan's matrix
+  // (record 0095).
+  | { kind: "no-on-merge-apply"; path: string }
   | { kind: "scan-no-matrix-output"; path: string; job: string; scan: string };
 
 // Something worth knowing that is not a mistake.
@@ -202,12 +239,17 @@ interface ParsedJob {
   outputs: string[];
   // The strategy block as text, where a matrix names the job it comes from.
   strategy: string;
+  environment: string | undefined;
+  // The names of the job's env: block.
+  env: string[];
 }
 
 interface Parsed {
   on: Record<string, unknown>;
   permissions: Permissions;
   jobs: Record<string, ParsedJob>;
+  // The names of the workflow's env: block.
+  env: string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -225,6 +267,14 @@ function triggersOf(value: unknown): Record<string, unknown> {
   if (typeof value === "string") return { [value]: null };
   if (Array.isArray(value)) return Object.fromEntries(value.map((event) => [String(event), null]));
   return isRecord(value) ? value : {};
+}
+
+// `environment` as a name or as a map with a name, always as the name. A map
+// without one is a workflow GitHub would not run.
+function environmentOf(value: unknown): string | undefined {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (!isRecord(value) || value.name === undefined || value.name === null) return undefined;
+  return String(value.name);
 }
 
 // `concurrency` as a group name or as a map, always as the map.
@@ -266,17 +316,81 @@ function parseWorkflow(text: string): Parsed | "unreadable" | undefined {
             : [],
       outputs: isRecord(job.outputs) ? Object.keys(job.outputs) : [],
       strategy: job.strategy === undefined ? "" : JSON.stringify(job.strategy),
+      environment: environmentOf(job.environment),
+      env: envNames(job.env),
     };
   }
-  return { on: triggersOf(document.on), permissions: permissionsOf(document.permissions), jobs };
+  return {
+    on: triggersOf(document.on),
+    permissions: permissionsOf(document.permissions),
+    jobs,
+    env: envNames(document.env),
+  };
+}
+
+// The names an env: block sets. Its values are never read (record 0099).
+function envNames(value: unknown): string[] {
+  return isRecord(value) ? Object.keys(value) : [];
+}
+
+// Whether a step is handed a secret of the repo in its with: or env:.
+function handedSecret(step: Record<string, unknown>): boolean {
+  return [step.with, step.env].some(
+    (block) =>
+      isRecord(block) && Object.values(block).some((value) => /secrets\./.test(String(value))),
+  );
+}
+
+// The action a step uses, without its ref: `owner/repo`, or the path of a
+// local action.
+function actionOf(uses: string): string {
+  return uses.trim().split("@")[0] ?? "";
+}
+
+// What the job hands the Sluiceway step at `at` (record 0099): the names of
+// env: on the workflow, the job and the step, and the other steps.
+function providesOf(
+  steps: unknown[],
+  at: number,
+  workflowEnv: string[],
+  jobEnv: string[],
+): JobProvides {
+  const own = steps[at];
+  const stepEnv = isRecord(own) ? envNames(own.env) : [];
+  const names = [
+    ...workflowEnv.map((name) => ({ name, where: "env: on the workflow" })),
+    ...jobEnv.map((name) => ({ name, where: "env: on the job" })),
+    ...stepEnv.map((name) => ({ name, where: "env: on the step" })),
+  ];
+  const others = steps.flatMap((step, index): JobProvides["steps"] => {
+    if (index === at || !isRecord(step)) return [];
+    const uses = typeof step.uses === "string" ? actionOf(step.uses) : undefined;
+    const run = typeof step.run === "string" ? step.run : undefined;
+    const title =
+      typeof step.name === "string" && step.name.trim() !== ""
+        ? step.name.trim()
+        : (uses ?? `step ${index + 1}`);
+    return [
+      {
+        step: title,
+        ...(uses === undefined ? {} : { uses }),
+        ...(run === undefined ? {} : { run }),
+        ...(handedSecret(step) ? { secret: true } : {}),
+        before: index < at,
+      },
+    ];
+  });
+  return { names, steps: others };
 }
 
 function sluicewayJob(
   job: string,
-  steps: unknown[],
+  parsed: ParsedJob,
+  workflowEnv: string[],
   auto: Mode[],
 ): (SluicewayJob & { named: string }) | undefined {
-  for (const step of steps) {
+  const { steps } = parsed;
+  for (const [index, step] of steps.entries()) {
     if (!isRecord(step) || typeof step.uses !== "string") continue;
     const ref = SLUICEWAY_STEP.exec(step.uses.trim())?.[1];
     if (ref === undefined) continue;
@@ -285,7 +399,19 @@ function sluicewayJob(
     const named = written === "" ? "auto" : written;
     const mode = isMode(named) ? named : undefined;
     const runs = mode === undefined ? [] : mode === "auto" ? auto : [mode];
-    return { job, mode, runs, ref, refKind: refKind(ref), named };
+    const provides = providesOf(steps, index, workflowEnv, parsed.env);
+    const preview = isRecord(step.with) ? step.with["pull-request-preview"] : undefined;
+    const previews = preview === true || String(preview ?? "").trim() === "true";
+    return {
+      job,
+      mode,
+      runs,
+      ref,
+      refKind: refKind(ref),
+      named,
+      provides,
+      ...(previews ? { previewsPullRequests: true as const } : {}),
+    };
   }
   return undefined;
 }
@@ -348,25 +474,40 @@ export function checkWorkflows(files: WorkflowFile[], config: Config): WorkflowR
 function checkOne(path: string, workflow: Parsed, config: Config, report: WorkflowReport): void {
   const auto = autoRuns(workflow.on, config);
   const found = Object.entries(workflow.jobs).flatMap(([name, job]) => {
-    const step = sluicewayJob(name, job.steps, auto);
-    return step ? [{ step, permissions: job.permissions ?? workflow.permissions }] : [];
+    const step = sluicewayJob(name, job, workflow.env, auto);
+    if (step === undefined) return [];
+    if (job.environment !== undefined) step.environment = job.environment;
+    return [{ step, permissions: job.permissions ?? workflow.permissions }];
   });
   if (found.length === 0) return;
   const { warnings, notes } = report;
   report.workflows.push({
     path,
-    jobs: found.map(({ step: { job, mode, runs, ref, refKind } }) => ({
-      job,
-      mode,
-      runs,
-      ref,
-      refKind,
-    })),
+    jobs: found.map(
+      ({
+        step: { job, mode, runs, ref, refKind, environment, provides, previewsPullRequests },
+      }) => ({
+        job,
+        mode,
+        runs,
+        ref,
+        refKind,
+        ...(environment === undefined ? {} : { environment }),
+        provides,
+        ...(previewsPullRequests ? { previewsPullRequests } : {}),
+      }),
+    ),
   });
 
   for (const { step } of found) {
     if (step.mode === undefined) {
       warnings.push({ kind: "unknown-mode", path, job: step.job, mode: step.named });
+    }
+    // The preview runs the pull request's code with the job's credentials,
+    // and pull_request_target hands a stranger's code the base branch's
+    // secrets (record 0101).
+    if (step.previewsPullRequests && "pull_request_target" in workflow.on) {
+      warnings.push({ kind: "preview-on-target", path, job: step.job });
     }
     if (step.refKind === "other") {
       warnings.push({ kind: "unreleased-ref", path, job: step.job, ref: step.ref });
@@ -417,6 +558,8 @@ function checkOne(path: string, workflow: Parsed, config: Config, report: Workfl
     if (step.mode === undefined) continue;
     const { job, mode } = step;
     const wanted = needsAll(step.runs, config);
+    // A page per stack of the pull request preview (record 0101).
+    if (step.previewsPullRequests) wanted.checks = "write";
     if (permissions === undefined) {
       warnings.push({ kind: "no-permissions", path, job, mode, needs: missing({}, wanted) });
       continue;
@@ -500,6 +643,12 @@ function checkJobs(
   const mergesAndDeploys = config.mergeAndDeploy.authors.length > 0;
   if (mergesAndDeploys && scans.length > 0 && withMode("resolve").length > 0) {
     if (fromScan.length === 0) warnings.push({ kind: "no-merged-apply", path });
+  }
+  // The scan of a merge hands a stack set to on-merge on the same way (record
+  // 0095). One warning says it for both.
+  const onMerge = config.stacks.some(({ deploy }) => deploy === "on-merge");
+  if (onMerge && !mergesAndDeploys && scans.length > 0 && applies.length > 0) {
+    if (fromScan.length === 0) warnings.push({ kind: "no-on-merge-apply", path });
   }
 }
 

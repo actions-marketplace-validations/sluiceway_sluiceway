@@ -1,6 +1,8 @@
 # Configuration
 
-Sluiceway reads one optional file, `sluiceway.yaml`, at the root of the repo. `sluiceway.yml` is read the same way, and both at once is an error. Without it every stack that discovery finds gets a row, anyone with write access can tick, and every setting below has its default. Add the file when a default does not fit.
+Sluiceway reads one optional file, `sluiceway.yaml`, at the root of the repo.
+
+`sluiceway.yml` is read the same way, and both at once is an error. Without it every stack that discovery finds gets a row, anyone with write access can tick, and every setting below has its default. Add the file when a default does not fit.
 
 `sluiceway.yaml` is about your stacks: who may tick them, which ones to leave out, what files they read. When and on what runner Sluiceway runs is GitHub's business and lives in the workflow file under `.github/workflows/`. [What goes where](workflow.md#what-goes-where) has the table.
 
@@ -11,9 +13,8 @@ The file is read from the checkout of the job, so the rules in force are the one
 - **Unknown keys are an error.** A typo in `tickers` would change who can deploy, so nothing is ever ignored. The message names the keys that are allowed there.
 - **Every problem is listed at once**, top to bottom as the file has them, so you fix the file in one go.
 - **Every mode stops on a file that is not valid.** The job goes red with the messages, and the dashboard is not written.
-- **`drift` on a stack is not in this version.** It fails with a message that says so, and is never ignored. `drift` at the top level is valid.
 - **Editors can check the file as you type.** Put this line at the top and an editor with YAML support finds the schema: `# yaml-language-server: $schema=https://raw.githubusercontent.com/sluiceway/sluiceway/main/schema/sluiceway.schema.json`.
-- **The `check` mode tells you in a pull request** whether the file is valid, which stacks it covers and what `ignore` leaves out ([check your setup](workflow.md#check-your-setup)).
+- **The `check` mode tells you in a pull request** whether the file is valid, which stacks it covers, which OpenTofu and Terraform directories discovery found or left out and why, and what `ignore` leaves out ([check your setup](workflow.md#check-your-setup)).
 
 ## Stacks and stack ids
 
@@ -21,7 +22,9 @@ Discovery finds the stacks from files alone. For Pulumi, a directory with `Pulum
 
 Every stack has a **stack id**, derived from where it lives and what it is called: `<path>:<name>`, where the path is the directory relative to the repo root, with forward slashes. A stack `prod` in `apps/web` is `apps/web:prod`. A stack at the repo root is `.:prod`. The id is never chosen, so moving a directory or renaming a stack makes a new stack with no deploy history.
 
-For OpenTofu there is no zero config. A root module and a child module look the same on disk, and a workspace lives in the backend, so files alone cannot say what a stack is. A `stacks` entry with `tool: opentofu` declares one: the root module in `path`, with an optional `name`, workspace and var files. Its stack id is `path`, or `path:name` when the entry gives a name, so one directory in two workspaces is two stacks, such as `infra/network:dev` and `infra/network:prod`. Discovery checks from the files that the directory holds OpenTofu files and that every var file is there, and still never starts the tool.
+OpenTofu and Terraform root modules are found from their files too, and a `stacks` entry declares any the files cannot speak for. A root module and a shared module look the same on disk, so discovery asks for more than `.tf` files: a directory is a stack only when the repo's own files say it is a root module. No other directory uses it as a local module source, it does not sit under a `modules` directory, a `terraform` block gives it a `backend` or a `cloud` block, and its lock file or its `.tofu` files say whether OpenTofu or Terraform runs it. A found root module is one stack in the default workspace, and its stack id is its path, such as `infra/dns`. [`discovery.rootModules`](#discoveryrootmodules) has the whole rule, what it leaves out and why, and how to overrule it. When in doubt it finds nothing, and the `check` mode lists every directory of OpenTofu or Terraform files with what discovery made of it, on the pull request, before a row appears.
+
+A `stacks` entry with `tool: opentofu` declares a root module the rule leaves out, or one in a workspace other than the default: the root module in `path`, with an optional `name`, workspace and var files. Its stack id is `path`, or `path:name` when the entry gives a name, so one directory in two workspaces is two stacks, such as `infra/network:dev` and `infra/network:prod`. A directory that an entry declares is the entry's, whatever discovery would find there, so a declared stack works exactly as it did before discovery existed. Discovery checks from the files that the directory holds OpenTofu files and that every var file is there, and still never starts the tool.
 
 The Terraform family runs through the same adapter and reads the same plan JSON. `tool: terraform` declares a root module that `terraform` plans and deploys, exactly as `tool: opentofu` does with `tofu`. A Terragrunt unit is declared with the tool that Terragrunt runs and `wrapper: terragrunt`: the stack is the unit's directory, its stack id is `path`, and Sluiceway runs the tool there through `terragrunt run`, one unit at a time, never `run --all`. A stack of a CDK for Terraform app is declared with `wrapper: cdktf` at the app's directory, with the name the app gives the stack: `cdktf synth` writes every stack of the app, and the entry's name picks the one it deploys, so its stack id is always `path:name`. Discovery checks from the files that the directory holds `.tf` files for Terraform, a `terragrunt.hcl` for a unit, or a `cdktf.json` for an app.
 
@@ -106,7 +109,7 @@ Default: `false`
 
 Keep resource types, resource names and property names out of the issue. A redacted row shows the stack id, the counts by op, the destroy warning, the failure line and a link to the run's summary, which stays full. It also turns [`dashboard.showValues`](#dashboardshowvalues) off, so no value is shown anywhere. In a repo with that list, turning redact on or off voids the ticks on rows that showed a value, once.
 
-Redact is about reach, not access. An issue body is emailed, sent to integrations and indexed on a public repo. A job summary sits behind a click. But anyone who can read the repo can open the run and read the code that names the resources. **It is not access control.** Turning it on or off never voids a tick, unless `dashboard.showValues` is set: the diff hash covers the whole diff either way.
+An issue body is emailed, sent to integrations and indexed on a public repo, while a job summary sits behind a click. Redact keeps names out of the issue, and anyone who can read the repo can still open the run and read the code that names the resources. Turning it on or off never voids a tick, unless `dashboard.showValues` is set: the diff hash covers the whole diff either way.
 
 ### `dashboard.personality`
 
@@ -147,7 +150,7 @@ Without this key Sluiceway shows which properties change and never what they cha
 - **Only single-line text, numbers and booleans are shown.** A whole object or list, a value of several lines, and a value that is known only once the deploy runs show nothing. A value longer than 40 characters keeps its start and its end.
 - **The same values appear in the summary, on the preview page, in the result file and in the job log.** The issue is emailed and kept in its edit history, so a value that reached it cannot be taken back.
 - **`dashboard.redact: true` turns the list off.** No value is even read.
-- **A tick approves the values it shows.** The diff hash covers them, so if a later merge moves `17.0.4` to `17.0.5` before the deploy, nothing deploys and the row comes back with `17.0.5`. A path that is not listed is approved at whatever value the code has, as before. See [what a tick promises](security.md#what-a-tick-promises).
+- **A tick covers the values it shows.** The diff hash covers them, so if a later merge moves `17.0.4` to `17.0.5` before the deploy, nothing deploys and the row comes back with `17.0.5`. A path that is not listed is covered by the [value fingerprint](#valuefingerprint) instead, without being shown. See [what a tick promises](security.md#what-a-tick-promises).
 - **Changing the list voids ticks once.** Adding or removing a path, or turning `dashboard.redact` on or off, gives the rows that show a value a new hash, so a tick on a row written before is refused as moved and the row asks for a fresh one.
 
 A list to copy in, of paths that are nearly always safe to show:
@@ -176,6 +179,141 @@ dashboard:
   recentlyDeployed: 25
 ```
 
+### `dashboard.timeZone`
+
+Default: `UTC`
+
+The time zone every time on the dashboard is shown in, as an IANA name such as `Europe/Brussels`, `America/New_York` or `Asia/Kolkata`. Without the key the dashboard stays in UTC, byte for byte as before.
+
+The zone belongs to the repo, not the reader: one issue is read by everyone, so it cannot follow a browser. Pick the zone the people who tick live in.
+
+- The line under the Recently deployed heading names the zone, `Times are in Europe/Brussels.`, and the times on the list leave it out.
+- A time that stands alone says its offset from UTC at that moment: the scan line (`on 2026-07-21 12:02 UTC+2`), the last full scan, the line about a scan that is running, the line about a run waiting for a runner, and the failure line on a row. A January time and a July time of one zone each say their own offset, because daylight saving changes it. A moment when the zone is at UTC, such as London in winter, says `UTC`.
+- The markers in the issue keep UTC. Changing the zone moves no row and no hash, and a body written under one zone reads the same under another. A row that the next scan does not draw again keeps its failure line in the zone it was written in, which is why that line says its offset.
+- A [deploy window](#deploywindowsdays) is written in this zone, and the time a queued row says the window opens at is in it too.
+
+A name that is not a zone fails the config with an example of one. An offset such as `+02:00` or `UTC+2` is not a zone name, because it has no daylight saving. The zone is checked against the zone data of the runtime that runs the action. GitHub's runners and the `node24` runtime the action uses carry every zone. A runtime built without zone data knows `UTC` alone, and there any other name fails the config the same way rather than falling back to UTC in silence.
+
+The job summaries, the preview pages and the notifications write no time of their own; GitHub shows the time of a run and a check in each reader's own zone.
+
+```yaml
+dashboard:
+  timeZone: Europe/Brussels
+```
+
+### `dashboard.sections`
+
+Default: `["deploying","updates","pending","drifted","previewFailed","inSync","recentlyDeployed"]`
+
+The order of the sections on the dashboard, top to bottom. The names are `deploying`, `updates` (the updates waiting to merge), `pending`, `drifted`, `previewFailed`, `inSync` and `recentlyDeployed`. The sections the list names come first, in its order. A section the list leaves out follows them in the default order, so leaving one out never hides it, and a list written before a later version adds a section keeps working. A name that is not a section, or one named twice, fails the config.
+
+The destroy alert and the deploy all box stay with Pending, and the repair all box with Drifted, wherever those sections go. A section with nothing in it is left out as always, and Pending is always shown. The header, the counts line and the scan line stay above every section, and the rescan box and the footer below them.
+
+```yaml
+dashboard:
+  sections: [pending, previewFailed, deploying]
+```
+
+This and every other layout key below change what the dashboard draws and where, never what a marker says: every stack keeps its row block in the issue, so a reader of [what Sluiceway writes](what-sluiceway-writes.md) sees the same facts whatever the look. None of them can hide a delete or replace line, a preview failure or a failure line. Every mode draws the same layout, so a tick never moves a section.
+
+### `dashboard.deployingSection`
+
+Default: `true`
+
+`false` takes the Deploying section off the page. Its rows move to one closed fold at the end of the sections, `N stacks in sections this dashboard does not show`, which every section that is off shares. The counts line, the header picture and the spinner inside the fold still say what is deploying.
+
+```yaml
+dashboard:
+  deployingSection: false
+```
+
+### `dashboard.driftedSection`
+
+Default: `true`
+
+`false` takes the Drifted section off the page, and its rows move to the closed fold at the end of the sections, with no repair all box. A drifted row with a failure line, or with a resource gone outside the code that the destroy alert names, stays open under the Drifted heading. The rows in the fold keep their boxes: a tick there repairs the drift as a tick anywhere does.
+
+### `dashboard.inSyncSection`
+
+Default: `fold`
+
+How the In sync section shows its rows. `fold`, the default, puts them in a fold. `list` shows every row open. `off` takes the section off the page: the rows move to the closed fold at the end of the sections, and the fold of stacks left out by `ignore` is not drawn. At every setting a row with a failure line stays open under the In sync heading.
+
+```yaml
+dashboard:
+  inSyncSection: off
+```
+
+### `dashboard.zeroCounts`
+
+Default: `true`
+
+`false` leaves a count of 0 out of the counts line, so `**3 pending** · 0 deploying · 0 preview failed · 12 in sync` becomes `**3 pending** · 12 in sync`. The pending count always stays.
+
+### `dashboard.destroyAlert`
+
+Default: `destroys`
+
+When the caution block above the pending rows is drawn. `destroys`, the default, draws it while a pending stack deletes or replaces something or a drifted stack has a resource gone. `always` also draws a note in its place when nothing is destroyed, `No pending stack deletes or replaces resources.`, so the block never moves the rows under it. There is no setting that turns it off.
+
+```yaml
+# Not valid: the destroy alert cannot be turned off
+dashboard:
+  destroyAlert: never
+```
+
+### `dashboard.pendingDetail`
+
+Default: `full`
+
+How much a pending row shows under its first line.
+
+- `full`, the default: everything, as the dashboard has always drawn it.
+- `compact`: the first line, the failure line, every delete and replace line, and the notes that say why a row has no box or why a tick would not go (a failed policy, a tick nothing picked up, a value that differs on every run, a stack set to on-merge that waits for a tick). The attribution line, the cost line, the fold of other changes and the drift and outside folds go. They are in the summary and on the preview page.
+- `names`: the stack id and its counts, without the preview link, then the failure line, every delete and replace line, and the line of a failed policy, which says why the row has no box.
+
+The delete and replace lines stay at every setting, and under the size budget and `redact` they turn into the same warning with their counts as before. The marker of a row is the same at every setting, and so is its diff hash: a tick approves the whole diff whatever the row shows, as under `redact`.
+
+```yaml
+dashboard:
+  pendingDetail: compact
+```
+
+### `dashboard.deployAll`
+
+Default: `true`
+
+`false` draws no deploy all box under the pending rows. Each row keeps its own box.
+
+### `dashboard.repairAll`
+
+Default: `true`
+
+`false` draws no repair all box under the drifted rows.
+
+### `dashboard.rescanBox`
+
+Default: `true`
+
+`false` draws no rescan box. A full scan is then started with Run workflow or by the schedule. A read-only dashboard never has one.
+
+### `dashboard.footer`
+
+Default: `true`
+
+`false` leaves out the small line at the bottom with the version and the docs link. Without it and without the rescan box the rule above them goes too.
+
+```yaml
+dashboard:
+  sections: [pending, previewFailed]
+  deployingSection: false
+  inSyncSection: off
+  zeroCounts: false
+  pendingDetail: names
+  rescanBox: false
+  footer: false
+```
+
 ### `tickers`
 
 Default: `write`
@@ -202,6 +340,8 @@ sluiceway.yaml is not valid:
 
 The rule is checked against GitHub's live answer at every tick. Nothing is cached, so a person whose access was removed is refused at their next tick. A refused tick deploys nothing, clears the box and gets one comment on the dashboard that says why. When GitHub gives no answer about a person, nothing deploys, the comment asks for a fresh tick and the job goes red.
 
+A tick rule decides who may **ask** for a deploy. Who may **deploy** is decided by a GitHub Environment with required reviewers on the job that deploys, where you have one: the tick asks, and a reviewer lets the job go on or not. Without one, the tick rule decides both, and its ceiling is everyone who may edit the dashboard issue, because it narrows within write access and never goes beyond it. For a team whose deployers are fewer than its writers, leave `tickers` at its default and put the deploy job in an environment whose reviewers are the people who may deploy. The rule lives in this file and is Sluiceway's own; the environment is GitHub's, lives in the repo's settings and records each approval. [Security](security.md#a-tick-asks-an-environment-decides) has the shape, what each one can and cannot do, and what happens between the tick and the approval. The [check](workflow.md#check-your-setup) says, for each job that deploys, which of the two decides.
+
 The rescan box has no rule of its own. Anyone with write access can tick it, and it only starts a full scan.
 
 The box that deploys every pending stack, and the one that repairs every drifted stack, have no rule of their own either: a tick on them deploys nothing and only asks for a confirmation. A tick on the confirm box is judged as a tick on each row it names, by each stack's own rule, so a stack whose rule refuses you is left out with a line in the comment and the others deploy.
@@ -218,11 +358,114 @@ deploys: false
 ```
 
 - The boxes that deploy every pending or every drifted stack at once are not drawn, and a confirm box that was already there goes ([record 0083](adr/0083-deploy-all-is-a-bulk-box-and-a-confirm-box-and-the-confirm-box-is-a-tick-on-each-row.md)).
-- `resolve` clears every ticked box, puts a note on the row that says deploys are turned off, and starts nothing. No deployment record is made, nobody's access is looked up and no comment is written, because nothing could go out whoever ticked. The rescan box still works: a scan deploys nothing.
+- `resolve` clears every ticked box, puts a note on the row that says deploys are turned off, and starts nothing. No deployment record is made, nobody's access is looked up and no comment is written, because nothing could go out whoever ticked. The rescan box still works, and its scan deploys nothing. A stack set to [on-merge](#stacksdeploy) does not go out either, and its row says deploys are turned off.
 - A deploy that was ticked before the switch was merged and that starts after it ends before the tool runs. Its deployment record ends as `failure` with the reason "deploys are turned off in sluiceway.yaml", which the row shows as its failure line, the `outcome` output is `refused` and the job is red.
 - Scans go on as before, so the dashboard keeps showing what is pending.
 
 Setting it back to `true` (or taking the line out) is all it takes to deploy again. A tick that was cleared needs a fresh tick.
+
+### `recordWriters`
+
+Default: `[]`
+
+Logins whose deployment records the workflow deploys without a tick: an app as `name[bot]`, a person as their login. Something that reads [what Sluiceway writes](what-sluiceway-writes.md#opening-a-record-yourself) can open a deployment record of a stack itself, with the diff hash of the row, and start the workflow with a dispatch, naming the run in the record. The `resolve` of that run hands such a record to `apply` only when the login GitHub records as the record's creator is on this list; a record that anyone else opened is left alone, and the job log says so. Nothing in the payload of the record decides it. `apply` then previews the stack again and deploys only when the fresh preview gives the same hash, exactly as for a tick, and the record's ticker is the writer's word on the row and the trail. Empty, the default, hands no such record on, and the dashboard behaves as it did before the key came. The list is the repo's reviewed word on who may open records: the tick rule cannot judge a bot, which has no access level of its own, and a change to this file goes through review where a record and a dispatch do not.
+
+```yaml
+recordWriters:
+  - deploy-bot[bot]
+```
+
+### `deployWindows[].days`
+
+Default: none, which is any time.
+
+When the stacks of this repo may go out. Each window is the days of the week it is on, a start and an end, in the [dashboard zone](#dashboardtimezone). A tick outside every window is not refused: its deployment record waits for the window, the row says when it opens, and the run that falls inside the window deploys it through the same fresh preview and hash check as any tick. Nobody has to be awake when it opens, and nothing goes out on a Friday evening ([record 0104](adr/0104-a-tick-outside-the-deploy-window-waits-for-it-instead-of-going-out.md)).
+
+```yaml
+dashboard:
+  timeZone: Europe/Brussels
+deployWindows:
+  - days: [monday, tuesday, wednesday, thursday]
+    from: "09:00"
+    to: "17:00"
+  - days: [friday]
+    from: "09:00"
+    to: "12:00"
+```
+
+- **The days are the full names of the week in lower case**, `monday` to `sunday`. A window is on each of the days it names, at the same times.
+- **A tick outside the window waits.** The tick is judged now, by the tick rule and the dependencies as always, and the record is opened now with what the tick approved. The row says `queued for the deploy window, which opens 2026-09-28 09:00 UTC+2 · ticked by alice`, with no box, and the stack counts as deploying. Once the window is open, the next run that `resolve` runs in starts it: in the [one-step workflow](workflow.md) that is the scheduled run, so the schedule decides how soon after the window opens the deploy goes out. In the [split workflow](split-workflow.md#deploy-windows) the `resolve` job runs on the schedule too.
+- **What goes out is what was ticked.** The run inside the window previews again and deploys only when the diff hash is the one the tick approved. A change that moved in between is refused, and the ticker gets the comment as for any moved tick.
+- **A [deploy on merge](#stacksdeploy) waits for the window too.** Its record is opened by the scan of the merge and waits the same way, and its row says `merged by`.
+- **A destroy on a stack set to on-merge still waits for a tick**, window or not. A ticked destroy waits for the window like any tick and goes out when it opens: the person looked at it when they ticked.
+- **Dependencies still decide the order.** A stack behind another is held to the window when the stacks it waited behind went out, and its row says both.
+- **The window is read from the file on the default branch at that moment**, as `tickers` is. Widening a window, or taking it away, moves what waits with it.
+
+What it is not: a change freeze for a company. It is what this repo's file says about this repo's stacks, in a reviewed file, and an outside deploy is as allowed as ever.
+
+A day that is not one, or an empty list of days, fails the config:
+
+```yaml
+# Not valid: a short day name
+deployWindows:
+  - days: [mon, tue]
+    from: "09:00"
+    to: "17:00"
+```
+
+```text
+sluiceway.yaml is not valid:
+- deployWindows[0].days[0]: "mon" is not a day of the week. Write one of: monday, tuesday, wednesday, thursday, friday, saturday, sunday.
+- deployWindows[0].days[1]: "tue" is not a day of the week. Write one of: monday, tuesday, wednesday, thursday, friday, saturday, sunday.
+```
+
+### `deployWindows[].from`
+
+Default: none
+
+When the window opens on each of its days, as `HH:MM` on a 24 hour clock in the dashboard zone. The start is inside the window. Quotes keep an editor from reading `09:00` as anything but text; without them the file loads the same.
+
+```yaml
+# Not valid: not a clock time
+deployWindows:
+  - days: [monday]
+    from: 9am
+    to: "17:00"
+```
+
+```text
+sluiceway.yaml is not valid:
+- deployWindows[0].from: "9am" is not a clock time. Write HH:MM on a 24 hour clock in quotes, such as "09:00" or "17:30". "24:00" is the end of the day.
+```
+
+### `deployWindows[].to`
+
+Default: none
+
+When the window closes, as `HH:MM`, after `from`. The end is outside the window: a window to `17:00` closes as the clock turns 17:00. `24:00` is the end of the day. A window over midnight is two windows, one to `24:00` and one from `00:00` on the next day:
+
+```yaml
+deployWindows:
+  - days: [monday, tuesday, wednesday, thursday]
+    from: "22:00"
+    to: "24:00"
+  - days: [tuesday, wednesday, thursday, friday]
+    from: "00:00"
+    to: "06:00"
+```
+
+```yaml
+# Not valid: the end comes first
+deployWindows:
+  - days: [monday]
+    from: "22:00"
+    to: "06:00"
+```
+
+```text
+sluiceway.yaml is not valid:
+- deployWindows[0]: the window ends at "06:00", which is not after it starts at "22:00". A window over midnight is two windows: one to "24:00" and one from "00:00" on the next day.
+```
 
 ### `ignore`
 
@@ -230,9 +473,12 @@ Default: `[]`
 
 Globs matched against the **stack id**, not the path. An ignored stack has no row, is never previewed, claims no files, and a `stacks` entry cannot give it settings.
 
-Because the id is `<path>:<name>`, a bare directory matches nothing. `apps/web` ignores nothing, and `apps/web:*` ignores every stack in `apps/web`. Globs that end in `*` already cross the colon: `apps/*` and `sandbox*` work as you would expect. `*` stops at a slash and `**` crosses slashes. The `check` mode warns about a glob that matches no stack, and names the glob that would work.
+> [!WARNING]
+> Write the full stack id. The id of a named stack is `<path>:<name>`, so a bare directory matches none of its stacks: `apps/web` ignores nothing, and `apps/web:*` ignores every stack in `apps/web`.
 
-A stack config file with no stack in the backend is the usual reason to ignore one:
+A stack without a name, such as a root module discovery found, has its path as its id, so its bare directory does match it. Globs that end in `*` already cross the colon: `apps/*` matches `apps/web:prod`, and `sandbox*` matches every stack whose id starts with `sandbox`. `*` stops at a slash and `**` crosses slashes. The `check` mode warns about a glob that matches no stack, and names the glob that would work.
+
+A stack config file with no stack in the backend is the usual reason to ignore one, unless the scan should create it ([`stacks[].createInBackend`](#stackscreateinbackend)):
 
 ```yaml
 ignore:
@@ -308,6 +554,109 @@ drift:
 - **A stack entry can turn it on or off** for its own stacks, with [`stacks[].drift.enabled`](#stacksdriftenabled).
 - **A drifted row's `preview` link** opens a preview page that lists the drift, as a pending row's lists its changes. Without `checks: write` it opens the summary.
 
+### `valueFingerprint`
+
+Default: `true`
+
+Every pending and drifted row carries a value fingerprint next to its diff hash: a hash of the values of the change that the row does not show, sixteen hex characters that name nothing, taken from the tool's own output inside the adapter. A tick approves it with the hash, and `apply` compares it after the hash. A value that changed between the tick and the deploy stops the deploy: the record ends with `a value changed since the tick`, the row comes back with the change as it is now, and a comment asks the ticker to look at it and tick again. A value the tool marks secret enters the fingerprint as its mark and never in the clear ([record 0102](adr/0102-a-tick-covers-the-values-it-does-not-show-through-a-value-fingerprint.md)).
+
+```yaml
+valueFingerprint: false
+```
+
+- **Turn it off where a value differs on every run.** A program that mints a token or a timestamp at each preview gives another fingerprint each time, so no tick of that stack can deploy it. The refusal says so and names this key, and a scan of the same commit says so on the row. Turn it off for that stack alone with [`stacks[].valueFingerprint`](#stacksvaluefingerprint).
+- **What is hashed** is spelled out in the record, per tool and per op, so a reviewer can check a fingerprint from the tool's output. An object the Helm plugin adds, and Helm and kubectl drift, carry none: the plugin prints no manifest for an added object, and those drift checks read no values.
+- **Turning it on or off voids ticks once.** Every pending row of the stacks it changes gets a fingerprint or loses it, so a tick on a row written before is refused and the row asks for a fresh one, as for a change of `dashboard.showValues`.
+- **Its cost, and why it is on.** The fingerprint sits in an issue that may be public, where a value that is neither shown nor marked secret can be guessed against it. [What a tick promises](security.md#what-a-tick-promises) states the cost and what bounds it. It is on by default because the safe reading is the one people assume: a person who ticks `web: update, image` believes they approved the image they read the code for. `dashboard.redact` does not turn it off.
+
+### `policies`
+
+Default: `[]`
+
+Directories or files of Rego policies, relative to the repo root, that every pending stack's preview is tested against with [Conftest](https://www.conftest.dev), right after the preview and in the same job ([record 0106](adr/0106-policies-run-against-the-preview-and-a-hard-failure-takes-the-box-off-the-row.md)). The workflow installs `conftest`, the way it installs the tool, and Sluiceway runs it and never wraps it. A policy reads the tool's own preview document of the stack: Pulumi's preview JSON, the plan JSON of OpenTofu and Terraform, the manifests a Helm chart or a directory of Kubernetes manifests renders. Every namespace of every file in the paths runs.
+
+```yaml
+policies:
+  - policies
+```
+
+- **A policy that fails takes the box off the row** until the change or the policy changes, names the policy on the row in its own words, escaped as untrusted text, and stops a deploy on merge outright. The preview page and the summary list every failure whole.
+- **A policy that could not run is a warning line**, not a failed policy: conftest missing or too old, a policy that does not parse, a path that is not in the repo. The row keeps its box, and the run carries a warning that says why.
+- **A `warn` rule is listed** on the preview page and in the summary, and changes nothing on the row.
+- **An entry adds its own** for its stacks with [`stacks[].policies`](#stackspolicies).
+- **How to write one** is on the [policies page](policies.md): the input each tool gives, the syntax both supported versions of conftest read, and the words a message should hold and not hold.
+
+### `cost.enabled`
+
+Default: `false`
+
+Estimates what each pending change of an OpenTofu or Terraform stack does to the monthly bill, and shows it on the row as a delta, right under the first line: `about **31.20 USD** more a month`, `less a month` for a change that saves, or `about the same cost a month`. The estimate comes from the [Infracost CLI](https://www.infracost.io), the open source 0.10 line, which the workflow installs the way it installs the tool and Sluiceway runs and never wraps. It reads the plan's JSON the preview already made, so no tool runs against the cloud again ([record 0105](adr/0105-a-row-shows-what-a-change-costs-and-a-threshold-turns-a-merge-back-to-a-tick.md)).
+
+```yaml
+cost:
+  enabled: true
+```
+
+- **Opt in, because something leaves the runner.** To price a plan the CLI sends the resource types, regions and quantities of the change to its pricing API, never a value and never a credential, and it reports the counts of its own run there. Sluiceway turns its upload to Infracost Cloud off and its check for a newer version off. Nothing is sent unless this key is on and the CLI is installed.
+- **The workflow installs the CLI and gives it a key.** Infracost's own [setup action](https://github.com/infracost/actions/tree/master/setup) installs the 0.10 line and takes the key, which is free, from a secret of your repo; the CLI reads it, Sluiceway never does. `INFRACOST_CURRENCY` in the job environment picks the currency of the estimate, USD without it.
+
+  ```yaml
+  - uses: infracost/actions/setup@v3
+    with:
+      api-key: ${{ secrets.INFRACOST_API_KEY }}
+  ```
+
+- **Only OpenTofu and Terraform stacks get a line**, because the CLI reads their plans and nothing else. A Pulumi, Helm or Kubernetes manifests stack shows no cost line, and no key makes it.
+- **An estimate that fails is a missing line, never a failed scan.** The CLI is not installed, its key is refused, its pricing API cannot be reached, or its output cannot be read: the row shows no line, the run carries the warning "Cost not estimated" with the reason, and the CLI's own words are in the stack's group of the job log.
+- **The cost is not in the diff hash.** It is derived from the plan, and the hash already covers what changes. A price that moved between the tick and the deploy stops nothing, and a tick approves the change, not the amount.
+- **The estimate is a price list against a plan**, not the bill: usage-based resources count at zero usage, and a resource the CLI has no price for counts nothing. The line always says "about".
+- **A stack entry turns it on or off** for its own stacks with [`stacks[].cost.enabled`](#stackscostenabled).
+
+### `cost.threshold`
+
+Default: none. No threshold gates anything.
+
+The change to the monthly bill above which a stack set to [`deploy: on-merge`](#stacksdeploy) waits for a tick instead of going out, in the currency of the estimate. A change that costs more a month than the threshold is not deployed by the merge, and its row says why: `this stack deploys on merge, and this change waits for a tick: it costs about **120.50 USD** more a month, above the threshold of 100.00 USD.` A tick deploys it as it deploys any stack ([record 0105](adr/0105-a-row-shows-what-a-change-costs-and-a-threshold-turns-a-merge-back-to-a-tick.md)).
+
+```yaml
+cost:
+  enabled: true
+  threshold: 100
+```
+
+- **A failed estimate waits too.** When a threshold is set and the change could not be priced, nobody knows what it costs, so the gate fails closed and the row says `its cost could not be estimated`. A person decides.
+- **A change that saves money, or costs the threshold exactly, goes out.** Only more than the threshold waits, and `0` makes every increase wait.
+- **A stack whose tool has no estimate is not gated.** The threshold means nothing to a Pulumi, Helm or Kubernetes manifests stack, which deploys on merge as before.
+- **It changes nothing for a stack on a tick.** The row shows the cost; the person ticks or not.
+- **A stack entry sets its own** with [`stacks[].cost.threshold`](#stackscostthreshold).
+
+A threshold needs the estimate:
+
+```yaml
+# Not valid: a threshold without the estimate
+cost:
+  threshold: 100
+```
+
+```text
+sluiceway.yaml is not valid:
+- cost.threshold: a threshold needs the estimate: set cost.enabled: true next to it, or on the stack's entry.
+```
+
+And it is an amount, 0 or more:
+
+```yaml
+# Not valid: a negative amount
+cost:
+  enabled: true
+  threshold: -5
+```
+
+```text
+sluiceway.yaml is not valid:
+- cost.threshold: expected an amount a month, 0 or more, got -5.
+```
+
 ### `attribution.lookback`
 
 Default: `100`
@@ -373,7 +722,7 @@ The name of the stack, the part of the stack id after the colon. Without it the 
 
 Default: none, the entry adds settings to stacks that discovery found.
 
-The tool of a stack that discovery cannot find from files alone. The entry then declares the stack at `path`, and `options` holds that tool's options. Four tools take it in this version: `opentofu`, for an OpenTofu root module, `terraform`, for a Terraform root module, `helm`, for a Helm release in a namespace, and `kubectl`, for a directory of Kubernetes manifests or a kustomization. With [`wrapper`](#stacksoptionswrapper), an `opentofu` or `terraform` entry declares a Terragrunt unit or a stack of a CDK for Terraform app instead. Pulumi stacks are found from their files and need no `tool`.
+The tool of a stack that discovery cannot find from files alone, or that you want exactly as the entry says. The entry then declares the stack at `path`, and `options` holds that tool's options. A root module that [discovery](#discoveryrootmodules) finds needs no entry, and an entry with a tool at its path takes it over. Four tools take it in this version: `opentofu`, for an OpenTofu root module, `terraform`, for a Terraform root module, `helm`, for a Helm release in a namespace, and `kubectl`, for a directory of Kubernetes manifests or a kustomization. With [`wrapper`](#stacksoptionswrapper), an `opentofu` or `terraform` entry declares a Terragrunt unit or a stack of a CDK for Terraform app instead. Pulumi stacks are found from their files and need no `tool`.
 
 ```yaml
 stacks:
@@ -425,7 +774,7 @@ Sluiceway runs `tofu init` for every directory of the stacks it is about to prev
 
 For Helm, Sluiceway runs `helm dependency build` for every local chart that has dependencies, one chart at a time, before the first preview. That includes the local charts a chart depends on through a `file://` repository, each built before the chart that depends on it: helm leaves out the objects of a subchart whose own dependencies were not built, and says nothing. `helm diff upgrade --install --reset-values --dry-run=server --output=structured`, from the [helm-diff](https://github.com/databus23/helm-diff) plugin, gives the preview: the objects the release would add, change and remove, and the path of every field that changes. A tick deploys with `helm upgrade --install --reset-values`, and `--rollback-on-failure` on Helm 4 or `--atomic` on Helm 3, whichever the installed helm knows. Helm saves no plan, so `apply` renders the chart with `helm template` in its fresh preview and once more right before the deploy, and deploys only when both renders are the same. A chart that renders differently every time, such as one with a random value, is refused as a moved change and never deploys. Install helm v3.18.0 or newer and the diff plugin v3.15.11 or newer in the workflow before Sluiceway ([credentials](credentials.md)). The release's namespace must exist, unless [`createNamespace`](#stacksoptionscreatenamespace) lets the deploy make it.
 
-For `kubectl`, Sluiceway renders the stack into one set of manifests: the files of the directory as they are (and of its subdirectories with [`recursive`](#stacksoptionsrecursive)), or what `kubectl kustomize` builds when the directory holds a `kustomization.yaml`. `kubectl diff --server-side` of that set is the preview: the API server runs the apply as a dry run, so a field that cannot change in place, a field another manager owns and an object the server refuses all fail the preview, before anyone ticks. A tick deploys, with `kubectl apply --server-side`, the very set `apply`'s own fresh preview diffed and hashed. Three things to know:
+For `kubectl`, Sluiceway renders the stack into one set of manifests: the files of the directory as they are (and of its subdirectories with [`recursive`](#stacksoptionsrecursive)), or what `kubectl kustomize` builds when the directory holds a `kustomization.yaml`. `kubectl diff --server-side` of that set is the preview: the API server runs the apply as a dry run, so a field that cannot change in place, a field another manager owns and an object the server refuses all fail the preview, before anyone ticks. A tick deploys, with `kubectl apply --server-side`, the same set `apply`'s own fresh preview diffed and hashed. Three things to know:
 
 - **Nothing is pruned unless you ask.** Without [`prune`](#stacksoptionsprune), an object taken out of the manifests stays in the cluster, and the row never shows a delete.
 - **The namespace must exist**, or the preview fails. Put a `Namespace` in a stack of its own and make the others [depend on it](#stacksdependson).
@@ -454,7 +803,7 @@ Default: `sluiceway`
 
 The environment name on the stack's deployment records, and the GitHub Environment the `apply` job of the [split workflow](split-workflow.md#with-github-environments) names when you use the feature. On its own it is only a label. The records work on every plan, and GitHub lists an environment for every name the records use, so your repo settings show one named `sluiceway` even when you never use the feature.
 
-Give stacks their own environment when the credentials that change things should be locked into a GitHub Environment ([security](security.md)). Stacks can share an environment.
+Give stacks their own environment when the credentials that change things should be locked into a GitHub Environment ([security](security.md)), or when that environment's required reviewers should decide who may deploy them ([a tick asks, an environment decides](security.md#a-tick-asks-an-environment-decides)). Stacks can share an environment.
 
 ### `stacks[].tickers`
 
@@ -482,7 +831,7 @@ stacks:
 
 Default: the `preview-timeout` input, `10` minutes.
 
-The time limit for one preview of this stack, in whole minutes. A preview that runs longer is stopped and the stack gets a preview failure row. `apply` uses it for the fresh preview before a deploy. The deploy itself has no time limit of Sluiceway's unless the `deploy-timeout` input gives it one: set `timeout-minutes` on the `apply` job.
+The time limit for one preview of this stack, in whole minutes. It counts from when the preview starts, not while the stack waits for a place in the pool. A preview that runs longer is stopped and the stack gets a preview failure row. `apply` uses it for the fresh preview before a deploy. The deploy itself has no time limit of Sluiceway's unless the `deploy-timeout` input gives it one: set `timeout-minutes` on the `apply` job.
 
 ```yaml
 # Not valid: minutes are whole numbers
@@ -502,7 +851,7 @@ Default: none.
 
 The stack ids of the stacks this stack depends on, such as a network stack that an app stack reads outputs from. Write each id as its row shows it. Two things follow:
 
-- **A tick waits for a change upstream.** A tick on this stack is refused while a stack it depends on has a pending row that nobody ticked: the box is cleared, and a note on the row names that stack. The job stays green. Only a pending row holds a tick back, because only a change that has not gone out can change what this stack reads. A stack that is in sync, or whose preview failed, holds nothing back.
+- **A tick waits for the stacks it depends on.** A tick on this stack is refused while a stack it depends on has a pending row that nobody ticked: the box is cleared, and a note on the row names that stack. The job stays green. Only a pending row holds a tick back, because only a change that has not gone out can change what this stack reads. A stack that is in sync, or whose preview failed, holds nothing back.
 - **Ticks in one chain go out in order.** Tick both and the one it depends on deploys first. The other gets the row `queued behind <stack>` and a deployment record of its own, and deploys once that stack went out. If that deploy fails, the queued stack does not deploy and its row gets a failure line. The same happens when you tick this stack while a stack it depends on is deploying.
 
 Each layer of a chain runs in a workflow run of its own. Sluiceway starts the workflow again when a layer went out, and `resolve` in that run starts the next layer, so the workflow has to run on `workflow_dispatch` as well as on `issues`. [The workflow](workflow.md#stack-dependencies) does.
@@ -520,7 +869,7 @@ stacks:
       - app:prod
 ```
 
-Every id is checked against discovery, because a dependency that could never hold anything back would be a gate that never says so. A stack that was not found, one that `ignore` leaves out (with the reason of the `ignore` entry, when it has one), the stack itself and a circle are errors, such as:
+Every id is checked against discovery, because a dependency that could never hold anything back would hold nothing back and never say so. A stack that was not found, one that `ignore` leaves out (with the reason of the `ignore` entry, when it has one), the stack itself and a circle are errors, such as:
 
 - `stacks[0].dependsOn[0]: "network:staging" is not a stack that discovery found. Write the stack id as a row shows it, such as "network:dev".`
 - `dependsOn goes round in a circle: app:prod depends on network:prod, which depends on site:prod, which depends on app:prod. Nothing in a circle could ever deploy first, so take one of these out.`
@@ -609,6 +958,76 @@ stacks:
 - **A stack whose project file has no such key, or whose text is not one of the phases, is an error.** The error names the key and the stack, and does not quote the text.
 - **Only Pulumi.** An entry with `tool` that says `from` is an error: name the phase instead.
 
+### `stacks[].deploy`
+
+Default: `on-tick`
+
+When the stacks of this entry deploy. `on-tick`, the default, is the loop the rest of this page describes: a stack deploys when a person ticks its row. `on-merge` lets a stack go out by itself after a merge, with no tick, for a stack nobody needs to look at first, such as a dashboard, an exporter or a test namespace. A stack that deletes a database or changes a network stays on a tick ([record 0095](adr/0095-a-stack-may-deploy-on-merge-and-the-default-stays-a-tick.md)).
+
+```yaml
+stacks:
+  # Grafana's dashboards go out when their pull request merges.
+  - path: apps/grafana
+    deploy: on-merge
+```
+
+- **Only the scan of a merge deploys it.** When a push to the default branch starts the scan and that scan finds the stack pending, the same run deploys it through exactly the path of a tick: a deployment record of its own, the fresh preview, the check that its diff hash is the one the scan found, and the same job and concurrency group. A change that moved in between is refused like a moved tick. A scheduled scan, "Run workflow" and the rescan box deploy nothing on merge: a change they find waits for a tick.
+- **It is attributed to whoever merged**, the person who pressed merge, or an app that merges, as GitHub names the sender of the push. The row says `deploying on merge · merged by alice`, and Recently deployed says `merged by alice` where a ticked deploy names the ticker alone, so a deploy on merge never reads as a tick.
+- **Some changes still wait for a tick**, and the row says which, in a line under its first line. A change that deletes or replaces a resource. A row that also shows drift, because a deploy would put back what someone changed by hand. A stack it depends on through [`dependsOn`](#stacksdependson) or a [phase](#stacksphase) that has a change waiting for a tick. A tick deploys any of them as it deploys any stack.
+- **Order follows the dependencies.** Two stacks set to on-merge in one chain go out one layer per run, as two ticked stacks do: the first now, the next queued behind it and started by the run after it.
+- **[`deploys: false`](#deploys) stops it**, and the row says deploys are turned off. A [read-only dashboard](#dashboardreadonly) deploys nothing on merge either.
+- **[`tickers`](#stackstickers) still decides who may tick the stack**, for every change that waits. It does not judge the merge: the merge is the ask, and who may merge is decided by the rules of the default branch. For a stack only named people may deploy, keep it on a tick, or put the job that deploys in an environment with required reviewers. That environment still holds the deploy on merge until a reviewer approves the job, as it holds a tick ([security](security.md#what-deploys-without-a-tick)).
+- **In the [split workflow](split-workflow.md#merge-and-deploy)** the scan hands the deploy on through its own `matrix`, so it needs the second apply job that merge and deploy uses. The [check](workflow.md#check-your-setup) warns when it is missing.
+
+An entry with a name wins over one without. Any other value fails the config:
+
+```yaml
+# Not valid: a trigger Sluiceway does not have
+stacks:
+  - path: apps/grafana
+    deploy: on-push
+```
+
+```text
+sluiceway.yaml is not valid:
+- stacks[0].deploy: expected "on-tick" or "on-merge", got "on-push".
+```
+
+### `stacks[].deployWindows[].days`
+
+Default: the top level [`deployWindows`](#deploywindowsdays)
+
+The deploy windows of the stacks of this entry, in place of the top level ones, in the same shape. An empty list lets them go out at any time while the repo has windows: for a dashboard or a test namespace that nobody needs to hold to office hours, or for the one stack the on-call has to be able to deploy at night. An entry with a name wins over one without ([record 0104](adr/0104-a-tick-outside-the-deploy-window-waits-for-it-instead-of-going-out.md)).
+
+```yaml
+deployWindows:
+  - days: [monday, tuesday, wednesday, thursday]
+    from: "09:00"
+    to: "17:00"
+stacks:
+  # The status page may go out at any time.
+  - path: apps/status
+    deployWindows: []
+  # The database only on Tuesday and Thursday mornings.
+  - path: platform/database
+    deployWindows:
+      - days: [tuesday, thursday]
+        from: "09:00"
+        to: "12:00"
+```
+
+### `stacks[].deployWindows[].from`
+
+Default: none
+
+As [`deployWindows[].from`](#deploywindowsfrom).
+
+### `stacks[].deployWindows[].to`
+
+Default: none
+
+As [`deployWindows[].to`](#deploywindowsto).
+
 ### `stacks[].drift.enabled`
 
 Default: the top level `drift.enabled`.
@@ -637,6 +1056,115 @@ stacks:
 ```text
 sluiceway.yaml is not valid:
 - stacks[0].drift: expected a mapping, got true. Write it as the top level has it: drift: { enabled: true }.
+```
+
+### `stacks[].valueFingerprint`
+
+Default: the top level `valueFingerprint`.
+
+Turns the value fingerprint on or off for the stacks of this entry, whatever the top level says. An entry with a name wins over one without ([record 0102](adr/0102-a-tick-covers-the-values-it-does-not-show-through-a-value-fingerprint.md)).
+
+```yaml
+stacks:
+  # A program that rotates a token on every preview.
+  - path: apps/runner
+    valueFingerprint: false
+```
+
+### `stacks[].envFile`
+
+Default: none. The stacks of the entry get the environment of the step as it is.
+
+A file of `NAME=value` lines that the tool gets for the stacks of this entry alone, on top of the job environment and the file the step's [`env-file` input](credentials.md#an-env-file) names. It is for a repo whose stacks live in different places: each stack's preview and deploy sees its own credentials, and a file that is wrong for one stack breaks the preview of that stack and no other ([record 0103](adr/0103-a-stack-may-name-the-env-file-its-tool-gets.md)).
+
+```yaml
+stacks:
+  - path: infra/aws
+    envFile: ci/aws.env
+  - path: infra/proxmox
+    envFile: ci/proxmox.env
+```
+
+The file follows every rule of the input: relative to the checkout or absolute, the strict format, every value masked before anything else happens, and the job log names what was loaded and never a value. A file two entries name is read once per job. The stack's file wins over the step's file, which wins over the job environment. A file that is missing or refused is a preview failure of its stacks, with the path and the line number in the job log, and the scan goes on with the other stacks. An entry with a name wins over one without, and an entry names one file.
+
+Choose a [GitHub Environment](#stacksenvironment) instead, or as well, when the credentials that change things should be held by GitHub behind required reviewers: an env file scopes what each stack's tool sees inside one job, an environment decides who may deploy and where the secrets live. A tool version or a runner per stack is not what this key does.
+
+### `stacks[].policies`
+
+Default: `[]`
+
+Policy paths for the stacks of this entry, on top of the top level [`policies`](#policies). They add up, the way `inputs` do: a stack tested by the repo's policies and by its own ([record 0106](adr/0106-policies-run-against-the-preview-and-a-hard-failure-takes-the-box-off-the-row.md)).
+
+```yaml
+policies:
+  - policies
+stacks:
+  - path: apps/payments
+    policies:
+      - policies/payments
+```
+
+### `stacks[].createInBackend`
+
+Default: `false`
+
+`true` lets a scan create each Pulumi stack of the entry that the backend does not hold, right before its first preview, and preview it as all creates. A stack file for a stack still to be made is otherwise a red row until someone runs the tool by hand ([record 0107](adr/0107-a-pulumi-stack-the-backend-lacks-is-created-by-the-scan-when-its-entry-asks.md)).
+
+```yaml
+stacks:
+  - path: apps/web
+    name: staging
+    createInBackend: true
+```
+
+The scan asks the backend for the list of the project's stacks, and runs `pulumi stack init <name>` only when the list lacks the stack, with the environment the stack's preview gets: the passphrase of the job, or of the stack's [`envFile`](#stacksenvfile), is the one the new stack uses, and the tool's default secrets provider stands. A stack the backend already holds is left alone, and the job log says which of the two it was. The init writes an encryption salt into the stack file of the checkout; Sluiceway commits nothing, so set the stack's config secrets from a clone as before ([credentials](credentials.md#state-backends)). A list or an init the tool refuses is a preview failure of that stack alone.
+
+Only a scan creates a stack. A deploy never does: a stack that is gone at deploy time fails the fresh preview as it did. The [check](workflow.md#check-your-setup) with `backend: true` names each such stack the backend lacks and says that the first scan creates it, and leaves it out of the `ignore` block. Off by default, because a typo in a stack file must never create a stack, and refused on an entry with `tool`: an OpenTofu workspace is made by the scan's init, and a Helm release by its first deploy.
+### `stacks[].cost.enabled`
+
+Default: the top level `cost.enabled`.
+
+Turns the cost estimate on or off for the stacks of this entry, whatever the top level says. An entry with a name wins over one without ([record 0105](adr/0105-a-row-shows-what-a-change-costs-and-a-threshold-turns-a-merge-back-to-a-tick.md)).
+
+```yaml
+cost:
+  enabled: true
+stacks:
+  # A sandbox nobody prices.
+  - path: playground
+    cost:
+      enabled: false
+```
+
+It is a mapping, like the top level:
+
+```yaml
+# Not valid: true alone
+stacks:
+  - path: apps/web
+    cost: true
+```
+
+```text
+sluiceway.yaml is not valid:
+- stacks[0].cost: expected a mapping, got true. Write it as the top level has it: cost: { enabled: true }.
+```
+
+### `stacks[].cost.threshold`
+
+Default: the top level `cost.threshold`.
+
+The threshold of the stacks of this entry, in place of the top level one, so a stack that holds the cluster can wait at a lower amount than a dashboard. It needs the estimate on for those stacks, here or at the top level ([record 0105](adr/0105-a-row-shows-what-a-change-costs-and-a-threshold-turns-a-merge-back-to-a-tick.md)).
+
+```yaml
+cost:
+  enabled: true
+  threshold: 500
+stacks:
+  - path: infra/cluster
+    deploy: on-merge
+    cost:
+      threshold: 50
 ```
 
 ### `stacks[].options.workspace`
@@ -754,6 +1282,55 @@ Default: kubectl's own, `kubectl`.
 
 Only with `tool: kubectl`. The field manager of the preview and the deploy, passed with `--field-manager`: letters, digits, `.`, `_` and `-`, at most 128 characters. A name of the stack's own, such as `sluiceway-web`, keeps a `kubectl apply --server-side` run by hand from counting as the stack's own change, and tells pruning and the drift check which objects and fields are the stack's. On a stack that was deployed with another field manager, the old one keeps holding every field it set, so a later change of such a field fails the preview with a conflict until `forceConflicts` takes it over.
 
+### `discovery.rootModules`
+
+Default: `true`
+
+Find OpenTofu and Terraform root modules from their files, the way Pulumi stacks are found. `false` turns it off for the repo, and every OpenTofu and Terraform stack is then one a `stacks` entry declares, as before this key existed.
+
+Discovery reads every directory of `*.tf`, `*.tofu`, `*.tf.json` and `*.tofu.json` files, and never starts the tool or asks a backend. It skips directories whose name starts with a dot, such as `.terraform` and `.terragrunt-cache`, and `node_modules` and `cdktf.out`. A directory is found as a stack when all of this holds, and the first thing that does not hold is the reason the `check` gives for leaving it out:
+
+1. **No `stacks` entry with a tool names it.** Such a directory is the entry's.
+2. **No other directory uses it as a local module source**, `source = "../network"` or `source = "./modules/vpc"` in a `module` block. This is the signal trusted most: it is the repo saying the directory is a module.
+3. **It does not sit under a directory named `modules`.** That only leaves directories out. A directory next to a `modules` directory is not a root module for that.
+4. **A `terraform` block has a `backend` or a `cloud` block.** Only a root module chooses where its state lives, and a root module that keeps its state on the runner would lose it after the deploy. An empty `backend "s3" {}` counts: the rest can come from the environment.
+5. **It is built for one workspace.** Code that reads `terraform.workspace`, or a `cloud` block that picks its workspaces by `tags`, means the root module runs in workspaces its files do not name.
+6. **No var file or backend file chooses anything.** A `*.tfvars` file other than `terraform.tfvars` and `*.auto.tfvars`, or a `*.tfbackend` file, in the directory or in a subdirectory that holds only such files (the `env/dev.tfvars` layout), is loaded only when a command names it, and which one a stack takes is yours to say.
+7. **Its files say which tool runs it.** A `.terraform.lock.hcl` whose providers come from `registry.opentofu.org` means OpenTofu, from `registry.terraform.io` Terraform. `.tofu` files mean OpenTofu, which is the only one that reads them. Files that say both, or neither, are no stack: running the wrong one can upgrade the state past what the other reads.
+
+A repo with a `terragrunt.hcl`, `terragrunt.hcl.json` or `terragrunt.stack.hcl` anywhere finds no root module at all: its stacks are its units, [declared](#stacksoptionswrapper) with `wrapper: terragrunt`, and the modules they run often carry an empty backend block. A CDK for Terraform app is declared too, because its stacks exist only in its program.
+
+A found root module is one stack in the default workspace: no name, its path as its stack id, no var files and no `TF_WORKSPACE`. It is planned once and deployed from the saved plan, exactly like a declared one. To run it in another workspace or with var files, declare it: the entry takes the directory over.
+
+Everything else in this file works on a found stack as on any stack: a `stacks` entry without `tool` gives it settings, and `ignore` leaves it out by its stack id.
+
+```yaml
+# Leave one found directory out, and say why on the dashboard.
+ignore:
+  - glob: bootstrap
+    reason: Applied once by hand when the account was made
+# Declare one discovery left out, in two workspaces.
+stacks:
+  - path: envs/app
+    name: dev
+    tool: opentofu
+    options:
+      workspace: dev
+  - path: envs/app
+    name: prod
+    tool: opentofu
+    options:
+      workspace: prod
+```
+
+```yaml
+# Only what stacks declares, as before.
+discovery:
+  rootModules: false
+```
+
+The rule can be wrong in one direction it cannot see: a shared module that another repo uses by a Git address, with a backend block and a lock file of its own, and nothing in this repo that calls it. The `check` shows it as found. Leave it out with `ignore`, or move it under `modules/`.
+
 ### `mergeAndDeploy.authors`
 
 Default: `[]`
@@ -821,8 +1398,8 @@ notify:
 
 - **No credentials and no environment variables.** Your workflow puts them into the job environment before Sluiceway runs ([credentials](credentials.md)).
 - **No notification channels.** A Slack webhook address, a Telegram bot token and a webhook address are secrets, so they are inputs of the step, read from your repo's secrets. A channel written under `notify` is an error that says so.
-- **No `concurrency` or `preview-timeout`.** They belong to the runner, so they are inputs of the action.
-- **No stack ids.** They are derived.
+- **No `concurrency` or `preview-timeout`.** They belong to the runner, so they are inputs of the action. Without `concurrency` the scan runs one preview for each core of the runner, up to 8, so the same repo scans well on a small runner and a large one without a change here ([reference](reference.md#inputs)).
+- **No list of stack ids.** Every id is derived from its path and name, unless a `stacks` entry gives one with [`id`](#stacksid).
 - **No teams** in a tick rule. Not in this version.
 
 A typo gets the list of keys that are allowed:
@@ -834,5 +1411,5 @@ ticker: admin
 
 ```text
 sluiceway.yaml is not valid:
-- unknown key "ticker". Known keys here: dashboard, tickers, deploys, ignore, scan, drift, attribution, phases, stacks, mergeAndDeploy, notify.
+- unknown key "ticker". Known keys here: dashboard, tickers, deploys, recordWriters, deployWindows, ignore, scan, drift, valueFingerprint, policies, cost, attribution, phases, stacks, discovery, mergeAndDeploy, notify.
 ```

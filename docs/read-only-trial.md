@@ -1,6 +1,8 @@
 # Start read only
 
-You can run the scan alone first, to see your dashboard with nothing that can deploy. It is [the workflow](workflow.md#the-workflow) with everything that can deploy taken out. Run the [check](workflow.md#check-your-setup) before it, in a pull request.
+You can run the scan alone first, to see your dashboard with nothing that can deploy.
+
+It is [the workflow](workflow.md#the-workflow) with everything that can deploy taken out. Run the [check](workflow.md#check-your-setup) before it, in a pull request.
 
 Put this in `.github/workflows/deploy-dashboard.yml` on the default branch. It uses the action at `@v0`. [Pin a commit](workflow.md#pin-a-commit) says how to pin a release by its commit SHA instead.
 
@@ -36,8 +38,11 @@ jobs:
           pulumi-version: ^3.229.0
       # Install what your programs need, once, for example: npm ci
       # Load your credentials and your state backend settings into the job
-      # environment here. Credentials that can only read are enough. Whatever
-      # loads a secret must also mask it.
+      # environment here. For Pulumi, credentials that can only read are
+      # enough. A Helm or Kubernetes manifests preview is a server-side dry
+      # run, which needs what a deploy needs (see Credentials). Whatever loads
+      # a secret must also mask it, or name a file of NAME=value lines with
+      # the env-file input and Sluiceway masks every value itself.
       - uses: sluiceway/sluiceway@v0
 ```
 

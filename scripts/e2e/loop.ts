@@ -283,6 +283,46 @@ export function checkApply(
   return problems;
 }
 
+// A push that reached the branch after the commit the run checked out
+// (record 0111): `apply` refuses before its fresh preview, so the tool never
+// runs. The record ends as a moved change, the job is red, the row still says
+// deploying and has no line of the refusal, and a full scan is started.
+export function checkBranchMoved(
+  step: LoopStep,
+  expected: { stack: string; deployment: number },
+): string[] {
+  const { stack, deployment } = expected;
+  const problems = exitCode(step, false);
+  const record = step.records.find(({ id }) => id === deployment);
+  if (!record) problems.push(`Deployment record ${deployment} does not exist.`);
+  else {
+    problems.push(
+      ...statuses(record, ["queued", "in_progress", "error"], "the change moved since the tick"),
+    );
+  }
+  if (step.outputs.outcome !== "refused") {
+    problems.push(`The outcome output is ${step.outputs.outcome}, expected refused.`);
+  }
+  if (step.log.includes("the fresh preview")) problems.push("The job ran a fresh preview.");
+  if (step.newDispatches !== 1) {
+    problems.push(`The job started ${step.newDispatches} runs, expected one full scan.`);
+  }
+  if (step.newComments.length !== 1) {
+    problems.push(`The job wrote ${step.newComments.length} comments, expected one.`);
+  }
+  problems.push(...rowState(step.body, stack, "deploying"));
+  return problems;
+}
+
+// The row of a stack after the scan of a newer commit, whose deploy was
+// refused: pending with the change as it is now, never in sync. The failure
+// line is not checked here: the fake's records keep times of their own, older
+// than the tool's own history, so a deploy of an earlier scene reads as newer
+// than the refusal. The mode tests on the fake hold the line.
+export function checkPendingAfterRefusal(body: string, stack: string): string[] {
+  return rowState(body, stack, "pending");
+}
+
 // A rehearsal (record 0051): `apply` with `dry-run: true` previews, checks
 // the hash and deploys nothing. The record ends as inactive with its own
 // words, the job is green, the row is pending again with its box, and the
@@ -436,6 +476,33 @@ export function checkQueued(
   });
 }
 
+// A drift repair (record 0055): the newest record of the stack says the hash
+// it carries covers drift, a queued one and the one a later run started for it
+// alike (record 0091).
+export function checkDriftRepair(step: LoopStep, stack: string): string[] {
+  const record = step.records.findLast(({ task }) => task === `sluiceway:${stack}`);
+  if (!record) return [`${stack} has no deployment record.`];
+  return payloadField(record.payload, "drift") === true
+    ? []
+    : [`Deployment record ${record.id} of ${stack} does not say its hash covers drift.`];
+}
+
+// The newest line of the stack in Recently deployed carries this result word
+// (records 0059 and 0062).
+export function checkTrail(body: string, stack: string, word: string): string[] {
+  const line = body
+    .split("\n")
+    .find((text) => new RegExp(`^- (\\S+&nbsp;)?${escaped(stack)} · `).test(text));
+  if (line === undefined) return [`Recently deployed has no line for ${stack}.`];
+  return line.includes(`${stack} · ${word} · `)
+    ? []
+    : [`The newest line of ${stack} in Recently deployed is "${line}", expected "${word}".`];
+}
+
+function escaped(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Merge and deploy (record 0054). The rows of the updates waiting to merge,
 // read the plain way: the pull request and the stack of each marker.
 export function mergeRows(body: string): { pr: string; stack: string; ticked: boolean }[] {
@@ -534,6 +601,67 @@ export function checkHandOff(
     );
   } else {
     problems.push(...statuses(record, ["queued"]), ...rowState(step.body, stack, "deploying"));
+  }
+  return problems;
+}
+
+// The diff hash on a pending row, read the plain way: what a writer that
+// opens a deployment record of its own puts in the payload (record 0109).
+export function rowHash(body: string, stack: string): string | undefined {
+  for (const line of body.split("\n")) {
+    const marker = new RegExp(
+      `<!-- sluiceway:row stack="${escaped(stack)}" state="[^"]*" hash="([0-9a-f]{16})"`,
+    ).exec(line);
+    if (marker) return marker[1];
+  }
+  return undefined;
+}
+
+// The value fingerprint on a pending row, read the same way, which the
+// writer copies too when the row has one (record 0102).
+export function rowFingerprint(body: string, stack: string): string | undefined {
+  for (const line of body.split("\n")) {
+    const marker = new RegExp(
+      `<!-- sluiceway:row stack="${escaped(stack)}" state="[^"]*" hash="[0-9a-f]{16}" fingerprint="([0-9a-f]{16})"`,
+    ).exec(line);
+    if (marker) return marker[1];
+  }
+  return undefined;
+}
+
+// An outside record (record 0109): a record another writer opened, naming the
+// run of a dispatch it made. `resolve` hands it on as it is, opens no record
+// of its own, and the run scans nothing after it. The deploy itself is
+// `checkApply`'s to check.
+export function checkOutsideRecord(
+  step: LoopStep,
+  expected: { stack: string; deployment: number },
+): string[] {
+  const { stack, deployment } = expected;
+  const problems: string[] = [];
+  const text = step.outputs.matrix;
+  const matrix = text === undefined ? [] : matrixEntries(text);
+  const [entry] = matrix;
+  if (matrix.length !== 1 || entry?.stack !== stack || entry.deployment !== deployment) {
+    problems.push(
+      `The matrix output is ${text}, expected one entry that hands on deployment record ${deployment} of ${stack}.`,
+    );
+  }
+  const newest = step.records.filter(({ task }) => task === `sluiceway:${stack}`).at(-1);
+  if (newest?.id !== deployment) {
+    problems.push(
+      `The newest record of ${stack} is ${newest?.id}, expected ${deployment}: the run opened a record of its own.`,
+    );
+  }
+  problems.push(
+    ...needLine(
+      step.log,
+      `${stack}: deployment record ${deployment} names this run and waits for nothing`,
+    ),
+    ...needLine(step.log, "The scan of this run is skipped: resolve handed on 1 deployment record"),
+  );
+  if (step.outputs.pending !== undefined) {
+    problems.push("The step set the pending output, so it scanned after all.");
   }
   return problems;
 }

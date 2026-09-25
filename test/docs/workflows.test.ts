@@ -9,7 +9,9 @@ import {
   isSluiceway,
   modeOf,
   read,
+  section,
   USER_DOCS,
+  type Workflow,
   workflows,
 } from "./docs.ts";
 
@@ -132,12 +134,21 @@ describe("the workflows in the docs", () => {
     expect(wrong).toEqual([]);
   });
 
-  // Record 0042: the check reads files and nothing else.
-  test("a check workflow asks for contents: read and nothing more", () => {
+  // Record 0042: the check reads files and nothing else. With the pull
+  // request preview it writes a page per stack, which is checks: write and
+  // no more (record 0101).
+  test("a check workflow asks for contents: read and nothing more, and one that previews adds checks: write", () => {
     const checks = all.filter(({ workflow }) => isCheckWorkflow(workflow));
-    expect(checks.length).toBeGreaterThan(0);
-    for (const { workflow } of checks) {
-      expect(workflow.permissions).toEqual({ contents: "read" });
+    const previews = ({ workflow }: { workflow: Workflow }) =>
+      Object.values(workflow.jobs).some((job) =>
+        job.steps.some((step) => isSluiceway(step) && step.with?.["pull-request-preview"] === true),
+      );
+    expect(checks.filter(previews).length).toBe(1);
+    expect(checks.filter((one) => !previews(one)).length).toBeGreaterThan(0);
+    for (const found of checks) {
+      expect(found.workflow.permissions).toEqual(
+        previews(found) ? { contents: "read", checks: "write" } : { contents: "read" },
+      );
     }
   });
 });
@@ -289,9 +300,14 @@ describe("the setup in docs/workflow.md", () => {
   const page = read("docs/workflow.md");
   const shown = all.filter(({ where }) => where.startsWith("docs/workflow.md"));
 
-  test("has no warning box", () => {
-    expect(page.includes("[!WARNING]")).toBe(false);
-    expect(read("README.md").includes("[!WARNING]")).toBe(false);
+  // The README once opened with a warning box that said Sluiceway was not
+  // released. Warning boxes now mark only what new users ran into first.
+  test("has warning boxes only for what new users ran into", () => {
+    const warnings = (text: string) => text.split("\n").filter((line) => line === "> [!WARNING]");
+    expect(warnings(read("README.md"))).toEqual([]);
+    expect(warnings(page).length).toBe(
+      warnings(section(page, "## What new users ran into")).length,
+    );
   });
 
   // Record 0042: the setup starts with the check.

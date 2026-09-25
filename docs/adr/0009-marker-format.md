@@ -1,5 +1,13 @@
 # Three marker kinds, a trailing row marker, and a body that is regenerated around its row blocks
 
+> Amended by 0110: the row marker gains six optional keys. `creates`, `updates`, `replaces` and `tracking` after `policy`, the counts of a pending row's first line, each left out at 0; `changed` right after `gone`, how many resources a drifted row's drift check found changed; and `behind` last, the stack ids a queued row waits behind, the display cache this record foresaw. All documented. The version stays 1.
+>
+> Amended by 0108: the root marker gains the optional keys `scan-running` and `scan-running-since`, after the `run-waiting` keys, for a scan that is running. The scan writes them first and takes them away last, and every other writer carries them. Left out of the documented keys on purpose, like the `run-waiting` keys.
+>
+> Amended by 0096: the markers are documented for readers outside Sluiceway in `docs/what-sluiceway-writes.md`, with the version rule said for them. Every key is documented except `shortened` on a row, the `run-waiting` keys on the root marker, and the notes and confirm keys of a bulk box, which may change without a new version.
+>
+> Amended by 0086: the root marker gains the optional keys `run-waiting`, `run-waiting-since` and `run-waiting-more`, after the full scan keys, for a run of the workflow that waits for a runner. A scan writes them and every other writer carries them.
+>
 > Amended by 0083: a marker of the kind `sluiceway:bulk` sits on its own line outside the row blocks, under the pending or the drifted rows: the bulk box of that section, or its confirm box with the stacks and hashes it names.
 >
 > Amended by 0075: the row marker gains the optional key `deletes` right after `destroys`, how many of the destroys are deletes, written whenever `destroys` is. A drifted row's marker gains `gone` after `drift`, how many resources its drift check found gone outside the code. Both are display caches for the header and the destroy alert, like `destroys`.

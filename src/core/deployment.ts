@@ -5,6 +5,7 @@
 // import `github/`. `github/deployments.ts` writes and reads the records
 // through the port in these words.
 
+import { z } from "zod";
 import { type DeployFailureReason, deployFailureText } from "./failure-reason.ts";
 import type { OutsideDeploy } from "./outside-deploy.ts";
 
@@ -22,6 +23,10 @@ export interface Deployment {
   payload: unknown;
   // As GitHub writes it ("2026-09-21T08:52:10Z").
   createdAt: string;
+  // The login of whoever created it, as GitHub records it: the bot for a
+  // record of Sluiceway's, and the writer of an outside record (record
+  // 0109). Absent where the port did not read it.
+  creator?: string | undefined;
 }
 
 export interface DeploymentStatus {
@@ -84,10 +89,127 @@ export interface DeploymentPayload {
   // version stays 1. A reader that does not know it compares without drift,
   // which ends as a moved change: the safe direction.
   drift?: boolean | undefined;
+  // The record was opened after the scan of a merge, for a stack set to
+  // on-merge, and `ticker` is whoever merged (record 0095). An added key, so
+  // the version stays 1. A reader that does not know it reads the record as
+  // a tick by that person, which deploys the same.
+  onMerge?: boolean | undefined;
+  // The value fingerprint the tick approved (record 0102): a hash of the
+  // values the row did not show. An added key, so the version stays 1. Absent
+  // on a record written before, or with the check off for the stack: a fresh
+  // preview that gives one then refuses the deploy, the safe direction.
+  fingerprint?: string | undefined;
+  // The record waits for the stack's deploy window (record 0104): a queued
+  // record that waits for a time and not for a stack. A run inside the window
+  // starts it under a record of its own. An added key, so the version stays
+  // 1. A reader that does not know it reads an open deployment, which is what
+  // it is.
+  window?: boolean | undefined;
+}
+
+// The payload as a schema (record 0096): what every writer writes, checked
+// before it is sent, and published as schema/deployment-payload.schema.json
+// for anyone who reads the records. Strict, so a key that is not named here
+// cannot ride along, and none of its fields can hold a property value or a
+// secret: a hash, a login, run ids, stack ids, a pull request number and
+// flags.
+const runId = () => z.string().regex(/^[1-9]\d*$/);
+const v = z
+  .literal(PAYLOAD_VERSION)
+  .describe("The version of the payload. A reader checks it first.");
+const ticker = z
+  .string()
+  .min(1)
+  .describe(
+    "The login of the person whose tick started the deploy, plain, without @. On a deploy on merge, whoever merged.",
+  );
+const run = runId().describe(
+  "The id of the workflow run that deploys. The record is open as long as that run is.",
+);
+const attempt = runId()
+  .optional()
+  .describe("The attempt of that run which created the record. Absent on older records.");
+
+// In the order the payload has always been written.
+const tickPayloadSchema = z
+  .strictObject({
+    v,
+    hash: z
+      .string()
+      .regex(/^[0-9a-f]{16}$/)
+      .describe(
+        "The diff hash the tick approved: the first 16 hex characters of a SHA-256. The deploy goes out only when a fresh preview gives the same hash.",
+      ),
+    ticker,
+    run,
+    attempt,
+    behind: z
+      .array(z.string().min(1))
+      .min(1)
+      .optional()
+      .describe(
+        "A queued record: the stack ids it waits behind, which have to go out first. Absent otherwise.",
+      ),
+    drift: z
+      .literal(true)
+      .optional()
+      .describe("The hash covers drift, and the deploy puts it back. Absent otherwise."),
+    onMerge: z
+      .literal(true)
+      .optional()
+      .describe(
+        "The record was opened after the scan of a merge, for a stack set to deploy on merge. Absent otherwise.",
+      ),
+    fingerprint: z
+      .string()
+      .regex(/^[0-9a-f]{16}$/)
+      .optional()
+      .describe(
+        "The value fingerprint the tick approved: the first 16 hex characters of a SHA-256 over the values of the diff that the row did not show. The deploy goes out only when a fresh preview gives the same one. Absent on a record written before the key came, or with the check off for the stack.",
+      ),
+    window: z
+      .literal(true)
+      .optional()
+      .describe(
+        "A queued record that waits for the stack's deploy window, which a run inside the window starts. Absent otherwise.",
+      ),
+  })
+  .describe(
+    "The record of a tick, a queued stack, a drift repair, a deploy on merge or a deploy that waits for its window.",
+  );
+
+const mergeRecordSchema = z
+  .strictObject({
+    v,
+    ticker,
+    run,
+    attempt,
+    merge: z
+      .int()
+      .positive()
+      .describe(
+        "The pull request a tick merged. The record carries no hash, never deploys, and ends when the scan after the merge opens the record that does.",
+      ),
+  })
+  .describe("The record of a tick that merged a pull request.");
+
+export const deploymentPayloadSchema = z.union([tickPayloadSchema, mergeRecordSchema]);
+
+// The JSON schema of the payload, for a reader that wants to check one. Only
+// scripts/generate-schema.ts calls this, never the action.
+export function deploymentPayloadJsonSchema(): Record<string, unknown> {
+  const { $schema, ...rest } = z.toJSONSchema(deploymentPayloadSchema, { target: "draft-7" });
+  return {
+    $schema,
+    title: "Sluiceway deployment record payload",
+    description:
+      "The payload of a GitHub deployment record whose task is sluiceway:<stack id>. It holds no property value, no secret and none of the tool's own words.",
+    ...rest,
+  };
 }
 
 export function deploymentPayload(payload: DeploymentPayload): Record<string, unknown> {
-  return {
+  return tickPayloadSchema.parse({
     v: PAYLOAD_VERSION,
     hash: payload.hash,
     ticker: payload.ticker,
@@ -95,7 +217,10 @@ export function deploymentPayload(payload: DeploymentPayload): Record<string, un
     ...(payload.attempt === undefined ? {} : { attempt: payload.attempt }),
     ...(payload.behind && payload.behind.length > 0 ? { behind: payload.behind } : {}),
     ...(payload.drift ? { drift: true } : {}),
-  };
+    ...(payload.onMerge ? { onMerge: true } : {}),
+    ...(payload.fingerprint === undefined ? {} : { fingerprint: payload.fingerprint }),
+    ...(payload.window ? { window: true } : {}),
+  });
 }
 
 // The payload of the record a merge tick opens (record 0054). No hash at all,
@@ -106,13 +231,13 @@ export function mergePayload(payload: {
   attempt?: string | undefined;
   merge: number;
 }): Record<string, unknown> {
-  return {
+  return mergeRecordSchema.parse({
     v: PAYLOAD_VERSION,
     ticker: payload.ticker,
     run: payload.run,
     ...(payload.attempt === undefined ? {} : { attempt: payload.attempt }),
     merge: payload.merge,
-  };
+  });
 }
 
 const RUN_ID = /^[1-9]\d*$/;
@@ -122,10 +247,8 @@ const RUN_ID = /^[1-9]\d*$/;
 // built from text that came from outside.
 export function readDeploymentPayload(payload: unknown): DeploymentPayload | undefined {
   if (typeof payload !== "object" || payload === null) return undefined;
-  const { v, hash, ticker, run, behind, merge, drift, attempt } = payload as Record<
-    string,
-    unknown
-  >;
+  const { v, hash, ticker, run, behind, merge, drift, attempt, onMerge, fingerprint, window } =
+    payload as Record<string, unknown>;
   if (v !== PAYLOAD_VERSION) return undefined;
   // Only a number is kept, so no link is built from text that came from
   // outside. Anything else leaves the attempt out, not the record.
@@ -147,6 +270,13 @@ export function readDeploymentPayload(payload: unknown): DeploymentPayload | und
   if (!RUN_ID.test(run)) return undefined;
   const read: DeploymentPayload = { hash, ticker, run, ...attempted };
   if (drift === true) read.drift = true;
+  if (onMerge === true) read.onMerge = true;
+  // Only a fingerprint is kept, so nothing that came from outside is ever
+  // compared as one (record 0102).
+  if (typeof fingerprint === "string" && /^[0-9a-f]{16}$/.test(fingerprint)) {
+    read.fingerprint = fingerprint;
+  }
+  if (window === true) read.window = true;
   if (behind === undefined) return read;
   const ids = Array.isArray(behind) ? behind : [];
   if (ids.length === 0 || !ids.every((id) => typeof id === "string" && id !== "")) {
@@ -171,9 +301,14 @@ export type DeployFact =
       // Queued behind these stacks (record 0056): it starts only after they
       // went out, in a later run.
       behind?: string[] | undefined;
+      // Queued for the stack's deploy window (record 0104): a run inside the
+      // window starts it.
+      window?: true;
       // The pull request a merge tick merged: the record waits for the scan
       // after the merge, not for its run (record 0054).
       merge?: number;
+      // Opened on merge, and `ticker` is whoever merged (record 0095).
+      onMerge?: true;
     }
   | {
       kind: "succeeded";
@@ -186,6 +321,7 @@ export type DeployFact =
       // The fresh preview had nothing to deploy, so nothing went out (record
       // 0051).
       inSync?: boolean;
+      onMerge?: true;
     }
   | {
       kind: "failed";
@@ -195,6 +331,7 @@ export type DeployFact =
       run: string;
       attempt?: string | undefined;
       at: Date;
+      onMerge?: true;
     };
 
 // One deploy that went out, for the recently deployed list (record 0029).
@@ -209,8 +346,12 @@ export interface SucceededDeploy {
   // Absent for a deploy that went out. "in-sync": the fresh preview had
   // nothing to deploy. "rehearsed": a rehearsal, nothing went out (record
   // 0051). "drift-repaired": it went out, and the approved hash covered
-  // drift, which it put back (record 0059).
-  result?: "in-sync" | "rehearsed" | "drift-repaired";
+  // drift, which it put back (record 0059). "drift-gone": the approved hash
+  // covered drift, and the drift check and the fresh preview found nothing to
+  // deploy, so nothing was repaired (record 0091).
+  result?: "in-sync" | "rehearsed" | "drift-repaired" | "drift-gone";
+  // It went out on merge (record 0095).
+  onMerge?: true;
 }
 
 // One line of the recently deployed list (records 0029 and 0062): a deploy
@@ -222,10 +363,12 @@ export interface TrailEntry {
   // The attempt of the run, when the record says (slice 5.9).
   attempt?: string | undefined;
   at: Date;
-  // Absent for a deploy that went out. "in-sync", "rehearsed" and
-  // "drift-repaired" as on `SucceededDeploy`, "failed" for a record that
-  // ended as `failure` or `error` (record 0062).
-  result?: "in-sync" | "rehearsed" | "drift-repaired" | "failed";
+  // Absent for a deploy that went out. "in-sync", "rehearsed",
+  // "drift-repaired" and "drift-gone" as on `SucceededDeploy`, "failed" for a
+  // record that ended as `failure` or `error` (record 0062).
+  result?: "in-sync" | "rehearsed" | "drift-repaired" | "drift-gone" | "failed";
+  // It went out on merge, and `ticker` is whoever merged (record 0095).
+  onMerge?: true;
   // The failure reason of a failed deploy, as the failure line shows it.
   reason?: string;
   // For a deploy that went out: the commit of the stack's success before it
@@ -351,7 +494,11 @@ export function recordStatus(step: RecordStep): StatusToWrite {
     case "failed":
       return {
         state:
-          step.reason.kind === "moved" || step.reason.kind === "run-ended" ? "error" : "failure",
+          step.reason.kind === "moved" ||
+          step.reason.kind === "value-changed" ||
+          step.reason.kind === "run-ended"
+            ? "error"
+            : "failure",
         description: deployFailureText(step.reason),
       };
   }
@@ -372,6 +519,7 @@ function factOf(record: DeploymentRecord, payload: DeploymentPayload): DeployFac
       : { run: payload.run, attempt: payload.attempt };
   const state = record.status?.state ?? "";
   const at = new Date(record.status?.createdAt ?? record.createdAt);
+  const onMerge = payload.onMerge ? { onMerge: true as const } : {};
   if (SUCCEEDED.has(state)) {
     // GitHub's `inactive` status is written when the deploy was superseded,
     // so its time is not when the deploy ended. The success before it is,
@@ -386,6 +534,7 @@ function factOf(record: DeploymentRecord, payload: DeploymentPayload): DeployFac
       at: Number.isNaN(ended.getTime()) ? at : ended,
       hash: payload.hash,
       ...(inSync ? { inSync } : {}),
+      ...onMerge,
     };
   }
   if (FAILED.has(state)) {
@@ -395,6 +544,7 @@ function factOf(record: DeploymentRecord, payload: DeploymentPayload): DeployFac
       ticker,
       ...run,
       at,
+      ...onMerge,
     };
   }
   return {
@@ -404,7 +554,9 @@ function factOf(record: DeploymentRecord, payload: DeploymentPayload): DeployFac
     ticker,
     ...run,
     ...(payload.behind ? { behind: payload.behind } : {}),
+    ...(payload.window ? { window: true as const } : {}),
     ...(payload.merge === undefined ? {} : { merge: payload.merge }),
+    ...onMerge,
   };
 }
 
@@ -446,8 +598,9 @@ export function deployFacts(records: readonly DeploymentRecord[]): DeployFacts {
         run: fact.run,
         ...(fact.attempt === undefined ? {} : { attempt: fact.attempt }),
         at: fact.at,
+        ...(fact.onMerge ? { onMerge: true as const } : {}),
         ...(fact.inSync
-          ? { result: "in-sync" as const }
+          ? { result: payload.drift ? ("drift-gone" as const) : ("in-sync" as const) }
           : payload.drift
             ? { result: "drift-repaired" as const }
             : {}),
@@ -469,6 +622,7 @@ export function deployFacts(records: readonly DeploymentRecord[]): DeployFacts {
         at: fact.at,
         result: "failed",
         reason: fact.reason,
+        ...(fact.onMerge ? { onMerge: true as const } : {}),
       });
     }
   }
@@ -558,8 +712,8 @@ export type PreviewFirstWhy =
 export function rowAtLateRead(stack: StackAtLateRead): RowAtLateRead {
   const { previewedAt, liveState, fact } = stack;
   if (fact?.kind === "open") {
-    // A queued record gives a queued row (record 0056).
-    const taken = fact.behind ? "queued" : "deploying";
+    // A queued record gives a queued row (records 0056 and 0104).
+    const taken = fact.behind || fact.window ? "queued" : "deploying";
     return { row: "deploying", from: liveState === taken ? "live" : "record" };
   }
   const usableLive = liveState !== undefined && liveState !== "deploying" && liveState !== "queued";

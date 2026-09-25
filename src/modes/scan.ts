@@ -18,7 +18,10 @@ import type { ProcessRunner } from "../adapters/process.ts";
 import { stripAnsi } from "../adapters/tool-run.ts";
 import type { Attribution } from "../core/attribution.ts";
 import { sharedFiles, suggestedUnrelated } from "../core/check.ts";
-import type { Config, ConfiguredStack } from "../core/config.ts";
+import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
+import { type CostSettings, costFailureText, costSettings } from "../core/cost.ts";
+import { withReadDependencies } from "../core/dependencies.ts";
+import { windowState } from "../core/deploy-window.ts";
 import {
   type DeployFacts,
   deployFacts,
@@ -36,9 +39,15 @@ import {
   waitingUpdates,
 } from "../core/merge-and-deploy.ts";
 import { repositoryOf, scanNotifications } from "../core/notify.ts";
+import { type OnMergeWait, onMergeDeploys } from "../core/on-merge.ts";
 import { resolveOnItsWay, type TickAtLateRead } from "../core/orphan-tick.ts";
 import { ownRuns } from "../core/outside-deploy.ts";
-import { runPool } from "../core/pool.ts";
+import {
+  CONFTEST_MINIMUM_VERSION,
+  type PolicyOutcome,
+  policyRunFailureText,
+} from "../core/policy.ts";
+import { type PoolSize, runPool } from "../core/pool.ts";
 import { openRepo } from "../core/repo.ts";
 import { type MatrixEntry, matrixOutput } from "../core/resolve.ts";
 import {
@@ -72,7 +81,10 @@ import {
 import { everyPreviewFailed } from "../core/scan-result.ts";
 import { shownValues } from "../core/show-values.ts";
 import { type Stack, stackId } from "../core/stack.ts";
-import { attributionSource } from "../github/attribution.ts";
+import type { Deploy } from "../core/tick-judgement.ts";
+import { valueFingerprint } from "../core/value-fingerprint.ts";
+import { type RunOfTheWorkflow, waitingRun } from "../core/waiting-run.ts";
+import { type AttributionSource, attributionSource } from "../github/attribution.ts";
 import { type DashboardResult, findDashboard } from "../github/dashboard.ts";
 import {
   type DashboardWriter,
@@ -80,6 +92,7 @@ import {
   type LiveDashboard,
   liveDashboard,
   type ScanAnswer,
+  swapRows,
   type Written,
   writeScan,
 } from "../github/dashboard-write.ts";
@@ -89,6 +102,7 @@ import {
   readDeploymentRecords,
   settleEndedRuns,
 } from "../github/deployments.ts";
+import { type StackEnvFilesLoad, stackEnvFiles } from "../github/env-file.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { dashboardUrl, type StepOutputs, writeResultFile } from "../github/outputs.ts";
 import type { GitHubPort } from "../github/port.ts";
@@ -98,24 +112,35 @@ import {
   previewPages,
 } from "../github/preview-pages.ts";
 import type { Notifier } from "../notify/send.ts";
+import { type ConftestCheck, checkConftest, runPolicies } from "../policy/conftest.ts";
 import { BODY_LIMIT, type BudgetOptions, bodyDoesNotFitMessage } from "../render/budget.ts";
 import { bulkSweepText } from "../render/bulk-box.ts";
 import { whereFilesBelong } from "../render/check.ts";
+import { costLine } from "../render/cost.ts";
 import { COUNT_DOT, HEADER_DOT } from "../render/dots.ts";
 import { dashboardSearchUrl, type RunLinks, runLinks, runUrl } from "../render/links.ts";
 import {
   diffLogLines,
   logGroupTitle,
   PUBLIC_LOG_DIFF,
+  poolSizeLine,
   toolDiffLogLines,
 } from "../render/log-text.ts";
-import { isDeployingState, MARKER_VERSION, parseDashboard } from "../render/marker.ts";
+import {
+  isDeployingState,
+  MARKER_VERSION,
+  type ParsedRow,
+  parseDashboard,
+  type WaitingRunFacts,
+} from "../render/marker.ts";
 import type { BranchPreview } from "../render/merge-row.ts";
 import { renderPreviewPage } from "../render/preview-page.ts";
 import { previewOutcome, previewSummary } from "../render/preview-result.ts";
 import { type DashboardCounts, scanResultFile } from "../render/result-file.ts";
-import { byCodeUnit, driftCounts, plural } from "../render/row.ts";
+import { byCodeUnit, driftCounts, onMergeNote, plural } from "../render/row.ts";
+import { scanRunningLogLine } from "../render/scan-running.ts";
 import { renderSummary, type UnclaimedFiles } from "../render/summary.ts";
+import { waitingRunLogLine } from "../render/waiting-run.ts";
 import { previewBranches } from "./branch-preview.ts";
 import { readHistories } from "./outside-deploys.ts";
 import { prepareStacks } from "./prepare.ts";
@@ -128,13 +153,17 @@ export interface ScanContext {
   // The environment of the job, read once by the glue. The scan never looks
   // inside. The adapter hands it to the tool (record 0013).
   env: Record<string, string | undefined>;
+  // The runner's `setSecret`, for the values of the env file a stack names
+  // (record 0103): every one is masked before the file is named.
+  mask: StackEnvFilesLoad["mask"];
   adapter: Adapter;
   run: ProcessRunner;
   github: GitHubPort;
   log: JobLog;
   now: () => Date;
-  // The `concurrency` input: the size of the pool.
-  concurrency: number;
+  // The size of the pool, from the `concurrency` input or the cores of the
+  // machine, and which of them it came from (record 0085).
+  pool: PoolSize;
   // The `preview-timeout` input, in whole minutes.
   previewTimeoutMinutes: number;
   // The `strict` input: any preview failure turns the job red, after the
@@ -172,6 +201,11 @@ export interface ScanContext {
   // Whether the repo is public, from the payload of the event. Absent when
   // the payload does not say (record 0048).
   publicRepo?: boolean | undefined;
+  // Who pushed to the default branch, as the push event names them, when a
+  // push to the default branch started this scan. It is the merge a stack
+  // set to on-merge deploys on, and who that deploy is attributed to (record
+  // 0095). Absent for every other scan.
+  mergedBy?: string | undefined;
   // Whether a person started the run, from the sender of the event. A
   // dispatch by the workflow token (`settle`, the rescan box) is not one
   // (record 0055).
@@ -199,6 +233,19 @@ interface Previewed extends PreviewedStack {
   // The drift check of the stack, when this scan ran one (record 0055). What
   // it found is in `result` already. A failed one is only for the job log.
   drift?: DriftResult | undefined;
+  // What the policies made of the change (record 0106), when the stack has
+  // policies and its preview is pending, and conftest's own words for the
+  // job log.
+  policies?: PolicyOutcome | undefined;
+  policyLog?: string | undefined;
+}
+
+// The policies of a scan (record 0106): whether any stack has some, and
+// conftest as it was checked once per job. Nothing else is decided here.
+interface Policies {
+  // The paths every stack names, each once, for the job log.
+  paths: string[];
+  check?: ConftestCheck | undefined;
 }
 
 // Row placement answers "preview these first" as a value (see
@@ -310,6 +357,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   report.startedAt = startedAt;
   const at = startedAt.toISOString();
   const links = runLinks(context);
+  let waitingRunFacts: { found: WaitingRunFacts | undefined } | undefined;
 
   // Config and discovery come first and cost no preview. An error in either
   // fails the job before the tool or GitHub is touched (record 0012). Every
@@ -323,33 +371,30 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   if (logDiff && context.publicRepo) {
     log.warning(PUBLIC_LOG_DIFF.message, PUBLIC_LOG_DIFF.title);
   }
+  // The env file of each stack that names one (record 0103), read once per
+  // job when the stack is first previewed, prepared or read, masked first.
+  const envFiles = stackEnvFiles({ root: context.root, env: context.env, mask: context.mask, log });
+  // The policies (record 0106): conftest is checked once, before the first
+  // preview that needs it, and a conftest that is missing or too old is one
+  // warning and never a red job.
+  const policies: Policies = {
+    paths: [...new Set(stacks.flatMap((one) => one.policies ?? []))],
+  };
 
   // The stacks whose row showed drift at the first read (record 0055).
   const knownDrift = new Set<string>();
   const plan = await makePlan(context, config, stacks, knownDrift);
   logPlan(context, plan, stacks.length);
   const checkDrift = driftCheckRule(config, context, knownDrift, stacks);
+  // The cost estimate per stack (record 0105): the top level, with the
+  // stack's entry on top.
+  const costByStack = new Map(
+    stacks.map((one) => [stackId(one.stack), costSettings(config.cost, one.cost)] as const),
+  );
+  const costOf = (id: string): CostSettings => costByStack.get(id) ?? costSettings(config.cost);
   const planned = plan.kind === "full" ? undefined : new Set(plan.previews.map(({ id }) => id));
   const unclaimed = unclaimedFiles(plan, config);
   let next = planned ? stacks.filter(({ stack }) => planned.has(stackId(stack))) : stacks;
-
-  // The updates waiting to merge (record 0054): read once, before the slow
-  // work, and drawn at the late read, where the ticks are.
-  const listing = await listUpdates(context, config, stacks);
-  // With mergeAndDeploy.preview, each listed update as it would be after the
-  // merge (record 0071). The tools are checked first, as for any preview.
-  let versionChecked = false;
-  let branchPreviews = new Map<number, BranchPreview[]>();
-  if (listing.kind === "listed" && config.mergeAndDeploy.preview && listing.updates.length > 0) {
-    await checkVersion(
-      context,
-      stacks.map(({ stack }) => stack),
-    );
-    versionChecked = true;
-    branchPreviews = await previewBranches(context, stacks, listing.updates);
-  }
-  // The records this scan opened for merged changes, handed to `apply`.
-  const handedOn: MatrixEntry[] = [];
 
   // Attribution (record 0026): walked once per job, shared by every stack,
   // and it never blocks.
@@ -368,6 +413,46 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
         `Attribution was left off the rows: ${message}. It only explains a row, so the scan goes on without it (record 0026).`,
       ),
   );
+
+  // The tools of every stack of the repo, once per job, before the dashboard
+  // is touched: a tool below the floor fails the job with nothing written.
+  let versionChecked = false;
+  if (next.length > 0) {
+    await checkVersion(
+      context,
+      stacks.map(({ stack }) => stack),
+    );
+    versionChecked = true;
+  }
+
+  // The scan says it is running, as its first act (record 0108): one write
+  // through the write loop, before any preview, that carries every row and
+  // puts one line under the scan line. It is a line and never a state: a
+  // write that fails leaves the line out and the scan goes on.
+  const firstWrite = await sayRunning(context, config, stacks, ignored, attribution, at);
+
+  // The updates waiting to merge (record 0054): read once, before the slow
+  // work, and drawn at the late read, where the ticks are.
+  const listing = await listUpdates(context, config, stacks);
+  // With mergeAndDeploy.preview, each listed update as it would be after the
+  // merge (record 0071). The tools are checked first, as for any preview.
+  let branchPreviews = new Map<number, BranchPreview[]>();
+  if (listing.kind === "listed" && config.mergeAndDeploy.preview && listing.updates.length > 0) {
+    await checkVersion(
+      context,
+      stacks.map(({ stack }) => stack),
+    );
+    versionChecked = true;
+    branchPreviews = await previewBranches(context, stacks, listing.updates, envFiles);
+  }
+  // The records this scan opened for merged changes, handed to `apply`.
+  const handedOn: MatrixEntry[] = [];
+  // The stacks set to on-merge this scan opened a record for, so a later try
+  // of the write loop never opens a second one (record 0095), and the ones
+  // whose change waits for a tick after all, with why.
+  const openedOnMerge = new Set<string>();
+  let waitsOnMerge = new Map<string, OnMergeWait>();
+
   let attributed: Attributed = new Map();
 
   const previewed = new Map<string, Previewed>();
@@ -380,11 +465,18 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   const prepared = new Set<string>();
   let lastPlaced: Placed | undefined;
   let written: Written & DashboardResult;
-  let startedFrom: string | undefined;
+  // The body this scan started from: the one before its first write, or the
+  // first late read when there was none.
+  let startedFrom: string | undefined = firstWrite?.before;
   // Stacks this scan previewed a second time for a deploy that ended under it.
   const again = new Set<string>();
   // The tools' own histories, read once the scan is full (record 0073).
   let histories: Map<string, ToolDeploy[]> | undefined;
+  let poolSaid = false;
+  const sayPool = () => {
+    if (!poolSaid) context.log.info(poolSizeLine(context.pool));
+    poolSaid = true;
+  };
   for (;;) {
     if (next.length > 0 && !versionChecked) {
       // The tools of every stack of the repo, once per job, so a later round
@@ -395,14 +487,22 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
       );
       versionChecked = true;
     }
+    if (policies.paths.length > 0 && policies.check === undefined && next.length > 0) {
+      policies.check = await checkPolicies(context, policies.paths);
+    }
     const round = await previewAll(
       context,
       next,
       logDiff,
       shownValues(config.dashboard),
+      config.valueFingerprint,
       prepared,
+      sayPool,
       checkDrift,
       stacks.map(({ stack }) => stack),
+      envFiles,
+      policies,
+      costOf,
     );
     for (const one of round) previewed.set(one.id, one);
     logResults(context, round);
@@ -429,8 +529,12 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     // A full scan is a scan that previews every stack, whatever row each
     // stack then gets.
     const full = isFullScan({ ids, previewed });
+    // Once a job, after the previews, so a run that started meanwhile is not
+    // named (record 0086).
+    if (waitingRunFacts === undefined) waitingRunFacts = await findWaitingRun(context, at);
     const writer: DashboardWriter = {
       github: context.github,
+      runId: context.runId,
       log,
       repoUrl: context.repoUrl,
       actionRef: context.actionRef,
@@ -444,13 +548,23 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     // and before the late read that matches them with the records (record
     // 0073).
     if (histories === undefined && ids.length > 0 && full) {
-      histories = await readHistories(context, stacks, config.dashboard.recentlyDeployed);
+      histories = await readHistories(
+        context,
+        stacks,
+        config.dashboard.recentlyDeployed,
+        envFiles(stacks.map(({ stack, envFile }) => ({ id: stackId(stack), envFile }))),
+      );
     }
     // What the scan has at its late read. Row placement decides every row
     // from it and the late read, and never reads or writes itself.
     const soFar: ScanSoFar = {
       ids,
-      scan: { sha: context.sha, runId: context.runId, at },
+      scan: {
+        sha: context.sha,
+        runId: context.runId,
+        at,
+        waitingRun: waitingRunFacts.found,
+      },
       repoUrl: context.repoUrl,
       links,
       logDiff,
@@ -462,6 +576,15 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
       again,
       pageUrls,
       histories,
+      windows: {
+        byStack: new Map(
+          stacks.flatMap((one) =>
+            one.deployWindows ? [[stackId(one.stack), one.deployWindows] as const] : [],
+          ),
+        ),
+        now: startedAt,
+        timeZone: config.dashboard.timeZone,
+      },
     };
 
     let answer: ScanAnswer;
@@ -495,11 +618,32 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
         if (merges.kind === "preview-first") throw new PreviewFirstError(merges);
         const { waiting } = merges;
         if (waiting.length > 0) {
-          const ended = await handOffMerges(context, config, stacks, previewed, waiting, handedOn);
+          const ended = await handOffMerges(
+            context,
+            config,
+            stacks,
+            previewed,
+            waiting,
+            handedOn,
+            startedAt,
+          );
           // Before the body, so a failed write does not lose the hand-off
           // (record 0035).
           context.outputs?.set("matrix", matrixOutput(handedOn));
           if (ended) deploys = await lateDeploys(context, stacks, previewed, live);
+        }
+        // Stacks set to on-merge that this scan found pending go out now,
+        // through the path of a tick (record 0095). After the merges, so a
+        // stack a merge from the dashboard already handed on is open.
+        const onMerge = onMergeDeploys(
+          onMergeInput(context, config, stacks, previewed, live, deploys.facts, startedAt),
+        );
+        waitsOnMerge = onMerge.waits;
+        const fresh = onMerge.deploys.filter(({ stackId: id }) => !openedOnMerge.has(id));
+        if (fresh.length > 0) {
+          await handOnMerged(context, fresh, handedOn, openedOnMerge);
+          context.outputs?.set("matrix", matrixOutput(handedOn));
+          deploys = await lateDeploys(context, stacks, previewed, live);
         }
         attributed = await attribution.attribute(startingCommits(deploys.facts, previewed));
         const shipped = await attribution.ship(deploys.facts.trail);
@@ -511,6 +655,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
               !config.dashboard.readOnly && (await resolveWaits(context, live, deploys)),
             attributed,
             shipped,
+            waitsOnMerge,
           }),
         );
         lastPlaced = late.placed;
@@ -542,10 +687,26 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   }
 
   reportDashboard(context, written, lastPlaced);
+  for (const [id, wait] of [...waitsOnMerge].sort(([a], [b]) => byCodeUnit(a, b))) {
+    log.info(onMergeLogLine(id, wait));
+  }
+  // A stack set to on-merge whose change a policy stopped (record 0106): it
+  // was never handed to the on-merge decision, and its row says why.
+  for (const one of stacks) {
+    const id = stackId(one.stack);
+    const outcome = previewed.get(id)?.policies;
+    if (one.deploy === "on-merge" && outcome?.kind === "failed") {
+      log.info(
+        `${logGroupTitle(id)} deploys on merge, and this change does not: ${policyCountWords(outcome.report.failures.length)} failed.`,
+      );
+    }
+  }
   report.attributed = attributed;
   report.dashboard = {
     url: dashboardUrl(context.repoUrl, written.number),
-    changed: written.written,
+    // Against the body before the first write, which said a scan was running
+    // (record 0108): the line alone is no change of the dashboard.
+    changed: firstWrite ? written.body !== firstWrite.before : written.written,
     // The counts line of the body as written, from its row markers.
     counts: written.counts,
   };
@@ -663,6 +824,100 @@ async function lateDeploys(
       `The deployment records could not be read: ${error instanceof Error ? error.message : error}. The scan job needs the permissions \`deployments: write\` and \`actions: read\` next to \`contents: read\` and \`issues: write\` (record 0003).`,
     );
   }
+}
+
+// The scan's first write (record 0108): the line that says a scan is running,
+// on a dashboard that exists, through the write loop, before any preview.
+// The scan has no row of its own yet, so it is a row swap that swaps nothing:
+// every row is carried byte for byte, tick included, the trail is drawn from
+// the deployment records as they are, and the rescan box is written back
+// unticked. Only the scan's write at the end takes the line away. A
+// dashboard that is missing, closed or of another version gets no first
+// write, and a write that GitHub refuses is a line of the log: the line
+// decides nothing, and the scan goes on to its previews.
+async function sayRunning(
+  context: ScanContext,
+  config: Config,
+  stacks: ConfiguredStack[],
+  ignored: readonly IgnoredStack[],
+  attribution: AttributionSource,
+  at: string,
+): Promise<{ before: string } | undefined> {
+  const { log, github } = context;
+  const facts = { run: context.runId, since: at };
+  try {
+    const dashboard = await findDashboard(github, config.dashboard.label);
+    // A first scan has no dashboard to say it on: it creates one at the end.
+    if (!dashboard) return undefined;
+    let before: string | undefined;
+    const answer = await swapRows(
+      {
+        github,
+        runId: context.runId,
+        log,
+        repoUrl: context.repoUrl,
+        actionRef: context.actionRef,
+        dashboard: config.dashboard,
+        deploys: config.deploys,
+        ignored,
+        budget: context.limits?.body,
+      },
+      dashboard.number,
+      async (live) => {
+        before ??= live.body;
+        // The records as they are: a stack whose live row says deploying is
+        // read off the page as every writer reads it (record 0003), and
+        // nothing is settled or decided here.
+        const records = await readDeploymentRecords(
+          github,
+          stacks.map(({ environment }) => environment),
+          stacks
+            .map(({ stack, environment }) => ({ stackId: stackId(stack), environment }))
+            .filter(({ stackId: id }) => isDeployingState(live.first.get(id)?.state ?? "")),
+        );
+        const deploys = deployFacts(records);
+        const shipped = await attribution.ship(deploys.trail);
+        return { facts: deploys, shipped, rows: new Map(), running: facts };
+      },
+    );
+    if (before === undefined) return undefined;
+    if (!answer.fits) {
+      log.info(
+        `The dashboard could not say a scan is running: with the line the body would be ${answer.size.toLocaleString("en-US")} characters, over the limit. The scan goes on (record 0108).`,
+      );
+      return undefined;
+    }
+    if (!answer.written) return undefined;
+    log.info(scanRunningLogLine(facts, context.repoUrl));
+    return { before };
+  } catch (error) {
+    log.info(
+      `The dashboard could not say a scan is running: ${error instanceof Error ? error.message : error}. The scan goes on (record 0108).`,
+    );
+    return undefined;
+  }
+}
+
+// A run of this workflow that has waited for a runner since ten minutes or
+// more before the scan started (record 0086). It is a line on the dashboard
+// and nothing else, so a read that fails leaves the line out and the scan
+// goes on: it never turns the job red and never holds anything back.
+async function findWaitingRun(
+  context: ScanContext,
+  at: string,
+): Promise<{ found: WaitingRunFacts | undefined }> {
+  let runs: RunOfTheWorkflow[];
+  try {
+    runs = await context.github.listQueuedRuns(context.workflow);
+  } catch (error) {
+    context.log.info(
+      `The queued runs of ${context.workflow} could not be read: ${error instanceof Error ? error.message : error}. The dashboard says nothing about a run that waits for a runner this time. The scan job needs the permission \`actions: read\` (record 0086).`,
+    );
+    return { found: undefined };
+  }
+  const found = waitingRun(runs, new Date(at), context.runId);
+  if (found) context.log.info(waitingRunLogLine(found, at, context.workflow, context.repoUrl));
+  return { found };
 }
 
 // The other half of the orphan tick rule (record 0025): whether a run that an
@@ -894,11 +1149,22 @@ async function previewAll(
   stacks: ConfiguredStack[],
   logDiff: boolean,
   showValues: readonly string[],
+  // The repo's `valueFingerprint` (record 0102). A stack entry may set its own.
+  valueFingerprint: boolean,
   prepared: Set<string>,
+  // Says the size of the pool and where it came from. It speaks once a job,
+  // however many rounds preview (record 0085).
+  sayPool: () => void,
   checkDrift: (id: string) => boolean,
   // Every stack of the repo, which a stack with `dependsOn: auto` may depend
   // on (record 0059).
   repoStacks: readonly Stack[],
+  // The env file of each stack (record 0103).
+  envFiles: ReturnType<typeof stackEnvFiles>,
+  // The policies of the scan, with conftest as checked (record 0106).
+  policies: Policies,
+  // The cost estimate of each stack (record 0105): whether to ask for one.
+  costOf: (id: string) => CostSettings,
 ): Promise<Previewed[]> {
   const { log, now, adapter } = context;
   // Nothing to preview, so a repo without stacks needs no tool, and neither
@@ -906,13 +1172,25 @@ async function previewAll(
   if (stacks.length === 0) return [];
   const tool = { root: context.root, env: context.env, run: context.run };
 
+  // The environment of each stack: the step's, with the stack's own env file
+  // on top (record 0103). A file that could not be loaded is that stack's
+  // preview failure, found by the preparation below.
+  const envs = envFiles(stacks.map(({ stack, envFile }) => ({ id: stackId(stack), envFile })));
+  const envOf = (id: string): Record<string, string | undefined> => {
+    const own = envs.get(id);
+    return own?.ok ? own.env : tool.env;
+  };
+
   // Every preparation runs alone and before the pool (record 0053). A stack
-  // whose preparation failed is a preview failure and is not previewed.
+  // whose preparation failed is a preview failure and is not previewed. A
+  // stack whose entry asks is created in the backend here, by the scan
+  // alone (record 0107).
   const unprepared = stacks.filter(({ stack }) => !prepared.has(stackId(stack)));
   const failed = await prepareStacks(
-    { ...tool, log, adapter },
+    { ...tool, log, adapter, createInBackend: true },
     unprepared,
     context.previewTimeoutMinutes,
+    envs,
   );
   for (const { stack } of unprepared) {
     if (!failed.has(stackId(stack))) prepared.add(stackId(stack));
@@ -926,25 +1204,32 @@ async function previewAll(
   stacks = stacks.filter(({ stack }) => !failed.has(stackId(stack)));
   if (stacks.length === 0) return unpreparedFailures;
 
+  sayPool();
   log.info(
-    `Previewing ${plural(stacks.length, "stack")} with a pool of ${context.concurrency} and a time limit of ${minutes(context.previewTimeoutMinutes)} for each preview.`,
+    `Previewing ${plural(stacks.length, "stack")} with a pool of ${context.pool.size} and a time limit of ${minutes(context.previewTimeoutMinutes)} for each preview.`,
   );
   const poolStarted = now().getTime();
-  const previewed = await runPool(stacks, context.concurrency, async (configured) => {
+  const previewed = await runPool(stacks, context.pool.size, async (configured) => {
     const id = stackId(configured.stack);
     const startedAt = now();
     const started = startedAt.getTime();
     const options = {
       ...tool,
+      env: envOf(id),
       run: liveRun(tool.run, id, log),
       timeoutMinutes: configured.previewTimeout ?? context.previewTimeoutMinutes,
       showValues,
+      valueFingerprint: configured.valueFingerprint ?? valueFingerprint,
+      cost: costOf(id).enabled,
     };
     let previewedOnly: PreviewResult;
     try {
       previewedOnly = await adapter.preview(configured.stack, {
         ...options,
         ...(configured.dependsOnAuto ? { dependencies: repoStacks } : {}),
+        // The document for the policies (record 0106), only for a stack
+        // that has some.
+        ...(configured.policies === undefined ? {} : { keepDocument: true }),
       });
     } catch (error) {
       // The adapter turns everything the tool can do wrong into a preview
@@ -971,6 +1256,16 @@ async function previewAll(
     if (previewedOnly.ok && previewedOnly.dependencies) {
       log.info(readDependenciesText(id, previewedOnly.dependencies));
     }
+    // What the change costs (record 0105), or why the estimate failed. A
+    // failed estimate is a missing line on the row and never a red scan.
+    if (previewedOnly.ok && previewedOnly.cost) {
+      const { cost } = previewedOnly;
+      log.info(
+        cost.ok
+          ? `${logGroupTitle(id)} costs ${plainCostWords(costLine(cost.estimate))}.`
+          : `The cost of ${logGroupTitle(id)} was not estimated: ${costFailureText(cost.reason)}.`,
+      );
+    }
     // The drift check takes the same slot of the pool and the same time limit,
     // right after the preview, so one stack never runs the tool twice at once
     // (record 0055). A stack whose preview failed has no row to show drift on.
@@ -996,26 +1291,120 @@ async function previewAll(
       }
       milliseconds = now().getTime() - started;
     }
+    // The policies take the same slot of the pool and the same time limit,
+    // right after the preview, and only a pending stack with policies is
+    // tested (record 0106). The document goes with the run: it holds values
+    // and nothing else may take it (record 0021).
+    let tested: Pick<Previewed, "policies" | "policyLog"> = {};
+    if (configured.policies !== undefined && result.ok && result.diff.changes.length > 0) {
+      const policyStarted = now().getTime();
+      const ran = policies.check?.ok
+        ? await runPolicies({
+            ...options,
+            policies: configured.policies,
+            document: result.document,
+          })
+        : {
+            outcome: {
+              kind: "not-run" as const,
+              reason: policies.check?.reason ?? { kind: "tool-missing" as const },
+            },
+            toolLog: "",
+          };
+      log.info(
+        `Ran the policies of ${logGroupTitle(id)} in ${seconds(now().getTime() - policyStarted)}: ${policyOutcomeText(ran.outcome)}`,
+      );
+      tested = { policies: ran.outcome, policyLog: ran.toolLog };
+      milliseconds = now().getTime() - started;
+    }
+    result = withoutDocument(result);
     // The second run of the tool takes the same slot of the pool and the same
     // time limit, and only a pending stack gets one (record 0048).
     if (!logDiff || !result.ok || result.diff.changes.length === 0) {
-      return { id, result, startedAt, milliseconds, drift };
+      return { id, result, startedAt, milliseconds, drift, ...tested };
     }
     const toolDiffStarted = now().getTime();
     const toolDiff = await adapter.toolDiff(configured.stack, options);
     log.info(
       `Ran the tool's own diff of ${logGroupTitle(id)} in ${seconds(now().getTime() - toolDiffStarted)}${toolDiff.ok ? "" : `: ${previewFailureText(toolDiff.reason)}`}.`,
     );
-    return { id, result, startedAt, milliseconds, toolDiff, drift };
+    return { id, result, startedAt, milliseconds, toolDiff, drift, ...tested };
   });
   const total = now().getTime() - poolStarted;
 
   const addedUp = previewed.reduce((sum, { milliseconds }) => sum + milliseconds, 0);
   const slowest = previewed.reduce((a, b) => (b.milliseconds > a.milliseconds ? b : a));
   log.info(
-    `Previewed ${plural(previewed.length, "stack")} in ${seconds(total)} with a pool of ${context.concurrency}. Added up, the previews took ${seconds(addedUp)}. The slowest was ${logGroupTitle(slowest.id)} with ${seconds(slowest.milliseconds)}.`,
+    `Previewed ${plural(previewed.length, "stack")} in ${seconds(total)} with a pool of ${context.pool.size}. Added up, the previews took ${seconds(addedUp)}. The slowest was ${logGroupTitle(slowest.id)} with ${seconds(slowest.milliseconds)}.`,
   );
   return [...previewed, ...unpreparedFailures];
+}
+
+// The document leaves with the policy run (record 0106): it holds the values
+// the tool printed, and nothing that reads a preview later may take it.
+function withoutDocument(result: PreviewResult): PreviewResult {
+  if (!result.ok || result.document === undefined) return result;
+  const { document: _, ...rest } = result;
+  return rest;
+}
+
+function policyCountWords(count: number): string {
+  return `${count} ${count === 1 ? "policy" : "policies"}`;
+}
+
+// The headline of a policy run, for the job log.
+function policyOutcomeText(outcome: PolicyOutcome): string {
+  switch (outcome.kind) {
+    case "failed":
+      return `${policyCountWords(outcome.report.failures.length)} failed, so its row has no box.`;
+    case "passed":
+      return "every policy passed.";
+    case "not-run":
+      return `they did not run: ${policyRunFailureText(outcome.reason)}.`;
+  }
+}
+
+// conftest, checked once per job before the first policy runs (record
+// 0106). Missing or too old, the policies of every stack did not run, which
+// is one warning with what to install, and never a red job: a policy that
+// fails to run is not a policy that failed.
+async function checkPolicies(context: ScanContext, paths: string[]): Promise<ConftestCheck> {
+  const { log } = context;
+  const check = await checkConftest({ root: context.root, env: context.env, run: context.run });
+  if (check.ok) {
+    log.info(`conftest ${check.version} runs the policies: ${paths.join(", ")}.`);
+  } else {
+    log.warning(
+      `The policies did not run: ${policyRunFailureText(check.reason)}. Nothing was checked, and every pending row keeps its box. Install conftest ${CONFTEST_MINIMUM_VERSION} or newer in a step before Sluiceway, or take policies out of sluiceway.yaml.`,
+      "Policies did not run",
+    );
+  }
+  return check;
+}
+
+// The lines of a stack's group about its policies: what came of them, and
+// each failure and warning in the policy's own words. The job log is where
+// the tool's words go (record 0022), and a policy's words are the repo's.
+function policyLogLines(outcome: PolicyOutcome | undefined): string[] {
+  if (outcome === undefined) return [];
+  if (outcome.kind === "not-run") {
+    return [`policies did not run: ${policyRunFailureText(outcome.reason)}`];
+  }
+  const { failures, warnings, passed } = outcome.report;
+  const one = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  const headline =
+    outcome.kind === "failed"
+      ? `policies: ${failures.length} failed, ${one(warnings.length, "warning")}, ${passed} passed`
+      : `policies: every policy passed (${one(passed, "rule")}${warnings.length > 0 ? `, ${one(warnings.length, "warning")}` : ""})`;
+  return [
+    headline,
+    ...failures.map(
+      ({ namespace, message }) => `  failed: ${namespace}: ${lines(message).join(" ")}`,
+    ),
+    ...warnings.map(
+      ({ namespace, message }) => `  warning: ${namespace}: ${lines(message).join(" ")}`,
+    ),
+  ];
 }
 
 // The runner of one stack's previews, which puts each line the tool writes to
@@ -1045,8 +1434,10 @@ function readDependenciesText(id: string, read: ReadDependencies): string {
 // on the run as well (record 0012).
 function logResults(context: ScanContext, previewed: Previewed[]): void {
   const { log } = context;
-  for (const { id, result, toolDiff, drift } of previewed) {
-    const words = lines(result.toolLog + (toolDiff?.toolLog ?? "") + (drift?.toolLog ?? ""));
+  for (const { id, result, toolDiff, drift, policies, policyLog } of previewed) {
+    const words = lines(
+      result.toolLog + (toolDiff?.toolLog ?? "") + (drift?.toolLog ?? "") + (policyLog ?? ""),
+    );
     const own = [
       ...(result.ok
         ? diffLogLines(result.diff)
@@ -1055,6 +1446,8 @@ function logResults(context: ScanContext, previewed: Previewed[]): void {
       ...(drift !== undefined && !drift.ok
         ? [`drift check failed: ${previewFailureText(drift.reason)}`, ...drift.detail]
         : []),
+      ...policyLogLines(policies),
+      ...costLogLines(result),
       ...toolDiffLogLines(toolDiff),
       ...(words.length > 0 ? ["The tool's own words:", ...words] : []),
     ];
@@ -1076,6 +1469,31 @@ function logResults(context: ScanContext, previewed: Previewed[]): void {
         "Drift check failed",
       );
     }
+    // Never silent either: the row shows no cost line, and the run says
+    // why (record 0105).
+    if (result.ok && result.cost && !result.cost.ok) {
+      log.warning(
+        `The cost of ${logGroupTitle(id)} was not estimated: ${costFailureText(result.cost.reason)}. Its row shows no cost line.`,
+        "Cost not estimated",
+      );
+    }
+  }
+  // A policy run that failed for a reason of its own (record 0106). A
+  // conftest that is missing or too old was one warning at the check.
+  for (const { id, policies } of previewed) {
+    if (policies?.kind !== "not-run") continue;
+    const { reason } = policies;
+    if (
+      reason.kind === "tool-missing" ||
+      reason.kind === "too-old" ||
+      reason.kind === "no-version"
+    ) {
+      continue;
+    }
+    log.warning(
+      `The policies of ${logGroupTitle(id)} did not run: ${policyRunFailureText(reason)}. Nothing was checked, and its row keeps its box. The tool's own words are in the group of the stack.`,
+      "Policies did not run",
+    );
   }
 }
 
@@ -1093,7 +1511,7 @@ async function writePages(
   const { log } = context;
   const { links, logDiff } = options;
   const toWrite: PreviewPageToWrite[] = [];
-  for (const { id, result } of round) {
+  for (const { id, result, policies } of round) {
     // A stack previewed again takes the page of its newest preview or none.
     urls.delete(id);
     // A pending stack, and a drifted one, whose drift the page lists like a
@@ -1107,7 +1525,7 @@ async function writePages(
         summary: links.summary,
         log: context.jobId === undefined ? undefined : links.log,
       },
-      { toolDiffInLog: logDiff },
+      { toolDiffInLog: logDiff, policies },
     );
     const { title, summary, text } = page;
     toWrite.push({ stackId: id, output: { title, summary, text } });
@@ -1149,7 +1567,9 @@ async function writeSummary(
 ): Promise<void> {
   const { log } = context;
   const summary = renderSummary(
-    previewed.map(({ id, result }) => previewSummary(id, result, attributed.get(id)?.merges)),
+    previewed.map(({ id, result, policies }) =>
+      previewSummary(id, result, attributed.get(id)?.merges, policies),
+    ),
     {
       budget: context.limits?.summaryBudget,
       jobLogUrl: context.jobId === undefined ? undefined : runLinks(context).log,
@@ -1380,6 +1800,7 @@ async function handOffMerges(
   previewed: ReadonlyMap<string, Previewed>,
   waiting: WaitingMerge[],
   handedOn: MatrixEntry[],
+  now: Date,
 ): Promise<boolean> {
   const { log } = context;
   let ended = false;
@@ -1427,6 +1848,9 @@ async function handOffMerges(
     } else {
       await end({ kind: "merged" });
       const hash = diffHash(result.diff);
+      // The deploy after the merge is the ticker's, and it waits for the
+      // stack's deploy window as the tick would have (record 0104).
+      const window = !windowState(stack.deployWindows ?? [], now, config.dashboard.timeZone).open;
       try {
         const record = await openRecord(context, {
           stackId: id,
@@ -1436,11 +1860,22 @@ async function handOffMerges(
           hash,
           // The hash covers drift when this scan found some (record 0055).
           drift: (result.diff.drift ?? []).length > 0,
+          // And the record carries the value fingerprint (record 0102).
+          fingerprint: valueFingerprint(result.diff),
+          window,
         });
-        handedOn.push({ stack: id, environment: stack.environment, deployment: record.deployment });
+        if (!window) {
+          handedOn.push({
+            stack: id,
+            environment: stack.environment,
+            deployment: record.deployment,
+          });
+        }
         if (record.unfinished !== undefined) throw record.unfinished;
         log.info(
-          `#${fact.merge} is merged: deployment record ${record.deployment} of ${name} is queued with diff hash ${hash}, ticked by ${fact.ticker}, and handed to apply.`,
+          window
+            ? `#${fact.merge} is merged: deployment record ${record.deployment} of ${name} with diff hash ${hash}, ticked by ${fact.ticker}, waits for the deploy window, and a run inside the window starts it.`
+            : `#${fact.merge} is merged: deployment record ${record.deployment} of ${name} is queued with diff hash ${hash}, ticked by ${fact.ticker}, and handed to apply.`,
         );
       } catch (error) {
         throw new Error(
@@ -1450,6 +1885,146 @@ async function handOffMerges(
     }
   }
   return ended;
+}
+
+// What the decision of record 0095 needs, from what the scan has at its late
+// read. A stack whose deploy ended after its preview started keeps its live
+// row (record 0004), so its preview decides nothing here either.
+function onMergeInput(
+  context: ScanContext,
+  config: Config,
+  stacks: ConfiguredStack[],
+  previewed: ReadonlyMap<string, Previewed>,
+  live: LiveDashboard,
+  facts: DeployFacts,
+  now: Date,
+): Parameters<typeof onMergeDeploys>[0] {
+  const liveRows = live.current ? live.first : new Map<string, ParsedRow>();
+  // `dependsOn: auto` (record 0059): what the preview read, else what the
+  // row says an earlier preview read, as `resolve` reads it.
+  const read = new Map<string, string[]>();
+  for (const [id, { result }] of previewed) {
+    if (result.ok && result.dependencies) read.set(id, result.dependencies.stackIds);
+  }
+  for (const [id, row] of liveRows) {
+    if (!read.has(id) && row.known && row.dependsOn) read.set(id, row.dependsOn);
+  }
+  const { dependsOn } = withReadDependencies({
+    configured: new Map(stacks.map((one) => [stackId(one.stack), one.dependsOn ?? []])),
+    auto: new Set(stacks.flatMap((one) => (one.dependsOnAuto ? [stackId(one.stack)] : []))),
+    read,
+  });
+  const open = new Set<string>();
+  const fresh = new Map<string, Previewed["result"]>();
+  const livePending = new Set<string>();
+  for (const [id, one] of previewed) {
+    const fact = facts.byStack.get(id);
+    if (fact?.kind === "open") open.add(id);
+    // A change a policy stopped never deploys on merge (record 0106): it is
+    // handed on as a change nobody ticked, so a stack that depends on it
+    // waits.
+    else if (one.policies?.kind === "failed") livePending.add(id);
+    else if (fact === undefined || fact.at <= one.startedAt) fresh.set(id, one.result);
+  }
+  for (const [id, fact] of facts.byStack) if (fact.kind === "open") open.add(id);
+  for (const [id, row] of liveRows) {
+    if (!previewed.has(id) && row.known && row.state === "pending") livePending.add(id);
+  }
+  return {
+    mergedBy: context.mergedBy,
+    deploys: config.deploys,
+    readOnly: config.dashboard.readOnly,
+    stacks: stacks.map((one) => {
+      const id = stackId(one.stack);
+      return {
+        id,
+        environment: one.environment,
+        deploy: one.deploy ?? "on-tick",
+        dependsOn: dependsOn.get(id),
+        phase: one.phase,
+        deployWindows: one.deployWindows,
+        costThreshold: costSettings(config.cost, one.cost).threshold,
+      };
+    }),
+    previewed: fresh,
+    livePending,
+    open,
+    phases: config.phases,
+    clock: { now, timeZone: config.dashboard.timeZone },
+  };
+}
+
+// The records of the stacks that deploy on merge (record 0095), opened as
+// `resolve` opens the records of a tick: the first layer handed to `apply`,
+// the rest queued behind it (record 0056). Stops at the first record that
+// cannot be written, as `resolve` does.
+async function handOnMerged(
+  context: ScanContext,
+  going: readonly Deploy[],
+  handedOn: MatrixEntry[],
+  opened: Set<string>,
+): Promise<void> {
+  const { log } = context;
+  for (const one of going) {
+    const name = logGroupTitle(one.stackId);
+    try {
+      const record = await openRecord(context, {
+        stackId: one.stackId,
+        environment: one.environment,
+        sha: context.sha,
+        ticker: one.ticker,
+        hash: one.hash,
+        behind: one.behind,
+        onMerge: true,
+        fingerprint: one.fingerprint,
+        window: one.window,
+      });
+      opened.add(one.stackId);
+      if (one.behind === undefined && !one.window) {
+        handedOn.push({
+          stack: one.stackId,
+          environment: one.environment,
+          deployment: record.deployment,
+        });
+      }
+      if (record.unfinished !== undefined) throw record.unfinished;
+      log.info(
+        one.behind !== undefined
+          ? `${name} deploys on merge: deployment record ${record.deployment} with diff hash ${one.hash}, merged by ${one.ticker}, is queued behind ${one.behind.map(logGroupTitle).join(" and ")}, and a later run starts it.`
+          : one.window
+            ? `${name} deploys on merge: deployment record ${record.deployment} with diff hash ${one.hash}, merged by ${one.ticker}, waits for the deploy window, and a run inside the window starts it.`
+            : `${name} deploys on merge: deployment record ${record.deployment} is queued with diff hash ${one.hash}, merged by ${one.ticker}, and handed to apply.`,
+      );
+    } catch (error) {
+      throw new Error(
+        `The deployment record that deploys ${name} on merge could not be written: ${error instanceof Error ? error.message : error}. The scan job needs the permission \`deployments: write\` (record 0095). Nothing more deploys on merge in this run: the row shows the stack as pending, and a tick deploys it.`,
+      );
+    }
+  }
+}
+
+// The job log's line for a stack set to on-merge whose change waits: the
+// row's note, as plain text.
+// The cost line of a row without its emphasis, for the job log.
+function plainCostWords(line: string): string {
+  return line.replaceAll("**", "");
+}
+
+// What the stack's group of the job log says about the cost estimate
+// (record 0105): the line as the row shows it, or why there is none.
+function costLogLines(result: PreviewResult): string[] {
+  if (!result.ok || !result.cost) return [];
+  const { cost } = result;
+  return cost.ok
+    ? [`cost: ${plainCostWords(costLine(cost.estimate))}`]
+    : [`cost not estimated: ${costFailureText(cost.reason)}`, ...cost.detail];
+}
+
+function onMergeLogLine(id: string, wait: OnMergeWait): string {
+  return onMergeNote(wait)
+    .replace(":information_source: this stack", logGroupTitle(id))
+    .replaceAll("**", "")
+    .replaceAll("`", "");
 }
 
 // Whether the commit this scan checked out holds the merge commit of the

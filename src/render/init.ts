@@ -12,8 +12,9 @@ import {
   openTofuStacks,
   type PackageManager,
   type WorkflowFindings,
-} from "../adapters/init-findings.ts";
+} from "../core/init-findings.ts";
 import { MERGE_SCAN_INPUT } from "../core/merge-scan.ts";
+import { DOCS } from "./docs-site.ts";
 
 export const WORKFLOW_FILE = ".github/workflows/deploy-dashboard.yml";
 export const EXPORT_ENV_FILE = ".github/scripts/export-env.sh";
@@ -44,11 +45,11 @@ export function starterWorkflow(options: WorkflowOptions): string {
   const branch = options.branch ?? DEFAULT_BRANCH;
   const lines = [
     "# Written by sluiceway init from the files of this repo. Review every step",
-    "# before you commit it: docs/example-workflows.md says what to change, and",
-    "# init printed what it could not know.",
+    "# before you commit it, and change what init printed it could not know:",
+    `# ${DOCS.exampleWorkflows}`,
     "#",
     "# `@v0` follows every release until 1.0.0. To review every update yourself,",
-    '# pin a full commit SHA instead, as the README\'s "Pin a commit" says.',
+    `# pin a full commit SHA instead: ${DOCS.pinACommit}`,
     "name: deploy-dashboard",
     "",
     "on:",
@@ -235,7 +236,9 @@ function credentialSteps(envFiles: EnvFiles | undefined): string[] {
     return [
       "      # Load your credentials and your state backend settings into the job",
       "      # environment here. Sluiceway passes the environment to the tool and",
-      "      # never looks inside. Whatever loads a secret must also mask it.",
+      "      # never looks inside. Whatever loads a secret must also mask it. Or",
+      "      # name a file of NAME=value lines with the env-file input on the step",
+      "      # below, and Sluiceway loads it for the tool and masks every value.",
     ];
   }
   const file = envFiles.deploy;
@@ -272,7 +275,7 @@ export function starterConfig({ declarable, unrelated, unclaimed }: ConfigOption
     SCHEMA,
     "#",
     "# Written by sluiceway init from the files of this repo. Review it before",
-    "# you commit it: docs/configuration.md explains every key.",
+    `# you commit it. Every key is explained at ${DOCS.configuration}`,
   ];
   if (opentofu.length + helm.length > 0) {
     lines.push("", "stacks:");
@@ -338,7 +341,10 @@ export function starterConfig({ declarable, unrelated, unclaimed }: ConfigOption
   return `${lines.join("\n")}\n`;
 }
 
-// What init says it did, and what is left for a person (record 0065).
+// What init says it did, and what is left for a person (record 0065). A
+// person runs init and the check through the command line (record 0094).
+const CLI = "npx sluiceway";
+
 export const NOT_A_REPO_ROOT =
   "This is not the root of a git repo. Run init in the top directory of your checkout.";
 
@@ -347,11 +353,21 @@ export function noStacksText(): string {
 }
 
 export function workflowExistsText(paths: string[]): string {
-  return `A workflow runs Sluiceway already: ${paths.join(", ")}. init never overwrites one, and wrote nothing. Run the check (mode: check) to see what it lacks.`;
+  // --force writes the one file init writes again, and no other (record
+  // 0094), so it is named only when that file is all that stopped init.
+  const force =
+    paths.length === 1 && paths[0] === WORKFLOW_FILE
+      ? `, or ${CLI} init --force to write ${WORKFLOW_FILE} again`
+      : "";
+  return `A workflow runs Sluiceway already: ${paths.join(", ")}. init never overwrites one, and wrote nothing. Run ${CLI} check to see what it lacks${force}.`;
 }
 
 export function wroteText(file: string): string {
   return `Wrote ${file}.`;
+}
+
+export function replacedText(file: string): string {
+  return `Replaced ${file}.`;
 }
 
 export const KEPT_CONFIG = "Kept sluiceway.yaml as it is, and set the workflow up from it.";
@@ -368,7 +384,7 @@ export function needsText({ findings, declarable, branchGuessed }: NeedsInput): 
   const { envFiles, node } = findings;
   if (envFiles === undefined) {
     needs.push(
-      "Load the credentials and the state backend settings of your stacks where the comment in the workflow says, with credentials that can deploy. init writes no credential step it did not find in the repo. docs/credentials.md has recipes.",
+      `Load the credentials and the state backend settings of your stacks where the comment in the workflow says, with credentials that can deploy. init writes no credential step it did not find in the repo. Recipes: ${DOCS.credentials}`,
     );
   } else {
     needs.push(
@@ -380,13 +396,16 @@ export function needsText({ findings, declarable, branchGuessed }: NeedsInput): 
     ];
     if (unused.length > 0) {
       needs.push(
-        `init did not use ${unused.join(", ")}: one job previews and deploys, with the credentials of ${envFiles.deploy}. For credentials that only read in scans, use the split workflow (docs/split-workflow.md).`,
+        `init did not use ${unused.join(", ")}: one job previews and deploys, with the credentials of ${envFiles.deploy}. For credentials that only read in scans, use the split workflow: ${DOCS.splitWorkflow}`,
       );
     }
   }
   if (findings.helm || findings.kubectl) {
     needs.push(
-      "The job needs a kubeconfig for the cluster (docs/credentials.md, Helm and Kubernetes manifests).",
+      `The job needs a kubeconfig for the cluster: ${[
+        ...(findings.helm ? [DOCS.credentialsHelm] : []),
+        ...(findings.kubectl ? [DOCS.credentialsKubectl] : []),
+      ].join(" and ")}`,
     );
   }
   if (declarable.helm.length > 0) {
@@ -427,7 +446,7 @@ export function needsText({ findings, declarable, branchGuessed }: NeedsInput): 
   }
   needs.push(
     `The job runs on ${RUNS_ON} with timeout-minutes: 60. Raise it when a scan or a deploy of yours takes longer, since one run can hold both. For a self-hosted runner change runs-on, with runner 2.328.0 or newer.`,
-    "Review the files, run the check in a pull request, and commit them. init commits nothing.",
+    `Review the files, run ${CLI} check, and commit them. init commits nothing.`,
   );
   return needs;
 }

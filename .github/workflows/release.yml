@@ -17,6 +17,9 @@ jobs:
     permissions:
       contents: write # create the release and its tags
       pull-requests: write # open and update the release pull request
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
@@ -38,3 +41,92 @@ jobs:
             gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA" --silent
           fi
           echo "Moved $TAG to $SHA"
+
+      # The example dashboard names the version in its pictures and its footer
+      # (slice 5.24, record 0088). release-please bumps the version on its own
+      # branch and cannot run a script, so the example is written there, and
+      # the release tag holds an example that names itself.
+      - name: Check out the release pull request
+        if: steps.release.outputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          persist-credentials: false
+
+      - if: steps.release.outputs.pr
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+
+      - name: Write the example dashboard
+        if: steps.release.outputs.pr
+        run: |
+          bun install --frozen-lockfile
+          bun run example
+
+      # Through the API, so GitHub signs the commit, and only on the head that
+      # was checked out: a newer push by release-please runs this again.
+      - name: Commit the example dashboard
+        if: steps.release.outputs.pr
+        # The pull request comes in as JSON and is read in the script: a step's env is evaluated
+        # even when its `if` skips it, and fromJSON of the empty output of a run that left the
+        # release pull request alone fails the job, and with it the npm job of a release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.release.outputs.pr }}
+        run: |
+          BRANCH=$(jq -r .headBranchName <<<"$PR")
+          if git diff --quiet -- assets/example-dashboard.md README.md; then
+            echo "The example dashboard already names this release."
+            exit 0
+          fi
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg branch "$BRANCH" \
+            --arg head "$(git rev-parse HEAD)" \
+            --arg example "$(base64 -w0 assets/example-dashboard.md)" \
+            --arg readme "$(base64 -w0 README.md)" \
+            '{
+              query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+              variables: { input: {
+                branch: { repositoryNameWithOwner: $repo, branchName: $branch },
+                expectedHeadOid: $head,
+                message: { headline: "docs: the example dashboard names the release" },
+                fileChanges: { additions: [
+                  { path: "assets/example-dashboard.md", contents: $example },
+                  { path: "README.md", contents: $readme }
+                ] }
+              } }
+            }' | gh api graphql --input -
+
+  # The command line, `npx sluiceway` (record 0094), from the release tag, so
+  # sluiceway@0.28.0 is the code of v0.28.0. npm's trusted publishing: no
+  # secret, a token that lives for one publish, and provenance. A job of its
+  # own, so the OIDC token is never in reach of a step that can write.
+  npm:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest # trusted publishing needs a runner GitHub hosts
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # the OIDC token npm exchanges for a publish token
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      # npm 11.5.1 is the first that publishes with OIDC.
+      - run: npm install --global npm@11.20.0
+
+      # npm trusts this workflow once its trusted publisher is set up on
+      # npmjs.com. Until then the release stands without the package: the
+      # script turns npm's refusal into a warning that says what to set, calls
+      # a version already on npm fine, and fails on anything else (slice 5.32).
+      - name: Publish sluiceway
+        run: scripts/ci/publish-npm.sh

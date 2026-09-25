@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { readScanInputs } from "../src/github/inputs.ts";
+import { readApplyInputs, readScanInputs } from "../src/github/inputs.ts";
 import { MODES } from "../src/mode.ts";
 
 const ROOT = resolve(import.meta.dir, "..");
@@ -41,11 +41,34 @@ describe("action.yml", () => {
   test("the defaults of the scan inputs are the ones of the build plan, and the scan can read them", () => {
     const defaults = (name: string) => action.inputs[name]?.default ?? "";
     expect(readScanInputs((name) => (name === "github-token" ? "token" : defaults(name)))).toEqual({
-      concurrency: 4,
+      concurrency: undefined,
       previewTimeoutMinutes: 10,
       token: "token",
       strict: false,
     });
+  });
+
+  // Record 0084: an empty optional input means its default, so a workflow
+  // that passes an input through from its own dispatch inputs reads what
+  // action.yml would have given. The defaults live in both places, and this
+  // holds them together.
+  test("an empty optional input reads as the default action.yml gives it", () => {
+    const defaults = (name: string) => action.inputs[name]?.default ?? "";
+    const token = (name: string) => (name === "github-token" ? "token" : "");
+    const empty = (name: string) => token(name);
+    expect(readScanInputs(empty)).toEqual(readScanInputs((name) => token(name) || defaults(name)));
+    const apply = (read: (name: string) => string) => (name: string) =>
+      name === "deployment-id" ? "12" : read(name);
+    expect(readApplyInputs(apply(empty))).toEqual(
+      readApplyInputs(apply((name) => token(name) || defaults(name))),
+    );
+  });
+
+  // Slice 5.21 (record 0085): a default in action.yml would reach the step as
+  // if the workflow had set it, and the pool could never follow the machine.
+  test("concurrency has no default, so the pool follows the cores of the machine", () => {
+    expect(action.inputs.concurrency?.required).toBe(false);
+    expect(action.inputs.concurrency?.default).toBeUndefined();
   });
 
   // Record 0044: the id of the running job is in no variable of its
@@ -90,8 +113,8 @@ describe("action.yml", () => {
     }
   });
 
-  // Record 0035: the five inputs of v1, `job-id` of record 0044, and the four
-  // channels of record 0078.
+  // Record 0035: the five inputs of v1, `job-id` of record 0044, the four
+  // channels of record 0078, and the env file of record 0100.
   test("declares only the inputs the decision records fix", () => {
     expect(Object.keys(action.inputs).sort()).toEqual([
       "backend",
@@ -99,10 +122,12 @@ describe("action.yml", () => {
       "deploy-timeout",
       "deployment-id",
       "dry-run",
+      "env-file",
       "github-token",
       "job-id",
       "mode",
       "preview-timeout",
+      "pull-request-preview",
       "slack-webhook-url",
       "strict",
       "telegram-bot-token",
@@ -124,6 +149,17 @@ describe("action.yml", () => {
     expect(action.inputs["dry-run"]?.required).toBe(false);
     expect(action.inputs["dry-run"]?.default).toBe("false");
     expect(action.inputs["dry-run"]?.description).toContain("apply");
+  });
+
+  // Record 0100: the env file is empty by default, and the description names
+  // the modes that read it and says that every value is masked.
+  test("env-file has no default and names the modes that read it", () => {
+    expect(action.inputs["env-file"]?.required).toBe(false);
+    expect(action.inputs["env-file"]?.default).toBeUndefined();
+    const description = action.inputs["env-file"]?.description ?? "";
+    for (const word of ["scan", "apply", "backend: true", "mask"]) {
+      expect(description).toContain(word);
+    }
   });
 
   // Record 0074: the check asks the backend only when a workflow says so.

@@ -95,6 +95,12 @@ export type Opening = {
       behind?: string[] | undefined;
       // The hash covers drift (record 0055).
       drift?: boolean | undefined;
+      // Opened on merge, and `ticker` is whoever merged (record 0095).
+      onMerge?: boolean | undefined;
+      // The value fingerprint the tick approved (record 0102).
+      fingerprint?: string | undefined;
+      // Queued for the stack's deploy window (record 0104).
+      window?: boolean | undefined;
     }
   // The pull request a tick merged. No hash: nothing was previewed yet
   // (record 0054).
@@ -126,6 +132,9 @@ export async function openRecord(writer: RecordWriter, opening: Opening): Promis
             ...run,
             behind: opening.behind,
             ...(opening.drift ? { drift: true } : {}),
+            ...(opening.onMerge ? { onMerge: true } : {}),
+            ...(opening.fingerprint === undefined ? {} : { fingerprint: opening.fingerprint }),
+            ...(opening.window ? { window: true } : {}),
           }),
   });
   try {
@@ -142,15 +151,17 @@ export async function openRecord(writer: RecordWriter, opening: Opening): Promis
 // Starts a queued stack whose dependencies went out under a record of this
 // run, because `apply` deploys only a record of its own run (records 0035 and
 // 0056). The new record comes first, so a stack is never without an open
-// one, and carries the hash and the ticker of the queued one. Then the queued
-// record ends as handed on. Nothing when this version cannot read the queued
-// record's payload.
+// one, and carries what the tick approved: the hash, the ticker, whether
+// the hash covers drift (record 0091), and whether it goes out on merge
+// (record 0095). The run and its attempt are this run's,
+// and it waits behind nothing. Then the queued record ends as handed on.
+// Nothing when this version cannot read the queued record's payload.
 export async function startQueuedRecord(
   writer: RecordWriter,
   queued: DeploymentRecord,
   // The commit this run deploys, and the stack's label.
   at: { sha: string; environment: string },
-): Promise<(Opened & { ticker: string }) | undefined> {
+): Promise<(Opened & { ticker: string; onMerge?: true }) | undefined> {
   const stackId = taskStackId(queued.task);
   const payload = readDeploymentPayload(queued.payload);
   if (stackId === undefined || !payload) return undefined;
@@ -160,8 +171,15 @@ export async function startQueuedRecord(
     sha: at.sha,
     ticker: payload.ticker,
     hash: payload.hash,
+    drift: payload.drift,
+    onMerge: payload.onMerge,
+    fingerprint: payload.fingerprint,
   });
-  const started = { ...opened, ticker: payload.ticker };
+  const started = {
+    ...opened,
+    ticker: payload.ticker,
+    ...(payload.onMerge ? { onMerge: true as const } : {}),
+  };
   if (opened.unfinished !== undefined) return started;
   try {
     await endRecord(writer, queued.id, { kind: "handed-on" });
@@ -183,8 +201,9 @@ export type Claim =
   | { kind: "unreadable-payload"; stackId: string }
   // It lives as long as another run (record 0003).
   | { kind: "other-run"; stackId: string; run: string }
-  // A later `resolve` starts it (record 0056).
-  | { kind: "queued"; stackId: string; behind: string[] }
+  // A later `resolve` starts it: behind these stacks (record 0056), or for
+  // the stack's deploy window (record 0104), or both.
+  | { kind: "queued"; stackId: string; behind: string[] | undefined; window: boolean }
   // Every check passed, and the `in_progress` status could not be written.
   | { kind: "unclaimed"; stackId: string; payload: DeploymentPayload; error: unknown }
   // It is this job's now, `in_progress`.
@@ -215,7 +234,9 @@ export async function claimRecord(writer: RecordWriter, id: number): Promise<Cla
   if (stackId === undefined) return { kind: "not-sluiceways" };
   if (!payload) return { kind: "unreadable-payload", stackId };
   if (payload.run !== writer.runId) return { kind: "other-run", stackId, run: payload.run };
-  if (payload.behind) return { kind: "queued", stackId, behind: payload.behind };
+  if (payload.behind || payload.window) {
+    return { kind: "queued", stackId, behind: payload.behind, window: payload.window === true };
+  }
   try {
     await github.createDeploymentStatus(id, {
       ...recordStatus({ kind: "claimed" }),
@@ -281,7 +302,9 @@ export class RecordNotEnded extends Error {
 // A queued record (record 0056) outlives its run on purpose: it waits for the
 // stacks it depends on, and a later `resolve` starts it under a record of its
 // own run. It is ended only when one of them did not go out, with that reason
-// and as `failure`, after the records of runs that are over got theirs.
+// and as `failure`, after the records of runs that are over got theirs. A
+// record that waits for the deploy window (record 0104) outlives its run the
+// same way, and nothing here ends it: a run inside the window starts it.
 export async function settleEndedRuns(
   github: GitHubPort,
   records: readonly DeploymentRecord[],
@@ -295,6 +318,7 @@ export async function settleEndedRuns(
     if (fact.kind !== "open" || fact.merge !== undefined) continue;
     const one = { deployment: fact.deployment, stackId, run: fact.run };
     if (fact.behind) queued.push({ ...one, behind: fact.behind });
+    else if (fact.window) queued.push({ ...one, window: true });
     else open.push(one);
   }
   // In stack id order, so a chain ends from its first stack on.
@@ -316,11 +340,12 @@ export async function settleRun(
   repoUrl: string,
   runId: string,
 ): Promise<Settled & { open: number }> {
-  const open = openRecordsOfRun(records, runId).map(({ id, stackId, behind }) => ({
+  const open = openRecordsOfRun(records, runId).map(({ id, stackId, behind, window }) => ({
     deployment: id,
     stackId,
     run: runId,
     ...(behind ? { behind } : {}),
+    ...(window ? { window } : {}),
   }));
   const settled = await settle(github, repoUrl, records, open, async () => true);
   return { ...settled, open: open.length };
@@ -331,6 +356,7 @@ interface OpenRecord {
   stackId: string;
   run: string;
   behind?: string[];
+  window?: true;
 }
 
 // The one way an open record is settled. First every one that waits for no
@@ -370,7 +396,7 @@ async function settle(
     });
   };
   for (const record of open) {
-    if (record.behind) continue;
+    if (record.behind || record.window) continue;
     if (!(await over(record.run))) continue;
     await end(record, false);
   }

@@ -1,12 +1,12 @@
 # Credentials and your own tooling
 
-Sluiceway runs your infrastructure tool, but it never loads a credential. Your workflow puts everything the tool needs into the job environment, in steps that run before Sluiceway, and Sluiceway passes that environment to the tool as it is. This page is the pattern, then recipes for the usual places credentials come from, then what to do when your programs fetch things or you deploy from somewhere else too.
+Sluiceway runs your infrastructure tool, and your workflow gives the tool what it needs: steps that run before Sluiceway put it into the job environment, which Sluiceway passes to the tool as it is, or the [`env-file` input](#an-env-file) names a file of `NAME=value` lines that Sluiceway reads for the tool and masks itself. It fetches no credential from anywhere and resolves no secret reference. This page is the pattern, then recipes for the usual places credentials come from, then what to do when your programs fetch things or you deploy from somewhere else too.
 
 ## The pattern
 
 1. **Authenticate** to wherever the credentials live: a GitHub secret, your cloud through OIDC, a secret manager.
 2. **Load everything into the job environment in one step**, once per job. The tool's backend, the passphrase of its secrets, the cloud credentials, anything your programs read.
-3. **That step masks every secret it loads.** Sluiceway never sees a secret as a secret, so it cannot mask one by its value. The step that knows it is a secret has to.
+3. **That step masks every secret it loads**, or it writes a file that the `env-file` input names, and Sluiceway masks every value of that file. Sluiceway masks nothing else: in the job environment it cannot tell a secret from a setting, so the step that put a secret there has to.
 
 Then:
 
@@ -17,17 +17,23 @@ Then:
 
 The job environment is the whole interface. There is no allowlist and no environment per stack: a program may read any variable, so Sluiceway cannot know the names. A stack that needs a value of its own gets it through its own variable name or its stack config.
 
+## What the check says about them
+
+[The check](workflow.md#check-your-setup) reads the same files and says, per stack, what its tool will want from the job environment: the names, with the alternatives, and the file that names each. A Pulumi stack wants its backend (`PULUMI_ACCESS_TOKEN` for Pulumi Cloud, or `PULUMI_BACKEND_URL` and the credentials of the bucket it names), the passphrase of its secrets when its stack file has one, and the credentials of every provider its program names, read from a YAML program's resource types or from the packages its `package.json`, `requirements.txt`, `pyproject.toml`, `go.mod` or .NET project file lists. A root module wants the credentials of the providers its lock file, `required_providers` and `provider` blocks name, of its backend, and a `TF_VAR_<name>` for every variable without a default that no var file of the stack sets. A Helm release and a manifests stack want the cluster. For the aws provider it also asks for a region, unless the stack's config or the provider block sets one.
+
+For each job that runs the tool, the check then reads what the workflow hands the step: the names `env:` sets on the workflow, the job and the Sluiceway step, the names an env file of the repo lists when a step before the Sluiceway step loads it, and the login actions before the step. It says which needs nothing in the workflow appears to provide, and names a step it cannot see into, one that writes to the environment or loads secrets, as a maybe. It reads names and never a value, and it never turns this into a warning: a program can read any variable, so it is a reading of the files, not a guarantee. `npx sluiceway check` says the same on your own machine.
+
 ## What Sluiceway promises about them
 
-Sluiceway never holds credentials. That is five promises you can check against the code:
+Sluiceway fetches no credential and keeps none. That is five promises you can check against the code ([record 0014](adr/0014-never-hold-credentials-is-five-promises.md), amended by [record 0100](adr/0100-the-env-file-input-loads-the-file-a-step-names-and-masks-every-value.md) and [record 0103](adr/0103-a-stack-may-name-the-env-file-its-tool-gets.md)):
 
-1. **No credential inputs.** No input and no config key ever carries a cloud, backend or secret manager credential. The action takes the GitHub token, and, only when you want notifications, the addresses and the bot token of your notification channels, from your secrets ([notifications](notifications.md)).
-2. **Never read by name.** No Sluiceway code reads a credential variable. The environment goes to the tool as one opaque block.
-3. **Never stored, never sent.** Nothing from the environment reaches the issue, deployment records, job summaries, artifacts or caches. The only network calls are to the GitHub API, whatever the tool itself makes, and the notification channels a step names.
-4. **Only the modes that run the tool need credentials.** `scan` and `apply` run the tool. `resolve` and `settle` never do. `check` does only when its step sets `backend: true`, to ask the backend which stacks it holds, and then only with the credentials you loaded before that step.
+1. **No credential inputs.** No input and no config key ever carries a cloud, backend or secret manager credential. The action takes the GitHub token, and, only when you want notifications, the addresses and the bot token of your notification channels, from your secrets ([notifications](notifications.md)). The `env-file` input and `stacks[].envFile` carry a path, never a value.
+2. **Nothing read by name, and files read by yours.** No Sluiceway code reads a credential variable of the job environment: the environment goes to the tool as one opaque block. The files it reads are the one the `env-file` input names and the ones a `stacks` entry names with `envFile`, in the checkout you pinned it to or where a step of yours wrote them, and it reads every line of each the same way, for the tool, a stack's file for that stack alone. It masks every value first, and the job log says which names it loaded for which stacks and never a value.
+3. **Never stored, never sent.** Nothing from the environment or an env file reaches the issue, deployment records, job summaries, artifacts or caches. The only network calls are to the GitHub API, whatever the tool itself makes, the notification channels a step names, and, only with [`cost.enabled`](configuration.md#costenabled), the pricing API of the Infracost CLI, which gets resource types, regions and quantities and never a value or a credential.
+4. **Only the modes that run the tool need credentials.** `scan` and `apply` run the tool. `resolve` and `settle` never do, and never open an env file. `check` does only when its step sets `backend: true`, to ask the backend which stacks it holds, and then only with the credentials you loaded before that step, or the env file the step names.
 5. **A hosted version would keep all of this.** The tool always runs in your own runners.
 
-The credentials are in the same job as Sluiceway's own process, so the promise is not that Sluiceway cannot see them. It is that its code, which you pin and can read, never looks. The [security page](security.md) says what that protects against and what it does not.
+The credentials are in the same job as Sluiceway's own process, so that process could read them, and with `env-file` and `envFile` it reads the ones you name. Its code, which you pin and can read, does nothing else with them. The [security page](security.md) says what that protects against and what it does not.
 
 ## Recipes
 
@@ -35,7 +41,7 @@ Each recipe is the loading part of a job. [example-workflows.md](example-workflo
 
 ### GitHub secrets
 
-The simplest source. Put the secrets on Sluiceway's step, not on the job, so that the other steps of the job, such as the install scripts of your package manager, never see them. GitHub masks the value of every secret it hands a step.
+Nothing to set up outside GitHub. Put the secrets on Sluiceway's step, not on the job, so that the other steps of the job, such as the install scripts of your package manager, never see them. GitHub masks the value of every secret it hands a step.
 
 ```yaml
       - uses: sluiceway/sluiceway@v0
@@ -44,6 +50,47 @@ The simplest source. Put the secrets on Sluiceway's step, not on the job, so tha
 ```
 
 For the credentials that change things, use a secret of a GitHub Environment where your plan has them, and name the environment on the job ([with GitHub Environments](workflow.md#with-github-environments)). Only a job that names the environment, on a branch the environment allows, can read its secrets. The [security page](security.md) has the setups.
+
+### An env file
+
+The `env-file` input names one file of `NAME=value` lines that Sluiceway reads once per job for the tool's process. It is for a file of plain values that lives next to the code, and for a file a step before Sluiceway resolved from your secret manager, so that no repo has to carry a script that masks and exports:
+
+```yaml
+      - uses: sluiceway/sluiceway@v0
+        with:
+          env-file: ci/deploy.env
+```
+
+What Sluiceway does with it:
+
+- **Every value is masked before anything else happens**, so the tool's own words in the job log cannot show one, and each line of a value that spans lines is masked on its own, because the runner matches the log line by line. Not masked: an empty value, `true` and `false`, and a value of 1 to 3 characters, because a mask that short turns every `dev` or `1` in the log into stars. Everything from 4 characters on is masked, whatever it looks like: a short password is still a password, and a masked `prod` costs less than a password in the log. The job log says which names it loaded, which got no mask and why, and never a value.
+- **The file wins.** A name the job environment already has takes the file's value, and the job log names each one it replaced. What Sluiceway reads for itself, the repo, the run and its inputs, comes from the runner and never from the file.
+- **The format is strict.** A comment line starts with `#`, blank lines are skipped, and every other line is `NAME=value`, with `export ` allowed in front and spaces around the `=`. An unquoted value runs to the end of its line, without the white space around it, and a `#` in it is part of it. A value in double quotes may span lines and knows `\n`, `\"` and `\\`. A value in single quotes is taken as it is, across lines too. Refused, by line number and never by quoting the line: any other line, a name set twice, a quote never closed, anything after a closing quote, another escape in double quotes, a name that starts with `INPUT_` (the tool never gets those, record 0013) and a secret reference (`op://`), because Sluiceway resolves none.
+- **A file that is not there fails the step before the tool runs**, in the modes that run the tool: `scan`, `apply`, `auto`, and `check` with `backend: true` or `pull-request-preview: true`. A path is relative to the checkout, or absolute for a file a step wrote elsewhere, such as under `${{ runner.temp }}`. On a step that never runs the tool the input is a warning, and the file is never opened.
+- **One file per step.** Two files would raise which wins on a name both set, which the format refuses inside one file too. Join them in a step before Sluiceway.
+
+For a file of secret references, resolve it first. With 1Password, `op inject -i ci/deploy.env -o "$RUNNER_TEMP/deploy.env"` writes the resolved file for the life of the job, and `env-file: ${{ runner.temp }}/deploy.env` loads it. The script under [An env file of secret references](#an-env-file-of-secret-references) does the same without a file on disk.
+
+#### One file per stack
+
+One job has one environment, so a repo whose stacks live in different places had two bad choices: load every credential for every preview, or write a job per group. A `stacks` entry can name the file its stacks get instead ([record 0103](adr/0103-a-stack-may-name-the-env-file-its-tool-gets.md)):
+
+```yaml
+# sluiceway.yaml
+stacks:
+  - path: infra/aws
+    envFile: ci/aws.env
+  - path: infra/proxmox
+    envFile: ci/proxmox.env
+  - path: infra/k8s
+    envFile: ci/k8s.env
+```
+
+Each stack's preview and deploy then gets the job environment, the step's `env-file` on top, and its own file on top of that, and nothing from another stack's file. The rules are the input's: the same format, every value masked first, the file wins, and the job log names what each file loaded for which stacks and never a value. A file is read once per job however many entries name it. A file that is missing or refused fails the preview of its stacks, with the path and the line number in the job log, and every other stack carries on: it never fails the scan. On a deploy it fails the fresh preview, so nothing goes out.
+
+What it does not do: a file of secret references still has to be resolved by a step before Sluiceway, with the secret manager's own credential, which is the job's. A GitHub Environment per stack ([`stacks[].environment`](configuration.md#stacksenvironment)) is the stronger answer where separation of duties matters: it holds the credentials that change things behind required reviewers, in the deploy job of the [split workflow](split-workflow.md). An env file per stack scopes what each stack's tool sees inside one job. Use both when you need both. A different tool version or a different runner per stack is not what an env file does.
+
+The check knows about it: a name the stack's file lists counts as provided for that stack in every job that runs the tool, and a file the check cannot read in the checkout is named as a maybe.
 
 ### A cloud through OIDC
 
@@ -76,7 +123,7 @@ Prefer one bulk call per job over one call per secret. A secret manager counts r
 
 #### An env file of secret references
 
-Many repos keep one env file of secret references next to the code, which the team's own tooling resolves before it runs the tool. The same file can load a CI job. Run your secret manager's `run` command once, which resolves every reference in one go, and let a small script inside it mask the secrets and write every value to `$GITHUB_ENV`. With 1Password:
+Many repos keep one env file of secret references next to the code, which the team's own tooling resolves before it runs the tool. The same file can load a CI job, and this is the one place a script is still needed: your secret manager's `run` command resolves every reference in one go into the environment of the process it starts, and something has to hand the values on to the job. A file a step already resolved, or a file of plain values, needs none of this: the [`env-file` input](#an-env-file) loads it. Run the `run` command once, and let a small script inside it mask the secrets and write every value to `$GITHUB_ENV`. With 1Password:
 
 ```yaml
       - uses: 1password/install-cli-action@v4
@@ -146,6 +193,8 @@ What to know about it:
 
 The tool's backend is configured the same way, in the environment: for Pulumi, `PULUMI_ACCESS_TOKEN` for Pulumi Cloud, or `PULUMI_BACKEND_URL` for a bucket or another self-managed backend, and `PULUMI_CONFIG_PASSPHRASE` when stack secrets use a passphrase. Sluiceway never sets or defaults any of them. When one is missing, the tool's own error becomes that stack's preview failure, and the job log shows it.
 
+A stack the scan creates with [`stacks[].createInBackend`](configuration.md#stackscreateinbackend) is made with that same environment: `pulumi stack init` with the name alone, so the tool's default secrets provider stands and the passphrase is the one the job has. The salt it writes into the stack file stays on the runner, because Sluiceway commits nothing. A stack whose config needs secrets still gets them the way it did: set them with `pulumi config set --secret` from a clone and commit the stack file, or give the program what it needs through the environment.
+
 ### OpenTofu
 
 The same pattern holds for OpenTofu (record 0053). Install `tofu` v1.11.0 or newer in a step before Sluiceway, without a wrapper around the binary, because Sluiceway reads what `tofu` itself prints:
@@ -159,6 +208,8 @@ The same pattern holds for OpenTofu (record 0053). Install `tofu` v1.11.0 or new
 
 Then load the backend's and the providers' credentials into the environment as for any tool. Every `TF_*` variable of the job reaches `tofu`: `TF_VAR_*` for variables, `TF_CLI_CONFIG_FILE` or a credentials file for a private registry, `TF_ENCRYPTION` for state and plan encryption, `TF_PLUGIN_CACHE_DIR` to download providers once per job. Sluiceway sets `TF_IN_AUTOMATION`, and `TF_WORKSPACE` for a stack whose options name a workspace, and nothing else.
 
+- **A root module that discovery found runs the tool its lock file names**: providers from `registry.terraform.io` mean `terraform`, from `registry.opentofu.org` `tofu`. Install that one ([`discovery.rootModules`](configuration.md#discoveryrootmodules)).
+- **Do not set `TF_WORKSPACE`** for the job. A found root module is the default workspace, and a stack that needs another names it in its options.
 - **Do not set `TF_DATA_DIR`** for the job. Sluiceway runs `tofu init` in every directory of the stacks it previews, one after the other, and one shared data directory would make those inits overwrite each other.
 - **`TF_CLI_ARGS` reaches the tool too.** Whatever it adds to a plan is in the plan file, and a tick deploys exactly that file, so the deploy never differs from the row. Prefer the named options.
 - **The plan file holds every value in plain text.** Sluiceway keeps it in a temporary directory of its own and removes it when the preview or the deploy ends. It is never uploaded.
@@ -222,6 +273,9 @@ For a stack with `tool: kubectl` (record 0060), install `kubectl` v1.34.0 or new
 
 ## What your programs fetch, the runner has to fetch
 
+> [!WARNING]
+> A program that pulls from a private registry works on your laptop and fails on the runner. Log in to that registry in a step before Sluiceway.
+
 A preview runs your programs, and your programs fetch things: packages, provider plugins, container images, Helm charts, modules. On a laptop that works because the person is logged in. On a runner nothing is logged in until a step does it. When one stack fails in CI and works on your machine, look here first.
 
 The job has to be able to reach, and log in to:
@@ -260,9 +314,9 @@ A preview failure row links to the scan's run. The job log group of that stack h
 
 ## Next to your own tooling
 
-Most repos already run the tool in their own way: a script, a task runner, a laptop, another pipeline. Keep it. Sluiceway only previews and deploys the stacks it finds. Destroying a stack, a refresh and repairing state stay with your own tooling, and Sluiceway writes no lock, puts no marker in the tool's state and never claims to be the only way to deploy.
+Most repos already run the tool in their own way: a script, a task runner, a laptop, another pipeline. Keep it. Sluiceway only previews and deploys the stacks it finds. Destroying a stack, a refresh and repairing state stay with your own tooling, and Sluiceway writes no lock and puts no marker in the tool's state, so other ways to deploy keep working.
 
 - **Your wrapper script is not needed in CI.** What a wrapper does around each run of the tool (load an env file, pick a backend, pass fixed flags) becomes the loading step of the job. Sluiceway runs the tool itself, so it can check the tool's version, stop a preview at its time limit, and read its output.
-- **A deploy from somewhere else is legal.** It has no deployment record. For a Pulumi stack the next full scan finds it in `pulumi stack history`, which needs the same backend access as a preview and no passphrase, and lists it under recently deployed. A row it made stale stays pending until the next full scan. Tick the rescan box on the dashboard, or wait for the scheduled scan. A tick on a stale row deploys nothing: the fresh preview finds a different diff and the row is written again.
+- **An outside deploy is allowed.** It has no deployment record. For a Pulumi stack the next full scan finds it in `pulumi stack history`, which needs the same backend access as a preview and no passphrase, and lists it under recently deployed. A row it left behind stays pending until the next full scan. Tick the rescan box on the dashboard, or wait for the scheduled scan. A tick on that row deploys nothing: the fresh preview finds a different diff and the row is written again.
 - **Two deploys of one stack at the same moment** meet at the tool's own state lock. One of them fails cleanly, and if it was Sluiceway's, the row shows a failure line.
 - **To make the dashboard the only way in**, take the credentials that change things away from every other place. That is access control in your secret manager and your cloud, not a Sluiceway setting.

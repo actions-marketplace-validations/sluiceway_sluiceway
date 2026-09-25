@@ -573,7 +573,7 @@ describe("what a narrowed scan carries through (records 0009 and 0011)", () => {
     }
     expect(after).toContain("- [x] **network:dev**");
     expect(after).toContain(
-      "🟡&nbsp;**2 pending** · ⚪&nbsp;0 deploying · ⚪&nbsp;0 preview failed · 🟢&nbsp;2 in sync · :warning: **2 pending stacks destroy resources** · 🔴&nbsp;1 failed deploy",
+      "🟡&nbsp;**2 pending** · ⚪&nbsp;0 deploying · ⚪&nbsp;0 preview failed · 🟢&nbsp;2 in sync · :warning: **2 pending stacks delete or replace resources** · 🔴&nbsp;1 failed deploy",
     );
     expect(after).toContain("so 1 of 2 pending rows is shortened");
   });
@@ -660,7 +660,7 @@ describe("the job of a narrowed scan", () => {
       TABLE,
       ahead("network/Pulumi.yaml", "network/index.ts", "network/x.ts"),
     );
-    await scan({ ...context, concurrency: 1 });
+    await scan({ ...context, pool: { size: 1, from: "input" } });
     const size = dashboardBody(github).length.toLocaleString("en-US");
     expect(log.lines).toEqual([
       "Found 4 stacks.",
@@ -668,6 +668,8 @@ describe("the job of a narrowed scan", () => {
       "This is a narrowed scan: it previews 2 of 4 stacks and keeps the rows of the other 2 as they are.",
       "network:dev is previewed: it claims network/Pulumi.yaml and 2 more changed files.",
       "network:prod is previewed: it claims network/Pulumi.yaml and 2 more changed files.",
+      "The dashboard says a scan is running, under the scan line, until this scan writes the body (record 0108): https://github.com/acme/infra/actions/runs/4242",
+      "The pool is 1 preview at once, from the concurrency input.",
       "Previewing 2 stacks with a pool of 1 and a time limit of 10 minutes for each preview.",
       "Previewed network:dev in 0.5 s: pending",
       "Previewed network:prod in 0.5 s: in sync",
@@ -708,7 +710,7 @@ describe("the job of a narrowed scan", () => {
     expect(scanned.log.warnings).toHaveLength(1);
   });
 
-  test("costs ten requests: the first read, the comparison, the preview page of its pending stack, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
+  test("costs sixteen requests: the first read, the comparison, the first write that says a scan is running, the preview page of its pending stack, the queued runs of the workflow, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
     const scanned = await pushed(TABLE, ahead("site/index.ts"), {
       next: { "site:prod": pending("site:prod", change("page")) },
     });
@@ -717,9 +719,18 @@ describe("the job of a narrowed scan", () => {
     expect(scanned.github.requests.slice(before)).toEqual([
       "listIssues",
       "compareCommits",
+      // Record 0108: the first write, which says a scan is running: find,
+      // read, the records of the trail, write, read back.
+      "listIssues",
+      "getIssue",
+      "listNewestDeployments",
+      "updateIssueBody",
+      "getIssue",
       // Record 0050: the commit's check runs, and the one page.
       "listCheckRuns",
       "createCheckRun",
+      // Record 0086: the queued runs of the workflow, once a job.
+      "listQueuedRuns",
       "listIssues",
       "getIssue",
       "listNewestDeployments",

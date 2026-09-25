@@ -5,20 +5,36 @@
 // the backend, and it is used only when the input says so.
 
 import * as core from "@actions/core";
-import { discoverAll } from "../adapters/discover-all.ts";
-import { readsFiles } from "../adapters/file-references.ts";
-import { readBackend } from "../github/inputs.ts";
+import { filesOnly } from "../adapters/files-only.ts";
+import { loadEnvFile } from "../github/env-file.ts";
+import { readBackend, readEnvFileInput, readPullRequestPreview } from "../github/inputs.ts";
 import { actionsLog, type JobLog } from "../github/job-log.ts";
 import { type CheckContext, check } from "./check.ts";
 
 // What asks the backend, built from the environment of the job.
 export type BackendFactory = (
   env: Record<string, string | undefined>,
+  // What reads the env file a stack names (record 0103): the checkout, the
+  // runner's `setSecret` and the log.
+  glue: { root: string; mask: (value: string) => void; log: JobLog },
 ) => NonNullable<CheckContext["backend"]>;
+
+// What previews a pull request, built from the environment of the job and
+// handed the job's log (record 0101). It reaches the port and the process
+// runner, which is why it is handed in and never imported here.
+export type PullRequestPreviewFactory = (
+  env: Record<string, string | undefined>,
+  log: JobLog,
+  mask: (value: string) => void,
+) => NonNullable<CheckContext["pullRequestPreview"]>;
 
 // Auto mode hands in the log of its one step, whose summary it shares with
 // nothing else on a pull request (record 0077).
-export async function runCheck(makeBackend?: BackendFactory, log?: JobLog): Promise<void> {
+export async function runCheck(
+  makeBackend?: BackendFactory,
+  log?: JobLog,
+  makePreview?: PullRequestPreviewFactory,
+): Promise<void> {
   const root = process.env.GITHUB_WORKSPACE;
   if (!root) {
     throw new Error(
@@ -29,13 +45,38 @@ export async function runCheck(makeBackend?: BackendFactory, log?: JobLog): Prom
   if (asked && makeBackend === undefined) {
     throw new Error("backend: true needs a runner for the tool, and this check has none.");
   }
-  const backend = asked ? makeBackend?.({ ...process.env }) : undefined;
+  const previews = readPullRequestPreview(core.getInput);
+  if (previews && makePreview === undefined) {
+    throw new Error(
+      "pull-request-preview: true needs the GitHub port and a runner for the tool, and this check has neither.",
+    );
+  }
+  const jobLog = log ?? actionsLog();
+  // Only with backend: true or pull-request-preview: true does the check run
+  // the tool, so only then is the env file read for it, once for both
+  // (records 0100 and 0101).
+  const env =
+    asked || previews
+      ? loadEnvFile({
+          input: readEnvFileInput(core.getInput),
+          root,
+          env: { ...process.env },
+          mask: (value) => core.setSecret(value),
+          log: jobLog,
+        })
+      : undefined;
+  const mask = (value: string) => core.setSecret(value);
+  const backend =
+    asked && env !== undefined ? makeBackend?.(env, { root, mask, log: jobLog }) : undefined;
+  const pullRequestPreview =
+    previews && env !== undefined ? makePreview?.(env, jobLog, mask) : undefined;
   await check({
     root,
     ...(backend === undefined ? {} : { backend }),
-    // Of every tool the check uses discovery and what its files name as read,
-    // and nothing that starts it (records 0042, 0053 and 0074).
-    adapter: { discover: discoverAll, readsFiles },
-    log: log ?? actionsLog(),
+    ...(pullRequestPreview === undefined ? {} : { pullRequestPreview }),
+    // Of every tool the check uses what reads files, and nothing that starts
+    // it (records 0042, 0053, 0074 and 0092).
+    adapter: filesOnly,
+    log: jobLog,
   });
 }

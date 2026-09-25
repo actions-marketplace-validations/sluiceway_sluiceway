@@ -21,10 +21,10 @@ inputs:
     default: auto
   concurrency:
     description: >-
-      How many previews a scan runs at the same time. It belongs to the runner, not to the repo,
-      so it is an input and not a config key.
+      How many previews a scan runs at the same time. Leave it out and the scan runs one preview
+      for each core of the machine, up to 8, and says in the job log which number it used. It
+      belongs to the runner, not to the repo, so it is an input and not a config key.
     required: false
-    default: "4"
   preview-timeout:
     description: >-
       Time limit for one preview, in minutes. A preview that runs longer is stopped and its stack
@@ -64,12 +64,32 @@ inputs:
       the ones it does not. It runs the tool for that one question and nothing else.
     required: false
     default: "false"
+  pull-request-preview:
+    description: >-
+      check and auto only. true also previews the stacks a pull request claims, as they would be
+      after the merge, with the credentials the job loads before this step, and writes a check run
+      per stack on the pull request's head commit, for the reviewer. Nothing deploys from it, and
+      it leaves no row. A pull request from a fork is refused, and pull_request_target is never
+      used. Off by default.
+    required: false
+    default: "false"
   deploy-timeout:
     description: >-
       apply only. A time limit on the deploy itself, in whole minutes. When it runs out the tool is
       interrupted, gets two minutes to stop by itself, and the deploy fails with a reason that says
       so. The stack may then be half deployed. Empty by default: no limit of Sluiceway's, and the
       job's own timeout-minutes is the limit.
+    required: false
+  env-file:
+    description: >-
+      scan, apply, auto, and check with backend: true or pull-request-preview: true. A file of
+      NAME=value lines, relative to the
+      checkout or absolute, that Sluiceway reads once for the infrastructure tool's process: every
+      value is masked in the job log before anything else, and the file wins over a variable the
+      job already has. The file may hold plain values or what a step before this one resolved;
+      Sluiceway resolves no secret reference. Empty by default: the tool gets the job environment
+      as it is. On a step that never runs the tool the file is not read. A stacks entry of
+      sluiceway.yaml may name a file of its own with envFile, on top of this one for its stacks.
     required: false
   slack-webhook-url:
     description: >-
@@ -105,7 +125,8 @@ outputs:
     description: >-
       Set by resolve and scan. A JSON list with one { stack, environment, deployment } entry per
       deploy it started, or []. Hand it to the matrix of the apply job. A scan starts a deploy
-      only for a pull request merged from the dashboard (mergeAndDeploy).
+      for a pull request merged from the dashboard (mergeAndDeploy), and the scan of a push to the
+      default branch for each stack set to deploy: on-merge.
   dashboard-url:
     description: >-
       Set by scan, apply and settle. The web address of the dashboard issue. Empty when the step

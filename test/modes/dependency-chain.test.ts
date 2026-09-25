@@ -37,6 +37,7 @@ async function applyAndSettle(h: ResolveHarness, runId: string): Promise<string[
     await apply({
       root: h.context.root,
       env: { PATH: "/usr/bin" },
+      mask: () => {},
       adapter: h.adapter,
       run: async () => {
         throw new Error("The table adapter starts no process.");
@@ -52,6 +53,7 @@ async function applyAndSettle(h: ResolveHarness, runId: string): Promise<string[
       sha: SHA,
       actionRef: ACTION_REF,
       deploymentId: entry.deployment,
+      workflow: { file: "sluiceway.yml", ref: "refs/heads/main" },
       event: h.context.event,
     });
   }
@@ -65,6 +67,7 @@ async function applyAndSettle(h: ResolveHarness, runId: string): Promise<string[
     runId,
     event: h.context.event,
     workflow: WORKFLOW,
+    actionRef: ACTION_REF,
   });
   h.github.seedRun(runId, { completed: true });
   return h.github.dispatches.length > before ? ["dispatched"] : [];

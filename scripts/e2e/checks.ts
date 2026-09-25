@@ -92,7 +92,7 @@ function previewedTotal(count: number): string {
   return `Previewed ${count} ${count === 1 ? "stack" : "stacks"} in `;
 }
 
-// One preview page per pending stack this scan previewed, written by this
+// One preview page per pending or drifted stack this scan previewed, written by this
 // scan, never a second one of the same name, none for any other stack, and
 // the row's preview link lands on it (record 0050).
 function checkPages(
@@ -106,7 +106,7 @@ function checkPages(
     const name = `sluiceway / ${stack}`;
     const all = observed.pages.filter((page) => page.name === name);
     const written = all.filter((page) => page.written);
-    if (state !== "pending" || !previewed.includes(stack)) {
+    if ((state !== "pending" && state !== "drift") || !previewed.includes(stack)) {
       if (written.length > 0) problems.push(`The scan wrote a preview page for ${stack}.`);
       continue;
     }
@@ -191,11 +191,12 @@ function checkScan(observed: Observed, expected: Expected, previewed: string[]):
   problems.push(...checkPages(observed, expected, rows, previewed));
 
   // The count the scan logs is taken on the wire, so it has to be the count
-  // the fake GitHub saw (record 0017, build plan slice 3.1). On a dispatch the
-  // one step of auto mode resolves before it scans (record 0077), and those
-  // requests are the step's but not the scan's.
+  // the fake GitHub saw (record 0017, build plan slice 3.1). On a dispatch
+  // and on the schedule the one step of auto mode resolves before it scans
+  // (records 0077 and 0104), and those requests are the step's but not the
+  // scan's.
   const requests = observed.requests.length;
-  if (observed.log.includes(RESOLVED_FIRST)) {
+  if (RESOLVED_FIRST.test(observed.log)) {
     const made = Number(
       /The scan made (\d+) requests? to the GitHub API\./.exec(observed.log)?.[1],
     );
@@ -244,7 +245,8 @@ export function checkOutsideDeploys(observed: Observed, stacks: string[]): strin
 }
 
 // The line of auto mode that says it resolves before it scans.
-const RESOLVED_FIRST = "Sluiceway runs resolve, for the workflow_dispatch event of this run.";
+const RESOLVED_FIRST =
+  /^Sluiceway runs resolve, for the (workflow_dispatch|schedule) event of this run\.$/m;
 
 export function checkFullScan(observed: Observed, expected: Expected): string[] {
   const stacks = Object.keys(expected.rows);
@@ -297,6 +299,32 @@ export function checkNarrowedScan(
     if (was !== is) {
       problems.push(`The root marker has ${key}="${is}", expected "${was}" carried through.`);
     }
+  }
+  return problems;
+}
+
+// The env file of record 0100, on a scan whose step named one: the runner
+// was told to mask the value that is long enough before the log said the
+// file was loaded, the short one was never masked, and the log named both,
+// with why the short one has no mask. The value itself is in `secrets`, so
+// the other checks hold it out of the dashboard, the summary and the pages.
+export function checkEnvFile(
+  log: string,
+  file: { path: string; masked: string; unmaskedName: string; unmaskedValue: string },
+): string[] {
+  const problems: string[] = [];
+  const mask = log.indexOf(`::add-mask::${file.masked}`);
+  const loaded = log.indexOf(`Loaded the env file ${file.path}`);
+  if (mask < 0) problems.push(`The step never masked the value of the env file.`);
+  if (loaded < 0) problems.push(`The step never said it loaded ${file.path}.`);
+  if (mask >= 0 && loaded >= 0 && mask > loaded) {
+    problems.push("The step said it loaded the env file before it masked the value.");
+  }
+  if (log.includes(`::add-mask::${file.unmaskedValue}`)) {
+    problems.push(`The step masked ${file.unmaskedName}, which is too short to mask.`);
+  }
+  if (!log.includes(`Not masked: ${file.unmaskedName} (shorter than 4 characters).`)) {
+    problems.push(`The step did not say that ${file.unmaskedName} got no mask.`);
   }
   return problems;
 }

@@ -31,6 +31,8 @@ export const ACTION_REF = "v0.1.0";
 // What a deploying or queued row starts with under a header (record 0063).
 const SPINNERS = `https://raw.githubusercontent.com/sluiceway/sluiceway/${ACTION_REF}/assets/mascot`;
 export const SPINNER = `<picture><source media="(prefers-color-scheme: dark)" srcset="${SPINNERS}/spinner-dark.svg"><img alt="" width="16" height="16" src="${SPINNERS}/spinner-light.svg"></picture> `;
+// A queued row's crate stands still (record 0098).
+export const QUEUED_SPINNER = `<picture><source media="(prefers-color-scheme: dark)" srcset="${SPINNERS}/spinner-queued-dark.svg"><img alt="" width="16" height="16" src="${SPINNERS}/spinner-queued-light.svg"></picture> `;
 
 // A repo root on disk, because config is a file. Discovery is the adapter's,
 // so no stack needs a file here.
@@ -91,6 +93,15 @@ export interface TableAdapter extends Adapter {
   previewed: string[];
   // The time limit each preview was started with, by stack id.
   timeouts: Record<string, number>;
+  // Whether each preview was asked for the value fingerprint (record 0102),
+  // by stack id.
+  fingerprintAsked: Record<string, boolean | undefined>;
+  // Whether each preview was asked for its document (record 0106), by stack
+  // id.
+  documentAsked: Record<string, boolean | undefined>;
+  // Whether each preview was asked for the cost estimate (record 0105), by
+  // stack id.
+  costAsked: Record<string, boolean | undefined>;
   versionChecks: number;
   // The stack id of every deploy, in order.
   applied: string[];
@@ -127,6 +138,9 @@ export function tableAdapter(
     },
     previewed: [],
     timeouts: {},
+    fingerprintAsked: {},
+    documentAsked: {},
+    costAsked: {},
     versionChecks: 0,
     applied: [],
     toolDiffs: [],
@@ -152,6 +166,9 @@ export function tableAdapter(
       const id = stackId(previewed);
       adapter.previewed.push(id);
       adapter.timeouts[id] = options.timeoutMinutes;
+      adapter.fingerprintAsked[id] = options.valueFingerprint;
+      adapter.documentAsked[id] = options.keepDocument;
+      adapter.costAsked[id] = options.cost;
       const answer = table[id];
       if (answer === undefined) throw new Error(`The table holds no answer for ${id}.`);
       return typeof answer === "function" ? answer(options) : answer;
@@ -204,6 +221,7 @@ export function harness(
   const context: ScanContext = {
     root: repoRoot(config),
     env: { PATH: "/usr/bin" },
+    mask: () => {},
     adapter,
     run: async () => {
       throw new Error("No test of the scan mode starts a process.");
@@ -211,7 +229,7 @@ export function harness(
     github,
     log,
     now: steppingClock(),
-    concurrency: 4,
+    pool: { size: 4, from: "input" },
     previewTimeoutMinutes: 10,
     repoUrl: REPO_URL,
     runId: RUN_ID,
@@ -225,6 +243,9 @@ export function harness(
     actionRef: ACTION_REF,
     ...rest,
   };
+  // The branch the run is on holds the commit it checked out, as when
+  // nothing was pushed since (record 0111).
+  github.seedBranch("main", context.sha);
   return { context, github, log };
 }
 

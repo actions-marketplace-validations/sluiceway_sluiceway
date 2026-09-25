@@ -1,10 +1,12 @@
 // What a scan shows for one previewed stack, on its row and in the summary.
 // Both come from the same preview result, so they can never disagree.
 
-import type { PreviewResult } from "../adapters/adapter.ts";
 import { diffHash } from "../core/diff-hash.ts";
 import { previewFailureText } from "../core/failure-reason.ts";
 import { globOf } from "../core/glob.ts";
+import type { PolicyOutcome } from "../core/policy.ts";
+import type { PreviewResult } from "../core/tool-result.ts";
+import { valueFingerprint } from "../core/value-fingerprint.ts";
 import type { RunLinks } from "./links.ts";
 import type { FailureLine, Row } from "./row.ts";
 import type { SummaryMerge, SummaryStack } from "./summary.ts";
@@ -49,6 +51,7 @@ export function previewRow(
         state: "drift",
         diff: result.diff,
         hash: diffHash(result.diff),
+        fingerprint: valueFingerprint(result.diff),
         runUrl: links.summary,
         previewUrl: options.pageUrl,
         failure,
@@ -57,14 +60,19 @@ export function previewRow(
     }
     return { state: "in-sync", stackId, failure, ...dependsOn };
   }
+  // What the change costs a month (record 0105), when the estimate came
+  // back. A failed one is a missing line, and the job log says why.
+  const cost = result.cost?.ok ? { cost: result.cost.estimate } : {};
   return {
     state: "pending",
     diff: result.diff,
     hash: diffHash(result.diff),
+    fingerprint: valueFingerprint(result.diff),
     runUrl: links.summary,
     previewUrl: options.pageUrl ?? (options.toolDiffInLog ? links.log : undefined),
     failure,
     ...dependsOn,
+    ...cost,
   };
 }
 
@@ -74,8 +82,10 @@ export function previewSummary(
   stackId: string,
   result: PreviewResult,
   merges?: SummaryMerge[] | undefined,
+  // What the policies made of the change (record 0106).
+  policies?: PolicyOutcome | undefined,
 ): SummaryStack {
-  if (result.ok) return { kind: "diff", diff: result.diff, merges };
+  if (result.ok) return { kind: "diff", diff: result.diff, merges, policies };
   return {
     kind: "preview-failed",
     stackId,

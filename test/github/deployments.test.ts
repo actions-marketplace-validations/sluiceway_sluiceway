@@ -153,6 +153,22 @@ describe("an open deployment whose run is over", () => {
     expect(github.requests).toEqual([]);
   });
 
+  // Deploy windows (record 0104): a record that waits for the window outlives
+  // its run, as one behind a stack does. A run inside the window starts it.
+  test("a record that waits for the deploy window is never ended for its run", async () => {
+    const github = new FakeGitHub();
+    const open = github.seedDeployment({
+      task: "sluiceway:a",
+      payload: { ...payload("4242"), window: true },
+      status: { state: "queued" },
+    });
+    github.seedRun("4242", { completed: true });
+
+    const settled = await settleEndedRuns(github, [github.deployment(open.id)], REPO_URL);
+    expect(settled.ended).toEqual([]);
+    expect(github.requests).toEqual([]);
+  });
+
   test("a run that is still going leaves the record open, however long it waits", async () => {
     const github = new FakeGitHub();
     const open = github.seedDeployment({
@@ -296,11 +312,50 @@ describe("opening a record", () => {
       environment: "sluiceway",
       sha: "abc1234",
       ticker: "alice",
-      hash: "h",
+      hash: "2b44350653e84a11",
     });
     // A record with no status is an open deployment (record 0035, slice 2.4).
     expect(opened).toEqual({ deployment: 1, unfinished: refused });
     expect(factOf(github, 1)?.kind).toBe("open");
+  });
+});
+
+describe("starting a record that waited for the deploy window (record 0104)", () => {
+  test("the new record of this run carries what the tick approved and waits for nothing", async () => {
+    const github = new FakeGitHub();
+    const waiting = github.seedDeployment({
+      task: "sluiceway:app:prod",
+      payload: {
+        v: 1,
+        hash: "1111111111111111",
+        ticker: "bob",
+        run: "4242",
+        drift: true,
+        fingerprint: "f65a69fe79dd93c3",
+        window: true,
+      },
+      status: { state: "queued" },
+    });
+
+    const started = await startQueuedRecord(writer(github), github.deployment(waiting.id), {
+      sha: "def5678",
+      environment: "sluiceway",
+    });
+
+    expect(started).toEqual({ deployment: 2, ticker: "bob" });
+    expect(github.deployment(2).payload).toEqual({
+      v: 1,
+      hash: "1111111111111111",
+      ticker: "bob",
+      run: RUN,
+      attempt: "2",
+      drift: true,
+      fingerprint: "f65a69fe79dd93c3",
+    });
+    expect(github.deployment(waiting.id).status).toMatchObject({
+      state: "inactive",
+      description: "started in a later run",
+    });
   });
 });
 
@@ -309,7 +364,13 @@ describe("starting a queued record in a later run (record 0056)", () => {
     const github = new FakeGitHub();
     const queued = github.seedDeployment({
       task: "sluiceway:app:prod",
-      payload: { v: 1, hash: "h1", ticker: "bob", run: "4242", behind: ["network:prod"] },
+      payload: {
+        v: 1,
+        hash: "1111111111111111",
+        ticker: "bob",
+        run: "4242",
+        behind: ["network:prod"],
+      },
       status: { state: "queued" },
     });
 
@@ -321,13 +382,88 @@ describe("starting a queued record in a later run (record 0056)", () => {
     expect(started).toEqual({ deployment: 2, ticker: "bob" });
     expect(github.deployment(2)).toMatchObject({
       sha: "def5678",
-      payload: { v: 1, hash: "h1", ticker: "bob", run: RUN, attempt: "2" },
+      payload: { v: 1, hash: "1111111111111111", ticker: "bob", run: RUN, attempt: "2" },
     });
     // The handed-on record is no deploy fact: the new one is the stack's.
     const facts = deployFacts([github.deployment(1), github.deployment(2)]);
     expect(facts.byStack.get("app:prod")).toMatchObject({ kind: "open", deployment: 2 });
     expect(facts.trail).toEqual([]);
     expect(github.deployment(1).status?.description).toBe(HANDED_ON_DESCRIPTION);
+  });
+
+  test("a queued drift repair starts as a drift repair (record 0091)", async () => {
+    const github = new FakeGitHub();
+    const queued = github.seedDeployment({
+      task: "sluiceway:app:prod",
+      payload: {
+        v: 1,
+        hash: "1111111111111111",
+        ticker: "bob",
+        run: "4242",
+        attempt: "3",
+        behind: ["network:prod"],
+        drift: true,
+      },
+      status: { state: "queued" },
+    });
+
+    await startQueuedRecord(writer(github), github.deployment(queued.id), {
+      sha: "def5678",
+      environment: "sluiceway",
+    });
+
+    // The attempt is this run's, not the queued record's.
+    expect(github.deployment(2).payload).toEqual({
+      v: 1,
+      hash: "1111111111111111",
+      ticker: "bob",
+      run: RUN,
+      attempt: "2",
+      drift: true,
+    });
+  });
+
+  test("a stack queued on merge starts on merge, with whoever merged (record 0095)", async () => {
+    const github = new FakeGitHub();
+    const queued = github.seedDeployment({
+      task: "sluiceway:app:prod",
+      payload: {
+        v: 1,
+        hash: "1111111111111111",
+        ticker: "alice",
+        run: "4242",
+        behind: ["network:prod"],
+        onMerge: true,
+      },
+      status: { state: "queued" },
+    });
+
+    await startQueuedRecord(writer(github), github.deployment(queued.id), {
+      sha: "def5678",
+      environment: "sluiceway",
+    });
+
+    expect(github.deployment(2).payload).toEqual({
+      v: 1,
+      hash: "1111111111111111",
+      ticker: "alice",
+      run: RUN,
+      attempt: "2",
+      onMerge: true,
+    });
+  });
+
+  test("a record the scan of a merge opens says onMerge", async () => {
+    const github = new FakeGitHub();
+    await openRecord(writer(github), {
+      stackId: "app:prod",
+      environment: "sluiceway",
+      sha: "abc1234",
+      ticker: "alice",
+      hash: "2b44350653e84a11",
+      onMerge: true,
+    });
+    expect(github.deployment(1).payload).toMatchObject({ ticker: "alice", onMerge: true });
   });
 
   test("a queued record this version cannot read starts nothing and costs nothing", async () => {
@@ -347,7 +483,7 @@ describe("claiming a record (records 0019, 0035 and 0056)", () => {
   function seed(github: FakeGitHub, payload: unknown, state?: string, task = "sluiceway:app:prod") {
     return github.seedDeployment({ task, payload, ...(state ? { status: { state } } : {}) }).id;
   }
-  const mine = { v: 1, hash: "h", ticker: "alice", run: RUN };
+  const mine = { v: 1, hash: "2b44350653e84a11", ticker: "alice", run: RUN };
 
   test("an open record of this run becomes `in_progress`, and is the job's", async () => {
     const github = new FakeGitHub();
@@ -357,7 +493,7 @@ describe("claiming a record (records 0019, 0035 and 0056)", () => {
     expect(await claimRecord(writer(github), id)).toEqual({
       kind: "claimed",
       stackId: "app:prod",
-      payload: { hash: "h", ticker: "alice", run: RUN },
+      payload: { hash: "2b44350653e84a11", ticker: "alice", run: RUN },
     });
     expect(written).toEqual([
       {
@@ -393,7 +529,7 @@ describe("claiming a record (records 0019, 0035 and 0056)", () => {
       "queued",
       "sluiceway:app:prod",
       { ...mine, behind: ["network:prod"] },
-      { kind: "queued", stackId: "app:prod", behind: ["network:prod"] },
+      { kind: "queued", stackId: "app:prod", behind: ["network:prod"], window: false },
     ],
   ])("a record that is %s is refused and gets no status", async (_, task, payload, claim) => {
     const github = new FakeGitHub();
@@ -433,7 +569,7 @@ describe("ending a record", () => {
     const github = new FakeGitHub();
     const id = github.seedDeployment({
       task: "sluiceway:app:prod",
-      payload: { v: 1, hash: "h", ticker: "alice", run: RUN },
+      payload: { v: 1, hash: "2b44350653e84a11", ticker: "alice", run: RUN },
     }).id;
     await endRecord(writer(github), id, end);
     if (fact === undefined) expect(factOf(github, id)).toBeUndefined();
@@ -462,7 +598,7 @@ describe("settling the open records of its own run (record 0035)", () => {
   }
   const of = (run: string, extra: object = {}) => ({
     v: 1,
-    hash: "h",
+    hash: "2b44350653e84a11",
     ticker: "alice",
     run,
     ...extra,

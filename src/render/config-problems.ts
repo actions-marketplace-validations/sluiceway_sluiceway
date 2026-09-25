@@ -1,4 +1,5 @@
 import type { CircleStep, ConfigIssue } from "../core/config.ts";
+import { WEEKDAYS } from "../core/deploy-window.ts";
 
 // The words of a config file that cannot be used. The rules that find what is
 // wrong are core/config.ts's, and they hand over facts. The wording is ours,
@@ -47,16 +48,38 @@ function problemWords(issue: ConfigIssue): string {
       return `expected a list of stack ids, or ${issue.auto}, got ${show(issue.value)}.`;
     case "not-a-phase":
       return `expected a phase name, or a mapping with from, got ${show(issue.value)}.`;
+    case "stack-cost-not-a-mapping":
+      return `expected a mapping, got ${show(issue.value)}. Write it as the top level has it: cost: { enabled: true }.`;
+    case "cost-threshold-without-enabled":
+      return "a threshold needs the estimate: set cost.enabled: true next to it, or on the stack's entry.";
+    case "not-an-amount":
+      return `expected an amount a month, 0 or more, got ${show(issue.value)}.`;
     case "stack-drift-not-a-mapping":
       return `expected a mapping, got ${show(issue.value)}. Write it as the top level has it: drift: { enabled: ${typeof issue.value === "boolean" ? issue.value : true} }.`;
     case "not-a-tick-rule":
       return `expected "write", "maintain", "admin" or a list of usernames, got ${show(issue.value)}.`;
+    case "not-a-deploy-trigger":
+      return `expected "on-tick" or "on-merge", got ${show(issue.value)}.`;
+    case "not-one-of":
+      return `expected one of ${issue.choices.map((choice) => `"${choice}"`).join(", ")}, got ${show(issue.value)}.`;
+    case "section-named-twice":
+      return `${show(issue.section)} is already dashboard.sections[${issue.first}]. Name each section once.`;
     case "not-an-event":
       return `${show(issue.value)} is not an event. The events are: ${issue.events.join(", ")}.`;
     case "not-a-phase-name":
       return `${show(issue.value)} is not a phase name. Use letters, digits, ".", "_" and "-".`;
     case "not-a-login":
       return `${show(issue.value)} is not a GitHub login. Write the login alone, without "@". An app is written with [bot], such as renovate[bot].`;
+    case "not-a-time-zone":
+      return `${show(issue.value)} is not a time zone. Write an IANA name, such as Europe/Brussels or America/New_York, or leave the key out for UTC.`;
+    case "not-a-weekday":
+      return `${show(issue.value)} is not a day of the week. Write one of: ${WEEKDAYS.join(", ")}.`;
+    case "no-days":
+      return "a window needs at least one day of the week.";
+    case "not-a-clock-time":
+      return `${show(issue.value)} is not a clock time. Write HH:MM on a 24 hour clock in quotes, such as "09:00" or "17:30". "24:00" is the end of the day.`;
+    case "window-ends-first":
+      return `the window ends at "${issue.to}", which is not after it starts at "${issue.from}". A window over midnight is two windows: one to "24:00" and one from "00:00" on the next day.`;
     case "a-team":
       return `${show(issue.value)} looks like a team. Teams are not supported yet. Use a level ("write", "maintain", "admin") or usernames.`;
     case "not-a-username":

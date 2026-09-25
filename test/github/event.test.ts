@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   editedIssue,
   mergedBeforeDispatch,
+  mergedBy,
   publicRepo,
+  pullRequestOf,
   readEventPayload,
   startedByPerson,
 } from "../../src/github/event.ts";
@@ -137,5 +139,94 @@ describe("the pull requests resolve merged before it dispatched the scan (slice 
     expect(mergedBeforeDispatch({ inputs: { "sluiceway-merged": "" }, sender: BOT })).toEqual([]);
     expect(mergedBeforeDispatch({ sender: BOT })).toEqual([]);
     expect(mergedBeforeDispatch(undefined)).toEqual([]);
+  });
+});
+
+// Record 0095: the merge a stack set to on-merge deploys on is a push to the
+// default branch, and the deploy is attributed to whoever pushed it: the
+// person who pressed merge, or an app that merges, as GitHub names them.
+describe("mergedBy", () => {
+  const push = (over: Record<string, unknown> = {}) => ({
+    ref: "refs/heads/main",
+    repository: { default_branch: "main" },
+    sender: { login: "alice", type: "User" },
+    ...over,
+  });
+
+  test("names the sender of a push to the default branch", () => {
+    expect(mergedBy("push", push())).toBe("alice");
+  });
+
+  test("an app that merges is named as GitHub names it", () => {
+    expect(mergedBy("push", push({ sender: { login: "renovate[bot]", type: "Bot" } }))).toBe(
+      "renovate[bot]",
+    );
+  });
+
+  test("is nobody for a push to another branch, another event, or a payload that does not say", () => {
+    expect(mergedBy("push", push({ ref: "refs/heads/feature" }))).toBeUndefined();
+    expect(mergedBy("push", push({ ref: "refs/tags/v1.0.0" }))).toBeUndefined();
+    expect(mergedBy("schedule", push())).toBeUndefined();
+    expect(mergedBy("workflow_dispatch", push())).toBeUndefined();
+    expect(mergedBy("push", push({ repository: {} }))).toBeUndefined();
+    expect(mergedBy("push", push({ sender: { login: "" } }))).toBeUndefined();
+    expect(mergedBy("push", undefined)).toBeUndefined();
+  });
+});
+
+// Record 0101: the pull request of a `pull_request` event, as the preview
+// needs it. A branch that lives in another repository is a fork, and so is
+// one whose repository the payload does not name.
+describe("the pull request of an event payload", () => {
+  const pullRequest = (overrides: Record<string, unknown> = {}) => ({
+    action: "synchronize",
+    number: 12,
+    pull_request: {
+      number: 12,
+      head: {
+        sha: "89abcdef89abcdef89abcdef89abcdef89abcdef",
+        repo: { full_name: "acme/infra" },
+      },
+      base: {
+        sha: "0123456789abcdef0123456789abcdef01234567",
+        ref: "main",
+        repo: { full_name: "acme/infra" },
+      },
+      ...overrides,
+    },
+    repository: { full_name: "acme/infra" },
+  });
+
+  test("is read into the preview's words", () => {
+    expect(pullRequestOf(pullRequest())).toEqual({
+      number: 12,
+      head: "89abcdef89abcdef89abcdef89abcdef89abcdef",
+      base: "0123456789abcdef0123456789abcdef01234567",
+      baseRef: "main",
+      fromFork: false,
+    });
+  });
+
+  test("a head in another repository is from a fork", () => {
+    expect(
+      pullRequestOf(
+        pullRequest({ head: { sha: "89abcdef", repo: { full_name: "mallory/infra" } } }),
+      )?.fromFork,
+    ).toBe(true);
+  });
+
+  test("a head whose repository the payload does not name is from a fork too", () => {
+    expect(pullRequestOf(pullRequest({ head: { sha: "89abcdef", repo: null } }))?.fromFork).toBe(
+      true,
+    );
+  });
+
+  test.each([
+    ["no payload", undefined],
+    ["a payload without a pull request", { ref: "refs/heads/main" }],
+    ["a pull request without a number", pullRequest({ number: "12" })],
+    ["a pull request without a head commit", pullRequest({ head: { repo: {} } })],
+  ])("%s holds no pull request", (_name, given) => {
+    expect(pullRequestOf(given)).toBeUndefined();
   });
 });

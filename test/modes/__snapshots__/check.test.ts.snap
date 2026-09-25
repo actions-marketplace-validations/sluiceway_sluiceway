@@ -46,6 +46,15 @@ No workflow in .github/workflows runs a scan yet.
 
 The check reads the workflow files as text. The repo's default token permissions, the rules of an environment and what GitHub itself validates live elsewhere and do not show here.
 
+### Credentials
+
+What each stack's own files say its tool will want from the job environment, as names, and which of them nothing in the workflow appears to provide. A program can read any variable, and a step that writes to the environment is opaque to the check, so this is a reading of the files and never a guarantee. No value is read or shown.
+
+| Stack | Needs | Any one of | Named in |
+|---|---|---|---|
+| app:prod | the Pulumi backend | PULUMI&#95;ACCESS&#95;TOKEN or PULUMI&#95;BACKEND&#95;URL | app/Pulumi.yaml |
+| network:prod | the Pulumi backend | PULUMI&#95;ACCESS&#95;TOKEN or PULUMI&#95;BACKEND&#95;URL | network/Pulumi.yaml |
+
 ### What a check cannot tell
 
 A check reads files only, so it cannot say that a preview will work: a stack that does not exist in the backend, a missing credential or a registry the runner cannot reach shows only in a scan.
@@ -59,7 +68,7 @@ exports[`a setup that is not valid the summary of a config that is not valid 1`]
 
 sluiceway.yaml is not valid.
 
-- unknown key &quot;tickerz&quot;. Known keys here: dashboard, tickers, deploys, ignore, scan, drift, attribution, phases, stacks, mergeAndDeploy, notify.
+- unknown key &quot;tickerz&quot;. Known keys here: dashboard, tickers, deploys, recordWriters, deployWindows, ignore, scan, drift, valueFingerprint, policies, cost, attribution, phases, stacks, discovery, mergeAndDeploy, notify.
 - drift: expected a mapping, got true.
 
 Fix these and run the check again. A scan stops at the same place.
@@ -87,7 +96,9 @@ Every file is claimed by a stack, covered by scan.unrelated, or one of the docs 
 |---|---|---|---|
 | .github/workflows/deploy-dashboard.yml | sluiceway | auto | at main, which is not a release |
 
-- .github/workflows/deploy-dashboard.yml, job sluiceway: sluiceway/sluiceway@main is not a release. A branch runs code that is not released yet. Use a major tag such as @v0 to follow every release, an exact tag such as @v0.8.0, or a full commit SHA.
+- Who may deploy: .github/workflows/deploy-dashboard.yml, job sluiceway names no GitHub Environment, so the tick rule alone decides who may deploy.
+
+- .github/workflows/deploy-dashboard.yml, job sluiceway: sluiceway/sluiceway<span>@</span>main is not a release. A branch runs code that is not released yet. Use a major tag such as <span>@</span>v0 to follow every release, an exact tag such as <span>@</span>v0.8.0, or a full commit SHA.
 - .github/workflows/deploy-dashboard.yml runs on pull&#95;request, and its Sluiceway job loads the credentials of your stacks before it. On pull&#95;request those steps would run code that is not on the default branch yet. Keep the check in a workflow of its own, which needs no credentials.
 - .github/workflows/deploy-dashboard.yml has no workflow&#95;dispatch trigger. The rescan box and settle start a scan through it.
 - .github/workflows/deploy-dashboard.yml, job sluiceway: the modes it runs need actions: write. A job's own permissions replace the workflow's.

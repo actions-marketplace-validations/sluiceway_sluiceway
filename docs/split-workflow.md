@@ -1,6 +1,8 @@
 # The split workflow
 
-[The workflow](workflow.md#the-workflow) is one job with one Sluiceway step that reads the event and does what it asks for. This page is the same loop as four jobs, one per mode, joined with `if:` and `needs:`. It is longer and has more to keep right, and the [check](workflow.md#check-your-setup) reads every part of it. Use it only for what one job cannot do ([what one job gives up](workflow.md#what-one-job-gives-up)):
+This page is the loop of [the workflow](workflow.md#the-workflow) as four jobs, one per mode, joined with `if:` and `needs:`.
+
+The workflow is one job with one Sluiceway step that reads the event and does what it asks for. The split workflow is longer and has more to keep right, and the [check](workflow.md#check-your-setup) reads every part of it. Use it only for what one job cannot do ([what one job gives up](workflow.md#what-one-job-gives-up)):
 
 - **Credentials that only read for the scan**, and the ones that write only in the deploy job.
 - **A GitHub Environment per stack**, with required reviewers who approve each deploy.
@@ -16,7 +18,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "0 6 * * *" # keep this: the daily full scan is part of the design
+    - cron: "0 6 * * *" # keep this: a push previews only some stacks, this scan all
   workflow_dispatch:
   issues:
     types: [edited]
@@ -43,13 +45,15 @@ jobs:
       # Install what your programs need, once, for example: npm ci
       # Load your credentials and your state backend settings into the job
       # environment here. Sluiceway passes the environment to the tool and
-      # never looks inside. Whatever loads a secret must also mask it.
+      # never looks inside. Whatever loads a secret must also mask it. Or
+      # name a file of NAME=value lines with the env-file input, and
+      # Sluiceway loads it for the tool and masks every value itself.
       - uses: sluiceway/sluiceway@v0
         with:
           mode: scan
 
   resolve:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'sluiceway'))
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'sluiceway'))
     runs-on: ubuntu-latest
     concurrency: sluiceway-resolve
     outputs:
@@ -102,14 +106,14 @@ What the parts are for:
 - **Every Sluiceway step names its mode.** A step without one is auto mode, which would do the work of all four jobs in one.
 - **The daily schedule stays.** A push previews only the stacks that claim a changed file. A program can read something that is not a file in the repo (another stack's output, a remote chart, a secret), and the daily full scan is what catches that.
 - **Never add `pull_request` or `merge_group` to this workflow.** A scan writes the dashboard from the code it checked out, and on a pull request or in a merge queue that is code that is not on the default branch yet. A merge queue ends in a push to the default branch, and the scan runs on that push.
-- **`actions: write`** lets the rescan box and `settle` start a scan, and lets a scan see whether a run is still on its way. `id-token: write` is not in the block. Add it only to the jobs that run the tool, and only if your credential step uses OIDC. A job's own `permissions:` replace the workflow's, so repeat the whole block there.
+- **`actions: write`** lets the rescan box, `settle` and an `apply` that a newer push stopped start a scan, and lets a scan see whether a run is still on its way. `id-token: write` is not in the block. Add it only to the jobs that run the tool, and only if your credential step uses OIDC. A job's own `permissions:` replace the workflow's, so repeat the whole block there.
 - **`sluiceway-scan`** makes scans run one at a time. A running scan finishes, and of the waiting ones only the newest runs.
 - **`sluiceway-resolve`** does the same for ticks. Any `resolve` run handles every ticked box it finds, so a replaced run loses nothing. Replaced runs show as cancelled in the Actions list. That is normal.
 - **`queue: max`** on `apply` keeps a waiting deploy from being cancelled by a newer one. Never add `cancel-in-progress` to this job.
-- **The `if:` on `resolve`** keeps an edit of an ordinary issue from starting a runner. If you change `dashboard.label`, change it here too. `resolve` also runs when the workflow is dispatched, for [stack dependencies](#stack-dependencies).
+- **The `if:` on `resolve`** keeps an edit of an ordinary issue from starting a runner. If you change `dashboard.label`, change it here too. `resolve` also runs when the workflow is dispatched, for [stack dependencies](#stack-dependencies), and on the schedule, for [deploy windows](#deploy-windows).
 - **`resolve` hands `apply` a deployment record.** It creates one record per ticked stack in GitHub's Deployments list and puts `{ stack, environment, deployment }` in `matrix`. `apply` deploys only while that record is still open. "Re-run failed jobs" therefore deploys nothing. To try again, tick the box again.
 - **`!cancelled()` on `apply`** lets the deploys that `resolve` started go ahead when `resolve` itself ended red, for example because one of several ticks could not be verified or the dashboard could not be written. Without a status check in its `if:`, GitHub skips a job whose `needs` failed. Every entry in `matrix` is a record that `resolve` created after it checked the ticker, so nothing else can get through here.
-- **`settle`** gives a deploy a result when its job was cancelled or rejected, so a row never stays "deploying" for ever. It touches only the deployment records of its own run. When it ended one it starts a full scan, which writes the row again with the failure line, so it needs `actions: write` as well. With `dependsOn`, it also starts the workflow again when a stack went out that others are queued behind ([stack dependencies](#stack-dependencies)).
+- **`settle`** gives a deploy a result when its job was cancelled or rejected, so a row never stays "deploying" for ever. It touches only the deployment records of its own run. When it ended one it puts the failure line on that row itself, within seconds and with no tool, and starts a full scan, which writes the row again with the fresh diff, so it needs `actions: write` as well. With `dependsOn`, it also starts the workflow again when a stack went out that others are queued behind ([stack dependencies](#stack-dependencies)).
 - **A deploy has no time limit of Sluiceway's** unless the `deploy-timeout` input gives it one. Set `timeout-minutes` on the `apply` job either way.
 - **`@v0`** follows every release from 0.1.0 until 1.0.0. A commit SHA stays the choice if you want to review every update ([Pin a commit](workflow.md#pin-a-commit)).
 
@@ -117,11 +121,12 @@ What the parts are for:
 
 Self-hosted runners work the same way: change `runs-on` for `scan` and `apply`. They need runner version 2.328.0 or newer, and ARM32 is not supported ([requirements](reference.md#requirements)).
 
-`resolve` and `settle` hold no infrastructure secrets. Keep them on hosted runners even when `scan` and `apply` are self-hosted, so a tick shows on the dashboard in seconds instead of waiting for a busy runner.
+> [!TIP]
+> `resolve` and `settle` hold no infrastructure secrets. Keep them on hosted runners even when `scan` and `apply` are self-hosted, so a tick shows on the dashboard in seconds instead of waiting for a busy runner.
 
 ## With GitHub Environments
 
-The tick is always a gate. Where your plan has environments, they make it a stronger one: store the credentials that can change things as secrets of an environment that is limited to the default branch, and add required reviewers where you have them. Give every stack an `environment` in `sluiceway.yaml`, and add this to the `apply` job:
+Every deploy starts from a tick. Where your plan has environments, they add to it: store the credentials that can change things as secrets of an environment that is limited to the default branch, and add required reviewers where you have them. Give every stack an `environment` in `sluiceway.yaml`, and add this to the `apply` job:
 
 ```yaml
     environment:
@@ -133,7 +138,7 @@ GitHub lists an environment for every name a deployment record uses, so your rep
 
 Without `deployment: false` GitHub records every deploy a second time. Custom deployment protection rules do not work with `deployment: false`. If you use them, leave it out and accept the second record. Sluiceway ignores it.
 
-[Security](security.md) has the three setups, from what every repo has to required reviewers, and what each one protects against.
+With required reviewers on the environment, the tick decides who may ask and the reviewers decide who may deploy, so a team whose deployers are fewer than its writers can leave `tickers` at its default ([a tick asks, an environment decides](security.md#a-tick-asks-an-environment-decides)). [Security](security.md) has the three setups, from what every repo has to required reviewers, and what each one protects against.
 
 ## Merge and deploy
 
@@ -190,6 +195,10 @@ on:
 
 A merge never skips a check: branch protection and required reviews apply to the merge as to any other, and the deploy after it goes through the fresh preview and the hash check like every tick. When the change moved between the scan after the merge and the deploy, nothing is deployed, the row shows the fresh diff and the ticker gets a comment.
 
+## Deploy on merge
+
+A stack set to [`deploy: on-merge`](configuration.md#stacksdeploy) is handed on by the scan of a push to the default branch, through the scan's own `matrix`, as the scan after a merge from the dashboard hands one on. So it needs the scan's `outputs:`, the `apply-merged` job and the `settle` above, and nothing more. `resolve` does not run on a push, and `apply-merged` needs only the scan. The job that takes the deploy is a copy of `apply`, so it names the same environment, and a deploy on merge waits for the environment's required reviewers as a tick does ([security](security.md#what-deploys-without-a-tick)). Without that job the check warns, and the stack never deploys on merge.
+
 ## Stack dependencies
 
 With [`dependsOn`](configuration.md#stacksdependson) or [`phases`](configuration.md#phases) in `sluiceway.yaml`, a stack waits for the stacks it depends on, and ticks in one chain deploy one layer per run. The workflow above already has what that needs, so keep these two parts when you change it:
@@ -197,5 +206,9 @@ With [`dependsOn`](configuration.md#stacksdependson) or [`phases`](configuration
 - **`resolve` runs on `workflow_dispatch`.** The `if:` of the `resolve` job lets a dispatched run through, not only an edit of the dashboard.
 - **`settle` has `actions: write`.** Once a stack went out that others are queued behind, `settle` starts the workflow again. The `resolve` job of that run starts the stacks that were queued behind it, the next layer.
 
-Without `dependsOn` or a phase, a dispatched `resolve` finds nothing to do in a few seconds and asks GitHub nothing.
+Without `dependsOn` or a phase, a dispatched `resolve` reads one page of deployment records per environment, for a [record a listed record writer opened for the run](what-sluiceway-writes.md#opening-a-record-yourself), finds nothing to do in a few seconds and asks GitHub nothing more.
+
+## Deploy windows
+
+With [`deployWindows`](configuration.md#deploywindowsdays) in `sluiceway.yaml`, a tick outside the window opens a record that waits for it, and the run that falls inside the window starts it. In this workflow that run is the scheduled one, so the `resolve` job above runs on `schedule` as well: its `if:` names the event. A `resolve` that the schedule starts and finds nothing waiting ends in a few seconds. Without `schedule` in that `if:`, a window opens only when the workflow is dispatched, by the rescan box, by `settle` after a layer went out, or after a merge from the dashboard.
 

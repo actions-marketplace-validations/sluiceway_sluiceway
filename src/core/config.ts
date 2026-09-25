@@ -2,6 +2,7 @@ import { LineCounter, parseDocument } from "yaml";
 import { z } from "zod";
 import { configErrorText, configProblemText } from "../render/config-problems.ts";
 import { LOOKBACK, NAMED_ON_A_ROW } from "./attribution.ts";
+import { type DeployWindow, WEEKDAYS, windowProblem } from "./deploy-window.ts";
 import { knownStacks } from "./discovery.ts";
 import { globMatcher } from "./glob.ts";
 import { DEFAULT_NOTIFY_EVENTS, NOTIFY_EVENTS } from "./notify.ts";
@@ -70,6 +71,38 @@ const stackPath = text
     return segments.length === 0 ? "." : segments.join("/");
   });
 
+// A clock time of a window, `HH:MM` on a 24 hour clock (record 0104), or
+// `24:00` for the end of the day. Its shape is a pattern so an editor sees
+// it too; `classify` gives it its own words.
+const CLOCK_TIME = /^(?:([01]\d|2[0-3]):[0-5]\d|24:00)$/;
+const clockTime = z.string().regex(CLOCK_TIME);
+
+// One deploy window (record 0104): days of the week, a start and an end, in
+// the dashboard zone. The end comes after the start, so a window over
+// midnight is written as two.
+const deployWindow = z
+  .strictObject({
+    days: z
+      .array(z.enum(WEEKDAYS))
+      .min(1)
+      .describe(
+        "The days of the week the window is on, in full and in lower case: monday to sunday.",
+      ),
+    from: clockTime.describe(
+      "When the window opens on each of those days, as HH:MM on a 24 hour clock in the dashboard zone.",
+    ),
+    to: clockTime.describe("When it closes, as HH:MM, after from. 24:00 is the end of the day."),
+  })
+  .superRefine((window, context) => {
+    const problem = windowProblem(window);
+    if (problem) refuse(context, problem);
+  });
+
+const deployWindows = z.array(deployWindow);
+// The paths of policy directories or files (record 0106): relative to the
+// repo root and inside it, like a stack's path, each once and as written.
+const policyPaths = z.array(stackPath).transform((paths) => [...new Set(paths)]);
+
 // An entry adds settings to stacks that discovery found. It never creates one,
 // except an entry that names a tool, which declares its stack (record 0053).
 const stackEntry = z
@@ -136,6 +169,21 @@ const stackEntry = z
         "The phase of these stacks, one of phases, or from: a key of the project file that names it. A stack in a phase depends on every stack in every earlier phase.",
       )
       .exactOptional(),
+    // When these stacks deploy (record 0095). A tick unless the repo says
+    // on-merge, for these stacks and no other.
+    deploy: z
+      .enum(["on-tick", "on-merge"])
+      .describe(
+        "When these stacks deploy. on-tick: when a person ticks the row, the default. on-merge: by themselves after the scan of a merge that found them pending, through the same fresh preview and hash check as a tick, attributed to whoever merged. A change that deletes or replaces something, drift, and a stack it depends on that waits for a tick still wait for a tick.",
+      )
+      .exactOptional(),
+    // The deploy windows of these stacks (record 0104), in place of the top
+    // level ones. An empty list lets them go out at any time.
+    deployWindows: deployWindows
+      .describe(
+        "When these stacks may go out, in place of the top level deployWindows. An empty list lets them go out at any time.",
+      )
+      .exactOptional(),
     // The drift check of these stacks, like the top level (record 0059).
     drift: z
       .strictObject({
@@ -146,6 +194,67 @@ const stackEntry = z
           ),
       })
       .describe("The drift check of these stacks. Default: the top level drift.")
+      .exactOptional(),
+    // The value fingerprint of these stacks, like the top level (record 0102).
+    valueFingerprint: z
+      .boolean()
+      .describe(
+        "Cover the values these stacks' rows do not show with a fingerprint, or not, whatever valueFingerprint at the top level says. Turn it off for a stack whose program makes a value that differs on every run. Default: the top level valueFingerprint.",
+      )
+      .exactOptional(),
+    // The env file of these stacks (record 0103): a file of NAME=value lines
+    // the modes that run the tool read for these stacks alone, on top of the
+    // job's environment and the step's own file. Relative to the checkout or
+    // absolute, like the `env-file` input, and one file on one line.
+    envFile: text
+      .refine((path) => !/[\r\n]/.test(path), {
+        message:
+          "envFile names one file on one line. To load several files, join them in a step before Sluiceway.",
+      })
+      .describe(
+        "A file of NAME=value lines, relative to the repo root or absolute, that the tool gets for these stacks alone, on top of the job environment and the step's env-file input. Every value is masked first. A file that cannot be loaded fails the preview of these stacks and no other.",
+      )
+      .exactOptional(),
+    // The policies of these stacks (record 0106), added to the top level ones.
+    policies: policyPaths
+      .describe(
+        "Directories or files of Rego policies these stacks are tested against, relative to the repo root, on top of the top level policies.",
+      )
+      .exactOptional(),
+    // A scan creates the stacks of the entry that the backend lacks (record
+    // 0107). Off unless an entry says so: a typo in a stack file must never
+    // create junk in a backend. Only a Pulumi stack has a stack to create, so
+    // discovery refuses the key on an entry with a tool.
+    createInBackend: z
+      .boolean()
+      .describe(
+        "true: a scan creates each Pulumi stack of the entry that the backend lacks, with pulumi stack init right before its first preview, and previews it as all creates. A deploy never creates a stack. Default: false.",
+      )
+      .exactOptional(),
+    // The cost estimate of these stacks (record 0105), like the top level,
+    // key by key: the switch, and the threshold that turns a stack set to
+    // on-merge back to a tick.
+    cost: z
+      .strictObject({
+        enabled: z
+          .boolean()
+          .describe(
+            "Estimate what a change of these stacks costs a month, or not, whatever cost.enabled at the top level says. Only an OpenTofu or Terraform stack gets an estimate.",
+          )
+          .exactOptional(),
+        threshold: z
+          .number()
+          .min(0)
+          .describe(
+            "The change to the monthly bill above which these stacks, when set to deploy on merge, wait for a tick instead, whatever cost.threshold at the top level says. In the currency of the estimate.",
+          )
+          .exactOptional(),
+      })
+      .superRefine((cost, context) => {
+        if (cost.threshold !== undefined && cost.enabled === false)
+          refuse(context, { kind: "cost-threshold-without-enabled" }, ["threshold"]);
+      })
+      .describe("The cost estimate of these stacks. Default: the top level cost.")
       .exactOptional(),
     // Named adapter options (records 0006, 0015). Only an entry with a tool
     // takes them, and its adapter checks their names and values (record 0053).
@@ -178,9 +287,41 @@ const stackEntries = z.array(stackEntry).superRefine((entries, context) => {
 // The shape of sluiceway.yaml (build-plan.md, section 3). Unknown keys are an
 // error, because a typo in "tickers" would change who can deploy. The JSON
 // schema in schema/ is generated from this.
+// An IANA name the runtime knows (record 0089): `Europe/Brussels`, `UTC`.
+// An offset such as `+02:00` is no name, even where the runtime takes one: it
+// has no daylight saving, so it would be wrong half the year.
+export function isTimeZone(name: string): boolean {
+  if (!/^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/.test(name)) return false;
+  if (/^(UTC|GMT)[+-]/i.test(name)) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // The longest Recently deployed list `dashboard.recentlyDeployed` allows
 // (record 0062).
 export const RECENTLY_DEPLOYED_MAX = 50;
+
+// The sections of the dashboard in the order of record 0063, the default of
+// `dashboard.sections` (record 0114).
+export const DASHBOARD_SECTIONS = [
+  "deploying",
+  "updates",
+  "pending",
+  "drifted",
+  "previewFailed",
+  "inSync",
+  "recentlyDeployed",
+] as const;
+export type DashboardSection = (typeof DASHBOARD_SECTIONS)[number];
+
+// The words of the layout keys that are not switches (record 0114).
+export const IN_SYNC_SECTION = ["fold", "list", "off"] as const;
+export const DESTROY_ALERT = ["destroys", "always"] as const;
+export const PENDING_DETAIL = ["full", "compact", "names"] as const;
 
 // The longest lookback and the most names `attribution` allows (record 0072).
 // Ten pages of the walk, and a line that still fits the size budget.
@@ -242,6 +383,89 @@ export const configSchema = z
             "How many deploys the Recently deployed list shows, newest first, failed ones included. 0 leaves the list out.",
           )
           .default(10),
+        // Slice 5.25 (record 0089). Checked against the zones the runtime
+        // knows, so a runtime without the zone refuses it here and never
+        // falls back to UTC in silence.
+        timeZone: z
+          .string()
+          .superRefine((value, context) => {
+            if (!isTimeZone(value)) refuse(context, { kind: "not-a-time-zone", value });
+          })
+          .describe(
+            "The IANA time zone every time on the dashboard is shown in, such as Europe/Brussels. A time that stands alone says its offset from UTC, and the line under Recently deployed names the zone. The markers keep UTC.",
+          )
+          .default("UTC"),
+        // Slice 5.51 (record 0114): the layout keys. Each default is the
+        // dashboard as it was before them, so no dashboard moves on upgrade.
+        // None of them changes a marker, and none can hide a destroy, a
+        // preview failure or a failure line.
+        sections: z
+          .array(z.enum(DASHBOARD_SECTIONS))
+          .superRefine((sections, context) => {
+            sections.forEach((section, index) => {
+              const first = sections.indexOf(section);
+              if (first !== index)
+                refuse(context, { kind: "section-named-twice", section, first }, [index]);
+            });
+          })
+          .describe(
+            "The order of the sections, top to bottom: deploying, updates, pending, drifted, previewFailed, inSync, recentlyDeployed. The ones named come first in this order, and a section left out follows in the default order. Leaving a section out does not hide it.",
+          )
+          .default([...DASHBOARD_SECTIONS]),
+        deployingSection: z
+          .boolean()
+          .describe(
+            "false takes the Deploying section off the page: its rows move to one closed fold at the end of the sections. The counts line and the header still count them.",
+          )
+          .default(true),
+        driftedSection: z
+          .boolean()
+          .describe(
+            "false takes the Drifted section off the page: its rows move to the closed fold at the end of the sections, with no repair all box. A drifted row with a failure line, or with a resource gone that the destroy alert names, stays open under the Drifted heading.",
+          )
+          .default(true),
+        inSyncSection: z
+          .enum(IN_SYNC_SECTION)
+          .describe(
+            "fold: the in sync rows in a fold, the default. list: every in sync row open. off: the section is off the page and its rows move to the closed fold at the end of the sections. A row with a failure line always stays open under the In sync heading.",
+          )
+          .default("fold"),
+        zeroCounts: z
+          .boolean()
+          .describe(
+            "false leaves a count of 0 out of the counts line. The pending count always stays.",
+          )
+          .default(true),
+        destroyAlert: z
+          .enum(DESTROY_ALERT)
+          .describe(
+            "destroys: the caution block above the pending rows is drawn when a pending stack deletes or replaces something, or a drifted stack has a resource gone. always: it is drawn on every body, and says so when nothing is destroyed. It cannot be turned off.",
+          )
+          .default("destroys"),
+        pendingDetail: z
+          .enum(PENDING_DETAIL)
+          .describe(
+            "How much a pending row shows under its first line. full: everything, the default. compact: the first line, and only the lines no setting hides (the failure line and every delete and replace line) and the ones that say why a row has no box or a tick would not go. names: the stack id and its counts, without the preview link, and only the lines no setting hides.",
+          )
+          .default("full"),
+        deployAll: z
+          .boolean()
+          .describe("false draws no deploy all box under the pending rows.")
+          .default(true),
+        repairAll: z
+          .boolean()
+          .describe("false draws no repair all box under the drifted rows.")
+          .default(true),
+        rescanBox: z
+          .boolean()
+          .describe(
+            "false draws no rescan box. A full scan is then started with Run workflow or the schedule.",
+          )
+          .default(true),
+        footer: z
+          .boolean()
+          .describe("false leaves out the small line with the version and the docs link.")
+          .default(true),
       })
       .prefault({}),
     tickers: tickers
@@ -256,6 +480,25 @@ export const configSchema = z
         "false stops every deploy: resolve clears every ticked box with a note and starts nothing, and apply ends a deploy that was already started before the tool runs. Scans go on.",
       )
       .default(true),
+    // Outside records (record 0109): the logins whose open deployment records
+    // a resolve that no issue edit started hands on. The writer is GitHub's
+    // creator of the record, never a name in the payload. Empty, the
+    // default, hands none on.
+    recordWriters: z
+      .array(author)
+      .transform((logins) => [...new Set(logins)])
+      .describe(
+        "Logins, an app as name[bot], whose open deployment records that name a dispatched or scheduled run are deployed by that run. The writer is who GitHub records as the creator of the record. Empty hands none on.",
+      )
+      .default([]),
+    // Deploy windows (record 0104): when a stack may go out, in the dashboard
+    // zone. A tick outside a window is not refused: its record waits for the
+    // window, and a run inside the window starts it. Empty is always.
+    deployWindows: deployWindows
+      .describe(
+        "When the stacks of this repo may go out, in the dashboard zone: a list of windows, each with days of the week, a start and an end. A tick outside every window waits for the next one to open, and so does a deploy on merge. Empty, the default, is any time. A stacks entry sets its own with stacks[].deployWindows.",
+      )
+      .default([]),
     ignore: z
       .array(ignoreEntry)
       .describe(
@@ -289,6 +532,47 @@ export const configSchema = z
           .default(false),
       })
       .prefault({}),
+    // The value fingerprint (record 0102): a tick covers the values a row does
+    // not show. On for every repo, off where a program makes a value that
+    // differs on every run.
+    valueFingerprint: z
+      .boolean()
+      .describe(
+        "Cover the values a row does not show with a fingerprint on the row, so a tick approves them too: a value that changed between the tick and the deploy stops the deploy, and the row says so without naming the value. A value the tool marks secret never reaches the fingerprint. Turn it off, here or per stack, where a program makes a value that differs on every run.",
+      )
+      .default(true),
+    // Policies on the preview (record 0106): Conftest runs the Rego policies
+    // in these paths over the preview document of every pending stack.
+    // Empty, and nothing runs.
+    policies: policyPaths
+      .describe(
+        "Directories or files of Rego policies, relative to the repo root, that every pending stack's preview is tested against with conftest, which the workflow installs. A policy that fails takes the box off the row until it passes and stops a deploy on merge. Empty runs nothing.",
+      )
+      .default([]),
+    // The cost estimate (record 0105): opt in, because it runs the Infracost
+    // CLI the workflow installs and that CLI asks a pricing API over the
+    // network. The threshold changes the gate of a stack set to on-merge.
+    cost: z
+      .strictObject({
+        enabled: z
+          .boolean()
+          .describe(
+            "Estimate what each pending change of an OpenTofu or Terraform stack costs a month, with the Infracost CLI the workflow installs, and show it on the row as a change to the monthly bill. The CLI sends resource types, regions and quantities to its pricing API, never a value or a credential. A Pulumi, Helm or Kubernetes manifests stack gets no estimate. An estimate that fails is a missing line, never a failed scan.",
+          )
+          .default(false),
+        threshold: z
+          .number()
+          .min(0)
+          .describe(
+            "The change to the monthly bill above which a stack set to deploy on merge waits for a tick instead, and its row says why. In the currency of the estimate, USD unless the workflow sets another. A change whose estimate failed waits too. Needs enabled: true.",
+          )
+          .exactOptional(),
+      })
+      .superRefine((cost, context) => {
+        if (cost.threshold !== undefined && !cost.enabled)
+          refuse(context, { kind: "cost-threshold-without-enabled" }, ["threshold"]);
+      })
+      .prefault({}),
     // Slice 5.5 (record 0072): how far attribution looks back, and how many
     // pull requests and direct pushes a row names before the rest is a count.
     attribution: z
@@ -319,8 +603,19 @@ export const configSchema = z
       )
       .default([]),
     stacks: stackEntries
-      .describe("Settings for stacks that discovery found. An entry never creates a stack.")
+      .describe(
+        "Settings for stacks that discovery found. An entry never creates a stack, except an entry with tool, which declares one.",
+      )
       .default([]),
+    // Record 0092: switches for what discovery finds from files without a
+    // `stacks` entry. Which switches exist is for the adapters to say, as with
+    // a tool and its options, so no tool word is written here (record 0006).
+    discovery: z
+      .record(z.string(), z.boolean())
+      .describe(
+        "Switches for what discovery finds on its own. See the configuration reference for the keys.",
+      )
+      .default({}),
     // Slice 4.2 (record 0054): one tick merges a routine pull request and
     // deploys its stack. Off while the list is empty.
     mergeAndDeploy: z
@@ -399,10 +694,21 @@ export type WhatIsWrong =
   | { kind: "not-a-depends-on"; value: unknown; auto: string }
   | { kind: "not-a-phase"; value: unknown }
   | { kind: "stack-drift-not-a-mapping"; value: unknown }
+  | { kind: "stack-cost-not-a-mapping"; value: unknown }
+  // A threshold gates a deploy on merge by the estimate, so it needs the
+  // estimate (record 0105).
+  | { kind: "cost-threshold-without-enabled" }
+  | { kind: "not-an-amount"; value: unknown }
   | { kind: "not-a-tick-rule"; value: unknown }
   | { kind: "not-an-event"; value: unknown; events: readonly string[] }
+  | { kind: "not-a-deploy-trigger"; value: unknown }
   | { kind: "not-a-phase-name"; value: unknown }
   | { kind: "not-a-login"; value: unknown }
+  | { kind: "not-a-time-zone"; value: unknown }
+  | { kind: "not-a-weekday"; value: unknown }
+  | { kind: "no-days" }
+  | { kind: "not-a-clock-time"; value: unknown }
+  | { kind: "window-ends-first"; from: string; to: string }
   | { kind: "a-team"; value: unknown }
   | { kind: "not-a-username"; value: unknown }
   | { kind: "no-tickers" }
@@ -415,6 +721,9 @@ export type WhatIsWrong =
   | { kind: "option-without-tool"; option: string }
   | { kind: "same-entry"; first: number; stackId: string }
   | { kind: "phase-named-twice"; phase: string; first: number }
+  | { kind: "section-named-twice"; section: string; first: number }
+  // A word a layout key does not take (record 0114).
+  | { kind: "not-one-of"; value: unknown; choices: readonly string[] }
   | { kind: "unknown-phase"; phase: string; phases: readonly string[] }
   // Against the stacks discovery found.
   | { kind: "id-covers-no-stack"; id: string }
@@ -557,6 +866,12 @@ function classify(issue: Issue, raw: unknown): Found[] {
   if (key === "names" && path[0] === "attribution") {
     return one({ kind: "not-a-count", counts: "names", min: 0, max: NAMES_MAX, value });
   }
+  if (key === "threshold" && path.includes("cost") && issue.code !== "custom") {
+    return one({ kind: "not-an-amount", value });
+  }
+  if (issue.code === "invalid_type" && key === "cost" && path[0] === "stacks") {
+    return one({ kind: "stack-cost-not-a-mapping", value });
+  }
   if (key === "previewTimeout" && issue.code !== "custom") {
     return one({ kind: "not-a-count", counts: "minutes", min: 1, value });
   }
@@ -580,13 +895,31 @@ function classify(issue: Issue, raw: unknown): Found[] {
   if (issue.code === "invalid_union") {
     return Array.isArray(value) ? inner(1) : one({ kind: "not-a-tick-rule", value });
   }
+  if (key === "deploy" && path[0] === "stacks") {
+    return one({ kind: "not-a-deploy-trigger", value });
+  }
+  // A deploy window (record 0104): its days, and its clock times when one is
+  // there but is not one. A missing time is a missing key like any other.
+  const inWindow = path.includes("deployWindows");
+  if (inWindow && issue.code === "invalid_value" && path.at(-2) === "days") {
+    return one({ kind: "not-a-weekday", value });
+  }
+  if (inWindow && (key === "from" || key === "to") && value !== undefined) {
+    return one({ kind: "not-a-clock-time", value });
+  }
+  if (issue.code === "invalid_value" && path[0] === "dashboard") {
+    return one({ kind: "not-one-of", value, choices: issue.values.map(String) });
+  }
   if (issue.code === "invalid_value" && path[0] === "notify") {
     return one({ kind: "not-an-event", value, events: NOTIFY_EVENTS });
   }
   if (issue.code === "invalid_format" && (path[0] === "phases" || key === "phase")) {
     return one({ kind: "not-a-phase-name", value });
   }
-  if (issue.code === "invalid_format" && path[0] === "mergeAndDeploy") {
+  if (
+    issue.code === "invalid_format" &&
+    (path[0] === "mergeAndDeploy" || path[0] === "recordWriters")
+  ) {
     return one({ kind: "not-a-login", value });
   }
   // The other pattern in the schema is the username.
@@ -598,7 +931,9 @@ function classify(issue: Issue, raw: unknown): Found[] {
   if (issue.code === "too_small") {
     return one(
       issue.origin === "array"
-        ? { kind: "no-tickers" }
+        ? key === "days"
+          ? { kind: "no-days" }
+          : { kind: "no-tickers" }
         : key === "path"
           ? { kind: "empty-stack-path" }
           : { kind: "empty" },
@@ -788,6 +1123,32 @@ export interface ConfiguredStack {
   // `drift.enabled` of its stack entries (record 0059). Absent when no entry
   // sets it, and the top level decides.
   drift?: boolean;
+  // `deploy: on-merge` of its stack entries (record 0095). Absent for a stack
+  // that deploys on a tick, the default, so nothing changes for a repo that
+  // does not use it.
+  deploy?: "on-merge";
+  // `valueFingerprint` of its stack entries (record 0102). Absent when no
+  // entry sets it, and the top level decides.
+  valueFingerprint?: boolean;
+  // `cost` of its stack entries (record 0105), key by key. Absent when no
+  // entry sets any of it, and the top level decides.
+  cost?: { enabled?: boolean; threshold?: number };
+  // `envFile` of its stack entries (record 0103): the file of NAME=value
+  // lines the tool gets for this stack, on top of the environment of the
+  // step. Absent for a stack that gets the environment of the step as it is.
+  envFile?: string;
+  // The deploy windows of the stack (record 0104): its entries' when one sets
+  // them, else the top level's. Absent when there is none, so a repo without
+  // windows is what it was.
+  deployWindows?: DeployWindow[];
+  // The policy paths of the stack (record 0106): the top level ones, then
+  // what its entries add, each once. Absent when the repo names none, so
+  // nothing changes for a repo without policies.
+  policies?: string[];
+  // `createInBackend: true` of its stack entries (record 0107): a scan
+  // creates the stack in the backend when it lacks it. Absent for a stack
+  // that no entry asks for, so nothing is created that nobody asked for.
+  createInBackend?: true;
 }
 
 const DEFAULT_ENVIRONMENT = "sluiceway";
@@ -811,14 +1172,31 @@ export function applyConfig(config: Config, found: Stack[]): ConfiguredStack[] {
   const dependencyIssues = checkDependsOn(config, found, stacks, phases.phaseOf);
   if (dependencyIssues.length > 0) throw new ConfigError(dependencyIssues);
   const derived = phaseDependencies(config.phases, phases.phaseOf);
+  const costIssues = checkCostThresholds(config, stacks);
+  if (costIssues.length > 0) throw new ConfigError(costIssues);
 
   return stacks.map((stack) => {
     const entries = entriesOf(config, stack);
     const id = stackId(stack);
     const previewTimeout = entries.findLast((entry) => entry.previewTimeout)?.previewTimeout;
     const drift = entries.findLast((entry) => entry.drift)?.drift?.enabled;
+    const deploy = entries.findLast((entry) => entry.deploy)?.deploy;
+    const valueFingerprint = entries.findLast(
+      (entry) => entry.valueFingerprint !== undefined,
+    )?.valueFingerprint;
+    const envFile = entries.findLast((entry) => entry.envFile !== undefined)?.envFile;
+    const windows =
+      entries.findLast((entry) => entry.deployWindows !== undefined)?.deployWindows ??
+      config.deployWindows;
+    const createInBackend = entries.findLast(
+      (entry) => entry.createInBackend !== undefined,
+    )?.createInBackend;
+    const cost = costOf(entries);
     const phase = phases.phaseOf.get(id);
     const from = phases.from.get(id);
+    const policies = [
+      ...new Set([...config.policies, ...entries.flatMap((entry) => entry.policies ?? [])]),
+    ];
     return {
       stack,
       environment:
@@ -833,8 +1211,49 @@ export function applyConfig(config: Config, found: Stack[]): ConfiguredStack[] {
         ? { dependsOnAuto: true as const }
         : {}),
       ...(drift === undefined ? {} : { drift }),
+      ...(deploy === "on-merge" ? { deploy } : {}),
+      ...(valueFingerprint === undefined ? {} : { valueFingerprint }),
+      ...(envFile === undefined ? {} : { envFile }),
+      ...(windows.length === 0 ? {} : { deployWindows: windows }),
+      ...(policies.length === 0 ? {} : { policies }),
+      ...(createInBackend === true ? { createInBackend } : {}),
+      ...(cost === undefined ? {} : { cost }),
     };
   });
+}
+
+// `cost` of the entries that cover a stack, key by key, the last entry that
+// sets a key winning (record 0105). Absent when none sets any.
+function costOf(entries: StackEntry[]): ConfiguredStack["cost"] | undefined {
+  const enabled = entries.findLast((entry) => entry.cost?.enabled !== undefined)?.cost?.enabled;
+  const threshold = entries.findLast((entry) => entry.cost?.threshold !== undefined)?.cost
+    ?.threshold;
+  if (enabled === undefined && threshold === undefined) return undefined;
+  return {
+    ...(enabled === undefined ? {} : { enabled }),
+    ...(threshold === undefined ? {} : { threshold }),
+  };
+}
+
+// A threshold on a stack whose estimate is off gates nothing, so it is
+// refused where it is written, once per entry (record 0105). The schema
+// catches the two keys in one mapping; this catches a threshold whose switch
+// is off at the top level or in another entry of the stack.
+function checkCostThresholds(config: Config, stacks: Stack[]): ConfigIssue[] {
+  const refused = new Set<number>();
+  for (const stack of stacks) {
+    const entries = entriesOf(config, stack);
+    const cost = costOf(entries);
+    if (cost?.threshold === undefined || (cost.enabled ?? config.cost.enabled)) continue;
+    const setBy = entries.findLast((entry) => entry.cost?.threshold !== undefined);
+    if (setBy !== undefined) refused.add(config.stacks.indexOf(setBy));
+  }
+  return [...refused]
+    .sort((a, b) => a - b)
+    .map((index) => ({
+      kind: "cost-threshold-without-enabled",
+      path: ["stacks", index, "cost", "threshold"],
+    }));
 }
 
 // The entries that cover a stack, the ones without a name first, so the

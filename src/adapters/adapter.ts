@@ -1,8 +1,17 @@
 import type { FileReference } from "../core/check.ts";
 import type { Config } from "../core/config.ts";
-import type { Change, Diff } from "../core/diff.ts";
-import type { DeployFailureReason, PreviewFailureReason } from "../core/failure-reason.ts";
+import type { CredentialNeed } from "../core/credentials.ts";
+import type { DiscoveryNote } from "../core/discovery.ts";
+import type { PreviewFailureReason } from "../core/failure-reason.ts";
 import type { Stack } from "../core/stack.ts";
+import type {
+  ApplyResult,
+  DriftResult,
+  PreviewResult,
+  SavedPlan,
+  ToolDeploy,
+  ToolDiffResult,
+} from "../core/tool-result.ts";
 import type { ProcessRunner } from "./process.ts";
 
 // What an adapter needs in order to start its tool. All of it is handed in, so
@@ -22,6 +31,16 @@ export interface PreviewOptions extends ToolContext {
   // `dashboard.showValues` (record 0052): the only paths whose values the
   // diff may hold. Absent or empty, it holds none.
   showValues?: readonly string[] | undefined;
+  // The value fingerprint (record 0102): read the values the row does not
+  // show and put their fingerprint on each change. Absent or false, no value
+  // is read for it and no change carries one.
+  valueFingerprint?: boolean | undefined;
+  // The cost estimate (record 0105): also work out what the change does to
+  // the monthly bill, from the plan this preview made, with the Infracost
+  // CLI. Only a scan asks, and only an adapter whose tool has a plan the CLI
+  // reads estimates. Absent or false, no estimate is made and nothing leaves
+  // the runner for one.
+  cost?: boolean | undefined;
   // Keep the plan this preview made, so a deploy can go out exactly as it
   // was hashed (record 0053). Only `apply` asks, and only an adapter whose
   // tool can save a plan keeps one. Whoever asked lets the plan go.
@@ -31,87 +50,25 @@ export interface PreviewOptions extends ToolContext {
   // Only a scan asks, and only for a stack with auto. An adapter whose tool
   // has no such references reads nothing.
   dependencies?: readonly Stack[] | undefined;
+  // The policies (record 0106): hand back the tool's own preview document,
+  // so the policy runner can test it. Only a scan with policies asks, and an
+  // adapter that was not asked hands back none.
+  keepDocument?: boolean | undefined;
 }
 
-// The stacks a preview read that its stack depends on (record 0059). Only
-// stack ids of the repo leave the adapter, never the name a program wrote.
-export interface ReadDependencies {
-  // In stack id order, each once, never the stack itself.
-  stackIds: string[];
-  // References that name no stack among the ones handed in, or more than one.
-  // Nothing waits on them.
-  elsewhere: number;
-}
-
-// A plan the tool saved, which only its own adapter can read. It lives inside
-// one `apply` job, is never written anywhere Sluiceway writes and never
-// travels between jobs (record 0053). A plan file holds values in plain text
-// (record 0021), so dispose removes it.
-export interface SavedPlan {
-  dispose(): Promise<void>;
-}
-
-export type PreviewResult = (
-  | {
-      ok: true;
-      diff: Diff;
-      // Only when the preview was asked to save its plan and the tool can.
-      plan?: SavedPlan;
-      // Only when the preview was asked to read them and the tool can.
-      dependencies?: ReadDependencies;
-    }
-  | {
-      ok: false;
-      reason: PreviewFailureReason;
-      // Sluiceway's own words on what went wrong, for the job log. They name a
-      // place in the tool's output and what was expected there, never what was
-      // found (record 0021).
-      detail: string[];
-    }
-) & {
-  // The tool's own words: its stderr and its diagnostics, with ANSI escapes
-  // stripped. They can quote a value, so they go to the job log and nowhere
-  // else (record 0022).
-  toolLog: string;
-};
-
-export type ApplyResult = (
-  | { ok: true }
-  // `moved`: the deploy did not start, because what it would deploy is no
-  // longer what the fresh preview saw, and the tool cannot hold it to that
-  // by itself. Only the Helm adapter gives it (record 0058).
-  | { ok: false; reason: Extract<DeployFailureReason, { kind: "tool-error" } | { kind: "moved" }> }
-) & {
-  // The tool's own words, with ANSI escapes stripped. They go to the job log
-  // and nowhere else (record 0022).
-  toolLog: string;
-};
-
-// What the drift check found (record 0055): the changes made to real
-// infrastructure outside the code, with the ops `update` (a property changed)
-// and `delete` (the object is gone). No value, like a diff (record 0021).
-export type DriftResult = (
-  | { ok: true; drift: Change[] }
-  | { ok: false; reason: PreviewFailureReason; detail: string[] }
-) & {
-  // The tool's own words, for the job log only (record 0022).
-  toolLog: string;
-};
-
-// One deploy that the tool's own history holds for a stack (record 0073): a
-// deploy that went out and changed something, by whoever ran it. It has no
-// field that could hold a value, a message or a person.
-export interface ToolDeploy {
-  kind: "deploy" | "destroy";
-  // When it ended, by the clock of the machine that ran it, in whole seconds.
-  endedAt: Date;
-  // The commit that was checked out, and whether the tree held changes that
-  // are in no commit. Absent when the tool recorded none.
-  commit?: { sha: string; dirty: boolean };
-  // The GitHub Actions run it ran in, when it ran in one. Sluiceway's own
-  // deploys are told apart by it.
-  runId?: string;
-}
+// What a preview, a deploy, the drift check, the tool's own diff and one
+// entry of the tool's history come to (issue 245). Core and render read
+// them, so core/ holds them; an adapter fills them in.
+export type {
+  ApplyResult,
+  DriftResult,
+  PreviewDocument,
+  PreviewResult,
+  ReadDependencies,
+  SavedPlan,
+  ToolDeploy,
+  ToolDiffResult,
+} from "../core/tool-result.ts";
 
 export interface HistoryOptions extends ToolContext {
   timeoutMinutes: number;
@@ -133,19 +90,6 @@ export interface ApplyOptions {
   repairDrift?: boolean | undefined;
 }
 
-// The tool's own diff (record 0048): what a deploy would change as the tool
-// displays it, values included, except the ones the tool holds as secret. It
-// exists only for the job log, in the group of its stack, and only when a repo
-// turned `scan.logDiff` on. Nothing else may take `text`: not a row, the
-// summary, the result file, an annotation or a deployment record.
-export type ToolDiffResult = (
-  | { ok: true; text: string }
-  | { ok: false; reason: PreviewFailureReason }
-) & {
-  // The tool's other words, with ANSI escapes stripped (record 0022).
-  toolLog: string;
-};
-
 // A step a tool needs before it can preview some stacks, such as OpenTofu's
 // init of a directory. Modes run the preparations one at a time and before
 // any preview, never side by side, because inits run side by side corrupted
@@ -161,7 +105,19 @@ export type PrepareResult = ({ ok: true } | { ok: false; reason: PreviewFailureR
   // The tool's own words, with ANSI escapes stripped. They go to the job log
   // and nowhere else (record 0022).
   toolLog: string;
+  // Sluiceway's own words on what the preparation did, for its group in the
+  // job log: a stack that was created, one that was there (record 0107).
+  // Never a word of the tool's.
+  detail?: string[];
 };
+
+export interface PrepareOptions {
+  // `createInBackend: true` (record 0107): the stacks among the ones handed
+  // in whose entry asks that a scan create them in the backend when it lacks
+  // them. Only a scan hands them in: a deploy never creates a stack. An
+  // adapter whose tool has nothing to create reads nothing of it.
+  createInBackend?: readonly Stack[] | undefined;
+}
 
 // The tool is missing, too old, or did not say which version it is. The scan
 // cannot do its work, so this fails the job (records 0001 and 0012). The
@@ -209,10 +165,22 @@ export interface Adapter {
   // from `stacks` entries that name the tool (record 0053).
   discover(root: string, config: Config): Promise<Stack[]>;
 
+  // What discovery made of each directory it looks at without a `stacks`
+  // entry, for the check to show (record 0092). Files only, like discover. An
+  // adapter that finds only what is certain, such as Pulumi stacks, leaves it
+  // out.
+  explainDiscovery?(root: string, config: Config): Promise<DiscoveryNote[]>;
+
   // The files and directories of the repo that the stack's own files name as
   // read (record 0074), for the check to suggest as inputs. It reads files
   // only and never starts the tool. An adapter that cannot tell leaves it out.
   readsFiles?(root: string, stack: Stack): Promise<FileReference[]>;
+
+  // What the stack's own files say its tool will want from the job
+  // environment (record 0099), for the check to say which of it the workflow
+  // provides. Names only, read from files: it never starts the tool and never
+  // reads the environment. An adapter that cannot tell leaves it out.
+  credentialNeeds?(root: string, stack: Stack): Promise<CredentialNeed[]>;
 
   // Asks the backend which of these stacks it holds (record 0074). Only the
   // check with backend: true calls it, with the credentials of its job. It
@@ -227,7 +195,7 @@ export interface Adapter {
 
   // The steps these stacks need before their previews, in the order to run
   // them. Absent or empty, a preview needs nothing first.
-  prepare?(stacks: Stack[]): Preparation[];
+  prepare?(stacks: Stack[], options?: PrepareOptions): Preparation[];
 
   // Works out what deploying the stack would change. It always resolves: a
   // preview that gave no diff is a preview failure with a reason, so one

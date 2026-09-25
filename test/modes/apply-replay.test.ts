@@ -90,6 +90,7 @@ async function deployed(
   const outcome = apply({
     root,
     env: { PATH: "/usr/bin", INPUT_GITHUB_TOKEN: "ghs_not_for_the_tool" },
+    mask: () => {},
     adapter,
     run: applyRun ? applyRun(root) : runs.run,
     github,
@@ -102,6 +103,7 @@ async function deployed(
     sha: SHA,
     actionRef: ACTION_REF,
     deploymentId: deployment,
+    workflow: { file: "sluiceway.yml", ref: "refs/heads/main" },
     outputs,
   });
   return { outcome, github, log, deployment, runs, root, outputs };

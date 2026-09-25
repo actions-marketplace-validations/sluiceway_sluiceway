@@ -8,8 +8,10 @@ import type { NotifyTargets } from "../notify/send.ts";
 export type GetInput = (name: string) => string;
 
 export interface ScanInputs {
-  // The size of the preview pool (record 0012).
-  concurrency: number;
+  // The size of the preview pool (record 0012), or undefined when the
+  // workflow does not set it, and the pool follows the cores of the machine
+  // (record 0085).
+  concurrency: number | undefined;
   previewTimeoutMinutes: number;
   // The workflow's own token (record 0017).
   token: string;
@@ -19,8 +21,23 @@ export interface ScanInputs {
   strict: boolean;
 }
 
-function wholeNumber(getInput: GetInput, name: string, hint = ""): number {
+// The defaults of action.yml, which GitHub applies only when a workflow leaves
+// an input out. A workflow that passes one through from its own inputs sends
+// "" instead, and that means the default too (record 0084). A test holds
+// these to action.yml. `concurrency` has none: without it the pool follows the
+// cores of the machine (record 0085).
+const DEFAULT_PREVIEW_TIMEOUT_MINUTES = 10;
+
+// An empty input, or one of white space only, is `fallback`. Anything else
+// must be a whole number of 1 or more.
+function wholeNumber<Fallback extends number | undefined>(
+  getInput: GetInput,
+  name: string,
+  fallback: Fallback,
+  hint = "",
+): number | Fallback {
   const text = getInput(name).trim();
+  if (text === "") return fallback;
   if (!/^[1-9]\d*$/.test(text)) {
     throw new Error(
       `The "${name}" input must be a whole number of 1 or more, and it is ${JSON.stringify(text)}.${hint}`,
@@ -32,7 +49,9 @@ function wholeNumber(getInput: GetInput, name: string, hint = ""): number {
 // The one input every mode reads: the workflow's own token (record 0017).
 export function readToken(getInput: GetInput): string {
   const token = getInput("github-token");
-  if (token === "") {
+  // It has no default to fall back to: action.yml's is the run's own token,
+  // and an empty one can only be a workflow that set it so (record 0084).
+  if (token.trim() === "") {
     throw new Error(
       'The "github-token" input is empty. Leave it out of the workflow, so it takes the GITHUB_TOKEN of the run.',
     );
@@ -40,12 +59,15 @@ export function readToken(getInput: GetInput): string {
   return token;
 }
 
+const MINUTES = " It is a number of whole minutes.";
+
 export function readScanInputs(getInput: GetInput): ScanInputs {
-  const concurrency = wholeNumber(getInput, "concurrency");
+  const concurrency = wholeNumber(getInput, "concurrency", undefined);
   const previewTimeoutMinutes = wholeNumber(
     getInput,
     "preview-timeout",
-    " It is a number of whole minutes.",
+    DEFAULT_PREVIEW_TIMEOUT_MINUTES,
+    MINUTES,
   );
   return {
     concurrency,
@@ -97,22 +119,21 @@ export function readApplyInputs(getInput: GetInput): ApplyInputs {
   const previewTimeoutMinutes = wholeNumber(
     getInput,
     "preview-timeout",
-    " It is a number of whole minutes.",
+    DEFAULT_PREVIEW_TIMEOUT_MINUTES,
+    MINUTES,
   );
   return {
     deploymentId: Number(text),
     previewTimeoutMinutes,
     token: readToken(getInput),
     dryRun: readBoolean(getInput, "dry-run"),
-    deployTimeoutMinutes:
-      getInput("deploy-timeout").trim() === ""
-        ? undefined
-        : wholeNumber(getInput, "deploy-timeout", " It is a number of whole minutes."),
+    deployTimeoutMinutes: wholeNumber(getInput, "deploy-timeout", undefined, MINUTES),
   };
 }
 
 // The words GitHub's own boolean inputs use. Anything else is refused, so a
-// typo never deploys when a rehearsal was meant (record 0051).
+// typo never deploys when a rehearsal was meant (record 0051). Empty is the
+// default of every one of them, false (record 0084).
 function readBoolean(getInput: GetInput, name: string): boolean {
   const text = getInput(name).trim();
   if (text === "" || text === "false") return false;
@@ -128,6 +149,18 @@ export function readBackend(getInput: GetInput): boolean {
   if (text === "" || text === "false") return false;
   if (text === "true") return true;
   throw new Error(`The "backend" input is true or false, and it is ${JSON.stringify(text)}.`);
+}
+
+// `pull-request-preview: true` makes the check preview the stacks the pull
+// request claims, with the credentials of its job (record 0101). Off by
+// default, and read the way backend is, so a typo never starts a tool.
+export function readPullRequestPreview(getInput: GetInput): boolean {
+  const text = getInput("pull-request-preview").trim();
+  if (text === "" || text === "false") return false;
+  if (text === "true") return true;
+  throw new Error(
+    `The "pull-request-preview" input is true or false, and it is ${JSON.stringify(text)}.`,
+  );
 }
 
 // `deployment-id` is an error in every mode but apply (record 0035), so a
@@ -148,6 +181,11 @@ export function refuseDeploymentId(mode: string, getInput: GetInput): void {
   const auto = mode === "auto";
   if (!auto && mode !== "check" && getInput("backend").trim() === "true") {
     throw only("backend", "check");
+  }
+  // `pull-request-preview: true` belongs to the check the same way (record
+  // 0101).
+  if (!auto && mode !== "check" && getInput("pull-request-preview").trim() === "true") {
+    throw only("pull-request-preview", "check");
   }
   if (!auto && mode !== "scan" && getInput("strict").trim() === "true") {
     throw only("strict", "scan");
@@ -232,4 +270,42 @@ export function readNotifyTargets(getInput: GetInput): NotifyInputs {
 export function unusedNotifyInputs(mode: string, getInput: GetInput): string[] {
   if (mode === "auto" || mode === "scan" || mode === "resolve" || mode === "apply") return [];
   return NOTIFY_INPUTS.filter((name) => getInput(name).trim() !== "");
+}
+
+// The env file (record 0100): one file of NAME=value lines that the modes
+// which run the tool read for the tool's process. Empty by default. It names
+// one file: a second line would be a second file, and the order two files
+// load in, and which wins on a name both set, is a question the strict
+// format refuses inside one file too.
+export function readEnvFileInput(getInput: GetInput): string | undefined {
+  const text = getInput("env-file").trim();
+  if (text === "") return undefined;
+  if (/[\r\n]/.test(text)) {
+    throw new Error(
+      'The "env-file" input names one file, and it holds more than one line. To load several files, join them in a step before Sluiceway.',
+    );
+  }
+  return text;
+}
+
+// Only the modes that run the tool open the file (record 0014, promise 4):
+// scan and apply, auto which runs them, and the check with backend: true.
+// Anywhere else the input is a mistake worth a warning, never an error, and
+// the file is never opened.
+export function unusedEnvFileInput(mode: string, getInput: GetInput): string | undefined {
+  if (getInput("env-file").trim() === "") return undefined;
+  if (mode === "auto" || mode === "scan" || mode === "apply") return undefined;
+  // The check runs the tool with backend: true (record 0100) and with
+  // pull-request-preview: true (record 0101).
+  if (
+    mode === "check" &&
+    (getInput("backend").trim() === "true" || getInput("pull-request-preview").trim() === "true")
+  ) {
+    return undefined;
+  }
+  const where =
+    mode === "check"
+      ? "check mode without backend: true or pull-request-preview: true"
+      : `${mode} mode`;
+  return `"env-file" is set on a step in ${where}, which never runs the tool, so the file is not read. Only scan, apply and the check with backend: true or pull-request-preview: true do. Take it out of this step.`;
 }

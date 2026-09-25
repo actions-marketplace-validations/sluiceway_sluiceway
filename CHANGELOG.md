@@ -1,5 +1,183 @@
 # Changelog
 
+## [0.43.0](https://github.com/sluiceway/sluiceway/compare/v0.42.2...v0.43.0) (2026-09-25)
+
+
+### Features
+
+* dashboard layout keys for section order, detail and boxes ([#278](https://github.com/sluiceway/sluiceway/issues/278)) ([da2279f](https://github.com/sluiceway/sluiceway/commit/da2279f58b98cd3b91a258bcd71c2804fb376022))
+
+## [0.42.2](https://github.com/sluiceway/sluiceway/compare/v0.42.1...v0.42.2) (2026-09-25)
+
+
+### Bug Fixes
+
+* a #, an @ or a web address in a name stays plain text ([#273](https://github.com/sluiceway/sluiceway/issues/273)) ([9921f65](https://github.com/sluiceway/sluiceway/commit/9921f6551f8797f5a540e48731f39f0f16da3f92))
+* a cancelled deploy's failure line reaches its row in seconds ([#275](https://github.com/sluiceway/sluiceway/issues/275)) ([72f8307](https://github.com/sluiceway/sluiceway/commit/72f8307a5b1e97b72b8ce76f37cdff81220b223e))
+* a push after the tick is refused as moved, never shown in sync ([#274](https://github.com/sluiceway/sluiceway/issues/274)) ([f324984](https://github.com/sluiceway/sluiceway/commit/f3249848b00565d043467dac22087b2eee891546))
+
+## [0.42.1](https://github.com/sluiceway/sluiceway/compare/v0.42.0...v0.42.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* every GitHub call names the API version 2026-03-10 ([#268](https://github.com/sluiceway/sluiceway/issues/268)) ([5b177cf](https://github.com/sluiceway/sluiceway/commit/5b177cff8e0c0e95f5d880e4ad80b8cc74882c9e))
+
+## [0.42.0](https://github.com/sluiceway/sluiceway/compare/v0.41.0...v0.42.0) (2026-09-25)
+
+
+### Features
+
+* the row marker carries its counts and what a queued row waits behind, and the example is data ([#264](https://github.com/sluiceway/sluiceway/issues/264)) ([1cbfc30](https://github.com/sluiceway/sluiceway/commit/1cbfc300af2bc4ddb63442c45f9af5486214ad09))
+
+## [0.41.0](https://github.com/sluiceway/sluiceway/compare/v0.40.0...v0.41.0) (2026-09-25)
+
+
+### Features
+
+* a dispatched run deploys the records another writer opened for it ([#260](https://github.com/sluiceway/sluiceway/issues/260)) ([73e4d00](https://github.com/sluiceway/sluiceway/commit/73e4d00d82373b98a268918fd61cec867dfd4def))
+
+## [0.40.0](https://github.com/sluiceway/sluiceway/compare/v0.39.0...v0.40.0) (2026-09-25)
+
+
+### Features
+
+* the dashboard says a scan is running from its first write ([#261](https://github.com/sluiceway/sluiceway/issues/261)) ([b1791a6](https://github.com/sluiceway/sluiceway/commit/b1791a669aff82c51b4191e4bea7bda4c8a17a88))
+
+## [0.39.0](https://github.com/sluiceway/sluiceway/compare/v0.38.0...v0.39.0) (2026-09-25)
+
+
+### Features
+
+* a row shows what a change costs, and a threshold demands a tick ([#255](https://github.com/sluiceway/sluiceway/issues/255)) ([1667591](https://github.com/sluiceway/sluiceway/commit/1667591a0cae2a48047a00ba99cadb7e5b12d9db))
+
+## [0.38.0](https://github.com/sluiceway/sluiceway/compare/v0.37.0...v0.38.0) (2026-09-24)
+
+
+### Features
+
+* a pulumi stack the backend lacks is created by the scan, opt in ([#254](https://github.com/sluiceway/sluiceway/issues/254)) ([97d8724](https://github.com/sluiceway/sluiceway/commit/97d87244ac3a92b404f82b1056dd5e1c1b06bf55))
+
+## [0.37.0](https://github.com/sluiceway/sluiceway/compare/v0.36.0...v0.37.0) (2026-09-24)
+
+
+### Features
+
+* policies on the preview, a failed one takes the box off the row ([#250](https://github.com/sluiceway/sluiceway/issues/250)) ([fb35ffa](https://github.com/sluiceway/sluiceway/commit/fb35ffa229e07cc2becd144e3226b3828f147d45))
+
+## [0.36.0](https://github.com/sluiceway/sluiceway/compare/v0.35.0...v0.36.0) (2026-09-24)
+
+
+### Features
+
+* a tick outside the deploy window waits for it instead of going out ([#249](https://github.com/sluiceway/sluiceway/issues/249)) ([1f3d4db](https://github.com/sluiceway/sluiceway/commit/1f3d4db95a9e9379ec7ff698547acf69ebcab7e3))
+
+## [0.35.0](https://github.com/sluiceway/sluiceway/compare/v0.34.0...v0.35.0) (2026-09-24)
+
+
+### Features
+
+* a stack names the env file its tool gets ([#246](https://github.com/sluiceway/sluiceway/issues/246)) ([b2a2f2d](https://github.com/sluiceway/sluiceway/commit/b2a2f2d0a6ee01d7037eed3b179bf2460cff2425))
+
+## [0.34.0](https://github.com/sluiceway/sluiceway/compare/v0.33.0...v0.34.0) (2026-09-24)
+
+
+### Features
+
+* a tick covers the values a row does not show ([#242](https://github.com/sluiceway/sluiceway/issues/242)) ([04d13ff](https://github.com/sluiceway/sluiceway/commit/04d13ffb01645731b60443ad5b08cccbca37e17e))
+
+## [0.33.0](https://github.com/sluiceway/sluiceway/compare/v0.32.0...v0.33.0) (2026-09-24)
+
+
+### Features
+
+* preview a pull request for its reviewer, never deploying from it ([#238](https://github.com/sluiceway/sluiceway/issues/238)) ([0384221](https://github.com/sluiceway/sluiceway/commit/0384221e595042ff0b81fba81c1da6a1c9623c01))
+
+## [0.32.0](https://github.com/sluiceway/sluiceway/compare/v0.31.0...v0.32.0) (2026-09-24)
+
+
+### Features
+
+* env-file loads the file a step names for the tool, masked first ([#237](https://github.com/sluiceway/sluiceway/issues/237)) ([377a853](https://github.com/sluiceway/sluiceway/commit/377a85315fcb8aff88822c305632098a0e483291))
+
+## [0.31.0](https://github.com/sluiceway/sluiceway/compare/v0.30.0...v0.31.0) (2026-09-24)
+
+
+### Features
+
+* the check says which credentials each stack needs ([#239](https://github.com/sluiceway/sluiceway/issues/239)) ([49c23b3](https://github.com/sluiceway/sluiceway/commit/49c23b3cafe71d34e7dcce67e4210c13ea68b7da))
+
+## [0.30.0](https://github.com/sluiceway/sluiceway/compare/v0.29.0...v0.30.0) (2026-09-24)
+
+
+### Features
+
+* the payload of a deployment record has a published schema, and the result file says where its one kind of value may be ([24cf141](https://github.com/sluiceway/sluiceway/commit/24cf141e921cdb001bfe341e3e9fa1fb1d370cf2))
+
+## [0.29.0](https://github.com/sluiceway/sluiceway/compare/v0.28.0...v0.29.0) (2026-09-23)
+
+
+### Features
+
+* a record opened on merge says so, and a queued one keeps it ([323da17](https://github.com/sluiceway/sluiceway/commit/323da17482816cf436814a935baed8559b766490))
+* decide which stacks set to on-merge deploy after a scan, and which wait for a tick ([f5edfad](https://github.com/sluiceway/sluiceway/commit/f5edfad80f8949a3f064852f5837c922831755da))
+* rows, the trail and apply say merged by for a deploy on merge ([5c11366](https://github.com/sluiceway/sluiceway/commit/5c11366e8a26028baf9f576e2fef3c7995886c08))
+* stacks[].deploy, on-tick by default or on-merge ([ccc08a2](https://github.com/sluiceway/sluiceway/commit/ccc08a2941e790904610356aee712e18cb0debbc))
+* the check lists stacks that deploy on merge and the apply job they need ([212ba7e](https://github.com/sluiceway/sluiceway/commit/212ba7e6e7b6e8f2e1b3dd8584340741a62cc9d6))
+* the scan of a merge hands stacks set to on-merge to apply ([5a69960](https://github.com/sluiceway/sluiceway/commit/5a6996041c92ab956a93d64d0c256e0e28602ae3))
+
+## [0.28.0](https://github.com/sluiceway/sluiceway/compare/v0.27.0...v0.28.0) (2026-09-23)
+
+
+### Features
+
+* a run that waits long for a runner gets a line under the scan line ([bf12184](https://github.com/sluiceway/sluiceway/commit/bf12184d6de238f781052826f03637063390a5b0))
+* **apply:** a drift repair that found nothing to repair says drift gone ([3d6ac0a](https://github.com/sluiceway/sluiceway/commit/3d6ac0aaeac99c98090dbcba5269ad29909fdc43))
+* dashboard.timeZone in sluiceway.yaml, checked against the runtime's zones ([362f28a](https://github.com/sluiceway/sluiceway/commit/362f28a110b933719959f992e7de267d68bfda7c))
+* every scan looks for a run of its workflow that waits for a runner ([c4a9021](https://github.com/sluiceway/sluiceway/commit/c4a90216a8cd9b7fca12331db505fe39447fcfab))
+* find OpenTofu and Terraform root modules from the repo's own files ([de4b22c](https://github.com/sluiceway/sluiceway/commit/de4b22cf725a0e3a94a75de0bef3a3621bbf16b8))
+* init --force writes the workflow again, and init names npx sluiceway check ([583bf22](https://github.com/sluiceway/sluiceway/commit/583bf22cb8508a75a72bebe7754318b5bc58cacb))
+* render a time in a named zone, with its offset when it stands alone ([46c3b5e](https://github.com/sluiceway/sluiceway/commit/46c3b5ecfa0f976e39ceb4c79bfcea868d2b5f5f))
+* **resolve:** one line in the job log says where resolve's time went ([f34b01a](https://github.com/sluiceway/sluiceway/commit/f34b01aca0803430e4a035770f50d15461e07e47))
+* the body and its rows take the dashboard's zone ([110b171](https://github.com/sluiceway/sluiceway/commit/110b171a0ac11585539a42dc7b4843dabad59784))
+* the check lists what root module discovery found and left out, and why ([8a1b75a](https://github.com/sluiceway/sluiceway/commit/8a1b75a111d5d75cde3ad04df50b6b1c101df632))
+* the check reads the environment a Sluiceway job names ([2a6406d](https://github.com/sluiceway/sluiceway/commit/2a6406d4213327b1d55a531957e6302f18cf8fbe))
+* the check says who decides who may deploy, for each job that deploys ([0f5fd30](https://github.com/sluiceway/sluiceway/commit/0f5fd309b2bf7695368e4187e2c49ea9e97972ff))
+* the command line, sluiceway init and sluiceway check ([d6aed35](https://github.com/sluiceway/sluiceway/commit/d6aed35195d4b47ea3c8ecfa7dc27c69c4591c52))
+* the port lists the queued runs of a workflow ([548dfd0](https://github.com/sluiceway/sluiceway/commit/548dfd0f2a7632ffd6279b3789280d5ddf432211))
+
+
+### Bug Fixes
+
+* README example breaks its lines, header signs get room, queued rows stand still ([#217](https://github.com/sluiceway/sluiceway/issues/217)) ([1093c22](https://github.com/sluiceway/sluiceway/commit/1093c223648ee2abcbd9c33d259cb56eade61eec))
+* **resolve:** a queued drift repair is started as a drift repair ([23666c3](https://github.com/sluiceway/sluiceway/commit/23666c3f80132a984360bb32276984731f24e2d2))
+* the check job lists the root modules discovery found and left out ([e7929e2](https://github.com/sluiceway/sluiceway/commit/e7929e2a0331e566fb0fe6229ce010dac76a72cc))
+
+## [0.27.0](https://github.com/sluiceway/sluiceway/compare/v0.26.2...v0.27.0) (2026-09-23)
+
+
+### Features
+
+* **core:** the pool size follows the cores, from 1 to 8, unless the input sets it ([fdbafb4](https://github.com/sluiceway/sluiceway/commit/fdbafb4ed809005ae8c3ce41adb6fcf410e176e9))
+* **render:** a log line that names the pool size and where it came from ([683c3e8](https://github.com/sluiceway/sluiceway/commit/683c3e89a584cb84fe9171a65aad4240215c73a1))
+* **scan:** without concurrency the pool is the machine's cores, said once in the job log ([f12bc21](https://github.com/sluiceway/sluiceway/commit/f12bc21692bf9b25dc61bda9146afea223471668))
+
+## [0.26.2](https://github.com/sluiceway/sluiceway/compare/v0.26.1...v0.26.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* an empty optional input means the action's default ([d1b38fd](https://github.com/sluiceway/sluiceway/commit/d1b38fd87ee6b57d9ad4fb7ac05e1d87bfd0e2d2))
+* the shortened note counts drifted rows too ([b06d399](https://github.com/sluiceway/sluiceway/commit/b06d3991ad7b0460cdb9a8c58db88641b4aeee7b))
+
+## [0.26.1](https://github.com/sluiceway/sluiceway/compare/v0.26.0...v0.26.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* init names pages on the docs site, not files in docs/ ([45801dd](https://github.com/sluiceway/sluiceway/commit/45801ddf1edea478c7cf7201431277113e17769b))
+* the dashboard footer's docs link goes to the docs site ([15c2055](https://github.com/sluiceway/sluiceway/commit/15c2055464f5ba399f8cd73e67a735c56dd95161))
+
 ## [0.26.0](https://github.com/sluiceway/sluiceway/compare/v0.25.0...v0.26.0) (2026-09-22)
 
 

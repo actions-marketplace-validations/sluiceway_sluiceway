@@ -1,5 +1,13 @@
-# The body puts pending first and folds away only what is calm
+# The body puts pending first and folds away only rows that need nothing
 
+> Amended by 0114: the order of the sections is `dashboard.sections`, In sync may be a list or off, the counts line may leave out a count of 0, and the rescan box and the footer may be off. A section that is off keeps its rows in one closed fold at the end of the sections.
+>
+> Amended by 0108: a scan that is running gets one line right under the scan line, from the root marker, above the line of 0086.
+>
+> Amended by 0089: every time on the dashboard is in the repo's zone, `dashboard.timeZone`, UTC by default. A time that stands alone ends in its offset from UTC, the line under Recently deployed names the zone, and the markers keep UTC.
+>
+> Amended by 0086: a run of the workflow that has waited ten minutes or more for a runner gets one line right under the scan line, from the root marker.
+>
 > Amended by 0076: a failure line stays only while no deploy of its stack, from the dashboard or outside it, ended after the failure. An in sync row whose stack was deployed outside the dashboard after the failure, and whose tool keeps a history, has no failure line and sits in the fold.
 >
 > Amended by 0073: Recently deployed also lists deploys made outside the dashboard, from the tool's own history. Those lines carry a marker, so the section is no longer drawn from the deployment records alone.
@@ -44,7 +52,7 @@ Pending comes first because ticking is what a person opens the dashboard for. Pu
 
 - The counts line always carries the four state counts, also when a count is 0, so the line keeps its shape. Two more facts appear only when they are not 0: how many pending stacks destroy resources, with the warning sign and in bold, and how many rows carry a failure line. Both come from the `destroys` and `failed` marker keys (0027), so every writer can produce them for carried rows.
 - The Pending section is always shown. When it is empty it keeps its heading and gets the good-news line, whose wording belongs to the voice work. Deploying, Preview failed and Recently deployed are left out entirely when empty, heading included.
-- The In sync section is a fold, because 43 one line rows are calm and nobody needs them open. One thing in it is not calm: an in sync row with a failure line. The stack is in sync now, often through an outside deploy (0016), but its last deploy from the dashboard failed and nobody may have looked. Those rows are listed open under the In sync heading, above the fold, and the fold's summary then reads `42 more in sync`. Their state stays `in-sync`. This is placement only, which 0009 leaves free, and the `failed` marker key makes it work for carried rows.
+- The In sync section is a fold, because 43 one line rows need nothing, so nobody needs them open. One thing in it does need a person: an in sync row with a failure line. The stack is in sync now, often through an outside deploy (0016), but its last deploy from the dashboard failed and nobody may have looked. Those rows are listed open under the In sync heading, above the fold, and the fold's summary then reads `42 more in sync`. Their state stays `in-sync`. This is placement only, which 0009 leaves free, and the `failed` marker key makes it work for carried rows.
 - Opening the whole fold whenever one row in it has a failure line was rejected: it shows 43 rows to surface one. Leaving the row inside the fold was rejected: the header would say `1 failed deploy` with nothing on the page to match it.
 - Recently deployed is a plain list of the newest 10 successful deployment records from the page that 0003 already reads: `stack id · ticked by alice · 2026-09-21 09:41 UTC · [run](url)`. Failed deploys are not listed there. A failure already has its failure line on the stack's own row, and the list stays a log of what went out. Ten is fixed in v1.
 - Every time on the dashboard is absolute, in UTC, to the minute. A relative time ("2 hours ago") would make the body differ on every render, which breaks the byte-identical rule (0004) and the skipped write that depends on it.

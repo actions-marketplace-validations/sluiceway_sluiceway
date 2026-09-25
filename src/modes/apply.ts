@@ -30,6 +30,7 @@ import {
   deployFailureText,
   previewFailureText,
 } from "../core/failure-reason.ts";
+import { comparedRef, type MovedWhy, movedSinceCheckout } from "../core/moved-since-checkout.ts";
 import {
   applyNotification,
   DEFAULT_NOTIFY_EVENTS,
@@ -44,10 +45,12 @@ import { type AttributionSource, attributionSource } from "../github/attribution
 import { findDashboard } from "../github/dashboard.ts";
 import { swapRows } from "../github/dashboard-write.ts";
 import { claimRecord, endRecord, readDeploymentRecords } from "../github/deployments.ts";
+import { type StackEnvFilesLoad, stackEnvFiles } from "../github/env-file.ts";
 import { publicRepo } from "../github/event.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { eventDashboardUrl, type StepOutputs, writeResultFile } from "../github/outputs.ts";
 import type { GitHubPort } from "../github/port.ts";
+import type { WorkflowRef } from "../github/workflow-ref.ts";
 import type { Notifier } from "../notify/send.ts";
 import {
   ALREADY_ENDED,
@@ -64,7 +67,8 @@ import {
   PUBLIC_LOG_DIFF,
   toolDiffLogLines,
 } from "../render/log-text.ts";
-import { movedComment } from "../render/moved-comment.ts";
+import { parseDashboard } from "../render/marker.ts";
+import { branchMovedComment, movedComment, valueChangedComment } from "../render/moved-comment.ts";
 import { previewRow } from "../render/preview-result.ts";
 import { type ApplyResultOutcome, applyResultFile } from "../render/result-file.ts";
 import { type AttributionLines, type FailureLine, isDestroy, type Row } from "../render/row.ts";
@@ -78,6 +82,9 @@ export interface ApplyContext {
   // The environment of the job, read once by the glue. The adapter hands it to
   // the tool (record 0013).
   env: Record<string, string | undefined>;
+  // The runner's `setSecret`, for the values of the env file the stack names
+  // (record 0103): every one is masked before the file is named.
+  mask: StackEnvFilesLoad["mask"];
   adapter: Adapter;
   run: ProcessRunner;
   github: GitHubPort;
@@ -104,6 +111,11 @@ export interface ApplyContext {
   actionRef: string;
   // The `deployment-id` input: the record to deploy (record 0035).
   deploymentId: number;
+  // The workflow of the run and the ref it runs on. `apply` compares the
+  // checked-out commit with the head of that branch before its fresh preview,
+  // and starts a full scan when the branch moved under the stack (record
+  // 0111). Nothing when the runner did not say, and then nothing deploys.
+  workflow: WorkflowRef | undefined;
   // The `dry-run` input: stop after the hash check, deploy nothing and end
   // the record as rehearsed (record 0051).
   dryRun?: boolean | undefined;
@@ -267,11 +279,13 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     );
   }
   // A queued record is started by a later `resolve`, under a record of its
-  // own run (record 0056). `resolve` never hands one on.
+  // own run (records 0056 and 0104). `resolve` never hands one on.
   if (claim.kind === "queued") {
     const { behind } = claim;
     throw new ApplyFailedError(
-      `Deployment record ${id} of ${name} is queued behind ${behind.map(logGroupTitle).join(" and ")}. \`apply\` never deploys a queued record: a later \`resolve\` starts it once ${behind.length === 1 ? "that stack" : "those stacks"} went out. Nothing was deployed and the record was left alone.`,
+      behind
+        ? `Deployment record ${id} of ${name} is queued behind ${behind.map(logGroupTitle).join(" and ")}. \`apply\` never deploys a queued record: a later \`resolve\` starts it once ${behind.length === 1 ? "that stack" : "those stacks"} went out. Nothing was deployed and the record was left alone.`
+        : `Deployment record ${id} of ${name} waits for the deploy window of ${name}. \`apply\` never deploys a queued record: a run inside the window starts it. Nothing was deployed and the record was left alone.`,
     );
   }
 
@@ -287,7 +301,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     );
   }
   log.info(
-    `Deployment record ${id}: ${name}, ticked by ${payload.ticker}, approved diff hash ${payload.hash}. It is in progress.`,
+    `Deployment record ${id}: ${name}, ${payload.onMerge ? "merged" : "ticked"} by ${payload.ticker}, approved diff hash ${payload.hash}. It is in progress.`,
   );
 
   // From here the record is this job's, and every way out gives it a result,
@@ -332,6 +346,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
         ticker: payload.ticker,
         runUrl,
         outcome: attempt.summary,
+        ...(payload.onMerge ? { onMerge: true } : {}),
       }),
     );
   }
@@ -353,6 +368,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
                 ticker: fact.ticker,
                 at: fact.at,
                 runUrl: runUrlOf(context.repoUrl, fact.run, fact.attempt),
+                ...(fact.onMerge ? { onMerge: true } : {}),
               }
             : undefined;
         const row = previewRow(id_, made, runLinks(context), failure, {
@@ -366,19 +382,74 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     // A moved change is told to the ticker in one comment (record 0051). It
     // says that the row shows the fresh diff, so it is written only once
     // that is true.
-    if (written !== undefined && reason?.kind === "moved") {
+    // So is a value that changed since the tick (record 0102).
+    if (written !== undefined && (reason?.kind === "moved" || reason?.kind === "value-changed")) {
+      const tick = {
+        login: payload.ticker,
+        stackId: id_,
+        ...(payload.onMerge ? { onMerge: true } : {}),
+      };
       try {
-        await github.createComment(written, movedComment({ login: payload.ticker, stackId: id_ }));
+        await github.createComment(
+          written,
+          reason.kind === "moved"
+            ? movedComment(tick)
+            : valueChangedComment({ ...tick, everyRun: reason.everyRun }),
+        );
       } catch (error) {
         failures.push(
-          `The comment to ${payload.ticker} about the moved change could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
+          `The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
         );
       }
     }
   }
 
+  // A push that reached the branch after the checkout (record 0111): no
+  // fresh preview shows it, so the row is left to a full scan this job
+  // starts, and the ticker is told that the next scan shows the change.
+  if (ended && attempt.branchMoved && attempt.setup) {
+    const { setup } = attempt;
+    try {
+      await dispatchScan(context);
+    } catch (error) {
+      failures.push(message(error));
+    }
+    try {
+      const dashboard = await findDashboard(github, setup.config.dashboard.label);
+      if (dashboard) {
+        await github.createComment(
+          dashboard.number,
+          branchMovedComment({
+            login: payload.ticker,
+            stackId: id_,
+            ...(payload.onMerge ? { onMerge: true } : {}),
+          }),
+        );
+      }
+    } catch (error) {
+      failures.push(
+        `The comment to ${payload.ticker} about the newer commit could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
+      );
+    }
+  }
+
   if (attempt.failed) failures.unshift(attempt.failed);
   if (failures.length > 0) throw new ApplyFailedError(failures.join("\n"));
+}
+
+// The full scan after a refusal for a newer commit (record 0111), started the
+// way `settle` starts one: this same workflow, on this same ref (record 0035).
+async function dispatchScan(context: ApplyContext): Promise<void> {
+  const { workflow } = context;
+  if (!workflow) return;
+  try {
+    await context.github.dispatchWorkflow(workflow.file, workflow.ref);
+    context.log.info("A full scan was started, which shows the change as it is now on the row.");
+  } catch (error) {
+    throw new Error(
+      `A full scan could not be started: ${message(error)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`,
+    );
+  }
 }
 
 // How far the job got with the tool's deploy.
@@ -412,6 +483,9 @@ interface Attempt {
   toolDiffInLog?: boolean | undefined;
   summary?: ApplyOutcome | undefined;
   setup?: Setup | undefined;
+  // The branch moved under the stack after the checkout, and the tool never
+  // ran (record 0111).
+  branchMoved?: boolean | undefined;
 }
 
 function reasonOf(attempt: Attempt): DeployFailureReason | undefined {
@@ -489,7 +563,19 @@ async function deploy(
     return { end: { kind: "failed", reason }, failed: notDeployed(reason, ` ${message(error)}`) };
   }
 
-  const tool = { root: context.root, env: context.env, run: context.run };
+  // A push after the checkout never reaches the fresh preview, so the
+  // branch is read before it (record 0111). The tool has not run yet.
+  const moved = await sinceCheckout(context, setup, id);
+  if (moved) return moved;
+
+  // The environment of the stack: the step's, with the env file its entry
+  // names on top (record 0103), masked first. A file that could not be loaded
+  // is a failed fresh preview, found by the preparation below.
+  const envs = stackEnvFiles({ root: context.root, env: context.env, mask: context.mask, log })([
+    { id, envFile: setup.stack.envFile },
+  ]);
+  const own = envs.get(id);
+  const tool = { root: context.root, env: own?.ok ? own.env : context.env, run: context.run };
   try {
     await adapter.checkVersion(tool, [setup.stack.stack]);
   } catch (error) {
@@ -508,7 +594,12 @@ async function deploy(
   // The stack's preparation, such as OpenTofu's init, before its fresh
   // preview (record 0053). A failed one is a failed fresh preview.
   const unprepared = (
-    await prepareStacks({ ...tool, log, adapter }, [setup.stack], context.previewTimeoutMinutes)
+    await prepareStacks(
+      { ...tool, log, adapter },
+      [setup.stack],
+      context.previewTimeoutMinutes,
+      envs,
+    )
   ).get(id);
 
   // The fresh preview: the same call as the scan's, so the hash is taken the
@@ -518,6 +609,7 @@ async function deploy(
     ...tool,
     timeoutMinutes: setup.stack.previewTimeout ?? context.previewTimeoutMinutes,
     showValues: shownValues(setup.config.dashboard),
+    valueFingerprint: setup.stack.valueFingerprint ?? setup.config.valueFingerprint,
   };
   const fresh =
     unprepared ?? (await adapter.preview(setup.stack.stack, { ...options, savePlan: true }));
@@ -527,6 +619,82 @@ async function deploy(
     // A plan file holds values in plain text (record 0021): it goes on every
     // way out, deployed or not.
     if (fresh.ok) await fresh.plan?.dispose();
+  }
+}
+
+// Record 0111: the commit this run checked out against the head of the
+// branch the run is on. A newer commit that a scan would preview the stack
+// for is a change that moved since the tick. Anything that keeps the answer
+// from being known deploys nothing.
+async function sinceCheckout(
+  context: ApplyContext,
+  setup: Setup,
+  id: string,
+): Promise<Attempt | undefined> {
+  const name = logGroupTitle(id);
+  const checkout = context.sha.slice(0, 7);
+  const refused = (reason: DeployFailureReason, why: string): Attempt => ({
+    end: { kind: "failed", reason },
+    failed: `${name} was not deployed: ${deployFailureText(reason)}. ${why}`,
+    summary: { kind: "not-deployed", reason: deployFailureText(reason) },
+    setup,
+  });
+  if (!context.workflow) {
+    return refused(
+      { kind: "not-started" },
+      "GITHUB_WORKFLOW_REF is not set, so this job does not know which branch it runs on, and nothing says the branch did not move since the tick.",
+    );
+  }
+  const ref = comparedRef(context.workflow.ref);
+  let comparison: Awaited<ReturnType<GitHubPort["compareCommits"]>>;
+  try {
+    comparison = await context.github.compareCommits(context.sha, ref);
+  } catch (error) {
+    return refused(
+      { kind: "not-started" },
+      `Comparing ${checkout}, the commit this run checked out, with ${ref} failed: ${message(error)}. Without it nothing says the branch did not move since the tick. The job needs the permission \`contents: read\`.`,
+    );
+  }
+  const found = movedSinceCheckout({
+    comparison,
+    stack: id,
+    stacks: setup.stacks.map((one) => ({
+      id: stackId(one.stack),
+      path: one.stack.path,
+      inputs: one.inputs,
+    })),
+    unrelated: setup.config.scan.unrelated,
+  });
+  if (found.kind === "still") {
+    context.log.info(
+      `${ref} holds nothing newer for ${name} than ${checkout}, the commit this run checked out.`,
+    );
+    return undefined;
+  }
+  return {
+    ...refused(
+      { kind: "moved" },
+      `${movedText(found.why, { ref, checkout, name })} Nothing was previewed or deployed. A full scan is started, which shows the change as it is now on the row. Tick it again to deploy that.`,
+    ),
+    branchMoved: true,
+  };
+}
+
+function movedText(
+  why: MovedWhy,
+  { ref, checkout, name }: { ref: string; checkout: string; name: string },
+): string {
+  const from = `${ref} moved on from ${checkout}, the commit this run checked out,`;
+  const files = (list: string[]) => (list.length === 1 ? "a file" : "files");
+  switch (why.kind) {
+    case "claims":
+      return `${from} to a commit that changes ${files(why.files)} ${name} claims: ${why.files.join(", ")}.`;
+    case "unclaimed":
+      return `${from} to a commit that changes ${files(why.files)} no stack claims, so a scan of it previews every stack: ${why.files.join(", ")}.`;
+    case "not-a-straight-line":
+      return `${ref} is not a straight line on from ${checkout}, the commit this run checked out (GitHub says ${why.status}), so what it holds is not what was previewed.`;
+    case "file-cap":
+      return `${from} and the comparison lists the most files GitHub gives, so which stacks the newer commits change cannot be told.`;
   }
 }
 
@@ -550,7 +718,8 @@ async function afterFreshPreview(
       reason: deployFailureText(reason),
       checked: applied(checked),
     }) as const;
-  const tool = { root: context.root, env: context.env, run: context.run };
+  // The stack's own environment, as the fresh preview had it (record 0103).
+  const tool = { root: context.root, env: options.env, run: context.run };
   const preview = () => adapter.preview(setup.stack.stack, options);
   // With `scan.logDiff` on, the tool's own diff of the fresh preview goes to
   // the job log before anything is decided, so a person reading this job sees
@@ -563,10 +732,15 @@ async function afterFreshPreview(
     logDiff && previewed.ok && previewed.diff.changes.length > 0
       ? await adapter.toolDiff(setup.stack.stack, options)
       : undefined;
+  // The commit of the dashboard's last scan (record 0102): when it is this
+  // run's, a value fingerprint that differs is a value that differs between
+  // two previews of the same code, and the refusal says so.
+  const sameCommit = await lastScanWasOfThisCommit(context, setup);
   const asked = deployGate({
     approved: payload,
     fresh: previewed,
     dryRun: context.dryRun === true,
+    sameCommit,
   });
   const gate =
     asked.kind === "check-drift"
@@ -595,9 +769,12 @@ async function afterFreshPreview(
       };
     case "in-sync":
       // Most likely a deploy outside the dashboard, which is legal (record
-      // 0016). The tool deploys nothing.
+      // 0016). The tool deploys nothing. A drift repair says it repaired
+      // nothing, not only that the stack is in sync (record 0091).
       log.info(
-        `The fresh preview shows no change: nothing to deploy, ${name} is already in sync. Nothing was deployed.`,
+        payload.drift
+          ? "The drift check and the fresh preview show no change: the drift the tick approved is not there any more, so there was nothing to repair. Nothing was deployed."
+          : `The fresh preview shows no change: nothing to deploy, ${name} is already in sync. Nothing was deployed.`,
       );
       return {
         end: gate.end,
@@ -614,6 +791,25 @@ async function afterFreshPreview(
         failed: notDeployed(
           gate.end.reason,
           ` The fresh preview gives diff hash ${gate.hash} and the tick approved ${payload.hash}. The row on the dashboard shows the fresh diff. Tick it again to deploy that.`,
+        ),
+        row: gate.checked,
+        toolDiffInLog,
+        summary: notDeployedSummary(gate.end.reason, gate.checked),
+        setup,
+      };
+    case "value-changed":
+      // The hash matches, and a value the row does not show changed since
+      // the tick (record 0102). Nothing goes out, and the row shows the fresh
+      // diff, which a fresh tick can approve.
+      return {
+        end: gate.end,
+        failed: notDeployed(
+          gate.end.reason,
+          ` The fresh preview gives diff hash ${gate.hash}, the one the tick approved, and value fingerprint ${gate.fingerprint} where the tick approved ${payload.fingerprint ?? "none"}: a value the row does not show changed since the tick.${
+            gate.everyRun
+              ? " The dashboard's last scan was of this same commit, so the value differs between two previews of the same code, and no tick can approve it. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry in `sluiceway.yaml`."
+              : " The row on the dashboard shows the change as it is now. Look at it and tick it again to deploy that."
+          }`,
         ),
         row: gate.checked,
         toolDiffInLog,
@@ -651,6 +847,7 @@ async function afterFreshPreview(
       destroys: fresh.diff.changes.filter(isDestroy).length,
       deletes: fresh.diff.changes.filter((change) => change.op === "delete").length,
       attribution,
+      ...(payload.onMerge ? { onMerge: true } : {}),
     }));
   } catch (error) {
     log.info(`The dashboard could not be written before the deploy: ${message(error)}`);
@@ -784,6 +981,20 @@ async function writeSummary(context: ApplyContext, text: string): Promise<void> 
   }
 }
 
+// Whether the dashboard's last scan was of the commit this run is of (record
+// 0102). One read of the dashboard, before the gate, because the record's end
+// is written before the row is. No dashboard, or one that cannot be read, is
+// not the same commit: the refusal then asks for a look and a fresh tick.
+async function lastScanWasOfThisCommit(context: ApplyContext, setup: Setup): Promise<boolean> {
+  try {
+    const dashboard = await findDashboard(context.github, setup.config.dashboard.label);
+    if (!dashboard) return false;
+    return parseDashboard(dashboard.body).root?.scanSha === context.sha;
+  } catch {
+    return false;
+  }
+}
+
 // Swaps the row block of this one stack into the dashboard (records 0004 and
 // 0009). The row is made at the late read of every try, from the deployment
 // records as they are then.
@@ -809,6 +1020,7 @@ async function swapRow(
     {
       github,
       log,
+      runId: context.runId,
       repoUrl: context.repoUrl,
       actionRef: context.actionRef,
       dashboard: setup.config.dashboard,

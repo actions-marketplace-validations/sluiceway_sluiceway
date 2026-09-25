@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readmeExampleSpan } from "../../scripts/example-dashboard.ts";
 import { fences, modeOf, read, section, workflows } from "./docs.ts";
 
 // Slice README rewrite (owner, 2026-09-22): the README is the front door and
@@ -30,9 +31,9 @@ describe("the README as the front door", () => {
   // 90, and it is what people copy, so the budget is on the words around it.
   // The example dashboard is folded and generated, so it does not count.
   test("is short: the words around the workflow fit in 90 lines", () => {
-    const start = readme.indexOf("<details>\n<summary><b>Open the example dashboard</b>");
-    const end = readme.indexOf("\n</details>\n\n## How it works");
-    const outside = readme.slice(0, start) + readme.slice(end);
+    const span = readmeExampleSpan(readme);
+    expect(span).toBeDefined();
+    const outside = readme.slice(0, span?.start) + readme.slice(span?.end);
     const words = outside.replace(/^```[\s\S]*?^```$/gm, "");
     expect(words.split("\n").length).toBeLessThanOrEqual(90);
     expect(outside.split("\n").length).toBeLessThanOrEqual(170);
@@ -43,7 +44,7 @@ describe("the README as the front door", () => {
     expect(top).toContain('<p align="center">');
     expect(top).toContain("assets/mascot/in-sync-light.svg");
     expect(top).toContain(
-      "Sluiceway keeps one GitHub issue that shows which infrastructure stacks have changes waiting, and deploys a stack when you tick its box.",
+      "Sluiceway keeps one GitHub issue that shows which Pulumi, OpenTofu, Terraform, Helm or Kubernetes stacks have changes waiting, and deploys a stack when you tick its box.",
     );
     expect(top.indexOf("<picture>")).toBeLessThan(top.indexOf("> [!IMPORTANT]"));
   });
@@ -62,16 +63,17 @@ describe("the README as the front door", () => {
     expect(steps.length).toBe(5);
   });
 
-  test("gets you started in four short paragraphs, each with a link to the docs site", () => {
+  test("gets you started in five short paragraphs, each with a link to the docs site", () => {
     const paragraphs = section(readme, "## Get started")
       .replace(/^```[\s\S]*?^```$/gm, "")
       .split("\n\n")
       .filter((block) => block.startsWith("**"));
     expect(paragraphs.map((block) => block.match(/^\*\*([^*]+)\*\*/)?.[1])).toEqual([
       "Check your setup.",
-      "Add the workflow.",
-      "Tell it about your stacks.",
+      "Before the first scan.",
+      "Decide who may deploy.",
       "Load your credentials.",
+      "Add the workflow.",
     ]);
     for (const block of paragraphs) expect(block).toMatch(SITE_LINK);
   });
