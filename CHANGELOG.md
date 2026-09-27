@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.0](https://github.com/sluiceway/sluiceway/compare/v0.46.0...v0.47.0) (2026-09-27)
+
+
+### Features
+
+* sluiceway preview prints a stack's full preview ([#287](https://github.com/sluiceway/sluiceway/issues/287)) ([14108a0](https://github.com/sluiceway/sluiceway/commit/14108a08ca53ccf3b91809751faac3ed3f205461))
+
 ## [0.46.0](https://github.com/sluiceway/sluiceway/compare/v0.45.0...v0.46.0) (2026-09-26)
 
 
