@@ -1,5 +1,5 @@
 // The commands that talk to the app (record 0116): login, logout, status,
-// stack, tick, rescan and settings. Each calls the app's /api/v1 with the
+// stack, preview, tick, rescan and settings. Each calls the app's /api/v1 with the
 // token the person gave at login, as that person, and nothing else: no
 // GitHub API, no other address. Every answer is the app's own words; the
 // command line adds none that claim a deploy went out.
@@ -10,6 +10,8 @@ import type {
   Deploy,
   Me,
   Org,
+  Preview,
+  PreviewChange,
   PullRequestAnswer,
   Repo,
   RescanAnswer,
@@ -35,7 +37,9 @@ export interface AppIo {
 
 type AppCommand = Extract<
   Command,
-  { command: "login" | "logout" | "status" | "stack" | "tick" | "rescan" | "settings" }
+  {
+    command: "login" | "logout" | "status" | "stack" | "preview" | "tick" | "rescan" | "settings";
+  }
 >;
 
 // How often and how long a tick polls its deployment record.
@@ -109,6 +113,12 @@ async function dispatch(parsed: AppCommand, io: AppIo): Promise<Ending> {
       return stackRow(
         await client.get<Stack>(
           `${repoPath(parsed.repo)}/stacks/${encodeURIComponent(parsed.stack)}`,
+        ),
+      );
+    case "preview":
+      return preview(
+        await client.get<Preview>(
+          `${repoPath(parsed.repo)}/stacks/${encodeURIComponent(parsed.stack)}/preview`,
         ),
       );
     case "tick":
@@ -291,6 +301,76 @@ function stackRow(stack: Stack): Ending {
   if (stack.lastDeploy !== null) lines.push(`Last deploy: ${deployWords(stack.lastDeploy)}`);
   lines.push(`Dashboard: ${stack.dashboard}`);
   return { exit: EXIT.ok, lines, json: stack };
+}
+
+// A path with the old and new value the page shows at it, as the dashboard
+// writes them: `memorySize 128 → 256`, and `nothing` for a side that is absent.
+function pathWords(change: PreviewChange, path: string): string {
+  const value = change.values.find((one) => one.path === path);
+  if (value === undefined) return path;
+  return `${path} ${value.old ?? "nothing"} → ${value.new ?? "nothing"}`;
+}
+
+// One change as the dashboard's details say it: the op, capitals for a
+// destroy, the type, the name, then what forces a replace and what else
+// changes.
+function changeWords(change: PreviewChange): string {
+  const word = [change.action === "none" ? undefined : change.action, change.tracking ?? undefined]
+    .filter((part) => part !== undefined)
+    .join(" + ");
+  const destroy = change.action === "delete" || change.action === "replace";
+  const parts = [`${destroy ? word.toUpperCase() : word}  ${change.type}  ${change.name}`];
+  const others = change.properties.filter((path) => !change.forcedBy.includes(path));
+  if (change.forcedBy.length > 0) {
+    parts.push(`forced by ${change.forcedBy.map((path) => pathWords(change, path)).join(", ")}`);
+  }
+  if (others.length > 0) {
+    const listed = others.map((path) => pathWords(change, path)).join(", ");
+    parts.push(change.forcedBy.length > 0 ? `also changes ${listed}` : listed);
+  }
+  return parts.join(" · ");
+}
+
+// A stack's full preview (the app's record 0280): the page on GitHub, read by
+// the app now, as the dashboard's details list it, with every path whole.
+function preview(answer: Preview): Ending {
+  const at = answer.page.at === null ? "" : `, written at ${answer.page.at}`;
+  const lines = [
+    `${answer.stack} in ${answer.repo}: ${answer.title.slice(answer.title.indexOf(": ") + 2)}`,
+    `Preview page: ${answer.page.url}, of ${answer.page.sha.slice(0, 7)}${at}`,
+  ];
+  if (answer.policies.length > 0) {
+    lines.push("", "Policies");
+    for (const policy of answer.policies) {
+      lines.push(`  ${policy.result}  ${policy.namespace} · ${policy.message}`);
+    }
+  }
+  if (answer.changes.length > 0) {
+    lines.push("", "Changes");
+    for (const change of answer.changes) lines.push(`  ${changeWords(change)}`);
+  }
+  if (answer.drift.length > 0) {
+    lines.push("", "Outside the code");
+    for (const drift of answer.drift) {
+      const paths = drift.properties.length > 0 ? ` · ${drift.properties.join(", ")}` : "";
+      lines.push(`  ${drift.action}  ${drift.type}  ${drift.name}${paths}`);
+    }
+  }
+  if (answer.unlisted > 0) {
+    const are = answer.unlisted === 1 ? "change is" : "changes are";
+    lines.push(
+      "",
+      `${answer.unlisted} more ${are} not on the preview page, which GitHub limits in size: the job log of the scan lists every change.`,
+    );
+  }
+  if (answer.unread > 0) {
+    const noun = answer.unread === 1 ? "line" : "lines";
+    lines.push(
+      "",
+      `${answer.unread} ${noun} of the preview page could not be read here: see the page itself.`,
+    );
+  }
+  return { exit: EXIT.ok, lines, json: answer };
 }
 
 // A tick, as the person (record 0222 of the app): the app judges it by the

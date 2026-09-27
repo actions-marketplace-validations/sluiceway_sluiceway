@@ -93,7 +93,7 @@ A pass over the repo's files that writes a first workflow and, when there is non
 _Avoid_: Scaffold, generator, bootstrap, wizard, setup
 
 **Command line**:
-The `sluiceway` command a person runs on their own machine, from the npm package of the same name or a standalone binary of a release: `init` and `check`, which read files and make no network call, and the commands that talk to the app with the person's personal token (`login`, `logout`, `status`, `stack`, `tick`, `rescan`, `settings`), which call the app alone and never a GitHub API. It reads its arguments, never the environment. Every mode of the action needs the run's identity and the workflow token, so the command line refuses it and points at the workflow. The package is released with the action, from the same tag and with the same version.
+The `sluiceway` command a person runs on their own machine, from the npm package of the same name or a standalone binary of a release: `init` and `check`, which read files and make no network call, and the commands that talk to the app with the person's personal token (`login`, `logout`, `status`, `stack`, `preview`, `tick`, `rescan`, `settings`), which call the app alone and never a GitHub API. It reads its arguments, never the environment. Every mode of the action needs the run's identity and the workflow token, so the command line refuses it and points at the workflow. The package is released with the action, from the same tag and with the same version.
 _Avoid_: CLI tool, npx mode, local mode, runner (that is the machine a workflow runs on)
 
 **App**:

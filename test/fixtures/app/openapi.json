@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Sluiceway app, for the command line",
-    "version": "1.0.0",
-    "description": "The Sluiceway app for `npx sluiceway` and its agents. Every request carries a personal token, made on the person's own page in the app, in `Authorization: Bearer <token>`; a cookie never works here. A token is for one org, and every answer counts as its person, by the same rules as the app's pages. Stack-level facts only: never a resource name, a property path or a value."
+    "version": "1.1.0",
+    "description": "The Sluiceway app for `npx sluiceway` and its agents. Every request carries a personal token, made on the person's own page in the app, in `Authorization: Bearer <token>`; a cookie never works here. A token is for one org, and every answer counts as its person, by the same rules as the app's pages. Stack-level facts only: never a resource name, a property path or a value, but for a stack's preview, which is read from GitHub at the request, handed on and kept nowhere."
   },
   "servers": [
     {
@@ -42,7 +42,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -72,7 +72,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -121,7 +121,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -151,7 +151,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -209,7 +209,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -239,7 +239,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -306,7 +306,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -336,7 +336,104 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/preview": {
+      "get": {
+        "operationId": "preview",
+        "summary": "One stack's full preview, read from its preview page on GitHub now: every change with its type, name and property paths. The app keeps none of it. no-preview when the stack has nothing waiting or no page.",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "description": "The token's org, by its login.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "description": "The repo's name, without the org.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stack",
+            "in": "path",
+            "required": true,
+            "description": "The stack id, encoded: apps%2Fapi%3Aprod.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or one that does not work.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not the token's org, or nothing there the pages would open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The token's rate limit is spent. Retry-After says when.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -403,7 +500,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -433,7 +530,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -500,7 +597,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -530,7 +627,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -588,7 +685,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -618,7 +715,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -676,7 +773,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -706,7 +803,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -795,7 +892,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -825,7 +922,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -904,7 +1001,7 @@
             }
           },
           "403": {
-            "description": "The token's person no longer belongs to the org, or the app left it.",
+            "description": "The token's person no longer belongs to the org, or the app left it; or, for a pull request, has no write access to the repo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -934,7 +1031,7 @@
             }
           },
           "503": {
-            "description": "GitHub did not say whether the person still belongs to the org.",
+            "description": "GitHub did not say whether the person still belongs to the org; or, for a preview, did not answer or has no Checks permission from the org yet.",
             "content": {
               "application/json": {
                 "schema": {
@@ -974,7 +1071,10 @@
               "github-silent",
               "rate-limited",
               "not-found",
-              "changes-refused"
+              "changes-refused",
+              "no-write-access",
+              "no-preview",
+              "preview-unreadable"
             ]
           }
         },
@@ -1299,6 +1399,30 @@
               "sentence"
             ],
             "additionalProperties": false
+          },
+          "unshared": {
+            "anyOf": [
+              {
+                "type": "object",
+                "description": "The repos of the org the token's person cannot read on GitHub, counted; null when they read every one.",
+                "properties": {
+                  "repos": {
+                    "type": "integer"
+                  },
+                  "sentence": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "repos",
+                  "sentence"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1309,7 +1433,8 @@
           "repos",
           "stacks",
           "locked",
-          "allowance"
+          "allowance",
+          "unshared"
         ],
         "additionalProperties": false
       },
@@ -1777,6 +1902,246 @@
         ],
         "additionalProperties": false
       },
+      "Preview": {
+        "type": "object",
+        "description": "A stack's full preview, read from GitHub at the request and kept nowhere: the one answer that holds resource names, types, property paths and the values dashboard.showValues lists.",
+        "properties": {
+          "stack": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "page": {
+            "type": "object",
+            "description": "The stack's preview page: the check run its row links.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "sluiceway / <stack id>, the check run's name."
+              },
+              "url": {
+                "type": "string",
+                "description": "The preview page on GitHub."
+              },
+              "sha": {
+                "type": "string",
+                "description": "The commit the page previewed."
+              },
+              "at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When it was written."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "url",
+              "sha",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "title": {
+            "type": "string",
+            "description": "The page's title: the stack id and its counts."
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "failed",
+                    "warning"
+                  ]
+                },
+                "namespace": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "In the policy's own words."
+                }
+              },
+              "required": [
+                "result",
+                "namespace",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "replace",
+                    "delete",
+                    "none"
+                  ]
+                },
+                "tracking": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "import",
+                        "forget",
+                        "move"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "description": "The resource type, as the tool names it."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The resource name."
+                },
+                "properties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Every property path that changes, those that force a replace first."
+                },
+                "forcedBy": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The property paths that force a replace."
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "old": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "new": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "old",
+                      "new"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "The old and new value, only at a path the repo's dashboard.showValues lists; null where the property is absent on that side."
+                }
+              },
+              "required": [
+                "action",
+                "tracking",
+                "type",
+                "name",
+                "properties",
+                "forcedBy",
+                "values"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Every change the page lists: deletes, then replaces, then the rest."
+          },
+          "drift": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "changed",
+                    "gone"
+                  ]
+                },
+                "type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "properties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "action",
+                "type",
+                "name",
+                "properties"
+              ],
+              "additionalProperties": false
+            },
+            "description": "What changed outside the code, never what it changed to."
+          },
+          "unlisted": {
+            "type": "integer",
+            "description": "How many changes the page leaves out to stay inside GitHub's limit. The scan's job log lists them."
+          },
+          "unread": {
+            "type": "integer",
+            "description": "How many lines of the page the app could not read."
+          }
+        },
+        "required": [
+          "stack",
+          "repo",
+          "page",
+          "title",
+          "policies",
+          "changes",
+          "drift",
+          "unlisted",
+          "unread"
+        ],
+        "additionalProperties": false
+      },
       "Audit": {
         "type": "object",
         "properties": {
@@ -1867,13 +2232,38 @@
               ],
               "additionalProperties": false
             }
+          },
+          "unshared": {
+            "anyOf": [
+              {
+                "type": "object",
+                "description": "The repos of the org the token's person cannot read on GitHub, counted; null when they read every one.",
+                "properties": {
+                  "repos": {
+                    "type": "integer"
+                  },
+                  "sentence": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "repos",
+                  "sentence"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "lines",
           "asked",
           "history",
-          "locked"
+          "locked",
+          "unshared"
         ],
         "additionalProperties": false
       },

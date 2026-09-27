@@ -1,5 +1,5 @@
 // The answers of the app's /api/v1 the command line reads, as the app's
-// OpenAPI document, version 1.0.0, describes them (record 0116). A copy of the
+// OpenAPI document, version 1.1.0, describes them (record 0116). A copy of the
 // document is test/fixtures/app/openapi.json, and the tests hold a fake app
 // to it. Only the fields the command line reads are named here.
 
@@ -108,4 +108,28 @@ export interface PullRequestAnswer {
   sentence: string;
   changes: string[];
   problems: string[];
+}
+
+// A stack's full preview (the app's record 0280): its preview page on GitHub,
+// read by the app at the request and handed on, never kept by it.
+export interface PreviewChange {
+  action: "create" | "update" | "replace" | "delete" | "none";
+  tracking: "import" | "forget" | "move" | null;
+  type: string;
+  name: string;
+  properties: string[];
+  forcedBy: string[];
+  values: { path: string; old: string | null; new: string | null }[];
+}
+
+export interface Preview {
+  stack: string;
+  repo: string;
+  page: { name: string; url: string; sha: string; at: string | null };
+  title: string;
+  policies: { result: "failed" | "warning"; namespace: string; message: string }[];
+  changes: PreviewChange[];
+  drift: { action: "changed" | "gone"; type: string; name: string; properties: string[] }[];
+  unlisted: number;
+  unread: number;
 }

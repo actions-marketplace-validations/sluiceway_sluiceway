@@ -3,7 +3,7 @@
 `sluiceway` is a command you run on your own machine. It does two kinds of things:
 
 - **`init` and `check`** read the files of your clone and nothing else: no credentials, no token, no network. [Start with init](init.md) explains them.
-- **`login`, `status`, `stack`, `tick`, `rescan` and `settings`** talk to the Sluiceway app at `console.sluiceway.dev` with a personal token you make there. They let you, or a coding agent you give the token to, see your stacks, read a stack's preview, tick, ask for a scan and change settings from a terminal.
+- **`login`, `status`, `stack`, `preview`, `tick`, `rescan` and `settings`** talk to the Sluiceway app at `console.sluiceway.dev` with a personal token you make there. They let you, or a coding agent you give the token to, see your stacks, read a stack's preview, tick, ask for a scan and change settings from a terminal.
 
 `scan`, `resolve`, `apply` and `settle` run only in the workflow: they need the run's identity and the workflow token, and the command line stops at them with a sentence.
 
@@ -78,10 +78,30 @@ A repo is its name, `infra`, or `org/infra` when the org is the token's. A stack
 | `sluiceway status` | The org's stacks by state, grouped as the app's org view groups them: Needs you (pending, drifted, preview failed), In flight (deploying and queued), In sync. |
 | `sluiceway status <repo>` | The same for one repo, with its last scan and its dashboard. |
 | `sluiceway stack <repo> <stack id>` | The stack's row: its state, the counts in the dashboard's words, what it deletes or replaces, drift, the preview page on GitHub, the run of a deploy and the last deploy. |
+| `sluiceway preview <repo> <stack id>` | Every change of the stack's preview: what a deploy would create, update, replace or delete, with each resource's type and name and every property path whole, the values your repo's [`dashboard.showValues`](configuration.md#dashboardshowvalues) shows, the drift, and the policies' failures and warnings. It is the stack's preview page on GitHub, read through the app, with its link and when the scan wrote it. |
 | `sluiceway tick <repo> <stack id>` | Ticks the stack, as you. A stack that deletes or replaces anything needs `--yes`. |
 | `sluiceway rescan <repo>` | Asks GitHub for a full scan, as Rescan in the app does. |
 | `sluiceway settings <repo>` | The keys of `sluiceway.yaml` a settings pull request may change, with the values the file gives them. |
 | `sluiceway settings <repo> set <key>=<value> ...` | Opens a pull request that sets them, and prints its link. A person merges it. |
+
+### Reading a stack's preview
+
+`preview` prints what the stack's preview page on GitHub holds, the page its row links, in the words of the dashboard's details but with every path whole:
+
+```
+apps/api:prod in acme/infra: 1 update, 1 replace
+Preview page: https://github.com/acme/infra/runs/48213301, of 0a1b2c3, written at 2026-09-26T08:00:00.000Z
+
+Changes
+  REPLACE  aws:rds/instance:Instance  main · forced by engineVersion · also changes tags.team
+  update  aws:lambda/function:Function  api · memorySize 128 → 256, timeout nothing → 30
+  create + import  aws:sqs/queue:Queue  jobs
+
+Outside the code
+  changed  aws:ec2/securityGroup:SecurityGroup  web · ingress[0].cidrBlocks[0]
+```
+
+The app reads the page from GitHub when you ask, hands it on, and keeps none of it: no resource name, type, property path or value is stored, logged or cached by the app. The page is written by the scan when the workflow has `checks: write`, and the app reads it with its Checks permission, which each org accepts on GitHub. A stack with nothing waiting and no drift has no preview, and ends as not found (4); an org that has not accepted the permission yet ends as failed (1), and says so. A page GitHub cut at its size limit says how many changes are not on it; the scan's job log lists every one.
 
 ### What a tick does, and what it does not
 
@@ -110,17 +130,17 @@ To set text that reads as JSON, such as the title `true`, quote it as JSON: `'da
 
 ## For agents and scripts
 
-Every command that talks to the app takes `--json`. It prints one JSON document on stdout: the app's answer as it came, for a tick `{ "tick": ..., "deploy": ... }`, and on a failure `{ "error", "code", "exit" }`. The answers are the app's API, version 1, described at `https://console.sluiceway.dev/api/v1/openapi.json`.
+Every command that talks to the app takes `--json`. It prints one JSON document on stdout: the app's answer as it came, for a tick `{ "tick": ..., "deploy": ... }`, and on a failure `{ "error", "code", "exit" }`. The answers are the app's API, version 1 (1.1.0 or later for `preview`), described at `https://console.sluiceway.dev/api/v1/openapi.json`.
 
 The exit code says how it ended:
 
 | Code | Meaning | What to do |
 |---|---|---|
 | 0 | Done | |
-| 1 | Failed: the app could not be reached, a tick or pull request failed, a deployment record failed | Read the words, or the dashboard |
+| 1 | Failed: the app could not be reached, a tick or pull request failed, a deployment record failed, the app may not read a preview page yet | Read the words, or the dashboard |
 | 2 | Not understood: the command line, or a token that is not one | Fix the command |
 | 3 | Not signed in, or the token does not work (revoked, expired, the person left the org, the app left it) | `sluiceway login` with a new token |
-| 4 | Not found, or not in the token's org | Check the repo and the stack id |
+| 4 | Not found, or not in the token's org, or a stack with no preview | Check the repo and the stack id |
 | 5 | Refused: the tick rule, a tick that happens on GitHub, changes the app refused, a pull request already open, a destroy without `--yes` | Read the reason; do not retry as it is |
 | 6 | Try again later: the rate limit (the message says in how many seconds), GitHub did not answer, the record not shown yet | Wait and run it again |
 

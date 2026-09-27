@@ -122,13 +122,20 @@ describe("the commands that talk to the app", () => {
     });
   });
 
-  test("stack and tick name a repo and a stack id", () => {
+  test("stack, preview and tick name a repo and a stack id", () => {
     expect(parseArgs(["stack", "infra", "apps/api:prod"])).toEqual({
       command: "stack",
       repo: "infra",
       stack: "apps/api:prod",
       app: APP,
       json: false,
+    });
+    expect(parseArgs(["preview", "infra", "apps/api:prod", "--json"])).toEqual({
+      command: "preview",
+      repo: "infra",
+      stack: "apps/api:prod",
+      app: APP,
+      json: true,
     });
     expect(parseArgs(["tick", "acme/infra", "network:prod", "--yes"])).toEqual({
       command: "tick",
@@ -219,6 +226,14 @@ describe("the commands that talk to the app", () => {
     expect(parseArgs(["stack", "infra"])).toEqual({
       command: "usage",
       message: "stack needs a repo and a stack id.",
+    });
+    expect(parseArgs(["preview", "infra", "a:prod", "b:prod"])).toEqual({
+      command: "usage",
+      message: 'preview takes a repo and a stack id, and got also "b:prod".',
+    });
+    expect(parseArgs(["preview", "infra", "a:prod", "--yes"])).toEqual({
+      command: "usage",
+      message: 'Unknown option "--yes" for preview.',
     });
     expect(parseArgs(["tick"])).toEqual({
       command: "usage",

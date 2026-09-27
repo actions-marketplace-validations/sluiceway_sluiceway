@@ -29,6 +29,8 @@ const EXIT_OF: Record<string, number> = {
   "org-gone": EXIT.signedOut,
   "not-a-member": EXIT.signedOut,
   "not-found": EXIT.notFound,
+  "no-preview": EXIT.notFound,
+  "preview-unreadable": EXIT.failed,
   "rate-limited": EXIT.later,
   "github-silent": EXIT.later,
   "changes-refused": EXIT.refused,
