@@ -112,6 +112,8 @@ export interface FakeApp {
     org: Record<string, Json>;
     repos: Record<string, Record<string, Json>>;
     stacks: Record<string, FakeStack>;
+    // A stack's full preview, by its id (the app's record 0280).
+    previews: Record<string, Record<string, Json>>;
     // Each poll of a deployment takes the next answer; the last one stays.
     deployments: Record<number, (Record<string, Json> | "not-yet")[]>;
     rescan: Record<string, Json>;
@@ -185,6 +187,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
       stacks: lines,
       locked: [],
       allowance: { plan: "free", limit: 3, sentence: null },
+      unshared: null,
     },
     repos: {
       infra: {
@@ -227,6 +230,62 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
           sentence: "The tick of apps/api:prod is asked: the deployment record is open.",
           deployment: 4243,
         },
+      },
+    },
+    previews: {
+      "apps/api:prod": {
+        stack: "apps/api:prod",
+        repo: "acme/infra",
+        page: {
+          name: "sluiceway / apps/api:prod",
+          url: "https://github.com/acme/infra/runs/48213301",
+          sha: "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+          at: "2026-09-26T08:00:00.000Z",
+        },
+        title: "apps/api:prod: 1 update, 1 replace",
+        policies: [{ result: "warning", namespace: "tags", message: "the queue has no team tag" }],
+        changes: [
+          {
+            action: "replace",
+            tracking: null,
+            type: "aws:rds/instance:Instance",
+            name: "main",
+            properties: ["engineVersion", "tags.team"],
+            forcedBy: ["engineVersion"],
+            values: [],
+          },
+          {
+            action: "update",
+            tracking: null,
+            type: "aws:lambda/function:Function",
+            name: "api",
+            properties: ["memorySize", "timeout"],
+            forcedBy: [],
+            values: [
+              { path: "memorySize", old: "128", new: "256" },
+              { path: "timeout", old: null, new: "30" },
+            ],
+          },
+          {
+            action: "create",
+            tracking: "import",
+            type: "aws:sqs/queue:Queue",
+            name: "jobs",
+            properties: [],
+            forcedBy: [],
+            values: [],
+          },
+        ],
+        drift: [
+          {
+            action: "changed",
+            type: "aws:ec2/securityGroup:SecurityGroup",
+            name: "web",
+            properties: ["ingress[0].cidrBlocks[0]"],
+          },
+        ],
+        unlisted: 0,
+        unread: 0,
       },
     },
     deployments: {
@@ -359,6 +418,17 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
           ? notFound(route, method)
           : answer(route, method, 200, found.row);
       }
+      case "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/preview": {
+        if (repo !== "infra") return notFound(route, method);
+        const found = state.previews[id ?? ""];
+        if (found !== undefined) return answer(route, method, 200, found);
+        return state.stacks[id ?? ""] === undefined
+          ? notFound(route, method)
+          : answer(route, method, 404, {
+              error: `${id} has nothing waiting to deploy and no drift, so it has no preview.`,
+              code: "no-preview",
+            });
+      }
       case "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/tick": {
         const found = repo === "infra" ? state.stacks[id ?? ""] : undefined;
         if (found?.tick === undefined) return notFound(route, method);
@@ -427,6 +497,9 @@ function routeOf(parts: string[]): string | undefined {
     return "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}";
   if (parts.length === 9 && kind === "stacks" && extra === "tick") {
     return "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/tick";
+  }
+  if (parts.length === 9 && kind === "stacks" && extra === "preview") {
+    return "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/preview";
   }
   if (parts.length === 8 && kind === "deployments") {
     return "/api/v1/orgs/{org}/repos/{repo}/deployments/{deployment}";

@@ -22,6 +22,7 @@ export type Command =
   | ({ command: "logout" } & AppOptions)
   | ({ command: "status"; repo: string | undefined } & AppOptions)
   | ({ command: "stack"; repo: string; stack: string } & AppOptions)
+  | ({ command: "preview"; repo: string; stack: string } & AppOptions)
   | ({ command: "tick"; repo: string; stack: string; yes: boolean } & AppOptions)
   | ({ command: "rescan"; repo: string } & AppOptions)
   | ({ command: "settings"; repo: string; changes: KeyChange[] | undefined } & AppOptions)
@@ -40,7 +41,16 @@ export const DEFAULT_APP = "https://console.sluiceway.dev";
 export const FORMER_APP = "https://app.sluiceway.dev";
 
 const RUNNER_MODES = new Set(["scan", "resolve", "apply", "settle", "auto"]);
-const APP_COMMANDS = new Set(["login", "logout", "status", "stack", "tick", "rescan", "settings"]);
+const APP_COMMANDS = new Set([
+  "login",
+  "logout",
+  "status",
+  "stack",
+  "preview",
+  "tick",
+  "rescan",
+  "settings",
+]);
 
 export function parseArgs(argv: string[]): Command {
   if (argv.includes("--help") || argv.includes("-h")) return { command: "help" };
@@ -119,6 +129,7 @@ function parseAppCommand(name: string, rest: string[]): Command {
       }
       return { command: "status", repo: words[0], ...shared };
     case "stack":
+    case "preview":
     case "tick": {
       const [repo, stack, ...extra] = words;
       if (repo === undefined || stack === undefined) {
@@ -127,8 +138,9 @@ function parseAppCommand(name: string, rest: string[]): Command {
       if (extra.length > 0) {
         return usage(`${name} takes a repo and a stack id, and got also ${quoted(extra)}.`);
       }
-      return name === "tick"
-        ? { command: "tick", repo, stack, yes, ...shared }
+      if (name === "tick") return { command: "tick", repo, stack, yes, ...shared };
+      return name === "preview"
+        ? { command: "preview", repo, stack, ...shared }
         : { command: "stack", repo, stack, ...shared };
     }
     case "rescan": {

@@ -33632,6 +33632,8 @@ var EXIT_OF = {
   "org-gone": EXIT.signedOut,
   "not-a-member": EXIT.signedOut,
   "not-found": EXIT.notFound,
+  "no-preview": EXIT.notFound,
+  "preview-unreadable": EXIT.failed,
   "rate-limited": EXIT.later,
   "github-silent": EXIT.later,
   "changes-refused": EXIT.refused
@@ -33736,6 +33738,8 @@ async function dispatch(parsed, io) {
       return parsed.repo === undefined ? orgStatus(await client.get(org)) : repoStatus(await client.get(repoPath3(parsed.repo)));
     case "stack":
       return stackRow(await client.get(`${repoPath3(parsed.repo)}/stacks/${encodeURIComponent(parsed.stack)}`));
+    case "preview":
+      return preview(await client.get(`${repoPath3(parsed.repo)}/stacks/${encodeURIComponent(parsed.stack)}/preview`));
     case "tick":
       return tick(client, repoPath3(parsed.repo), parsed, io);
     case "rescan":
@@ -33878,6 +33882,60 @@ function stackRow(stack) {
   lines.push(`Dashboard: ${stack.dashboard}`);
   return { exit: EXIT.ok, lines, json: stack };
 }
+function pathWords(change, path) {
+  const value = change.values.find((one) => one.path === path);
+  if (value === undefined)
+    return path;
+  return `${path} ${value.old ?? "nothing"} → ${value.new ?? "nothing"}`;
+}
+function changeWords(change) {
+  const word = [change.action === "none" ? undefined : change.action, change.tracking ?? undefined].filter((part) => part !== undefined).join(" + ");
+  const destroy = change.action === "delete" || change.action === "replace";
+  const parts = [`${destroy ? word.toUpperCase() : word}  ${change.type}  ${change.name}`];
+  const others = change.properties.filter((path) => !change.forcedBy.includes(path));
+  if (change.forcedBy.length > 0) {
+    parts.push(`forced by ${change.forcedBy.map((path) => pathWords(change, path)).join(", ")}`);
+  }
+  if (others.length > 0) {
+    const listed4 = others.map((path) => pathWords(change, path)).join(", ");
+    parts.push(change.forcedBy.length > 0 ? `also changes ${listed4}` : listed4);
+  }
+  return parts.join(" · ");
+}
+function preview(answer) {
+  const at = answer.page.at === null ? "" : `, written at ${answer.page.at}`;
+  const lines = [
+    `${answer.stack} in ${answer.repo}: ${answer.title.slice(answer.title.indexOf(": ") + 2)}`,
+    `Preview page: ${answer.page.url}, of ${answer.page.sha.slice(0, 7)}${at}`
+  ];
+  if (answer.policies.length > 0) {
+    lines.push("", "Policies");
+    for (const policy of answer.policies) {
+      lines.push(`  ${policy.result}  ${policy.namespace} · ${policy.message}`);
+    }
+  }
+  if (answer.changes.length > 0) {
+    lines.push("", "Changes");
+    for (const change of answer.changes)
+      lines.push(`  ${changeWords(change)}`);
+  }
+  if (answer.drift.length > 0) {
+    lines.push("", "Outside the code");
+    for (const drift of answer.drift) {
+      const paths = drift.properties.length > 0 ? ` · ${drift.properties.join(", ")}` : "";
+      lines.push(`  ${drift.action}  ${drift.type}  ${drift.name}${paths}`);
+    }
+  }
+  if (answer.unlisted > 0) {
+    const are = answer.unlisted === 1 ? "change is" : "changes are";
+    lines.push("", `${answer.unlisted} more ${are} not on the preview page, which GitHub limits in size: the job log of the scan lists every change.`);
+  }
+  if (answer.unread > 0) {
+    const noun = answer.unread === 1 ? "line" : "lines";
+    lines.push("", `${answer.unread} ${noun} of the preview page could not be read here: see the page itself.`);
+  }
+  return { exit: EXIT.ok, lines, json: answer };
+}
 async function tick(client, repoPath3, parsed, io) {
   const stackPath2 = `${repoPath3}/stacks/${encodeURIComponent(parsed.stack)}`;
   const stack = await client.get(stackPath2);
@@ -34003,7 +34061,16 @@ function pullRequest(answer) {
 var DEFAULT_APP = "https://console.sluiceway.dev";
 var FORMER_APP = "https://app.sluiceway.dev";
 var RUNNER_MODES = new Set(["scan", "resolve", "apply", "settle", "auto"]);
-var APP_COMMANDS = new Set(["login", "logout", "status", "stack", "tick", "rescan", "settings"]);
+var APP_COMMANDS = new Set([
+  "login",
+  "logout",
+  "status",
+  "stack",
+  "preview",
+  "tick",
+  "rescan",
+  "settings"
+]);
 function parseArgs(argv) {
   if (argv.includes("--help") || argv.includes("-h"))
     return { command: "help" };
@@ -34088,6 +34155,7 @@ function parseAppCommand(name, rest) {
       }
       return { command: "status", repo: words[0], ...shared };
     case "stack":
+    case "preview":
     case "tick": {
       const [repo, stack, ...extra] = words;
       if (repo === undefined || stack === undefined) {
@@ -34096,7 +34164,9 @@ function parseAppCommand(name, rest) {
       if (extra.length > 0) {
         return usage(`${name} takes a repo and a stack id, and got also ${quoted2(extra)}.`);
       }
-      return name === "tick" ? { command: "tick", repo, stack, yes, ...shared } : { command: "stack", repo, stack, ...shared };
+      if (name === "tick")
+        return { command: "tick", repo, stack, yes, ...shared };
+      return name === "preview" ? { command: "preview", repo, stack, ...shared } : { command: "stack", repo, stack, ...shared };
     }
     case "rescan": {
       const [repo, ...extra] = words;
@@ -34200,6 +34270,9 @@ With the Sluiceway app, as the person whose token it is:
   sluiceway status [repo]  The org's stacks, or a repo's, by state.
   sluiceway stack <repo> <stack id>
                            A stack's row and its preview page.
+  sluiceway preview <repo> <stack id>
+                           Every change of the stack's preview, read from
+                           its preview page on GitHub through the app.
   sluiceway tick <repo> <stack id> [--yes]
                            Tick it. A destroy needs --yes. Prints the
                            deployment record once it waits to start.
@@ -34237,6 +34310,7 @@ async function runCli(argv, io) {
     case "logout":
     case "status":
     case "stack":
+    case "preview":
     case "tick":
     case "rescan":
     case "settings":

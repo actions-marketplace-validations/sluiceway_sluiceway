@@ -52,6 +52,9 @@ With the Sluiceway app, as the person whose token it is:
   sluiceway status [repo]  The org's stacks, or a repo's, by state.
   sluiceway stack <repo> <stack id>
                            A stack's row and its preview page.
+  sluiceway preview <repo> <stack id>
+                           Every change of the stack's preview, read from
+                           its preview page on GitHub through the app.
   sluiceway tick <repo> <stack id> [--yes]
                            Tick it. A destroy needs --yes. Prints the
                            deployment record once it waits to start.
@@ -92,6 +95,7 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     case "logout":
     case "status":
     case "stack":
+    case "preview":
     case "tick":
     case "rescan":
     case "settings":

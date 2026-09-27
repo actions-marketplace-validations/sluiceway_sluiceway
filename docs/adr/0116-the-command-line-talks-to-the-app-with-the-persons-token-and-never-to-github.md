@@ -41,3 +41,13 @@ Record 0094 made the command line two commands that read files and nothing else.
 ## Amended, 2026-09-26
 
 The owner moved the app from `https://app.sluiceway.dev` to `https://console.sluiceway.dev`; the app keeps the old address answering `/api/v1` for a transition. The command line's default app is now `https://console.sluiceway.dev`. `--app https://app.sluiceway.dev` still works as given, with its own token. A token kept under the old address is read for the default app when none is kept under the new one, and the next `login` to the default app keeps the token under the new address and takes the old entry out of every place; `logout` takes out both. The `servers` line of `test/fixtures/app/openapi.json` names the new address ahead of the app's own document.
+
+## Amended, 2026-09-27: `sluiceway preview`
+
+An agent asked what a deploy would change had to leave the command line for the preview page's link. `sluiceway preview <repo> <stack id>` prints the stack's full preview: `GET /api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/preview` of the app's API, version 1.1.0 (the app's record 0280), which reads the stack's preview page (record 0050) from GitHub at the request with the app's Checks permission and answers every change as data: its action and tracking, type, name, the property paths whole with those that force a replace, and the values `dashboard.showValues` shows; the drift; the policies; the page's address, commit and time; and how many changes the page left out past GitHub's limit and how many lines the app could not read. The app keeps none of it.
+
+- **It still calls the app alone.** The page is on GitHub, and the command line never asks GitHub: the app reads it as the person, by the same access as every other read, and hands it on.
+- **The words are the dashboard's details'**: the op as the key cap writes it, in capitals for a delete or a replace, the type, the name, `forced by` and `also changes`, and a shown value as `old → new` with `nothing` for a side that is absent; every path whole, as on the page. `--json` is the app's answer as it came.
+- **Two more codes of the app.** `no-preview`, a stack with nothing waiting and no drift, or no page on GitHub, exits 4 as not found. `preview-unreadable`, an org that has not accepted the app's Checks permission yet, exits 1 as failed, because running it again changes nothing until an admin of the org accepts it. `github-silent` exits 6, as before.
+- **The fixture is the app's document at version 1.1.0**, as the app serves it with the preview. It also carries what the app added since 1.0.0 (`unshared` on the org and the audit log, record 0270 of the app), and the fake app answers it.
+

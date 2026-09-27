@@ -54,7 +54,7 @@ async function setup(options: Options = {}) {
 
 describe("the fake app keeps to the app's contract", () => {
   test("the committed document is the app's version 1", () => {
-    expect(OPENAPI.info.version).toBe("1.0.0");
+    expect(OPENAPI.info.version).toBe("1.1.0");
     expect(Object.keys(OPENAPI.paths).sort()).toEqual([
       "/api/v1/me",
       "/api/v1/orgs/{org}",
@@ -65,6 +65,7 @@ describe("the fake app keeps to the app's contract", () => {
       "/api/v1/orgs/{org}/repos/{repo}/deployments/{deployment}",
       "/api/v1/orgs/{org}/repos/{repo}/rescan",
       "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}",
+      "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/preview",
       "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/tick",
     ]);
   });
@@ -335,6 +336,83 @@ describe("stack", () => {
 async function run(argv: string[], app: FakeApp) {
   return (await setup({ app })).run(argv);
 }
+
+describe("preview", () => {
+  test("every change of the stack's preview page, as the dashboard's details say them", async () => {
+    const { app, run } = await setup();
+    const { code, text } = await run(["preview", "infra", "apps/api:prod"]);
+    expect(code).toBe(EXIT.ok);
+    expect(text).toBe(
+      [
+        "apps/api:prod in acme/infra: 1 update, 1 replace",
+        "Preview page: https://github.com/acme/infra/runs/48213301, of 0a1b2c3, written at 2026-09-26T08:00:00.000Z",
+        "",
+        "Policies",
+        "  warning  tags · the queue has no team tag",
+        "",
+        "Changes",
+        "  REPLACE  aws:rds/instance:Instance  main · forced by engineVersion · also changes tags.team",
+        "  update  aws:lambda/function:Function  api · memorySize 128 → 256, timeout nothing → 30",
+        "  create + import  aws:sqs/queue:Queue  jobs",
+        "",
+        "Outside the code",
+        "  changed  aws:ec2/securityGroup:SecurityGroup  web · ingress[0].cidrBlocks[0]",
+      ].join("\n"),
+    );
+    expect(app.calls.map((call) => call.url)).toEqual([
+      "https://console.sluiceway.dev/api/v1/me",
+      "https://console.sluiceway.dev/api/v1/orgs/acme/repos/infra/stacks/apps%2Fapi%3Aprod/preview",
+    ]);
+  });
+
+  test("changes the page leaves out, and lines it could not read, are said", async () => {
+    const { app, run } = await setup();
+    const one = app.state.previews["apps/api:prod"] ?? {};
+    app.state.previews["apps/api:prod"] = { ...one, unlisted: 12, unread: 1 };
+    const { text } = await run(["preview", "infra", "apps/api:prod"]);
+    expect(text).toContain(
+      "12 more changes are not on the preview page, which GitHub limits in size: the job log of the scan lists every change.",
+    );
+    expect(text).toContain(
+      "1 line of the preview page could not be read here: see the page itself.",
+    );
+  });
+
+  test("--json is the app's answer as it came", async () => {
+    const { app, run } = await setup();
+    const { code, text } = await run(["preview", "infra", "apps/api:prod", "--json"]);
+    expect(code).toBe(EXIT.ok);
+    expect(JSON.parse(text)).toEqual(app.state.previews["apps/api:prod"] ?? {});
+  });
+
+  test("a stack with nothing waiting has no preview, and is not found", async () => {
+    const { run } = await setup();
+    const { code, errText } = await run(["preview", "infra", "network:prod"]);
+    expect(code).toBe(EXIT.notFound);
+    expect(errText).toBe(
+      "network:prod has nothing waiting to deploy and no drift, so it has no preview.",
+    );
+    const json = await run(["preview", "infra", "network:prod", "--json"]);
+    expect(JSON.parse(json.text)).toMatchObject({ code: "no-preview", exit: EXIT.notFound });
+  });
+
+  test("an org that has not given the app Checks read fails, and GitHub silent is later", async () => {
+    const { app, run } = await setup();
+    app.state.failWith = {
+      status: 503,
+      error:
+        "GitHub did not let the app read the preview page of apps/api:prod: acme has not accepted the app's Checks: Read-only permission yet.",
+      code: "preview-unreadable",
+    };
+    expect((await run(["preview", "infra", "apps/api:prod"])).code).toBe(EXIT.failed);
+    app.state.failWith = {
+      status: 503,
+      error: "GitHub did not answer for the preview page of apps/api:prod. Try again in a minute.",
+      code: "github-silent",
+    };
+    expect((await run(["preview", "infra", "apps/api:prod"])).code).toBe(EXIT.later);
+  });
+});
 
 describe("tick", () => {
   test("asks the app, prints the record, and polls until it is waiting to start", async () => {
@@ -609,6 +687,7 @@ describe("where the command line reaches", () => {
     await run(["status"]);
     await run(["status", "infra"]);
     await run(["stack", "infra", "network:prod"]);
+    await run(["preview", "infra", "apps/api:prod"]);
     await run(["tick", "infra", "network:prod"]);
     await run(["rescan", "infra"]);
     await run(["settings", "infra"]);
