@@ -118,9 +118,12 @@ describe("a stack of the example project that does not exist in the backend", ()
         title: "Preview failed",
         message: "🔴 The preview of network:prod failed: the stack does not exist in the backend.",
       });
-      // The tool's words, which name the stack, stay in the job log (record 0022).
-      const written = [dashboard, ...summaries, ...log.lines].join("\n");
+      // The tool's words, which name the stack, stay in the job log (record
+      // 0022): in the group of the stack, and right under the line that says
+      // the preview failed (record 0117).
+      const written = [dashboard, ...summaries].join("\n");
       expect(written).not.toContain("no stack named");
+      expect(log.lines).toContain("[network:prod] error: no stack named 'ghost' found");
       expect(log.groups.find((group) => group.title === "network:prod")?.lines).toContain(
         "error: no stack named 'ghost' found",
       );
@@ -193,7 +196,8 @@ describe.each(VERSIONS)("a full scan of the example project, replayed from %s", 
     expect(log.warnings).toEqual([
       {
         title: "Preview failed",
-        message: "🔴 The preview of site:prod failed: the tool exited with an error (exit code 1).",
+        message:
+          "🔴 The preview of site:prod failed twice: the tool exited with an error (exit code 1).",
       },
     ]);
   });
@@ -275,7 +279,7 @@ describe("a narrowed scan of the example project", () => {
 
   test("a file under shared/ is claimed by app through its inputs, and the broken site stack is tried again", async () => {
     const { started, before, after, log } = await afterPush("shared/motd.txt");
-    expect(started).toEqual(["app", "site"]);
+    expect(started).toEqual(["app", "site", "site"]);
     expect(log.lines).toContain("app:prod is previewed: it claims shared/motd.txt.");
     expect(log.lines).toContain("site:prod is previewed: its row is a preview failure.");
     expect(rows(after)["network:dev"]).toBe(rows(before)["network:dev"] as string);
@@ -283,7 +287,7 @@ describe("a narrowed scan of the example project", () => {
   });
 
   test("the program of app lies in app/program, inside the stack's directory", async () => {
-    expect((await afterPush("app/program/Main.yaml")).started).toEqual(["app", "site"]);
+    expect((await afterPush("app/program/Main.yaml")).started).toEqual(["app", "site", "site"]);
   });
 
   test("a file in network/ is claimed by both of its stacks", async () => {
@@ -291,12 +295,13 @@ describe("a narrowed scan of the example project", () => {
       "network",
       "network",
       "site",
+      "site",
     ]);
   });
 
   test("a change to sluiceway.yaml is a full scan, and the log says the config file changed", async () => {
     const { started, log } = await afterPush("sluiceway.yaml");
-    expect(started).toEqual(["app", "network", "network", "site"]);
+    expect(started).toEqual(["app", "network", "network", "site", "site"]);
     expect(log.lines).toContain(
       "This is a full scan. A push gives a narrowed scan, and this one fell back to a full scan: sluiceway.yaml changed, so every stack is previewed.",
     );
@@ -305,7 +310,7 @@ describe("a narrowed scan of the example project", () => {
 
   test("the ignored playground stack claims nothing, so a change there is a full scan", async () => {
     const { started, log } = await afterPush("playground/Pulumi.yaml");
-    expect(started).toEqual(["app", "network", "network", "site"]);
+    expect(started).toEqual(["app", "network", "network", "site", "site"]);
     expect(log.lines).toContain(
       "This is a full scan. A push gives a narrowed scan, and this one fell back to a full scan: no stack claims playground/Pulumi.yaml.",
     );

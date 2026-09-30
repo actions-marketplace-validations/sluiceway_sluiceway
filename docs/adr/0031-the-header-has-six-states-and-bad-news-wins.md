@@ -1,5 +1,7 @@
 # The header has six states, bad news wins, and any delete or replace turns it plain
 
+> Amended by 0118: the alt text of the failing header names what failed and how many, `Sluiceway: 1 preview failed`, in place of `Sluiceway: something failed`. Amended by 0117: a busy row does not make the header failing.
+>
 > Amended by 0038 and 0039: failing is drawn as a jam under a half-open gate, and pending has three pictures picked from the pending count. The six states and their order stay as they are here. Amended by 0043: the `plain` state is gone, which leaves five states in the same order. A delete or replace no longer changes the state. It adds the destroy sign to the pending or deploying picture, and a deploying row that deletes something runs under the deploying picture with that sign.
 >
 > Amended by 0055: the header state `drift`, water seeping through the closed gate, sits after pending and before first run.

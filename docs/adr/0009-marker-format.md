@@ -1,5 +1,7 @@
 # Three marker kinds, a trailing row marker, and a body that is regenerated around its row blocks
 
+> Amended by 0117: the row marker gains the optional key `busy`, last, `true` on a row of the state `preview-failed` whose stack another update held the lock of when the scan ran. A display cache like `failed`.
+>
 > Amended by 0110: the row marker gains six optional keys. `creates`, `updates`, `replaces` and `tracking` after `policy`, the counts of a pending row's first line, each left out at 0; `changed` right after `gone`, how many resources a drifted row's drift check found changed; and `behind` last, the stack ids a queued row waits behind, the display cache this record foresaw. All documented. The version stays 1.
 >
 > Amended by 0108: the root marker gains the optional keys `scan-running` and `scan-running-since`, after the `run-waiting` keys, for a scan that is running. The scan writes them first and takes them away last, and every other writer carries them. Left out of the documented keys on purpose, like the `run-waiting` keys.

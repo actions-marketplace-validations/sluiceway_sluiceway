@@ -363,7 +363,7 @@ A row block that a writer takes from the live body and writes back as it is, bec
 _Avoid_: Kept row, old row, stale row
 
 **Counts line**:
-The first line of text on the dashboard: how many stacks are pending, deploying, preview failed and in sync, all four unless `dashboard.zeroCounts: false` leaves a 0 out, and the pending count always. It adds how many stacks drifted, how many pending stacks destroy resources and how many rows carry a failure line, each only when it is not 0. Under a header it is centered and every count has a count dot.
+The first line of text on the dashboard: how many stacks are pending, deploying, preview failed and in sync, all four unless `dashboard.zeroCounts: false` leaves a 0 out, and the pending count always. It adds how many stacks drifted, how many are busy, how many pending stacks destroy resources and how many rows carry a failure line, each only when it is not 0. Under a header it is centered and every count has a count dot.
 _Avoid_: Header line, stats, totals
 
 **Scan line**:
@@ -383,11 +383,11 @@ The time zone every time on the dashboard is shown in: UTC, or the IANA zone `da
 _Avoid_: Local time, user time zone, timezone setting
 
 **Row state**:
-Which group a stack's row belongs to: pending, drift, deploying, in sync, preview failed or queued. A queued row is placed and counted with the deploying ones. It is a label for placing and counting rows. Nothing about a deploy is ever decided from it, with one exception that only holds a deploy back and never starts one: `resolve` refuses a tick while a dependency's row is pending. A scan may read it for one thing only: to pick stacks worth previewing again.
+Which group a stack's row belongs to: pending, drift, deploying, in sync, preview failed or queued. A queued row is placed and counted with the deploying ones, and a preview failed row whose marker says busy is placed and counted as busy. It is a label for placing and counting rows. Nothing about a deploy is ever decided from it, with one exception that only holds a deploy back and never starts one: `resolve` refuses a tick while a dependency's row is pending. A scan may read it for one thing only: to pick stacks worth previewing again.
 _Avoid_: Status, stack state, phase
 
 **Preview failure**:
-A stack whose preview did not produce a diff. Its row has no checkbox and links to the run that failed. One stack's preview failure never stops the others. `settle` writes a row of the same state for a deploy it ended, which says there is no preview since the deploy ended and carries the failure line, until the next scan previews the stack.
+A stack whose preview did not produce a diff, after its second try when it got one. Its row has no checkbox and links to the run that failed. One stack's preview failure never stops the others. `settle` writes a row of the same state for a deploy it ended, which says there is no preview since the deploy ended and carries the failure line, until the next scan previews the stack.
 _Avoid_: Error row, broken stack, failed stack
 
 **Failure line**:
@@ -401,6 +401,14 @@ _Avoid_: History, audit log, deploy log, changelog
 **Pending-again line**:
 The note on a pending row whose newest deployment record is a deploy that went out with the same diff hash the row has now: the deploy did not bring the stack in sync. It suggests that a value in the program differs on every run, and points at the tool diff when the job log holds one. It explains a row and decides nothing.
 _Avoid_: Flapping, drift, stuck row
+
+**Second try**:
+The one more preview a scan gives a stack whose preview failed for a reason a second run can change, after one pause of 10 seconds for all such stacks of the scan. Only a preview that failed twice is a preview failure. When every preview failed, none gets one.
+_Avoid_: Retry loop, backoff, rerun
+
+**Busy stack**:
+A stack whose lock another update held when the scan previewed it, on both tries. It is not a preview failure: its row says busy, in a section of its own, the header does not turn failing and no job turns red. The next scan previews it. Only a tool whose preview takes a lock can give one, which is the OpenTofu family.
+_Avoid_: Locked stack, failed stack, stuck stack
 
 **Failure reason**:
 Why a preview or a deploy failed, in words from a short fixed list that Sluiceway owns. It never quotes the tool. The tool's own words stay in the job log, one link away.
@@ -537,7 +545,7 @@ How the failing header state is drawn: the gate stuck half open over a log, with
 _Avoid_: Broken gate, angry gate, crash
 
 **Count dot**:
-The coloured dot in front of a count on the counts line: yellow pending, orange drifted, blue deploying, red preview failed and failed deploys, green in sync, white for a count of 0. Shown whenever there is a header.
+The coloured dot in front of a count on the counts line: yellow pending, orange drifted, blue deploying, red preview failed and failed deploys, green in sync, white for a count of 0 and for the busy count. Shown whenever there is a header.
 _Avoid_: Badge, status light, bullet
 
 **Result dot**:

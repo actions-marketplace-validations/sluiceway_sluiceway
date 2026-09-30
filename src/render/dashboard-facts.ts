@@ -50,6 +50,9 @@ export interface CountsLineNumbers {
   deploying: number;
   previewFailed: number;
   inSync: number;
+  // Rows of a stack whose lock another update held (record 0117). They are
+  // not counted as preview failures.
+  busy: number;
   // Pending rows with a delete or replace: the destroy warning.
   destroying: number;
   // Rows of any state with a failure line.
@@ -63,7 +66,9 @@ export interface DashboardFacts {
   pending: readonly KnownRow[];
   deploying: readonly KnownRow[];
   drift: readonly KnownRow[];
+  // Without the busy rows, which have a list of their own (record 0117).
   previewFailed: readonly KnownRow[];
+  busy: readonly KnownRow[];
   inSync: readonly KnownRow[];
   // Rows of a state this version does not know (record 0009), in stack id
   // order. They take no part in any other fact.
@@ -166,7 +171,10 @@ export function dashboardFacts(rows: readonly ParsedRow[]): DashboardFacts {
     .filter((row) => isDeployingState(row.state))
     .sort((a, b) => byCodeUnit(a.stackId, b.stackId) || queuedLast(a) - queuedLast(b));
   const drift = of("drift");
-  const previewFailed = of("preview-failed");
+  // A busy row has the state of a preview failure and is not one (record
+  // 0117): it makes no header failing and is counted and listed apart.
+  const previewFailed = of("preview-failed").filter((row) => !row.busy);
+  const busy = of("preview-failed").filter((row) => row.busy);
   const inSync = of("in-sync");
   const failed = known.filter((row) => row.failed).length;
   const destroying = pending.filter((row) => row.destroys > 0);
@@ -175,6 +183,7 @@ export function dashboardFacts(rows: readonly ParsedRow[]): DashboardFacts {
 
   return {
     ...sections,
+    busy,
     unknown: sorted.filter((row) => !row.known),
     counts: {
       pending: pending.length,
@@ -182,6 +191,7 @@ export function dashboardFacts(rows: readonly ParsedRow[]): DashboardFacts {
       deploying: deploying.length,
       previewFailed: previewFailed.length,
       inSync: inSync.length,
+      busy: busy.length,
       destroying: destroying.length,
       failedDeploys: failed,
     },

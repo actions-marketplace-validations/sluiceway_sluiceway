@@ -77,6 +77,7 @@ One row per stack. Its state says where the row sits and is counted, and nothing
 | `replaces` | How many replaces. The same number as `destroys` less `deletes` |
 | `tracking` | How many changes only touch the tool's record of a resource: an import, a forget or a move, with no op |
 | `behind` | On a queued row, the stack ids it waits behind, as its deployment record's `behind` names them (record 0110). Absent on a row that waits for its deploy window or a deploy freeze alone, and on a row written before the key came |
+| `busy` | `true` on a `preview-failed` row whose stack another update held the lock of when the scan ran ([record 0117](adr/0117-a-preview-that-fails-is-tried-once-more-and-a-stack-whose-lock-is-held-is-busy.md)). Such a row is busy, not failed: the dashboard counts and lists it apart, and the next scan previews it. Draw it as a preview failure if you do not know the key. Absent otherwise |
 
 A pending row from the run, the whole block:
 

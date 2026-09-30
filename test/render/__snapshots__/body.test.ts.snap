@@ -6,7 +6,7 @@ exports[`snapshots header state failing 1`] = `
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
+    <img alt="Sluiceway: 1 preview and 1 deploy failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
   </picture>
 </p>
 
@@ -35,7 +35,7 @@ Tick a box to deploy that stack exactly as its row shows it.
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.
 
 - **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
   <!-- /sluiceway:row -->
@@ -1885,154 +1885,154 @@ exports[`snapshots the failing picture at 0 to 21 pending 1`] = `
 "<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-dark.svg">
-    <img alt="Sluiceway: something failed" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-light.svg">
+    <img alt="Sluiceway: 1 preview failed" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-dark.svg">
-    <img alt="Sluiceway: something failed, 2 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 2 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-dark.svg">
-    <img alt="Sluiceway: something failed, 3 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 3 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-dark.svg">
-    <img alt="Sluiceway: something failed, 4 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 4 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-dark.svg">
-    <img alt="Sluiceway: something failed, 5 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 5 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-dark.svg">
-    <img alt="Sluiceway: something failed, 6 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 6 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-dark.svg">
-    <img alt="Sluiceway: something failed, 7 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 7 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-dark.svg">
-    <img alt="Sluiceway: something failed, 8 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 8 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-dark.svg">
-    <img alt="Sluiceway: something failed, 9 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 9 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-dark.svg">
-    <img alt="Sluiceway: something failed, 10 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 10 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 11 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-dark.svg">
-    <img alt="Sluiceway: something failed, 12 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 12 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-dark.svg">
-    <img alt="Sluiceway: something failed, 13 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 13 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-dark.svg">
-    <img alt="Sluiceway: something failed, 14 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 14 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-dark.svg">
-    <img alt="Sluiceway: something failed, 15 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 15 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-dark.svg">
-    <img alt="Sluiceway: something failed, 16 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 16 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-dark.svg">
-    <img alt="Sluiceway: something failed, 17 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 17 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-dark.svg">
-    <img alt="Sluiceway: something failed, 18 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 18 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-dark.svg">
-    <img alt="Sluiceway: something failed, 19 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 19 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-dark.svg">
-    <img alt="Sluiceway: something failed, 20 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 20 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-dark.svg">
-    <img alt="Sluiceway: something failed, more than 20 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-light.svg">
+    <img alt="Sluiceway: 1 preview failed, more than 20 stacks are pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-light.svg">
   </picture>
 </p>
 "
@@ -2042,154 +2042,154 @@ exports[`snapshots the failing picture at 0 to 21 pending, with the delete sign 
 "<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 1 stack is pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 2 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 2 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 3 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 3 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 4 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 4 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 5 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 5 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 6 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 6 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 7 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 7 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 8 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 8 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 9 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 9 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 10 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 10 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 11 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 12 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 12 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 13 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 13 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 14 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 14 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 15 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 15 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 16 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 16 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 17 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 17 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 18 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 18 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 19 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 19 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, 20 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 20 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-dark.svg">
-    <img alt="Sluiceway: something failed, more than 20 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-light.svg">
+    <img alt="Sluiceway: 1 preview failed, more than 20 stacks are pending, some changes delete resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-light.svg">
   </picture>
 </p>
 "
@@ -2199,154 +2199,154 @@ exports[`snapshots the failing picture at 0 to 21 pending, with the replace sign
 "<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 1 stack is pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 2 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 2 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 3 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 3 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 4 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 4 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 5 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 5 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 6 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 6 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 7 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 7 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 8 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 8 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 9 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 9 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 10 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 10 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 11 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 12 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 12 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 13 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 13 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 14 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 14 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 15 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 15 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 16 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 16 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 17 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 17 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 18 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 18 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 19 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 19 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 20 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 20 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, more than 20 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, more than 20 stacks are pending, some changes replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-replaces-light.svg">
   </picture>
 </p>
 "
@@ -2356,154 +2356,154 @@ exports[`snapshots the failing picture at 0 to 21 pending, with both signs 1`] =
 "<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-0-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 1 stack is pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 2 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 2 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-2-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 3 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 3 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-3-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 4 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 4 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-4-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 5 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 5 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-5-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 6 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 6 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-6-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 7 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 7 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-7-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 8 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 8 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-8-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 9 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 9 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-9-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 10 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 10 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-10-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 12 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 12 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-12-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 13 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 13 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-13-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 14 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 14 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-14-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 15 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 15 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-15-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 16 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 16 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-16-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 17 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 17 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-17-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 18 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 18 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-18-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 19 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 19 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-19-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-20-deletes-replaces-light.svg">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, more than 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 1 preview failed, more than 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-light.svg">
   </picture>
 </p>
 "
@@ -3887,7 +3887,7 @@ exports[`snapshots read only, failing with rows pending 1`] = `
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
+    <img alt="Sluiceway: 1 preview and 1 deploy failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
   </picture>
 </p>
 
@@ -3916,7 +3916,7 @@ This dashboard is read only, so rows have no boxes and nothing deploys from here
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.
 
 - **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
   <!-- /sluiceway:row -->
@@ -4077,7 +4077,7 @@ Tick a box to deploy that stack exactly as its row shows it.
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.
 
 - **b:broken** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="b:broken" state="preview-failed" -->
   <!-- /sluiceway:row -->
@@ -4117,7 +4117,7 @@ exports[`snapshots the 58 stack body 1`] = `
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 2 previews and 2 deploys failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
   </picture>
 </p>
 
@@ -4403,7 +4403,7 @@ Tick a box to deploy that stack exactly as its row shows it.
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.
 
 - **data/redis:staging** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/redis:staging" state="preview-failed" -->
   <!-- /sluiceway:row -->
@@ -4527,7 +4527,7 @@ exports[`snapshots the 58 stack body, redacted 1`] = `
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 2 previews and 2 deploys failed, 11 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-11-deletes-replaces-light.svg">
   </picture>
 </p>
 
@@ -4604,7 +4604,7 @@ Tick a box to deploy that stack exactly as its row shows it.
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.
 
 - **data/redis:staging** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/redis:staging" state="preview-failed" -->
   <!-- /sluiceway:row -->

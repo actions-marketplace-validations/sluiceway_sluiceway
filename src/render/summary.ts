@@ -47,6 +47,9 @@ export type SummaryStack =
       // The `ignore` glob that takes the stack off the dashboard, for a stack
       // that does not exist in the backend (onboarding log, hurdle 9).
       ignore?: string | undefined;
+      // Another update holds the lock of the stack (record 0117): busy, and
+      // counted and listed apart from the preview failures.
+      busy?: boolean | undefined;
     };
 
 type FailedStack = Extract<SummaryStack, { kind: "preview-failed" }>;
@@ -319,7 +322,9 @@ export function renderSummary(stacks: SummaryStack[], options: SummaryOptions = 
   const hasDrift = (stack: DiffStack) => (stack.diff.drift ?? []).length > 0;
   const drifted = diffs.filter((stack) => stack.diff.changes.length === 0 && hasDrift(stack));
   const inSync = diffs.filter((stack) => stack.diff.changes.length === 0 && !hasDrift(stack));
-  const failed = sorted.filter((stack) => stack.kind === "preview-failed");
+  const notPreviewed = sorted.filter((stack) => stack.kind === "preview-failed");
+  const failed = notPreviewed.filter((stack) => !stack.busy);
+  const busy = notPreviewed.filter((stack) => stack.busy);
 
   const counted =
     stacks.length === 0
@@ -329,6 +334,7 @@ export function renderSummary(stacks: SummaryStack[], options: SummaryOptions = 
           drifted.length && `${drifted.length} drifted`,
           failed.length && `${failed.length} preview failed`,
           inSync.length && `${inSync.length} in sync`,
+          busy.length && `${busy.length} busy`,
         ]
           .filter(Boolean)
           .join(", ")}.`;
@@ -347,6 +353,10 @@ export function renderSummary(stacks: SummaryStack[], options: SummaryOptions = 
   }
   if (failed.length > 0) {
     tail.push("### Preview failed", failed.map((stack) => failedLine(stack, options)).join("\n"));
+  }
+  // Stacks whose lock another update held (record 0117).
+  if (busy.length > 0) {
+    tail.push("### Busy", busy.map((stack) => failedLine(stack, options)).join("\n"));
   }
   if (inSync.length > 0) {
     tail.push(
@@ -369,6 +379,7 @@ export function renderSummary(stacks: SummaryStack[], options: SummaryOptions = 
       `- Drifted: ${drifted.map((stack) => indexLink(stack.diff.stackId)).join(" · ")}`,
     failed.length > 0 &&
       `- Preview failed: ${failed.map((stack) => indexLink(stack.stackId)).join(" · ")}`,
+    busy.length > 0 && `- Busy: ${busy.map((stack) => indexLink(stack.stackId)).join(" · ")}`,
   ].filter((line) => line !== false);
   const frame = (shortened: number) => [
     "## Sluiceway scan",

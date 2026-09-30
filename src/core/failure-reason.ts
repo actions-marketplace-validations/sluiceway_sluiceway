@@ -27,6 +27,11 @@ export type PreviewFailureReason =
   // it is not there, or a line of it is refused. The tool never ran for the
   // stack, and the job log has the path and the line number.
   | { kind: "env-file-not-loaded" }
+  // Another update holds the lock of the stack, so the tool could not look
+  // (record 0117). Not a failure of the stack: its row says busy. The adapter
+  // picks it from one fixed phrase of its tool, the one reason that is, because
+  // no tool gives a held lock an exit code of its own.
+  | { kind: "stack-busy" }
   // Not a way a preview fails: the word a reader outside Sluiceway writes
   // when it draws a preview failure row from the markers alone and holds no
   // reason (record 0110). The reason is in the summary of the run, and in
@@ -66,6 +71,8 @@ export function previewFailureText(reason: PreviewFailureReason): string {
       return "Sluiceway failed inside itself, which is a bug";
     case "env-file-not-loaded":
       return "the env file of the stack could not be loaded";
+    case "stack-busy":
+      return "another update holds the stack's lock";
     case "in-summary":
       return "the reason is in the summary of the run";
   }

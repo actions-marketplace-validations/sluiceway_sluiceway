@@ -81,6 +81,14 @@ describe("terraform", () => {
         });
       }
 
+      // Record 0117: terraform writes the same diagnostic for a held state
+      // lock as tofu does.
+      test("a state lock that another run holds is a busy stack", async () => {
+        const { result } = await previewOf(terraform(DEV), version, "state-locked", TERRAFORM);
+        expect(result.ok ? undefined : result.reason).toEqual({ kind: "stack-busy" });
+        expect(result.toolLog).toContain("Error: Error acquiring the state lock");
+      });
+
       test("init with terraform in the directory, as the preparation", async () => {
         const { run, runs } = replay(version, "new-stack", ROOT, TERRAFORM);
         const [init] = opentofu.prepare?.([terraform(DEV)]) ?? [];

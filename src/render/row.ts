@@ -145,6 +145,10 @@ export interface PreviewFailedRow {
   // is not known (record 0044).
   runUrl: string;
   failure?: FailureLine | undefined;
+  // Another update holds the lock of the stack (record 0117): the row says
+  // busy and not failed. Its state stays `preview-failed`: no box, no diff,
+  // and every scan previews the stack, a narrowed one too (record 0010).
+  busy?: boolean | undefined;
 }
 
 export interface InSyncRow {
@@ -747,14 +751,19 @@ function deployingRow(row: DeployingRow, options: RowOptions): string[] {
   return lines;
 }
 
+// What a busy row says after its reason (record 0117).
+export const BUSY_ROW_WORDS = "the next scan previews it";
+
 function previewFailedRow(row: PreviewFailedRow, options: RowOptions): string[] {
+  const words = row.busy
+    ? `busy: ${escapeText(row.reason)}, ${BUSY_ROW_WORDS}`
+    : `preview failed: ${escapeText(row.reason)}`;
   const lines = [
-    `- **${escapeText(row.stackId)}** · preview failed: ${escapeText(row.reason)} · [run](${
-      row.runUrl
-    }) ${rowMarker({
+    `- **${escapeText(row.stackId)}** · ${words} · [run](${row.runUrl}) ${rowMarker({
       stackId: row.stackId,
       state: "preview-failed",
       failed: row.failure !== undefined,
+      busy: row.busy,
     })}`,
   ];
   if (row.failure) lines.push(failureLine(row.failure, options.timeZone));

@@ -63,6 +63,7 @@ const ZERO = {
   deploying: 0,
   previewFailed: 0,
   inSync: 0,
+  busy: 0,
   destroying: 0,
   failedDeploys: 0,
 };

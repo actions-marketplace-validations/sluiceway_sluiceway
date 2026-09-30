@@ -1,5 +1,7 @@
 # The tool's own words stay in the job log, and nothing is masked by guessing
 
+> Amended by 0117: the list for a preview gains "another update holds the stack's lock", the one reason an adapter picks from the tool's words, because no tool gives a held lock an exit code. The job log also shows the tool's last lines right under the line that says a preview did not work.
+>
 > Amended by 0110: each list gains a reason word for a reader that draws a row from the markers and the deployment records and holds no reason: for a deploy, "the reason is on the deployment record", for a preview, "the reason is in the summary of the run". Sluiceway never writes either.
 >
 > Amended by 0048: with `scan.logDiff` on, the tool's words in the job log include its own diff, printed with workflow commands stopped.

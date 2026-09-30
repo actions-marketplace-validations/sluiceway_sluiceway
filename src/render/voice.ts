@@ -69,8 +69,20 @@ export const WAITING_ON_CHECKS_LINE =
 export const READ_ONLY_LINE =
   "This dashboard is read only, so rows have no boxes and nothing deploys from here. Rows get their boxes when `dashboard.readOnly` comes out of `sluiceway.yaml`.";
 
-export const PREVIEW_FAILED_LINE =
-  "These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.";
+// Above the busy rows (record 0117). Plain, and it says what happens next.
+export function busyLine(count: number): string {
+  return count === 1
+    ? "Another update held the lock of this stack when the scan ran, so it was not previewed. The next scan previews it."
+    : "Another update held the lock of each of these stacks when the scan ran, so they were not previewed. The next scan previews them.";
+}
+
+// Above the preview failures (record 0118). Plain: what the rows cannot do,
+// what happens next, and where the tool's own words are (record 0022).
+export function previewFailedLine(count: number): string {
+  return count === 1
+    ? "This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words."
+    : "These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.";
+}
 
 // The note under the scan line when the size budget shortened rows (record
 // 0028). An alert renders there, because it is outside any list. It links

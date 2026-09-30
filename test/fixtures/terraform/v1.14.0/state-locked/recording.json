@@ -1,0 +1,28 @@
+{
+  "scenario": "state-locked",
+  "description": "network:dev while another deploy of it runs and holds the state lock: the plan cannot take the lock and fails, with the diagnostic \"Error acquiring the state lock\" in its JSON log.",
+  "cliVersion": "v1.14.0",
+  "commands": [
+    {
+      "id": "plan",
+      "argv": [
+        "terraform",
+        "plan",
+        "-input=false",
+        "-no-color",
+        "-refresh=false",
+        "-json",
+        "-out={plan}",
+        "-var-file=dev.tfvars"
+      ],
+      "cwd": "network",
+      "exitCode": 1,
+      "stdout": "plan.stdout",
+      "stderr": "plan.stderr",
+      "stdoutFormat": "text",
+      "env": {
+        "TF_WORKSPACE": "dev"
+      }
+    }
+  ]
+}

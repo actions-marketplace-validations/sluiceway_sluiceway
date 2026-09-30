@@ -6,7 +6,7 @@ exports[`a full scan drops the failure line of every row whose stack was deploye
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-dark.svg">
-    <img alt="Sluiceway: something failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
+    <img alt="Sluiceway: 1 preview failed, 1 stack is pending" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-1-light.svg">
   </picture>
 </p>
 
@@ -41,7 +41,7 @@ Real infrastructure changed outside the code. Deploying a stack puts it back as 
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.
 
 - **web:prod** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/acme/infra/actions/runs/4242/job/106502264185) <!-- sluiceway:row stack="web:prod" state="preview-failed" -->
   <!-- /sluiceway:row -->
