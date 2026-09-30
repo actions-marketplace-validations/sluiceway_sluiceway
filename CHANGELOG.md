@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.48.0](https://github.com/sluiceway/sluiceway/compare/v0.47.0...v0.48.0) (2026-09-30)
+
+
+### Features
+
+* a preview that fails once is tried again, a busy stack says so, and the log keeps the tool's words ([#289](https://github.com/sluiceway/sluiceway/issues/289)) ([88ff952](https://github.com/sluiceway/sluiceway/commit/88ff952336d28a7dd54143a84a86b41b6dbda3a5))
+
 ## [0.47.0](https://github.com/sluiceway/sluiceway/compare/v0.46.0...v0.47.0) (2026-09-27)
 
 

@@ -47835,6 +47835,8 @@ function rowMarker(facts) {
   }
   if (facts.behind && facts.behind.length > 0)
     pairs.push(["behind", encodeIds(facts.behind)]);
+  if (facts.busy)
+    pairs.push(["busy", "true"]);
   return marker("row", pairs);
 }
 function mergeMarker(facts) {
@@ -48022,6 +48024,7 @@ function parseDashboard(body) {
       ...pairs.get("policy") === "failed" ? { policyFailed: true } : {},
       ...Object.fromEntries(COUNT_KEYS.filter((key) => count(key) > 0).map((key) => [key, count(key)])),
       ...behind === "" ? {} : { behind: decodeIds(behind) },
+      ...state === "preview-failed" && pairs.get("busy") === "true" ? { busy: true } : {},
       ticked: match[1] === "x" || match[1] === "X",
       text
     });
@@ -48556,12 +48559,15 @@ function deployingRow(row, options) {
     lines.push(row.attribution.full, ...outsideFold(row.attribution, 0));
   return lines;
 }
+var BUSY_ROW_WORDS = "the next scan previews it";
 function previewFailedRow(row, options) {
+  const words = row.busy ? `busy: ${escapeText(row.reason)}, ${BUSY_ROW_WORDS}` : `preview failed: ${escapeText(row.reason)}`;
   const lines = [
-    `- **${escapeText(row.stackId)}** · preview failed: ${escapeText(row.reason)} · [run](${row.runUrl}) ${rowMarker({
+    `- **${escapeText(row.stackId)}** · ${words} · [run](${row.runUrl}) ${rowMarker({
       stackId: row.stackId,
       state: "preview-failed",
-      failed: row.failure !== undefined
+      failed: row.failure !== undefined,
+      busy: row.busy
     })}`
   ];
   if (row.failure)
@@ -54127,6 +54133,28 @@ function byCodeUnit12(a, b) {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+// src/adapters/opentofu/state-lock.ts
+var STATE_LOCK_SUMMARY = "Error acquiring the state lock";
+function stateLockHeld(planStdout) {
+  for (const line of planStdout.split(/\r?\n/)) {
+    if (!line.includes(STATE_LOCK_SUMMARY))
+      continue;
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (typeof message !== "object" || message === null)
+      continue;
+    const { type, diagnostic } = message;
+    if (type === "diagnostic" && diagnostic?.severity === "error" && diagnostic.summary === STATE_LOCK_SUMMARY) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // src/adapters/opentofu/preview.ts
 async function preview3(stack, options) {
   const plan = await PlanFile.create(stackId(stack));
@@ -54153,8 +54181,10 @@ async function planAndShow(stack, options, plan) {
   const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
   const planned = await run(planArgs(plan.path, optionsOf3(stack).varFiles));
   const planWords = stripAnsi(planned.stderr) + jsonLogWords(planned.stdout);
-  if (!planned.ok)
-    return failed(planned.reason, planWords);
+  if (!planned.ok) {
+    const busy = planned.reason.kind === "tool-error" && stateLockHeld(planned.stdout);
+    return failed(busy ? { kind: "stack-busy" } : planned.reason, planWords);
+  }
   const shown3 = await run(showArgs(plan.path));
   const log = planWords + stripAnsi(shown3.stderr);
   if (!shown3.ok)
@@ -60662,7 +60692,8 @@ function dashboardFacts(rows) {
   const pending = of("pending");
   const deploying = known.filter((row) => isDeployingState(row.state)).sort((a, b) => byCodeUnit(a.stackId, b.stackId) || queuedLast(a) - queuedLast(b));
   const drift = of("drift");
-  const previewFailed = of("preview-failed");
+  const previewFailed = of("preview-failed").filter((row) => !row.busy);
+  const busy = of("preview-failed").filter((row) => row.busy);
   const inSync = of("in-sync");
   const failed2 = known.filter((row) => row.failed).length;
   const destroying = pending.filter((row) => row.destroys > 0);
@@ -60670,6 +60701,7 @@ function dashboardFacts(rows) {
   const sections = { pending, deploying, drift, previewFailed, inSync };
   return {
     ...sections,
+    busy,
     unknown: sorted.filter((row) => !row.known),
     counts: {
       pending: pending.length,
@@ -60677,6 +60709,7 @@ function dashboardFacts(rows) {
       deploying: deploying.length,
       previewFailed: previewFailed.length,
       inSync: inSync.length,
+      busy: busy.length,
       destroying: destroying.length,
       failedDeploys: failed2
     },
@@ -60713,7 +60746,8 @@ var COUNT_DOT = {
   deploying: "\uD83D\uDD35",
   "preview-failed": "\uD83D\uDD34",
   "in-sync": "\uD83D\uDFE2",
-  failed: "\uD83D\uDD34"
+  failed: "\uD83D\uDD34",
+  busy: "⚪"
 };
 var DOT_AT_ZERO = "⚪";
 var RESULT_DOT = {
@@ -60840,7 +60874,12 @@ var INSTRUCTION_LINE = "Tick a box to deploy that stack exactly as its row shows
 var MERGE_LINE2 = "Tick a box to merge that pull request. Its stack is then previewed again and deployed as that preview shows it.";
 var WAITING_ON_CHECKS_LINE = "These wait on their own checks. Each gets a box here once its checks are green.";
 var READ_ONLY_LINE = "This dashboard is read only, so rows have no boxes and nothing deploys from here. Rows get their boxes when `dashboard.readOnly` comes out of `sluiceway.yaml`.";
-var PREVIEW_FAILED_LINE = "These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.";
+function busyLine(count) {
+  return count === 1 ? "Another update held the lock of this stack when the scan ran, so it was not previewed. The next scan previews it." : "Another update held the lock of each of these stacks when the scan ran, so they were not previewed. The next scan previews them.";
+}
+function previewFailedLine(count) {
+  return count === 1 ? "This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words." : "These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.";
+}
 function shortenedNote(sections) {
   const named2 = sections.filter((one2) => one2.shortened > 0);
   const counts2 = named2.map(({ section, shortened, of }) => `${shortened} of ${of} ${section} row${of === 1 ? "" : "s"}`).join(" and ");
@@ -60910,7 +60949,6 @@ var RECENTLY_DEPLOYED = 10;
 var ACTION_REPO2 = "sluiceway/sluiceway";
 var ACTION_URL = `https://github.com/${ACTION_REPO2}`;
 var ALT = {
-  failing: "Sluiceway: something failed",
   deploying: "Sluiceway: deploying",
   queued: "Sluiceway: queued behind dependencies",
   drift: "Sluiceway: something changed outside the code",
@@ -60924,10 +60962,22 @@ function pendingWords(crates) {
 }
 var COUNTED = ["pending", "failing", "deploying", "queued"];
 var isCounted = (state2) => COUNTED.includes(state2);
-function countedAlt(state2, crates) {
+function failingAlt({ previews, deploys }) {
+  const some = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  if (previews > 0 && deploys > 0) {
+    return `Sluiceway: ${some(previews, "preview")} and ${some(deploys, "deploy")} failed`;
+  }
+  if (previews > 0)
+    return `Sluiceway: ${some(previews, "preview")} failed`;
+  if (deploys > 0)
+    return `Sluiceway: ${some(deploys, "deploy")} failed`;
+  return "Sluiceway: something failed";
+}
+function countedAlt(state2, crates, failed2) {
   if (state2 === "pending")
     return `Sluiceway: ${pendingWords(crates)}`;
-  return crates === 0 ? ALT[state2] : `${ALT[state2]}, ${pendingWords(crates)}`;
+  const alt = state2 === "failing" ? failingAlt(failed2) : ALT[state2];
+  return crates === 0 ? alt : `${alt}, ${pendingWords(crates)}`;
 }
 function signed(state2, signs) {
   const verb = signs.deletes && signs.replaces ? "delete or replace" : signs.deletes ? "delete" : "replace";
@@ -60947,16 +60997,18 @@ function rowBlock(row, options = {}) {
     throw new Error("A rendered row did not read back as a row block.");
   return block;
 }
-function picture(state2, crates, signs, actionRef2) {
+function picture(state2, crates, signs, actionRef2, busy, failed2) {
   let name = state2;
   let alt;
   if (isCounted(state2)) {
     const { suffix, fact } = signed(state2, signs);
     name = `${state2}-${crates}${suffix}`;
-    alt = `${countedAlt(state2, crates)}${fact}`;
+    alt = `${countedAlt(state2, crates, failed2)}${fact}`;
   } else {
     alt = ALT[state2];
   }
+  if (busy > 0)
+    alt += busy === 1 ? ", 1 stack is busy" : `, ${busy} stacks are busy`;
   const file2 = (theme) => mascotUrl(actionRef2, `${name}-${theme}.svg`);
   return [
     '<p align="center">',
@@ -60977,7 +61029,8 @@ function countsLine(counts2, dots, zeros = true) {
     ...drifted > 0 ? [`${dot("drift", drifted)}${drifted} drifted`] : [],
     ...shown3(deploying) ? [`${dot("deploying", deploying)}${deploying} deploying`] : [],
     ...shown3(previewFailed) ? [`${dot("preview-failed", previewFailed)}${previewFailed} preview failed`] : [],
-    ...shown3(inSync) ? [`${dot("in-sync", inSync)}${inSync} in sync`] : []
+    ...shown3(inSync) ? [`${dot("in-sync", inSync)}${inSync} in sync`] : [],
+    ...counts2.busy > 0 ? [`${dot("busy", counts2.busy)}${counts2.busy} busy`] : []
   ];
   if (destroying > 0) {
     const words = destroying === 1 ? "stack deletes or replaces" : "stacks delete or replace";
@@ -61120,7 +61173,13 @@ function previewFailedSection(facts) {
   const { previewFailed } = facts;
   if (previewFailed.length === 0)
     return [];
-  return ["## Preview failed", PREVIEW_FAILED_LINE, blocks(previewFailed)];
+  return ["## Preview failed", previewFailedLine(previewFailed.length), blocks(previewFailed)];
+}
+function busySection(facts) {
+  const { busy } = facts;
+  if (busy.length === 0)
+    return [];
+  return ["## Busy", busyLine(busy.length), blocks(busy)];
 }
 function inSyncSection(input2, facts, layout, off) {
   const out = [];
@@ -61189,7 +61248,10 @@ function renderBody(input2) {
   const freezes = (input2.freezes ?? []).map((freeze) => freezeLine(freeze, input2.timeZone));
   const scanLines = [scan, running, runWaits, ...freezes].filter((line) => line !== undefined);
   if (input2.personality)
-    out.push(picture(facts.headerState, facts.crates, facts.signs, input2.actionRef).join(`
+    out.push(picture(facts.headerState, facts.crates, facts.signs, input2.actionRef, facts.counts.busy, {
+      previews: facts.counts.previewFailed,
+      deploys: facts.counts.failedDeploys
+    }).join(`
 `), '<div align="center">', counts2, ...scanLines, "</div>");
   else
     out.push(counts2, ...scanLines);
@@ -61206,7 +61268,7 @@ function renderBody(input2) {
     updates: () => updatesSection(input2),
     pending: () => pendingSection(input2, facts, layout),
     drifted: () => driftedSection(input2, facts, layout, off),
-    previewFailed: () => previewFailedSection(facts),
+    previewFailed: () => [...previewFailedSection(facts), ...busySection(facts)],
     inSync: () => inSyncSection(input2, facts, layout, off),
     recentlyDeployed: () => recentSection(input2)
   };
@@ -61812,6 +61874,8 @@ function previewFailureText(reason) {
       return "Sluiceway failed inside itself, which is a bug";
     case "env-file-not-loaded":
       return "the env file of the stack could not be loaded";
+    case "stack-busy":
+      return "another update holds the stack's lock";
     case "in-summary":
       return "the reason is in the summary of the run";
   }
@@ -63251,6 +63315,32 @@ function branchMovedComment({ login, stackId: stackId2, onMerge }) {
   return `@${login} ticked ${stack}, and a newer commit reached the branch before the deploy started, so nothing was deployed. ${tail} Tick it again to deploy that.`;
 }
 
+// src/core/preview-retry.ts
+var PREVIEW_RETRY_PAUSE_SECONDS = 10;
+function worthASecondTry(reason) {
+  switch (reason.kind) {
+    case "tool-error":
+    case "authentication-error":
+    case "resource-error":
+    case "tool-timed-out":
+    case "stack-busy":
+      return true;
+    case "stack-not-found":
+    case "configuration-error":
+    case "timed-out":
+    case "unreadable-output":
+    case "output-too-large":
+    case "unknown-step":
+    case "internal-error":
+    case "env-file-not-loaded":
+    case "in-summary":
+      return false;
+  }
+}
+function isBusy(result2) {
+  return !result2.ok && result2.reason.kind === "stack-busy";
+}
+
 // src/render/preview-result.ts
 function previewRow(stackId2, result2, links2, failure2, options = {}) {
   if (!result2.ok) {
@@ -63259,7 +63349,8 @@ function previewRow(stackId2, result2, links2, failure2, options = {}) {
       stackId: stackId2,
       reason: previewFailureText(result2.reason),
       runUrl: links2.log,
-      failure: failure2
+      failure: failure2,
+      ...isBusy(result2) ? { busy: true } : {}
     };
   }
   const drifted = (result2.diff.drift ?? []).length > 0;
@@ -63300,10 +63391,13 @@ function previewSummary(stackId2, result2, merges, policies) {
     kind: "preview-failed",
     stackId: stackId2,
     reason: previewFailureText(result2.reason),
-    ignore: result2.reason.kind === "stack-not-found" ? globOf(stackId2) : undefined
+    ignore: result2.reason.kind === "stack-not-found" ? globOf(stackId2) : undefined,
+    ...isBusy(result2) ? { busy: true } : {}
   };
 }
 function previewOutcome(result2) {
+  if (isBusy(result2) && !result2.ok)
+    return `busy, ${previewFailureText(result2.reason)}`;
   if (!result2.ok)
     return `preview failed, ${previewFailureText(result2.reason)}`;
   const drifted = (result2.diff.drift ?? []).length > 0;
@@ -68642,12 +68736,15 @@ function renderSummary(stacks2, options = {}) {
   const hasDrift = (stack) => (stack.diff.drift ?? []).length > 0;
   const drifted = diffs.filter((stack) => stack.diff.changes.length === 0 && hasDrift(stack));
   const inSync = diffs.filter((stack) => stack.diff.changes.length === 0 && !hasDrift(stack));
-  const failed3 = sorted.filter((stack) => stack.kind === "preview-failed");
+  const notPreviewed = sorted.filter((stack) => stack.kind === "preview-failed");
+  const failed3 = notPreviewed.filter((stack) => !stack.busy);
+  const busy = notPreviewed.filter((stack) => stack.busy);
   const counted2 = stacks2.length === 0 ? "No stacks previewed." : `${plural2(stacks2.length, "stack")} previewed: ${[
     pending.length && `${pending.length} pending`,
     drifted.length && `${drifted.length} drifted`,
     failed3.length && `${failed3.length} preview failed`,
-    inSync.length && `${inSync.length} in sync`
+    inSync.length && `${inSync.length} in sync`,
+    busy.length && `${busy.length} busy`
   ].filter(Boolean).join(", ")}.`;
   const tail = [];
   if (drifted.length > 0) {
@@ -68662,6 +68759,10 @@ function renderSummary(stacks2, options = {}) {
     tail.push("### Preview failed", failed3.map((stack) => failedLine(stack, options)).join(`
 `));
   }
+  if (busy.length > 0) {
+    tail.push("### Busy", busy.map((stack) => failedLine(stack, options)).join(`
+`));
+  }
   if (inSync.length > 0) {
     tail.push("### In sync", inSync.map((stack) => `- ${anchorTag(stack.diff.stackId)}${escapeText(stack.diff.stackId)}`).join(`
 `));
@@ -68672,7 +68773,8 @@ function renderSummary(stacks2, options = {}) {
   const index = [
     pending.length > 0 && `- Pending: ${pending.map((stack) => indexLink(stack.diff.stackId)).join(" · ")}`,
     drifted.length > 0 && `- Drifted: ${drifted.map((stack) => indexLink(stack.diff.stackId)).join(" · ")}`,
-    failed3.length > 0 && `- Preview failed: ${failed3.map((stack) => indexLink(stack.stackId)).join(" · ")}`
+    failed3.length > 0 && `- Preview failed: ${failed3.map((stack) => indexLink(stack.stackId)).join(" · ")}`,
+    busy.length > 0 && `- Busy: ${busy.map((stack) => indexLink(stack.stackId)).join(" · ")}`
   ].filter((line3) => line3 !== false);
   const frame = (shortened2) => [
     "## Sluiceway scan",
@@ -69155,7 +69257,7 @@ async function scanning(context3, report2) {
     const all = [...previewed.values()].sort((a, b) => byCodeUnit(a.id, b.id));
     await writeSummary2(context3, all, { logDiff, unclaimed }, attributed);
   }
-  const failed3 = [...previewed.values()].filter(({ result: result2 }) => !result2.ok);
+  const failed3 = [...previewed.values()].filter(({ result: result2 }) => !result2.ok && !isBusy(result2));
   const faults = failed3.filter(({ result: result2 }) => !result2.ok && result2.reason.kind === "internal-error").map(({ id }) => id).sort(byCodeUnit);
   if (faults.length > 0) {
     throw new ScanFailedError(`The preview of ${faults.join(", ")} failed inside Sluiceway, which is a bug. The dashboard was written first and shows ${faults.length === 1 ? "it" : "them"} as a preview failure. The job log holds the error in the group of the stack. Please report it at https://github.com/sluiceway/sluiceway/issues.`);
@@ -69419,8 +69521,9 @@ async function previewAll(context3, stacks2, logDiff, showValues, valueFingerpri
   sayPool();
   log.info(`Previewing ${plural2(stacks2.length, "stack")} with a pool of ${context3.pool.size} and a time limit of ${minutes(context3.previewTimeoutMinutes)} for each preview.`);
   const poolStarted = now().getTime();
-  const previewed = await runPool(stacks2, context3.pool.size, async (configured) => {
+  const previewOne2 = async (configured, again) => {
     const id = stackId(configured.stack);
+    const said = again ? "again " : "";
     const startedAt = now();
     const started = startedAt.getTime();
     const options = {
@@ -69448,11 +69551,15 @@ async function previewAll(context3, stacks2, logDiff, showValues, valueFingerpri
         detail,
         toolLog: ""
       };
-      log.info(`Previewed ${logGroupTitle(id)} in ${seconds3(milliseconds2)}: ${previewOutcome(result3)}`);
+      log.info(`Previewed ${logGroupTitle(id)} ${said}in ${seconds3(milliseconds2)}: ${previewOutcome(result3)}`);
       return { id, result: result3, startedAt, milliseconds: milliseconds2 };
     }
     let milliseconds = now().getTime() - started;
-    log.info(`Previewed ${logGroupTitle(id)} in ${seconds3(milliseconds)}: ${previewOutcome(previewedOnly)}`);
+    log.info(`Previewed ${logGroupTitle(id)} ${said}in ${seconds3(milliseconds)}: ${previewOutcome(previewedOnly)}`);
+    if (!previewedOnly.ok) {
+      for (const line3 of lastToolLines(id, previewedOnly.toolLog))
+        log.info(line3);
+    }
     if (previewedOnly.ok && previewedOnly.dependencies) {
       log.info(readDependenciesText(id, previewedOnly.dependencies));
     }
@@ -69504,12 +69611,48 @@ async function previewAll(context3, stacks2, logDiff, showValues, valueFingerpri
     const toolDiff5 = await adapter.toolDiff(configured.stack, options);
     log.info(`Ran the tool's own diff of ${logGroupTitle(id)} in ${seconds3(now().getTime() - toolDiffStarted)}${toolDiff5.ok ? "" : `: ${previewFailureText(toolDiff5.reason)}`}.`);
     return { id, result: result2, startedAt, milliseconds, toolDiff: toolDiff5, drift, ...tested };
-  });
+  };
+  const previewed = await runPool(stacks2, context3.pool.size, (configured) => previewOne2(configured, false));
   const total = now().getTime() - poolStarted;
   const addedUp = previewed.reduce((sum, { milliseconds }) => sum + milliseconds, 0);
   const slowest = previewed.reduce((a, b) => b.milliseconds > a.milliseconds ? b : a);
   log.info(`Previewed ${plural2(previewed.length, "stack")} in ${seconds3(total)} with a pool of ${context3.pool.size}. Added up, the previews took ${seconds3(addedUp)}. The slowest was ${logGroupTitle(slowest.id)} with ${seconds3(slowest.milliseconds)}.`);
+  const failures = previewed.filter(({ result: result2 }) => !result2.ok && !isBusy(result2));
+  const secondTries = previewed.filter(({ result: result2 }) => !result2.ok && worthASecondTry(result2.reason));
+  if (secondTries.length > 0 && everyPreviewFailed(previewed.length, failures.length)) {
+    log.info("Every preview failed, so none is tried again: that nearly always means the environment is broken.");
+  } else if (secondTries.length > 0) {
+    const one = secondTries.length === 1;
+    log.info(`${plural2(secondTries.length, "preview")} ${one ? "did not work and is" : "did not work and are"} tried once more after a pause of ${PREVIEW_RETRY_PAUSE_SECONDS} s: ${secondTries.map(({ id }) => logGroupTitle(id)).join(", ")}.`);
+    await context3.pause?.(PREVIEW_RETRY_PAUSE_SECONDS * 1000);
+    const byId2 = new Map(stacks2.map((configured) => [stackId(configured.stack), configured]));
+    const tried = await runPool(secondTries, context3.pool.size, async (first) => {
+      const configured = byId2.get(first.id);
+      if (configured === undefined || first.result.ok)
+        return first;
+      const second2 = await previewOne2(configured, true);
+      return {
+        ...second2,
+        milliseconds: first.milliseconds + second2.milliseconds,
+        firstTry: { reason: first.result.reason, toolLog: first.result.toolLog }
+      };
+    });
+    const second = new Map(tried.map((one2) => [one2.id, one2]));
+    return [...previewed.map((one2) => second.get(one2.id) ?? one2), ...unpreparedFailures];
+  }
   return [...previewed, ...unpreparedFailures];
+}
+var TOOL_LAST_LINES = 20;
+function lastToolLines(id, toolLog2) {
+  const title = logGroupTitle(id);
+  const all = lines5(toolLog2);
+  if (all.length === 0)
+    return [`The tool wrote nothing for ${title}.`];
+  const shown3 = all.slice(-TOOL_LAST_LINES);
+  return [
+    shown3.length === all.length ? `What the tool wrote for ${title}:` : `The last ${shown3.length} of the ${all.length} lines the tool wrote for ${title}, which the group of the stack holds in full:`,
+    ...shown3.map((line3) => `[${title}] ${line3}`)
+  ];
 }
 function withoutDocument(result2) {
   if (!result2.ok || result2.document === undefined)
@@ -69568,24 +69711,34 @@ function readDependenciesText(id, read5) {
 }
 function logResults(context3, previewed) {
   const { log } = context3;
-  for (const { id, result: result2, toolDiff: toolDiff5, drift, policies, policyLog } of previewed) {
+  for (const { id, result: result2, toolDiff: toolDiff5, drift, policies, policyLog, firstTry } of previewed) {
     const words = lines5(result2.toolLog + (toolDiff5?.toolLog ?? "") + (drift?.toolLog ?? "") + (policyLog ?? ""));
+    const firstWords = lines5(firstTry?.toolLog ?? "");
     const own2 = [
-      ...result2.ok ? diffLogLines(result2.diff) : [`preview failed: ${previewFailureText(result2.reason)}`, ...result2.detail],
+      ...result2.ok ? diffLogLines(result2.diff) : [
+        isBusy(result2) ? `busy: ${previewFailureText(result2.reason)}` : `preview failed${firstTry ? " twice" : ""}: ${previewFailureText(result2.reason)}`,
+        ...result2.detail
+      ],
       ...drift !== undefined && !drift.ok ? [`drift check failed: ${previewFailureText(drift.reason)}`, ...drift.detail] : [],
       ...policyLogLines(policies),
       ...costLogLines(result2),
       ...toolDiffLogLines(toolDiff5),
-      ...words.length > 0 ? ["The tool's own words:", ...words] : []
+      ...words.length > 0 ? ["The tool's own words:", ...words] : [],
+      ...firstTry ? [
+        `The first try ${firstTry.reason.kind === "stack-busy" ? "found the stack busy" : "failed"}: ${previewFailureText(firstTry.reason)}`,
+        ...firstWords.length > 0 ? ["The tool's own words on the first try:", ...firstWords] : []
+      ] : []
     ];
     if (toolDiff5?.ok)
       log.group(logGroupTitle(id), own2, lines5(toolDiff5.text));
     else
       log.group(logGroupTitle(id), own2);
   }
-  for (const { id, result: result2, drift } of previewed) {
-    if (!result2.ok) {
-      log.warning(`${COUNT_DOT["preview-failed"]} The preview of ${logGroupTitle(id)} failed: ${previewFailureText(result2.reason)}.`, "Preview failed");
+  for (const { id, result: result2, drift, firstTry } of previewed) {
+    if (isBusy(result2) && !result2.ok) {
+      log.info(`${logGroupTitle(id)} is busy: ${previewFailureText(result2.reason)}.${firstTry ? " It was tried twice." : ""} Its row says busy, and the next scan previews it.`);
+    } else if (!result2.ok) {
+      log.warning(`${COUNT_DOT["preview-failed"]} The preview of ${logGroupTitle(id)} failed${firstTry ? " twice" : ""}: ${previewFailureText(result2.reason)}.`, "Preview failed");
     }
     if (drift !== undefined && !drift.ok) {
       log.warning(`The drift check of ${logGroupTitle(id)} failed: ${previewFailureText(drift.reason)}. Its row shows the preview alone.`, "Drift check failed");
@@ -69998,6 +70151,7 @@ async function runScan(directory, step3) {
     pool: poolSize(inputs.concurrency, machineCores2()),
     previewTimeoutMinutes: inputs.previewTimeoutMinutes,
     strict: inputs.strict,
+    pause: (milliseconds) => new Promise((resolve5) => setTimeout(resolve5, milliseconds)),
     repoUrl: job.repoUrl,
     runId: job.runId,
     runAttempt: job.runAttempt,

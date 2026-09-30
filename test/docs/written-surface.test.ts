@@ -202,6 +202,7 @@ const WRITTEN_KEYS = {
       replaces: 1,
       tracking: 1,
       behind: ["c"],
+      busy: true,
     }),
   ),
   merge: keysOf(mergeMarker({ pr: 1, stackIds: ["a"], head: "h" })),

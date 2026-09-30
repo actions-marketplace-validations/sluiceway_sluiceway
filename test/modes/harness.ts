@@ -231,6 +231,8 @@ export function harness(
     now: steppingClock(),
     pool: { size: 4, from: "input" },
     previewTimeoutMinutes: 10,
+    // No test waits for the pause before a second try (record 0117).
+    pause: async () => {},
     repoUrl: REPO_URL,
     runId: RUN_ID,
     runAttempt: "1",

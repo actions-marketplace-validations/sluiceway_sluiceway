@@ -32151,6 +32151,8 @@ function previewFailureText(reason) {
       return "Sluiceway failed inside itself, which is a bug";
     case "env-file-not-loaded":
       return "the env file of the stack could not be loaded";
+    case "stack-busy":
+      return "another update holds the stack's lock";
     case "in-summary":
       return "the reason is in the summary of the run";
   }

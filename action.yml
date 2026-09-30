@@ -34,6 +34,7 @@ inputs:
   strict:
     description: >-
       scan only. true turns the job red when any preview failed, after the dashboard is written.
+      A preview counts as failed after its second try, and a busy stack does not count.
       Off by default, because a job that is red for one broken stack on every push teaches people
       to ignore red.
     required: false
@@ -137,8 +138,8 @@ outputs:
       failed before it wrote the dashboard.
   preview-failed:
     description: >-
-      Set by scan. The number of stacks on the dashboard whose preview failed. 0 when the scan
-      failed before it wrote the dashboard.
+      Set by scan. The number of stacks on the dashboard whose preview failed. A busy stack is not
+      counted. 0 when the scan failed before it wrote the dashboard.
   in-sync:
     description: >-
       Set by scan. The number of stacks on the dashboard that are in sync. 0 when the scan failed

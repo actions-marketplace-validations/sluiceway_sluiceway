@@ -204,7 +204,8 @@ describe("the job result (record 0012)", () => {
     expect(log.warnings).toEqual([
       {
         title: "Preview failed",
-        message: "🔴 The preview of b:prod failed: the tool exited with an error (exit code 255).",
+        message:
+          "🔴 The preview of b:prod failed twice: the tool exited with an error (exit code 255).",
       },
     ]);
   });

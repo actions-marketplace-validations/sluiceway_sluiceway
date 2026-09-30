@@ -1,5 +1,7 @@
 # The body puts pending first and folds away only rows that need nothing
 
+> Amended by 0117 and 0118: busy stacks have a section of their own, `## Busy`, right under Preview failed, and the line above the preview failures counts its rows and says what comes next.
+>
 > Amended by 0114: the order of the sections is `dashboard.sections`, In sync may be a list or off, the counts line may leave out a count of 0, and the rescan box and the footer may be off. A section that is off keeps its rows in one closed fold at the end of the sections.
 >
 > Amended by 0108: a scan that is running gets one line right under the scan line, from the root marker, above the line of 0086.

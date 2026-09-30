@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  busyLine,
   DRY,
   GOOD_NEWS,
   INSTRUCTION_LINE,
   NOTHING_TO_DEPLOY,
-  PREVIEW_FAILED_LINE,
+  previewFailedLine,
   WARM,
 } from "../../src/render/voice.ts";
 
@@ -83,8 +84,11 @@ describe("every other line is plain", () => {
   test("the words", () => {
     expect(INSTRUCTION_LINE).toBe("Tick a box to deploy that stack exactly as its row shows it.");
     expect(NOTHING_TO_DEPLOY).toBe("Nothing to deploy.");
-    expect(PREVIEW_FAILED_LINE).toBe(
-      "These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.",
+    expect(previewFailedLine(1)).toBe(
+      "This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.",
+    );
+    expect(previewFailedLine(3)).toBe(
+      "These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.",
     );
   });
 
@@ -98,7 +102,10 @@ describe("every other line is plain", () => {
       DRY.firstRun,
       INSTRUCTION_LINE,
       NOTHING_TO_DEPLOY,
-      PREVIEW_FAILED_LINE,
+      previewFailedLine(1),
+      previewFailedLine(2),
+      busyLine(1),
+      busyLine(2),
     ].join("\n");
     expect(all).not.toMatch(/[!\u2014\u2013]|:[a-z_]+:|\p{Extended_Pictographic}/u);
     expect(all).not.toMatch(/\b(I|I'm|me|my|we|our)\b/);

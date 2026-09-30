@@ -29,7 +29,7 @@ import {
   type RecordEnd,
 } from "../core/deployment.ts";
 import { diffHash } from "../core/diff-hash.ts";
-import { previewFailureText } from "../core/failure-reason.ts";
+import { type PreviewFailureReason, previewFailureText } from "../core/failure-reason.ts";
 import {
   MAX_WAITING_ON_CHECKS,
   NOT_QUALIFIED,
@@ -48,6 +48,7 @@ import {
   policyRunFailureText,
 } from "../core/policy.ts";
 import { type PoolSize, runPool } from "../core/pool.ts";
+import { isBusy, PREVIEW_RETRY_PAUSE_SECONDS, worthASecondTry } from "../core/preview-retry.ts";
 import { openRepo } from "../core/repo.ts";
 import { type MatrixEntry, matrixOutput } from "../core/resolve.ts";
 import {
@@ -169,6 +170,9 @@ export interface ScanContext {
   // The `strict` input: any preview failure turns the job red, after the
   // dashboard is written (slice 5.9).
   strict?: boolean | undefined;
+  // Waits before the second try of the previews that failed (record 0117).
+  // The glue hands in a real wait. Absent, the scan does not wait.
+  pause?: ((milliseconds: number) => Promise<void>) | undefined;
   // `https://github.com/<owner>/<repo>`.
   repoUrl: string;
   runId: string;
@@ -238,6 +242,10 @@ interface Previewed extends PreviewedStack {
   // job log.
   policies?: PolicyOutcome | undefined;
   policyLog?: string | undefined;
+  // The first try of a stack that was previewed twice because its first
+  // preview failed (record 0117): why it failed and the tool's own words,
+  // for the job log and nothing else.
+  firstTry?: { reason: PreviewFailureReason; toolLog: string } | undefined;
 }
 
 // The policies of a scan (record 0106): whether any stack has some, and
@@ -734,7 +742,8 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     await writeSummary(context, all, { logDiff, unclaimed }, attributed);
   }
 
-  const failed = [...previewed.values()].filter(({ result }) => !result.ok);
+  // A busy stack is not a failed one (record 0117), so it turns no job red.
+  const failed = [...previewed.values()].filter(({ result }) => !result.ok && !isBusy(result));
   const faults = failed
     .filter(({ result }) => !result.ok && result.reason.kind === "internal-error")
     .map(({ id }) => id)
@@ -1220,8 +1229,9 @@ async function previewAll(
     `Previewing ${plural(stacks.length, "stack")} with a pool of ${context.pool.size} and a time limit of ${minutes(context.previewTimeoutMinutes)} for each preview.`,
   );
   const poolStarted = now().getTime();
-  const previewed = await runPool(stacks, context.pool.size, async (configured) => {
+  const previewOne = async (configured: ConfiguredStack, again: boolean): Promise<Previewed> => {
     const id = stackId(configured.stack);
+    const said = again ? "again " : "";
     const startedAt = now();
     const started = startedAt.getTime();
     const options = {
@@ -1256,14 +1266,20 @@ async function previewAll(
         toolLog: "",
       };
       log.info(
-        `Previewed ${logGroupTitle(id)} in ${seconds(milliseconds)}: ${previewOutcome(result)}`,
+        `Previewed ${logGroupTitle(id)} ${said}in ${seconds(milliseconds)}: ${previewOutcome(result)}`,
       );
       return { id, result, startedAt, milliseconds };
     }
     let milliseconds = now().getTime() - started;
     log.info(
-      `Previewed ${logGroupTitle(id)} in ${seconds(milliseconds)}: ${previewOutcome(previewedOnly)}`,
+      `Previewed ${logGroupTitle(id)} ${said}in ${seconds(milliseconds)}: ${previewOutcome(previewedOnly)}`,
     );
+    // What the tool wrote, right under the line that says its preview did
+    // not work, so nobody has to find the group of one stack among many
+    // (record 0117).
+    if (!previewedOnly.ok) {
+      for (const line of lastToolLines(id, previewedOnly.toolLog)) log.info(line);
+    }
     if (previewedOnly.ok && previewedOnly.dependencies) {
       log.info(readDependenciesText(id, previewedOnly.dependencies));
     }
@@ -1340,7 +1356,10 @@ async function previewAll(
       `Ran the tool's own diff of ${logGroupTitle(id)} in ${seconds(now().getTime() - toolDiffStarted)}${toolDiff.ok ? "" : `: ${previewFailureText(toolDiff.reason)}`}.`,
     );
     return { id, result, startedAt, milliseconds, toolDiff, drift, ...tested };
-  });
+  };
+  const previewed = await runPool(stacks, context.pool.size, (configured) =>
+    previewOne(configured, false),
+  );
   const total = now().getTime() - poolStarted;
 
   const addedUp = previewed.reduce((sum, { milliseconds }) => sum + milliseconds, 0);
@@ -1348,7 +1367,64 @@ async function previewAll(
   log.info(
     `Previewed ${plural(previewed.length, "stack")} in ${seconds(total)} with a pool of ${context.pool.size}. Added up, the previews took ${seconds(addedUp)}. The slowest was ${logGroupTitle(slowest.id)} with ${seconds(slowest.milliseconds)}.`,
   );
+
+  // The second try (record 0117): every preview that failed for a reason a
+  // second run can change is taken once more, after one pause for all of
+  // them, through the same pool. When every preview failed, the environment
+  // is broken (record 0012), and a second round would only take as long
+  // again.
+  const failures = previewed.filter(({ result }) => !result.ok && !isBusy(result));
+  const secondTries = previewed.filter(
+    ({ result }) => !result.ok && worthASecondTry(result.reason),
+  );
+  if (secondTries.length > 0 && everyPreviewFailed(previewed.length, failures.length)) {
+    log.info(
+      "Every preview failed, so none is tried again: that nearly always means the environment is broken.",
+    );
+  } else if (secondTries.length > 0) {
+    const one = secondTries.length === 1;
+    log.info(
+      `${plural(secondTries.length, "preview")} ${one ? "did not work and is" : "did not work and are"} tried once more after a pause of ${PREVIEW_RETRY_PAUSE_SECONDS} s: ${secondTries
+        .map(({ id }) => logGroupTitle(id))
+        .join(", ")}.`,
+    );
+    await context.pause?.(PREVIEW_RETRY_PAUSE_SECONDS * 1000);
+    const byId = new Map(stacks.map((configured) => [stackId(configured.stack), configured]));
+    const tried = await runPool(secondTries, context.pool.size, async (first) => {
+      const configured = byId.get(first.id);
+      if (configured === undefined || first.result.ok) return first;
+      const second = await previewOne(configured, true);
+      return {
+        ...second,
+        // The time the tool took for the stack, both tries.
+        milliseconds: first.milliseconds + second.milliseconds,
+        firstTry: { reason: first.result.reason, toolLog: first.result.toolLog },
+      };
+    });
+    const second = new Map(tried.map((one) => [one.id, one]));
+    return [...previewed.map((one) => second.get(one.id) ?? one), ...unpreparedFailures];
+  }
   return [...previewed, ...unpreparedFailures];
+}
+
+// How many of the tool's last lines the job log shows under a preview that
+// did not work (record 0117). The group of the stack holds every line.
+const TOOL_LAST_LINES = 20;
+
+// The tool's own words may reach the job log and nothing else (record 0022).
+// They stand behind the stack id, as the lines a preview writes while it
+// runs do, since previews run side by side.
+function lastToolLines(id: string, toolLog: string): string[] {
+  const title = logGroupTitle(id);
+  const all = lines(toolLog);
+  if (all.length === 0) return [`The tool wrote nothing for ${title}.`];
+  const shown = all.slice(-TOOL_LAST_LINES);
+  return [
+    shown.length === all.length
+      ? `What the tool wrote for ${title}:`
+      : `The last ${shown.length} of the ${all.length} lines the tool wrote for ${title}, which the group of the stack holds in full:`,
+    ...shown.map((line) => `[${title}] ${line}`),
+  ];
 }
 
 // The document leaves with the policy run (record 0106): it holds the values
@@ -1445,14 +1521,20 @@ function readDependenciesText(id: string, read: ReadDependencies): string {
 // on the run as well (record 0012).
 function logResults(context: ScanContext, previewed: Previewed[]): void {
   const { log } = context;
-  for (const { id, result, toolDiff, drift, policies, policyLog } of previewed) {
+  for (const { id, result, toolDiff, drift, policies, policyLog, firstTry } of previewed) {
     const words = lines(
       result.toolLog + (toolDiff?.toolLog ?? "") + (drift?.toolLog ?? "") + (policyLog ?? ""),
     );
+    const firstWords = lines(firstTry?.toolLog ?? "");
     const own = [
       ...(result.ok
         ? diffLogLines(result.diff)
-        : [`preview failed: ${previewFailureText(result.reason)}`, ...result.detail]),
+        : [
+            isBusy(result)
+              ? `busy: ${previewFailureText(result.reason)}`
+              : `preview failed${firstTry ? " twice" : ""}: ${previewFailureText(result.reason)}`,
+            ...result.detail,
+          ]),
       // A failed drift check says why. What it found is in the diff above.
       ...(drift !== undefined && !drift.ok
         ? [`drift check failed: ${previewFailureText(drift.reason)}`, ...drift.detail]
@@ -1461,14 +1543,29 @@ function logResults(context: ScanContext, previewed: Previewed[]): void {
       ...costLogLines(result),
       ...toolDiffLogLines(toolDiff),
       ...(words.length > 0 ? ["The tool's own words:", ...words] : []),
+      // The first try of a stack that was previewed twice (record 0117).
+      ...(firstTry
+        ? [
+            `The first try ${firstTry.reason.kind === "stack-busy" ? "found the stack busy" : "failed"}: ${previewFailureText(firstTry.reason)}`,
+            ...(firstWords.length > 0
+              ? ["The tool's own words on the first try:", ...firstWords]
+              : []),
+          ]
+        : []),
     ];
     if (toolDiff?.ok) log.group(logGroupTitle(id), own, lines(toolDiff.text));
     else log.group(logGroupTitle(id), own);
   }
-  for (const { id, result, drift } of previewed) {
-    if (!result.ok) {
+  for (const { id, result, drift, firstTry } of previewed) {
+    // A busy stack is not a failed one (record 0117): no warning on the run,
+    // and a line that says what its row says.
+    if (isBusy(result) && !result.ok) {
+      log.info(
+        `${logGroupTitle(id)} is busy: ${previewFailureText(result.reason)}.${firstTry ? " It was tried twice." : ""} Its row says busy, and the next scan previews it.`,
+      );
+    } else if (!result.ok) {
       log.warning(
-        `${COUNT_DOT["preview-failed"]} The preview of ${logGroupTitle(id)} failed: ${previewFailureText(result.reason)}.`,
+        `${COUNT_DOT["preview-failed"]} The preview of ${logGroupTitle(id)} failed${firstTry ? " twice" : ""}: ${previewFailureText(result.reason)}.`,
         "Preview failed",
       );
     }

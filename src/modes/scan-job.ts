@@ -72,6 +72,9 @@ export async function runScan(directory: string, step?: AutoStep): Promise<void>
     pool: poolSize(inputs.concurrency, machineCores()),
     previewTimeoutMinutes: inputs.previewTimeoutMinutes,
     strict: inputs.strict,
+    // The pause before the second try of the previews that failed (record
+    // 0117).
+    pause: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
     repoUrl: job.repoUrl,
     runId: job.runId,
     runAttempt: job.runAttempt,

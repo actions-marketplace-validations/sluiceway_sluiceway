@@ -85,6 +85,8 @@ You can run the recorder yourself to try a scenario: `bun run record:fixtures --
 
 Never edit a file under `test/fixtures/pulumi/` by hand.
 
+A scenario about a lock needs a command that is still running while the recorded one runs. A `hold` step starts it, waits until a file of the copy shows that it holds what the scenario needs, and stops it when the scenario ends (record 0117). `state-locked` holds a deploy of a resource that takes a minute, so that the recorded plan cannot take the state lock.
+
 OpenTofu works the same way (record 0053): `scripts/fixtures/opentofu-scenarios.ts` drives `examples/opentofu-basic`, `FIXTURE_TOFU_VERSIONS` in `scripts/fixtures/versions.ts` names the two versions, and the `fixtures-opentofu` job of CI records them. A recording writes the plan file as `{plan}`, so it holds no path of the machine that made it. To take them from CI:
 
 ```sh

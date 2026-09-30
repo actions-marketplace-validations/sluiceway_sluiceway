@@ -483,3 +483,78 @@ describe("checking a recording against its scenario", () => {
     ]);
   });
 });
+
+// A lock is only held while the command that took it runs, so a scenario
+// about a busy stack keeps one running behind its other steps.
+describe("a held command", () => {
+  const LOCK = "network/.lock";
+  const scenario: Scenario = {
+    name: "locked",
+    description: "A preview while another update holds the lock.",
+    steps: [
+      { kind: "hold", cwd: "network", argv: ["pulumi", "up"], until: LOCK },
+      { kind: "record", id: "preview", cwd: "network", argv: PREVIEW, stdout: "text" },
+    ],
+  };
+
+  test("runs while the steps after it run, is stopped when the scenario ends, and is not saved", async () => {
+    const events: string[] = [];
+    const { runner } = replay({});
+    const recording = await recordScenario(scenario, {
+      exampleDir: example,
+      workDir: work,
+      outDir: out,
+      cliVersion: "v3.229.0",
+      parentEnv: {},
+      runner: async (run) => {
+        events.push(`ran ${run.argv.slice(0, 2).join(" ")}`);
+        return runner(run);
+      },
+      hold: (run) => {
+        events.push(`held ${run.argv.join(" ")} in ${run.cwd.slice(work.length)}`);
+        writeFileSync(join(run.cwd, ".lock"), "");
+        return { stop: async () => void events.push("stopped") };
+      },
+    });
+
+    expect(events).toEqual([
+      "held pulumi up in /scenarios/locked/project/network",
+      "ran pulumi preview",
+      "stopped",
+    ]);
+    expect(recording.commands.map((command) => command.id)).toEqual(["preview"]);
+    expect(checkRecording(join(out, "locked"), scenario)).toEqual([]);
+  });
+
+  test("that never gets as far as the scenario needs stops the scenario, and is stopped itself", async () => {
+    let stopped = false;
+    const { runner, runs } = replay({});
+    const recording = recordScenario(scenario, {
+      exampleDir: example,
+      workDir: work,
+      outDir: out,
+      cliVersion: "v3.229.0",
+      parentEnv: {},
+      runner,
+      holdWaitMs: 50,
+      hold: () => ({
+        stop: async () => {
+          stopped = true;
+        },
+      }),
+    });
+
+    await expect(recording).rejects.toThrow(
+      'Scenario "locked": the held command "pulumi up" never made network/.lock, so nothing shows that it holds what the scenario needs.',
+    );
+    expect(stopped).toBe(true);
+    expect(runs).toEqual([]);
+  });
+
+  test("needs a recorder that can hold one", async () => {
+    const { runner } = replay({});
+    await expect(record(scenario, runner)).rejects.toThrow(
+      'Scenario "locked": this recorder cannot hold a command.',
+    );
+  });
+});

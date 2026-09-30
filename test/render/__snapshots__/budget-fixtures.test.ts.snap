@@ -6,7 +6,7 @@ exports[`the 100 stack fixture the body 1`] = `
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-dark.svg">
-    <img alt="Sluiceway: something failed, more than 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-light.svg">
+    <img alt="Sluiceway: 2 previews and 2 deploys failed, more than 20 stacks are pending, some changes delete or replace resources" width="880" src="https://raw.githubusercontent.com/sluiceway/sluiceway/v0.1.0/assets/mascot/failing-more-deletes-replaces-light.svg">
   </picture>
 </p>
 
@@ -431,7 +431,7 @@ Tick a box to deploy that stack exactly as its row shows it.
 
 ## Preview failed
 
-These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.
+These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.
 
 - **data/redis:staging** · preview failed: the tool exited with an error (exit code 255) · [run](https://github.com/example-org/infra/actions/runs/17034455121) <!-- sluiceway:row stack="data/redis:staging" state="preview-failed" -->
   <!-- /sluiceway:row -->

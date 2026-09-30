@@ -226,6 +226,18 @@ for (const version of VERSIONS) {
       expect(result.ok ? undefined : result.reason).toEqual({ kind: "tool-error", exitCode: 1 });
       expect(result.toolLog).toContain("No value for required variable");
     });
+
+    // Record 0117: the plan takes the state lock, and the recording holds a
+    // plan while another deploy of the stack runs. The tool gives a held lock
+    // no exit code of its own, so the adapter reads the one diagnostic the
+    // tool writes for it. The words still go to the job log and nowhere else.
+    test("a state lock that another run holds is a busy stack, not a tool error", async () => {
+      const result = await previewOf(version, "state-locked");
+      expect(result.ok ? undefined : result.reason).toEqual({ kind: "stack-busy" });
+      expect(result.toolLog).toContain("Error: Error acquiring the state lock");
+      expect(result.plans).toHaveLength(1);
+      expect(existsSync(dirname(result.plans[0] as string))).toBe(false);
+    });
   });
 }
 
@@ -257,6 +269,44 @@ describe("what no recording holds", () => {
       const result = await opentofu.preview(DEV, options(run));
       expect(result.ok ? undefined : result.reason).toEqual({ kind: "unreadable-output" });
     }
+  });
+
+  // Record 0117: only the summary of an error diagnostic names a held lock.
+  // A program whose own error quotes the phrase, in a detail or in a line
+  // that is no diagnostic, is still a tool error.
+  test("a failed plan that only quotes the lock phrase is a tool error", async () => {
+    const quoted = [
+      JSON.stringify({
+        "@level": "error",
+        "@message": "Error: Invalid value",
+        type: "diagnostic",
+        diagnostic: {
+          severity: "error",
+          summary: "Invalid value",
+          detail: "Error acquiring the state lock",
+        },
+      }),
+      JSON.stringify({
+        "@level": "warn",
+        "@message": "Warning: Error acquiring the state lock",
+        type: "diagnostic",
+        diagnostic: { severity: "warning", summary: "Error acquiring the state lock" },
+      }),
+      "Error acquiring the state lock",
+    ].join("\n");
+    const { run } = answering(exited(quoted, 1));
+    const result = await opentofu.preview(DEV, options(run));
+    expect(result.ok ? undefined : result.reason).toEqual({ kind: "tool-error", exitCode: 1 });
+  });
+
+  test("a plan that ran out of time on a held lock is still a plan that timed out", async () => {
+    const locked = JSON.stringify({
+      type: "diagnostic",
+      diagnostic: { severity: "error", summary: "Error acquiring the state lock" },
+    });
+    const { run } = answering({ status: "timed-out", stdout: locked, stderr: "" });
+    const result = await opentofu.preview(DEV, options(run));
+    expect(result.ok ? undefined : result.reason).toEqual({ kind: "timed-out", minutes: 3 });
   });
 
   test("an errored plan is never shown as in sync", async () => {

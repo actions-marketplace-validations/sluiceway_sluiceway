@@ -1,0 +1,25 @@
+{
+  "scenario": "preview-locked",
+  "description": "The preview while a deploy holds the stack lock of the file backend. It takes no lock and runs, so a preview never finds a Pulumi stack busy there (record 0117).",
+  "cliVersion": "v3.229.0",
+  "commands": [
+    {
+      "id": "preview",
+      "argv": [
+        "pulumi",
+        "preview",
+        "--json",
+        "--non-interactive",
+        "--color",
+        "never",
+        "--stack",
+        "dev"
+      ],
+      "cwd": "network",
+      "exitCode": 0,
+      "stdout": "preview.stdout",
+      "stderr": "preview.stderr",
+      "stdoutFormat": "json"
+    }
+  ]
+}

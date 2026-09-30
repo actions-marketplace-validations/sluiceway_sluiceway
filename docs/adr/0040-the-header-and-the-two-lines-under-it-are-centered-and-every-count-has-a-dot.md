@@ -1,5 +1,7 @@
 # The header and the two lines under it are centered, and every count has a dot
 
+> Amended by 0117: the counts line gains `N busy` after the in sync count, with the white dot, only when a stack is busy.
+>
 > Amended by 0043: there is no plain state any more. The dots are shown whenever there is a header, also when the picture carries the destroy sign.
 
 Record 0029 put the header, the counts line and the scan line at the top of the body, all left-aligned, the counts as plain text. With a header as wide as the issue (0038) the three belong together as one block, and the counts deserve to be found at a glance.

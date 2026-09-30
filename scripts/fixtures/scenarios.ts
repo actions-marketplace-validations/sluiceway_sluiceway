@@ -780,6 +780,16 @@ ${OUTPUTS}`,
     steps: [driftCheck("network", "ghost", { exit: "nonzero" }, "drift", "text")],
   },
   {
+    name: "preview-locked",
+    description:
+      "The preview while a deploy holds the stack lock of the file backend. It takes no lock and runs, so a preview never finds a Pulumi stack busy there (record 0117).",
+    steps: [
+      init("network", "dev"),
+      HELD_LOCK,
+      preview("network", "dev", { exit: "zero", ops: ["create"] }),
+    ],
+  },
+  {
     name: "stack-list",
     description:
       "The stacks the backend holds for network/, as the check with backend: true asks for them (record 0074): network:dev was made, network:prod was not, and a stack of app/ in the same backend is not listed.",

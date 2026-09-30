@@ -20,6 +20,9 @@ export interface RunResult {
 
 export type Runner = (run: Run) => Promise<RunResult>;
 
+// Starts a command that stays running, and hands back how to stop it.
+export type Holder = (run: Run) => { stop: () => Promise<void> };
+
 // "jsonl" is one JSON document per line, as the tool streams its events.
 // "diff" is text whose ops the tool's own reader finds (kubectl diff).
 export type StdoutFormat = "json" | "jsonl" | "text" | "diff";
@@ -56,6 +59,18 @@ export type Step =
   // Writes the prune file, the second file a kubectl stack with pruning hands
   // the tool (record 0070).
   | { kind: "prune-file"; content: string }
+  // Starts a command and leaves it running behind the steps after it, the way
+  // another update holds the lock of a stack while a preview runs. The
+  // scenario goes on once the file `until` names is in the copy, which shows
+  // that the command holds what the scenario needs, and the command is
+  // stopped when the scenario ends. Not saved.
+  | {
+      kind: "hold";
+      cwd: string;
+      argv: string[];
+      env?: Record<string, string>;
+      until: string;
+    }
   // Runs a command and saves what it printed.
   | {
       kind: "record";
@@ -138,6 +153,11 @@ export interface RecordOptions {
   runner: Runner;
   // The environment of the tool, built from nothing. Pulumi's when absent.
   environment?: (options: RecordOptions, backend: string) => Record<string, string>;
+  // Starts the command of a hold step. A recorder without one refuses such a
+  // scenario.
+  hold?: Holder;
+  // How long a hold step waits for its file, HOLD_WAIT_MS when absent.
+  holdWaitMs?: number;
   // The name of the plan file, "tfplan" when absent.
   planFileName?: string;
   // The plan file of a directory, for the bundle step.
@@ -151,6 +171,20 @@ export const RECORDING_FILE = "recording.json";
 // controller writes an object's status a few times in the seconds after a
 // deploy, and a run only races when one of those writes lands inside it.
 export const RUNS_WHILE_RACED = 10;
+
+// How long a held command gets to take what the scenario needs, and how often
+// the recorder looks.
+export const HOLD_WAIT_MS = 60_000;
+const HOLD_LOOK_MS = 25;
+
+async function appears(file: string, waitMs: number): Promise<boolean> {
+  const until = Date.now() + waitMs;
+  while (!existsSync(file)) {
+    if (Date.now() >= until) return false;
+    await new Promise((resolve) => setTimeout(resolve, HOLD_LOOK_MS));
+  }
+  return true;
+}
 
 export async function recordScenario(
   scenario: Scenario,
@@ -176,78 +210,103 @@ export async function recordScenario(
     argv.map((arg) => arg.replace(PLAN_FILE, planFile).replace(PRUNE_FILE, pruneFile));
   const cwdOf = (cwd: string) => (cwd === PLAN_DIR ? join(planFile, "..") : join(project, cwd));
 
-  for (const step of scenario.steps) {
-    if (step.kind === "edit") {
-      const file = join(project, step.file);
-      writeFileSync(file, replaceOnce(readFileSync(file, "utf8"), step, scenario.name));
-    } else if (step.kind === "write") {
-      const file = join(project, step.file);
-      mkdirSync(join(file, ".."), { recursive: true });
-      writeFileSync(file, step.content);
-    } else if (step.kind === "remove") {
-      const file = join(project, step.file);
-      if (!existsSync(file)) {
-        throw new Error(
-          `Scenario "${scenario.name}": expected ${step.file} to be there, and it is not.`,
+  const held: { stop: () => Promise<void> }[] = [];
+  try {
+    await runSteps();
+  } finally {
+    for (const one of held) await one.stop();
+  }
+
+  async function runSteps(): Promise<void> {
+    for (const step of scenario.steps) {
+      if (step.kind === "edit") {
+        const file = join(project, step.file);
+        writeFileSync(file, replaceOnce(readFileSync(file, "utf8"), step, scenario.name));
+      } else if (step.kind === "write") {
+        const file = join(project, step.file);
+        mkdirSync(join(file, ".."), { recursive: true });
+        writeFileSync(file, step.content);
+      } else if (step.kind === "remove") {
+        const file = join(project, step.file);
+        if (!existsSync(file)) {
+          throw new Error(
+            `Scenario "${scenario.name}": expected ${step.file} to be there, and it is not.`,
+          );
+        }
+        rmSync(file);
+      } else if (step.kind === "backend") {
+        const file = join(backend, step.file);
+        mkdirSync(join(file, ".."), { recursive: true });
+        writeFileSync(file, step.content);
+      } else if (step.kind === "bundle") {
+        if (options.bundle === undefined) {
+          throw new Error(`Scenario "${scenario.name}": this tool has no bundle step.`);
+        }
+        const bundled = options.bundle(join(project, step.cwd), step.recursive === true);
+        writeFileSync(planFile, step.append === undefined ? bundled : step.append(bundled));
+      } else if (step.kind === "prune-file") {
+        writeFileSync(pruneFile, step.content);
+      } else if (step.kind === "hold") {
+        if (options.hold === undefined) {
+          throw new Error(`Scenario "${scenario.name}": this recorder cannot hold a command.`);
+        }
+        held.push(
+          options.hold({
+            argv: argvOf(step.argv),
+            cwd: cwdOf(step.cwd),
+            env: { ...env, ...step.env },
+          }),
         );
-      }
-      rmSync(file);
-    } else if (step.kind === "backend") {
-      const file = join(backend, step.file);
-      mkdirSync(join(file, ".."), { recursive: true });
-      writeFileSync(file, step.content);
-    } else if (step.kind === "bundle") {
-      if (options.bundle === undefined) {
-        throw new Error(`Scenario "${scenario.name}": this tool has no bundle step.`);
-      }
-      const bundled = options.bundle(join(project, step.cwd), step.recursive === true);
-      writeFileSync(planFile, step.append === undefined ? bundled : step.append(bundled));
-    } else if (step.kind === "prune-file") {
-      writeFileSync(pruneFile, step.content);
-    } else if (step.kind === "setup") {
-      const result = await options.runner({
-        argv: argvOf(step.argv),
-        cwd: cwdOf(step.cwd),
-        env: { ...env, ...step.env },
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          `Scenario "${scenario.name}": setup command "${step.argv.join(" ")}" ended with exit code ${result.exitCode}.\n${result.stderr}`,
-        );
-      }
-      if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
-    } else {
-      const run = () =>
-        options.runner({
+        if (!(await appears(join(project, step.until), options.holdWaitMs ?? HOLD_WAIT_MS))) {
+          throw new Error(
+            `Scenario "${scenario.name}": the held command "${step.argv.join(" ")}" never made ${step.until}, so nothing shows that it holds what the scenario needs.`,
+          );
+        }
+      } else if (step.kind === "setup") {
+        const result = await options.runner({
           argv: argvOf(step.argv),
           cwd: cwdOf(step.cwd),
           env: { ...env, ...step.env },
         });
-      let result = await run();
-      for (let runs = 1; step.raced?.(result.stdout); runs++) {
-        if (runs === RUNS_WHILE_RACED) {
+        if (result.exitCode !== 0) {
           throw new Error(
-            `Scenario "${scenario.name}": every one of ${RUNS_WHILE_RACED} runs of "${step.id}" raced a change elsewhere, so none of them shows what the scenario is for. The cluster never held still.`,
+            `Scenario "${scenario.name}": setup command "${step.argv.join(" ")}" ended with exit code ${result.exitCode}.\n${result.stderr}`,
           );
         }
-        result = await run();
-      }
-      const command: RecordedCommand = {
-        id: step.id,
-        argv: step.argv,
-        cwd: step.cwd,
-        exitCode: result.exitCode,
-        stdout: `${step.id}.stdout`,
-        stderr: `${step.id}.stderr`,
-        stdoutFormat: step.stdout,
-        ...(step.env === undefined ? {} : { env: step.env }),
-      };
-      writeFileSync(join(target, command.stdout), result.stdout);
-      writeFileSync(join(target, command.stderr), result.stderr);
-      commands.push(command);
-      if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
-      if (step.stdoutBesidePlan !== undefined) {
-        writeFileSync(join(planFile, "..", step.stdoutBesidePlan), result.stdout);
+        if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
+      } else {
+        const run = () =>
+          options.runner({
+            argv: argvOf(step.argv),
+            cwd: cwdOf(step.cwd),
+            env: { ...env, ...step.env },
+          });
+        let result = await run();
+        for (let runs = 1; step.raced?.(result.stdout); runs++) {
+          if (runs === RUNS_WHILE_RACED) {
+            throw new Error(
+              `Scenario "${scenario.name}": every one of ${RUNS_WHILE_RACED} runs of "${step.id}" raced a change elsewhere, so none of them shows what the scenario is for. The cluster never held still.`,
+            );
+          }
+          result = await run();
+        }
+        const command: RecordedCommand = {
+          id: step.id,
+          argv: step.argv,
+          cwd: step.cwd,
+          exitCode: result.exitCode,
+          stdout: `${step.id}.stdout`,
+          stderr: `${step.id}.stderr`,
+          stdoutFormat: step.stdout,
+          ...(step.env === undefined ? {} : { env: step.env }),
+        };
+        writeFileSync(join(target, command.stdout), result.stdout);
+        writeFileSync(join(target, command.stderr), result.stderr);
+        commands.push(command);
+        if (step.stdoutToPlan) writeFileSync(planFile, result.stdout);
+        if (step.stdoutBesidePlan !== undefined) {
+          writeFileSync(join(planFile, "..", step.stdoutBesidePlan), result.stdout);
+        }
       }
     }
   }

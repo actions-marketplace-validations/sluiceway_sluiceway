@@ -5,6 +5,7 @@ import { diffHash } from "../core/diff-hash.ts";
 import { previewFailureText } from "../core/failure-reason.ts";
 import { globOf } from "../core/glob.ts";
 import type { PolicyOutcome } from "../core/policy.ts";
+import { isBusy } from "../core/preview-retry.ts";
 import type { PreviewResult } from "../core/tool-result.ts";
 import { valueFingerprint } from "../core/value-fingerprint.ts";
 import type { RunLinks } from "./links.ts";
@@ -36,6 +37,7 @@ export function previewRow(
       reason: previewFailureText(result.reason),
       runUrl: links.log,
       failure,
+      ...(isBusy(result) ? { busy: true } : {}),
     };
   }
   const drifted = (result.diff.drift ?? []).length > 0;
@@ -94,11 +96,13 @@ export function previewSummary(
     // create (onboarding log, hurdle 9). The glob is built from the stack id,
     // a name Sluiceway derived from the repo's files (record 0022).
     ignore: result.reason.kind === "stack-not-found" ? globOf(stackId) : undefined,
+    ...(isBusy(result) ? { busy: true } : {}),
   };
 }
 
 // The row state a preview result leads to, in the words of the counts line.
 export function previewOutcome(result: PreviewResult): string {
+  if (isBusy(result) && !result.ok) return `busy, ${previewFailureText(result.reason)}`;
   if (!result.ok) return `preview failed, ${previewFailureText(result.reason)}`;
   const drifted = (result.diff.drift ?? []).length > 0;
   if (result.diff.changes.length === 0) return drifted ? "drift" : "in sync";

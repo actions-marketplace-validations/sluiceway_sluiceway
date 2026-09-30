@@ -8,6 +8,7 @@ import { optionsOf, tofuEnvironment } from "./environment.ts";
 import { foldChanges } from "./fold.ts";
 import { PlanFile } from "./plan-file.ts";
 import { parsePlan } from "./schema.ts";
+import { stateLockHeld } from "./state-lock.ts";
 import { jsonLogWords } from "./tool-log.ts";
 
 // A preview is two commands: `tofu plan -out` writes the plan file, and
@@ -50,12 +51,18 @@ async function planAndShow(
   ): PreviewResult => ({ ok: false, reason, detail, toolLog });
 
   // The reason comes from the exit code alone, never from the tool's words
-  // (record 0022 as amended). A workspace the backend does not hold gives no
+  // (record 0022 as amended), but for a held state lock, which has no code of
+  // its own (record 0117). A workspace the backend does not hold gives no
   // exit code of its own, so there is no "stack not found" here.
   const planned = await run(planArgs(plan.path, optionsOf(stack).varFiles));
   // The plan's JSON log holds its diagnostics and no values (record 0022).
   const planWords = stripAnsi(planned.stderr) + jsonLogWords(planned.stdout);
-  if (!planned.ok) return failed(planned.reason, planWords);
+  if (!planned.ok) {
+    // Another run holds the state lock: the stack is busy, not broken (record
+    // 0117). Only a plan the tool ended itself says so.
+    const busy = planned.reason.kind === "tool-error" && stateLockHeld(planned.stdout);
+    return failed(busy ? { kind: "stack-busy" } : planned.reason, planWords);
+  }
 
   const shown = await run(showArgs(plan.path));
   // Never stdout: it is the plan, values and all (record 0021).

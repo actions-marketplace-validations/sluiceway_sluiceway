@@ -94,6 +94,29 @@ function run({ argv, cwd, env }: Run): Promise<RunResult> {
   });
 }
 
+// A command that stays running behind the steps of a scenario, in a process
+// group of its own, so that stopping it also stops what it started.
+function hold({ argv, cwd, env }: Run): { stop: () => Promise<void> } {
+  const [command = "", ...args] = argv;
+  const child = spawn(command, args, { cwd, env, stdio: "ignore", detached: true });
+  const closed = new Promise<void>((done) => {
+    child.on("close", () => done());
+    child.on("error", () => done());
+  });
+  return {
+    stop: async () => {
+      if (child.pid !== undefined && child.exitCode === null) {
+        try {
+          process.kill(-child.pid, "SIGKILL");
+        } catch {
+          // It ended by itself in the meantime.
+        }
+      }
+      await closed;
+    },
+  };
+}
+
 interface Tool {
   name: string;
   example: string;
@@ -289,6 +312,7 @@ for (const scenario of scenarios) {
     cliVersion,
     parentEnv: process.env,
     runner: run,
+    hold,
     ...(tool.environment === undefined ? {} : { environment: tool.environment }),
     ...(tool.planFileName === undefined ? {} : { planFileName: tool.planFileName }),
     ...(tool.bundle === undefined ? {} : { bundle: tool.bundle }),

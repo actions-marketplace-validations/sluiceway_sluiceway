@@ -138,6 +138,12 @@ export interface RowFacts {
   // the row as it reads. A display cache: the fact is `behind` on the
   // deployment record (record 0056), and nothing is decided from the row.
   behind?: readonly string[] | undefined;
+  // Another update held the lock of the stack when the scan ran, so it was
+  // not previewed (record 0117). Only on a row of the state `preview-failed`,
+  // which is what a reader that does not know the key draws it as. A display
+  // cache like `failed`: the header, the counts line and the sections tell a
+  // busy row from a preview failure by it, and nothing is decided from it.
+  busy?: boolean | undefined;
 }
 
 // A list of stack ids in one marker value, split on commas. An id is
@@ -269,6 +275,7 @@ export function rowMarker(facts: RowFacts): string {
     if (facts[key]) pairs.push([key, String(facts[key])]);
   }
   if (facts.behind && facts.behind.length > 0) pairs.push(["behind", encodeIds(facts.behind)]);
+  if (facts.busy) pairs.push(["busy", "true"]);
   return marker("row", pairs);
 }
 
@@ -381,6 +388,9 @@ export type ParsedRow =
       // The stacks a queued row waits behind (record 0110). Absent when the
       // marker names none.
       behind?: string[];
+      // Busy, not failed, on a row of the state `preview-failed` (record
+      // 0117). Absent on any other row.
+      busy?: true;
       ticked: boolean;
       text: string;
     }
@@ -571,6 +581,9 @@ export function parseDashboard(body: string): ParsedDashboard {
         COUNT_KEYS.filter((key) => count(key) > 0).map((key) => [key, count(key)]),
       ),
       ...(behind === "" ? {} : { behind: decodeIds(behind) }),
+      ...(state === "preview-failed" && pairs.get("busy") === "true"
+        ? { busy: true as const }
+        : {}),
       ticked: match[1] === "x" || match[1] === "X",
       text,
     });

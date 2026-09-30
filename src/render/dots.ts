@@ -14,6 +14,9 @@ export const COUNT_DOT = {
   "preview-failed": "🔴",
   "in-sync": "🟢",
   failed: "🔴",
+  // A busy stack is nothing to look at (record 0117), so it keeps the white
+  // dot of a count of 0.
+  busy: "⚪",
 } as const;
 export const DOT_AT_ZERO = "⚪";
 

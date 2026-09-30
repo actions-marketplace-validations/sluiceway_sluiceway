@@ -63,6 +63,22 @@ const SUBNET_DELETE: Change = {
 
 for (const version of VERSIONS) {
   describe(`preview, replaying pulumi ${version}`, () => {
+    // Record 0117: on a file backend the preview takes no stack lock, so it
+    // runs while a deploy holds one and never finds the stack busy. The
+    // scenario holds the lock the way a running deploy does.
+    test("the preview runs while a deploy holds the stack lock", async () => {
+      const result = await previewWith(NETWORK_DEV, replay(version, "preview-locked"));
+      expect(result.ok).toBe(true);
+      // The four resources of a stack that was never deployed, as in the
+      // scenario new-stack.
+      expect(changesOf(result).map((change) => change.op)).toEqual([
+        "create",
+        "create",
+        "create",
+        "create",
+      ]);
+    });
+
     // The tool also creates the root stack resource, pulumi:pulumi:Stack. That
     // is the stack coming into being, not a resource of the program, so it is
     // not a change (record 0079): two resources read as two creates.

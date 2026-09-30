@@ -1,5 +1,7 @@
 # The dashboard layout is a set of keys that move and hide, and never drop a row block
 
+> Amended by 0117: the Busy section sits right under Preview failed, wherever `dashboard.sections` puts that, and is never turned off either.
+>
 > Amends 0027 (a pending row may show less under its first line), 0029 and 0063 (the order of the sections, the counts line, In sync as a list or off), 0062 (the destroy alert can be drawn always), 0083 (a key turns each bulk box off, which 0083 left for later) and 0088 (the generator draws the example under each key). Built as slice 5.51, from issue 277.
 
 The owner asked on 2026-09-25 for a way to customise the dashboard with templates, such as a minimal one. The hosted app's edit mode edits the rendered dashboard in place, and every dial it offers must be a documented `sluiceway.yaml` key that the free action honours, so a repo that leaves the app keeps its dashboard as built. Issue 277 lists the dials: the order of the sections, sections on or off, the zero counts, the destroy alert, how much a pending row shows, and the bulk boxes. Its rules: every key optional with today's behaviour as its default, none may hide a destroy, a preview failure or a failure line, and the markers do not change.

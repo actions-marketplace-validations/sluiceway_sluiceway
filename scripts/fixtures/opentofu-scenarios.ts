@@ -136,6 +136,18 @@ const NULL_RESOURCE = `resource "null_resource" "trigger" {
 `;
 const OUTPUT = `output "pet" {`;
 
+// A resource whose create takes a minute, so that a deploy of it holds the
+// state lock for as long as a scenario needs. `terraform_data` is built into
+// the tool, so it needs no provider.
+const SLOW_RESOURCE = `resource "terraform_data" "slow" {
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+}
+`;
+// Where the local backend writes who holds the lock of the workspace dev.
+const DEV_LOCK_INFO = "network/terraform.tfstate.d/dev/.terraform.tfstate.lock.info";
+
 const updatedConfig = edit("    greeting = var.motd\n", '    greeting = "hi"\n');
 const replacedNotes = edit(
   '  content  = "CANARY-VALUE ${var.motd}"\n',
@@ -384,6 +396,23 @@ export function familyScenarios(c: FamilyCommands, binary: string): Scenario[] {
       steps: [
         init(c, DEV),
         edit('env = "dev"\n', "", "network/dev.tfvars"),
+        ...plan(c, DEV, { exit: "nonzero" }),
+      ],
+    },
+    {
+      name: "state-locked",
+      description:
+        'network:dev while another deploy of it runs and holds the state lock: the plan cannot take the lock and fails, with the diagnostic "Error acquiring the state lock" in its JSON log.',
+      steps: [
+        init(c, DEV),
+        { kind: "write", file: "network/slow.tf", content: SLOW_RESOURCE },
+        {
+          kind: "hold",
+          cwd: DEV.cwd,
+          argv: c.deploy(DEV.varFiles),
+          ...withEnv(DEV),
+          until: DEV_LOCK_INFO,
+        },
         ...plan(c, DEV, { exit: "nonzero" }),
       ],
     },

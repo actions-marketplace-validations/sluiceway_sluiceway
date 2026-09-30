@@ -317,7 +317,7 @@ describe("the picture", () => {
     pending: "Sluiceway: 1 stack is pending",
     deploying: "Sluiceway: deploying, 1 stack is pending",
     queued: "Sluiceway: queued behind dependencies, 1 stack is pending",
-    failing: "Sluiceway: something failed, 1 stack is pending",
+    failing: "Sluiceway: 1 preview and 1 deploy failed, 1 stack is pending",
     drift: "Sluiceway: something changed outside the code",
   };
   // Records 0043 and 0075: the state's alt text plus the fact.
@@ -346,14 +346,14 @@ describe("the picture", () => {
   // from 0 to 12 and one past it, like pending (record 0047), and say the
   // number unless it is 0.
   test.each<[number, string, string]>([
-    [0, "failing-0", "Sluiceway: something failed"],
-    [1, "failing-1", "Sluiceway: something failed, 1 stack is pending"],
-    [9, "failing-9", "Sluiceway: something failed, 9 stacks are pending"],
-    [12, "failing-12", "Sluiceway: something failed, 12 stacks are pending"],
-    [13, "failing-13", "Sluiceway: something failed, 13 stacks are pending"],
-    [20, "failing-20", "Sluiceway: something failed, 20 stacks are pending"],
-    [21, "failing-more", "Sluiceway: something failed, more than 20 stacks are pending"],
-    [58, "failing-more", "Sluiceway: something failed, more than 20 stacks are pending"],
+    [0, "failing-0", "Sluiceway: 1 preview failed"],
+    [1, "failing-1", "Sluiceway: 1 preview failed, 1 stack is pending"],
+    [9, "failing-9", "Sluiceway: 1 preview failed, 9 stacks are pending"],
+    [12, "failing-12", "Sluiceway: 1 preview failed, 12 stacks are pending"],
+    [13, "failing-13", "Sluiceway: 1 preview failed, 13 stacks are pending"],
+    [20, "failing-20", "Sluiceway: 1 preview failed, 20 stacks are pending"],
+    [21, "failing-more", "Sluiceway: 1 preview failed, more than 20 stacks are pending"],
+    [58, "failing-more", "Sluiceway: 1 preview failed, more than 20 stacks are pending"],
   ])("a failed preview and %i pending rows show %s", (count, file, alt) => {
     const rows = Array.from({ length: count }, (_, index) => pending(`stack-${index}`));
     const body = renderBody(input([...rows, previewFailed("broken"), inSync("calm")]));
@@ -399,7 +399,7 @@ describe("the picture", () => {
       input([deploying("a"), deploying("b"), previewFailed("c"), previewFailed("d"), pending("e")]),
     );
     expect(paragraphs(failing)[1]).toBe(
-      centered("failing-1", "Sluiceway: something failed, 1 stack is pending"),
+      centered("failing-1", "Sluiceway: 2 previews failed, 1 stack is pending"),
     );
     const moving = renderBody(input([deploying("a"), deploying("b"), inSync("c")]));
     expect(paragraphs(moving)[1]).toBe(centered("deploying-0", "Sluiceway: deploying"));
@@ -447,7 +447,7 @@ describe("the picture", () => {
       centered("deploying-10", "Sluiceway: deploying, 10 stacks are pending"),
     );
     expect(paragraphs(renderBody(input([...ten, previewFailed("z")])))[1]).toBe(
-      centered("failing-10", "Sluiceway: something failed, 10 stacks are pending"),
+      centered("failing-10", "Sluiceway: 1 preview failed, 10 stacks are pending"),
     );
   });
 
@@ -516,19 +516,43 @@ describe("the picture", () => {
     );
   });
 
+  // Record 0118: the alt text of a failing header names what failed and how
+  // many, in the numbers of the counts line: preview failures, and rows
+  // with a failure line.
+  test.each<[string, Row[], string]>([
+    ["one preview", [previewFailed("a")], "Sluiceway: 1 preview failed"],
+    ["two previews", [previewFailed("a"), previewFailed("b")], "Sluiceway: 2 previews failed"],
+    ["one deploy", [{ ...inSync("a"), failure: FAILURE }], "Sluiceway: 1 deploy failed"],
+    [
+      "two deploys",
+      [
+        { ...inSync("a"), failure: FAILURE },
+        { ...inSync("b"), failure: FAILURE },
+      ],
+      "Sluiceway: 2 deploys failed",
+    ],
+    [
+      "previews and a deploy",
+      [previewFailed("a"), previewFailed("b"), { ...inSync("c"), failure: FAILURE }],
+      "Sluiceway: 2 previews and 1 deploy failed",
+    ],
+  ])("a failing header says what failed: %s", (_, rows, alt) => {
+    expect(paragraphs(renderBody(input(rows)))[1]).toBe(centered("failing-0", alt));
+  });
+
   // Record 0066 amends 0043: the jam gets the sign too, from the same rule.
   test.each<[string, Row[], string, string]>([
     [
       "a pending row",
       [pending("a", ["delete"]), previewFailed("b")],
       "failing-1-deletes",
-      "Sluiceway: something failed, 1 stack is pending, some changes delete resources",
+      "Sluiceway: 1 preview failed, 1 stack is pending, some changes delete resources",
     ],
     [
       "a deploying row",
       [deploying("a", 1, 0), { ...inSync("b"), failure: FAILURE }],
       "failing-0-replaces",
-      "Sluiceway: something failed, some changes replace resources",
+      "Sluiceway: 1 deploy failed, some changes replace resources",
     ],
   ])("a failing header gets the sign from %s", (_, rows, file, alt) => {
     expect(paragraphs(renderBody(input(rows)))[1]).toBe(centered(file, alt));
@@ -903,10 +927,16 @@ describe("the sections", () => {
     expect(parseDashboard(body).rows.map((row) => row.stackId)).toEqual(["a", "b", "c"]);
   });
 
-  test("the preview failed section says what its rows cannot do", () => {
-    const all = paragraphs(renderBody(input([previewFailed("a")])));
-    expect(all[all.indexOf("## Preview failed") + 1]).toBe(
-      "These stacks could not be previewed, so they cannot be deployed from here until a scan succeeds.",
+  // Record 0118: what its rows cannot do, and what happens next, for one
+  // stack and for more.
+  test("the preview failed section says what its rows cannot do and what comes next", () => {
+    const one = paragraphs(renderBody(input([previewFailed("a")])));
+    expect(one[one.indexOf("## Preview failed") + 1]).toBe(
+      "This stack could not be previewed, so it cannot be deployed from here until a scan previews it. Every scan tries it again, and the run on its row holds the tool's own words.",
+    );
+    const two = paragraphs(renderBody(input([previewFailed("a"), previewFailed("b")])));
+    expect(two[two.indexOf("## Preview failed") + 1]).toBe(
+      "These stacks could not be previewed, so they cannot be deployed from here until a scan previews them. Every scan tries them again, and the run on each row holds the tool's own words.",
     );
   });
 });
