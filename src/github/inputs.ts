@@ -203,6 +203,7 @@ export const NOTIFY_INPUTS = [
   "slack-webhook-url",
   "telegram-bot-token",
   "telegram-chat-id",
+  "telegram-thread-id",
   "webhook-url",
 ] as const;
 
@@ -211,7 +212,9 @@ export interface NotifyInputs {
   // A channel set up wrong sends nothing and is a warning, never an error: a
   // notification never stops a scan or a deploy. No problem quotes a value.
   problems: string[];
-  // Every value that was set, for the runner to mask, the wrong ones too.
+  // Every value that was set, for the runner to mask, the wrong ones too. The
+  // topic of a Telegram chat is not one: it means nothing without the token,
+  // and a short number masked would hide that number everywhere in the log.
   secrets: string[];
 }
 
@@ -220,9 +223,13 @@ export interface NotifyInputs {
 const TELEGRAM_TOKEN = /^\d+:[\w-]+$/;
 // A chat id, or the @ name of a public channel.
 const TELEGRAM_CHAT = /^(-?\d+|@\w+)$/;
+// The id of a topic in a forum group: a whole number above 0.
+const TELEGRAM_THREAD = /^[1-9]\d*$/;
 
 export function readNotifyTargets(getInput: GetInput): NotifyInputs {
-  const [slack, token, chatId, webhook] = NOTIFY_INPUTS.map((name) => getInput(name).trim());
+  const [slack, token, chatId, threadId, webhook] = NOTIFY_INPUTS.map((name) =>
+    getInput(name).trim(),
+  );
   const targets: NotifyTargets = {};
   const problems: string[] = [];
   const secrets = [slack, token, chatId, webhook].filter((value): value is string => !!value);
@@ -250,8 +257,12 @@ export function readNotifyTargets(getInput: GetInput): NotifyInputs {
       problems.push(
         'The "telegram-chat-id" input is not a chat id or an @ name, so nothing is sent to Telegram.',
       );
+    } else if (threadId && !TELEGRAM_THREAD.test(threadId)) {
+      problems.push(
+        'The "telegram-thread-id" input is not the id of a topic, a whole number above 0, so nothing is sent to Telegram.',
+      );
     } else {
-      targets.telegram = { token, chatId };
+      targets.telegram = { token, chatId, ...(threadId ? { threadId: Number(threadId) } : {}) };
     }
   }
   if (webhook) {

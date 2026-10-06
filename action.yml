@@ -108,6 +108,12 @@ inputs:
       scan, resolve and apply. The chat the Telegram bot posts to: a chat id or the @ name of a
       public channel. Empty by default.
     required: false
+  telegram-thread-id:
+    description: >-
+      scan, resolve and apply. The topic of a forum group the Telegram bot posts to: the topic's
+      id, a whole number. Needs telegram-bot-token and telegram-chat-id too. Empty by default:
+      the message goes to the chat itself, or to the General topic of a forum group.
+    required: false
   webhook-url:
     description: >-
       scan, resolve and apply. An http or https address, from a secret, that gets a small JSON

@@ -46,6 +46,35 @@ describe("the channels", () => {
     expect(read.targets.telegram).toEqual({ token: "123:abc", chatId: "@acme_deploys" });
   });
 
+  test("a Telegram topic goes with the channel as a number, and is not a secret to mask", () => {
+    const read = readNotifyTargets(
+      inputs({
+        "telegram-bot-token": "123:abc",
+        "telegram-chat-id": "-100123",
+        "telegram-thread-id": " 56 ",
+      }),
+    );
+    expect(read.targets.telegram).toEqual({ token: "123:abc", chatId: "-100123", threadId: 56 });
+    expect(read.problems).toEqual([]);
+    expect(read.secrets).toEqual(["123:abc", "-100123"]);
+  });
+
+  test("a Telegram topic that is not a whole number above 0 sends nothing to Telegram", () => {
+    for (const threadId of ["0", "-5", "5.5", "general", "56abc"]) {
+      const read = readNotifyTargets(
+        inputs({
+          "telegram-bot-token": "123:abc",
+          "telegram-chat-id": "-100123",
+          "telegram-thread-id": threadId,
+        }),
+      );
+      expect(read.targets).toEqual({});
+      expect(read.problems).toEqual([
+        'The "telegram-thread-id" input is not the id of a topic, a whole number above 0, so nothing is sent to Telegram.',
+      ]);
+    }
+  });
+
   test("a Slack address that is not https is refused, and the value is never quoted", () => {
     const read = readNotifyTargets(inputs({ "slack-webhook-url": "hooks.slack.com/SECRET" }));
     expect(read.targets).toEqual({});

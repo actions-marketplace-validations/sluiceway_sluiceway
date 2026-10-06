@@ -132,6 +132,7 @@ describe("action.yml", () => {
       "strict",
       "telegram-bot-token",
       "telegram-chat-id",
+      "telegram-thread-id",
       "webhook-url",
     ]);
   });
