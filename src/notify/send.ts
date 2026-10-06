@@ -15,7 +15,8 @@ import { slackMessage, telegramMessage, webhookMessage } from "../render/notific
 // Where to send, as the step's inputs gave it. Every field is a secret.
 export interface NotifyTargets {
   slack?: string | undefined;
-  telegram?: { token: string; chatId: string } | undefined;
+  // `threadId` is the topic of a forum group, when the step names one.
+  telegram?: { token: string; chatId: string; threadId?: number } | undefined;
   webhook?: string | undefined;
 }
 
@@ -51,7 +52,7 @@ function channels(targets: NotifyTargets): Channel[] {
           {
             name: "Telegram",
             url: `https://api.telegram.org/bot${telegram.token}/sendMessage`,
-            body: (n: Notification) => telegramMessage(n, telegram.chatId),
+            body: (n: Notification) => telegramMessage(n, telegram.chatId, telegram.threadId),
           },
         ]
       : []),

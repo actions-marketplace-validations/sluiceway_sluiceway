@@ -51,6 +51,8 @@ Create an [incoming webhook](https://api.slack.com/messaging/webhooks) for the c
 
 Create a bot with BotFather and store its token as a secret, such as `TELEGRAM_BOT_TOKEN`. Add the bot to the chat, and store the chat's id, or the `@` name of a public channel, as `TELEGRAM_CHAT_ID`. Both inputs are needed. The message is plain text with no link preview.
 
+To post in one topic of a forum group, add `telegram-thread-id` with the topic's id, a whole number: the number after the chat in a link to a message of that topic. It is not a secret, so it can be written in the workflow, such as `telegram-thread-id: 56`. Without it the message goes to the chat itself, or to the General topic of a forum group.
+
 ### A webhook
 
 `webhook-url` gets a `POST` with a small JSON body, for Discord through a bridge, a chat bot, or anything of your own. The address is `http://` or `https://`.
@@ -71,7 +73,7 @@ Create a bot with BotFather and store its token as a secret, such as `TELEGRAM_B
 
 ### When a send fails
 
-A notification never changes a job. A channel that answers with an error, or does not answer within 10 seconds, gets a warning in the job log, "Notification not sent", with the status or the kind of error, and the job, the dashboard and any deploy are what they would be without it. A channel that is set up wrong, such as a Slack address that is not `https://` or a Telegram token without a chat id, gets a warning "Notification channel not used" and sends nothing. Neither warning ever shows the address or the token.
+A notification never changes a job. A channel that answers with an error, or does not answer within 10 seconds, gets a warning in the job log, "Notification not sent", with the status or the kind of error, and the job, the dashboard and any deploy are what they would be without it. A channel that is set up wrong, such as a Slack address that is not `https://`, a Telegram token without a chat id, or a topic id that is not a whole number, gets a warning "Notification channel not used" and sends nothing. Neither warning ever shows the address or the token.
 
 ### How the secrets are kept
 

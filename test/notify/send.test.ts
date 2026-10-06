@@ -70,6 +70,22 @@ describe("sending", () => {
     expect(log.warnings).toEqual([]);
   });
 
+  test("posts to the Telegram topic the step names", async () => {
+    const { sent, fetch } = recordingFetch(ok);
+    await createNotifier(
+      { telegram: { token: TOKEN, chatId: CHAT, threadId: 56 } },
+      { fetch, log: rememberingLog() },
+    ).send([pendingNews], ["pending"]);
+    expect(sent).toEqual([
+      {
+        url: `https://api.telegram.org/bot${TOKEN}/sendMessage`,
+        body: telegramMessage(pendingNews, CHAT, 56),
+        headers: expect.any(Object),
+      },
+    ]);
+    expect(sent[0]?.body).toMatchObject({ message_thread_id: 56 });
+  });
+
   test("sends only the events sluiceway.yaml lists", async () => {
     const { sent, fetch } = recordingFetch(ok);
     await createNotifier(ALL, { fetch, log: rememberingLog() }).send([pendingNews], ["failed"]);

@@ -85,12 +85,21 @@ export function slackMessage(n: Notification): {
 }
 
 // Plain text: no `parse_mode`, so nothing in an id can be read as markup.
+// `message_thread_id` puts it in one topic of a forum group, and is left out
+// when the step names no topic, so the message goes where it always did.
 export function telegramMessage(
   n: Notification,
   chatId: string,
-): { chat_id: string; text: string; link_preview_options: { is_disabled: true } } {
+  threadId?: number,
+): {
+  chat_id: string;
+  message_thread_id?: number;
+  text: string;
+  link_preview_options: { is_disabled: true };
+} {
   return {
     chat_id: chatId,
+    ...(threadId === undefined ? {} : { message_thread_id: threadId }),
     text: notificationText(n),
     link_preview_options: { is_disabled: true },
   };

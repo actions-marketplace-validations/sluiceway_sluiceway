@@ -27671,12 +27671,14 @@ var NOTIFY_INPUTS = [
   "slack-webhook-url",
   "telegram-bot-token",
   "telegram-chat-id",
+  "telegram-thread-id",
   "webhook-url"
 ];
 var TELEGRAM_TOKEN = /^\d+:[\w-]+$/;
 var TELEGRAM_CHAT = /^(-?\d+|@\w+)$/;
+var TELEGRAM_THREAD = /^[1-9]\d*$/;
 function readNotifyTargets(getInput2) {
-  const [slack, token, chatId, webhook] = NOTIFY_INPUTS.map((name) => getInput2(name).trim());
+  const [slack, token, chatId, threadId, webhook] = NOTIFY_INPUTS.map((name) => getInput2(name).trim());
   const targets = {};
   const problems = [];
   const secrets = [slack, token, chatId, webhook].filter((value) => !!value);
@@ -27695,8 +27697,10 @@ function readNotifyTargets(getInput2) {
       problems.push('The "telegram-bot-token" input is not a bot token as BotFather gives it, so nothing is sent to Telegram.');
     } else if (!TELEGRAM_CHAT.test(chatId)) {
       problems.push('The "telegram-chat-id" input is not a chat id or an @ name, so nothing is sent to Telegram.');
+    } else if (threadId && !TELEGRAM_THREAD.test(threadId)) {
+      problems.push('The "telegram-thread-id" input is not the id of a topic, a whole number above 0, so nothing is sent to Telegram.');
     } else {
-      targets.telegram = { token, chatId };
+      targets.telegram = { token, chatId, ...threadId ? { threadId: Number(threadId) } : {} };
     }
   }
   if (webhook) {
@@ -61629,9 +61633,10 @@ function slackMessage(n) {
   const text8 = [headline(n, slackEscape), parts.join(" · ")].filter(Boolean).join(" ");
   return { text: text8, unfurl_links: false, unfurl_media: false };
 }
-function telegramMessage(n, chatId) {
+function telegramMessage(n, chatId, threadId) {
   return {
     chat_id: chatId,
+    ...threadId === undefined ? {} : { message_thread_id: threadId },
     text: notificationText(n),
     link_preview_options: { is_disabled: true }
   };
@@ -61658,7 +61663,7 @@ function channels(targets) {
       {
         name: "Telegram",
         url: `https://api.telegram.org/bot${telegram.token}/sendMessage`,
-        body: (n) => telegramMessage(n, telegram.chatId)
+        body: (n) => telegramMessage(n, telegram.chatId, telegram.threadId)
       }
     ] : [],
     ...webhook ? [{ name: "the webhook", url: webhook, body: webhookMessage }] : []

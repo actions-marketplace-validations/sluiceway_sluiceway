@@ -34,6 +34,7 @@ One action, seven modes, chosen with the `mode` input. Leave it out, and the ste
 | `slack-webhook-url` | none | `scan`, `resolve`, `apply` and `auto`. The address of a Slack incoming webhook, from a secret. Sluiceway posts a short message there on the events `notify.events` lists ([notifications](notifications.md)). |
 | `telegram-bot-token` | none | `scan`, `resolve`, `apply` and `auto`. The token of a Telegram bot, from a secret. Needs `telegram-chat-id` too. |
 | `telegram-chat-id` | none | The chat the Telegram bot posts to: a chat id or the `@` name of a public channel. |
+| `telegram-thread-id` | none | The topic of a forum group the Telegram bot posts to: the topic's id, a whole number. Needs `telegram-bot-token` and `telegram-chat-id` too. Without it the message goes to the chat itself, or to the General topic of a forum group. |
 | `webhook-url` | none | `scan`, `resolve`, `apply` and `auto`. An `http` or `https` address, from a secret, that gets a small JSON message on the same events. |
 | `job-id` | the id of the running job | Leave it at the default. GitHub gives a step its job's id in no other way, and it needs no permission. A row's link to a failed preview uses it to land on the job's log. |
 

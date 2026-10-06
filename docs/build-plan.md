@@ -88,6 +88,7 @@ Every name, default and fixed value of v1 in one place. The record in the last c
 | `slack-webhook-url` | input | `scan`, `resolve`, `apply`, `auto` | none | A Slack incoming webhook address, from a secret. A warning in any other mode | 0078, 0077 |
 | `telegram-bot-token` | input | `scan`, `resolve`, `apply`, `auto` | none | A Telegram bot token, from a secret. Needs `telegram-chat-id` | 0078 |
 | `telegram-chat-id` | input | `scan`, `resolve`, `apply`, `auto` | none | The chat the bot posts to: an id or an `@` name | 0078 |
+| `telegram-thread-id` | input | `scan`, `resolve`, `apply`, `auto` | none | The topic of a forum group the bot posts to, as `message_thread_id`. Needs the token and the chat id | 0078 |
 | `webhook-url` | input | `scan`, `resolve`, `apply`, `auto` | none | An `http` or `https` address, from a secret, that gets `{ version, event, repository, stacks, dashboard, run, text }` | 0078 |
 | `job-id` | input | `scan`, `apply` | `${{ job.check_run_id }}` | The id of the running job, for links to its log. Never set by hand | 0044 |
 | `matrix` | output | `resolve`, `scan` | `[]` | `[{ stack, environment, deployment }]`. A scan sets one entry after a merge from the dashboard, and one per stack set to on-merge that the scan of a push hands on (slice 5.31). A `resolve` that no issue edit started sets one per outside record it hands on (slice 5.44) | 0035, 0054, 0095, 0109 |

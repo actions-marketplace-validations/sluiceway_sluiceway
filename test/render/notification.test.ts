@@ -95,6 +95,18 @@ describe("the payloads", () => {
     });
   });
 
+  test("Telegram gets the topic as message_thread_id when the step names one", () => {
+    expect(telegramMessage(n("pending", ["a:prod"]), "-100123", 56)).toEqual({
+      chat_id: "-100123",
+      message_thread_id: 56,
+      text: `🟡 Sluiceway in acme/infra: a:prod is pending. Dashboard: ${DASHBOARD}`,
+      link_preview_options: { is_disabled: true },
+    });
+    expect(telegramMessage(n("pending", ["a:prod"]), "-100123")).not.toHaveProperty(
+      "message_thread_id",
+    );
+  });
+
   test("a webhook gets the facts and the text, every stack, with version 1", () => {
     const ids = Array.from({ length: 12 }, (_, i) => `s${i}`);
     const message = webhookMessage(n("pending", ids));
