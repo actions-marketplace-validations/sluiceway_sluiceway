@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.49.0](https://github.com/sluiceway/sluiceway/compare/v0.48.0...v0.49.0) (2026-10-06)
+
+
+### Features
+
+* a Telegram notification can go to one topic of a forum group with telegram-thread-id ([#295](https://github.com/sluiceway/sluiceway/issues/295)) ([1d7bedb](https://github.com/sluiceway/sluiceway/commit/1d7bedbad7c2a12828f79bd12110ec3dd5ace6ab))
+
 ## [0.48.0](https://github.com/sluiceway/sluiceway/compare/v0.47.0...v0.48.0) (2026-09-30)
 
 
