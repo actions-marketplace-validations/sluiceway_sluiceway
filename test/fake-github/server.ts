@@ -217,7 +217,7 @@ function routes(fake: FakeGitHub, baseUrl: () => string): [string, RegExp, Route
         if (isDeploymentsQuery(text(body.query))) return deploymentsQuery(fake, body.variables);
         if (isWalkQuery(text(body.query))) return walkQuery(fake, body.variables);
         if (isOpenPullRequestsQuery(text(body.query)))
-          return openPullRequestsQuery(fake, body.variables);
+          return openPullRequestsQuery(fake, text(body.query), body.variables);
         // The GraphQL calls of the port. GraphQL answers 200 and puts what
         // went wrong in the answer.
         const variables = body.variables as { issueId?: unknown } | undefined;

@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { diffHash } from "../../src/core/diff-hash.ts";
+import { TokenRefused } from "../../src/github/port.ts";
 import { scan } from "../../src/modes/scan.ts";
 import { parseDashboard } from "../../src/render/marker.ts";
 import { MERGE_ORPHAN_NOTE, renderMergeRow } from "../../src/render/merge-row.ts";
@@ -210,15 +211,66 @@ describe("the updates waiting to merge", () => {
     await scan(context);
     const before = parseDashboard(dashboardBody(github)).merges;
     github.listOpenPullRequests = async () => {
-      throw new Error("Resource not accessible by integration");
+      throw new Error("connect ECONNRESET");
     };
 
     await scan(context);
 
     expect(parseDashboard(dashboardBody(github)).merges).toEqual(before);
-    expect(log.lines).toContain(
-      "The open pull requests could not be read: Resource not accessible by integration. The updates waiting to merge are kept as they were. The scan job needs the permission `pull-requests: read` (record 0054).",
+    // An error that is not a refusal of the token names no permission.
+    expect(log.warnings).toContainEqual({
+      title: "Open pull requests not read",
+      message:
+        "The open pull requests could not be read: connect ECONNRESET. The updates waiting to merge on the dashboard are kept as an earlier scan left them (record 0119).",
+    });
+  });
+
+  // Issue 292: the line named `pull-requests: read` whatever GitHub refused,
+  // and it was an info line only, so nobody saw that no update was listed.
+  test("a list GitHub refuses the token names the permission, on the run and in the summary", async () => {
+    const { context, github, log } = harness(tableAdapter(TABLE), { config: CONFIG });
+    github.listOpenPullRequests = async () => {
+      throw new TokenRefused(
+        'GitHub answered "Resource not accessible by integration" for the pull requests',
+        "pull-requests: read",
+      );
+    };
+
+    await scan(context);
+
+    const said =
+      'The open pull requests could not be read: GitHub answered "Resource not accessible by integration" for the pull requests. The updates waiting to merge on the dashboard are kept as an earlier scan left them. The scan job needs the permission `pull-requests: read` (record 0119).';
+    expect(log.warnings).toContainEqual({ title: "Open pull requests not read", message: said });
+    // GitHub's words are escaped on the page, as a reason on a row is.
+    expect(log.summaries.at(-1)).toContain(
+      "> **The open pull requests could not be read.** GitHub answered &quot;Resource not accessible by integration&quot; for the pull requests. The updates waiting to merge on the dashboard are kept as an earlier scan left them. The scan job needs the permission `pull-requests: read` (record 0119).",
     );
+  });
+
+  test("a refusal that names no permission says so in the summary too", async () => {
+    const { context, github, log } = harness(tableAdapter(TABLE), { config: CONFIG });
+    github.listOpenPullRequests = async () => {
+      throw new TokenRefused(
+        'GitHub answered "Resource not accessible by integration" for a part of the pull requests, the first at repository.pullRequests.nodes.0.commits',
+      );
+    };
+
+    await scan(context);
+
+    expect(log.warnings.map(({ title }) => title)).toContain("Open pull requests not read");
+    expect(log.summaries.at(-1)).toContain(
+      "> **The open pull requests could not be read.** GitHub answered &quot;Resource not accessible by integration&quot; for a part of the pull requests, the first at repository.pullRequests.nodes.0.commits. The updates waiting to merge on the dashboard are kept as an earlier scan left them (record 0119).",
+    );
+  });
+
+  test("a list that was read says nothing of it in the summary", async () => {
+    const { context, github, log } = harness(tableAdapter(TABLE), { config: CONFIG });
+    github.seedOpenPullRequest({ number: 418, head: HEAD, files: ["a/values.yaml"] });
+
+    await scan(context);
+
+    expect(log.summaries.at(-1)).not.toContain("open pull requests");
+    expect(log.warnings.map(({ title }) => title)).not.toContain("Open pull requests not read");
   });
 
   test("a ticked row keeps its tick while a resolve run is on its way, and is cleared when none is", async () => {

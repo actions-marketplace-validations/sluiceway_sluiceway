@@ -33,6 +33,7 @@ Every item, as `docs/later.md` lists it:
 
 No date and no order. Each waits for a user who asks, and none of them needs a breaking change. [docs/later.md](later.md#deferred-door-left-open) says why each one waited and where that was decided.
 
+- A line on the dashboard when the open pull requests could not be read
 - A second try for a preparation that failed, such as an init that could not reach a registry
 - Calling a deploy busy when it could not start because another update holds the stack's lock
 - Recordings of a held state lock through Terragrunt and cdktf, and of a preview against Pulumi Cloud while an update runs

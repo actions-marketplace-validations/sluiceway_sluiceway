@@ -1,6 +1,6 @@
 import type { getOctokit } from "@actions/github";
 import type { OpenPullRequest } from "../core/merge-and-deploy.ts";
-import type { GitHubPort, MergeAnswer } from "./port.ts";
+import { type GitHubPort, type MergeAnswer, TokenRefused } from "./port.ts";
 
 type Octokit = ReturnType<typeof getOctokit>;
 
@@ -13,7 +13,10 @@ export type PullCalls = Pick<
 
 // A page of the open pull requests, oldest first, with what the qualification
 // rule reads: the author, the base, the head commit, the files and the
-// combined checks of the head commit. `pull-requests: read` is enough.
+// combined checks of the head commit. `pull-requests: read` is enough, on a
+// private repo too: the checks are the rollup's state and its counts by state.
+// A commit status among the rollup's contexts needs `statuses: read`, which no
+// workflow of the docs gives, and GitHub refuses each one (record 0119).
 const OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: String) {
   repository(owner: $owner, name: $repo) {
     defaultBranchRef {
@@ -49,15 +52,13 @@ const OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: Stri
               statusCheckRollup {
                 state
                 contexts(first: 100) {
-                  nodes {
-                    __typename
-                    ... on CheckRun {
-                      status
-                      conclusion
-                    }
-                    ... on StatusContext {
-                      state
-                    }
+                  checkRunCountsByState {
+                    state
+                    count
+                  }
+                  statusContextCountsByState {
+                    state
+                    count
                   }
                 }
               }
@@ -87,12 +88,16 @@ interface PullRequestNode {
 
 interface Rollup {
   state: string;
-  contexts?: { nodes: (RollupContext | null)[] | null } | null;
+  contexts?: {
+    checkRunCountsByState?: StateCount[] | null;
+    statusContextCountsByState?: StateCount[] | null;
+  } | null;
 }
 
-type RollupContext =
-  | { __typename: "CheckRun"; status: string; conclusion: string | null }
-  | { __typename: "StatusContext"; state: string };
+interface StateCount {
+  state: string;
+  count: number;
+}
 
 interface OpenPullRequestsData {
   repository: {
@@ -116,13 +121,26 @@ const CHECKS: Record<string, OpenPullRequest["checks"]> = {
   ERROR: "failure",
 };
 
-// A check run that ended in any other way than these failed.
-const PASSED = new Set(["SUCCESS", "NEUTRAL", "SKIPPED"]);
+// A check run in none of these states ended in a way that is not a pass, a
+// COMPLETED one with no conclusion too.
+const PASSED_OR_RUNNING = new Set([
+  "SUCCESS",
+  "NEUTRAL",
+  "SKIPPED",
+  "IN_PROGRESS",
+  "PENDING",
+  "QUEUED",
+  "WAITING",
+]);
+const FAILED_STATUS = new Set(["FAILURE", "ERROR"]);
 
-function failed(context: RollupContext): boolean {
-  return context.__typename === "CheckRun"
-    ? context.status === "COMPLETED" && !PASSED.has(context.conclusion ?? "")
-    : context.state === "FAILURE" || context.state === "ERROR";
+function anyFailed(contexts: Rollup["contexts"]): boolean {
+  const some = (counts: StateCount[] | null | undefined, failed: (state: string) => boolean) =>
+    (counts ?? []).some(({ state, count }) => count > 0 && failed(state));
+  return (
+    some(contexts?.checkRunCountsByState, (state) => !PASSED_OR_RUNNING.has(state)) ||
+    some(contexts?.statusContextCountsByState, (state) => FAILED_STATUS.has(state))
+  );
 }
 
 // The rollup is GitHub's combined result. A rollup that still waits is read
@@ -131,7 +149,7 @@ function failed(context: RollupContext): boolean {
 function checksOf(rollup: Rollup | null | undefined): OpenPullRequest["checks"] {
   if (!rollup) return "none";
   const checks = CHECKS[rollup.state] ?? "failure";
-  if (checks === "pending" && present(rollup.contexts?.nodes).some(failed)) return "failure";
+  if (checks === "pending" && anyFailed(rollup.contexts)) return "failure";
   return checks;
 }
 
@@ -186,6 +204,37 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+interface GraphqlError {
+  type?: unknown;
+  path?: unknown;
+  message?: unknown;
+}
+
+// A GraphQL answer whose errors are all refusals of the token, as one
+// TokenRefused (issue 292). GitHub names each refused part by its path, one
+// per pull request or check, so they are counted and the first is named.
+// Any other error is thrown as it came.
+function refusedOrAsIs(error: unknown): unknown {
+  const errors = (error as { errors?: unknown } | null)?.errors;
+  if (!Array.isArray(errors) || errors.length === 0) return error;
+  const refused = errors as GraphqlError[];
+  if (!refused.every((one) => one.type === "FORBIDDEN")) return error;
+  const paths = refused.map(({ path }) => (Array.isArray(path) ? path.map(String) : []));
+  const words = typeof refused[0]?.message === "string" ? refused[0].message : "refused";
+  const first = paths[0] ?? [];
+  // Without `pull-requests: read` GitHub refuses the list itself.
+  if (paths.every((path) => path.join(".") === "repository.pullRequests")) {
+    return new TokenRefused(
+      `GitHub answered "${words}" for the pull requests`,
+      "pull-requests: read",
+    );
+  }
+  const parts = paths.length === 1 ? "a part" : `${paths.length} parts`;
+  return new TokenRefused(
+    `GitHub answered "${words}" for ${parts} of the pull requests, the first at ${first.join(".")}`,
+  );
+}
+
 export function pullCalls(octokit: Octokit, repo: { owner: string; repo: string }): PullCalls {
   return {
     async listOpenPullRequests() {
@@ -196,10 +245,11 @@ export function pullCalls(octokit: Octokit, repo: { owner: string; repo: string 
       const pullRequests: OpenPullRequest[] = [];
       let after: string | null = null;
       for (;;) {
-        const data: OpenPullRequestsData = await octokit.graphql<OpenPullRequestsData>(
-          OPEN_PULL_REQUESTS,
-          { ...repo, after },
-        );
+        const data: OpenPullRequestsData = await octokit
+          .graphql<OpenPullRequestsData>(OPEN_PULL_REQUESTS, { ...repo, after })
+          .catch((error: unknown) => {
+            throw refusedOrAsIs(error);
+          });
         defaultBranch ??= data.repository?.defaultBranchRef?.name;
         const list = data.repository?.pullRequests;
         pullRequests.push(...present(list?.nodes).map(toPullRequest));

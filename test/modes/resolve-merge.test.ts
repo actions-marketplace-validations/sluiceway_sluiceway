@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { TokenRefused } from "../../src/github/port.ts";
 import { parseDashboard } from "../../src/render/marker.ts";
 import {
   MERGE_DEPLOYING_NOTE,
@@ -341,6 +342,35 @@ describe("a merge that does not happen", () => {
     await expect(wake(h)).rejects.toThrow("`contents: write`");
     expect(h.github.requests).not.toContain("createDeployment");
     expect(merges(h).map(({ ticked }) => ticked)).toEqual([true]);
+  });
+
+  // Issue 292: the job named `pull-requests: read` whatever GitHub refused.
+  test("a list GitHub refuses names the permission its refusal says, and only that", async () => {
+    for (const [permission, named] of [
+      ["pull-requests: read", "The resolve job needs the permission `pull-requests: read`"],
+      [undefined, undefined],
+    ] as const) {
+      const h = await ready();
+      h.github.listOpenPullRequests = async () => {
+        throw new TokenRefused(
+          'GitHub answered "Resource not accessible by integration" for the pull requests',
+          permission,
+        );
+      };
+      tickMerge(h);
+
+      const error = await wake(h).then(
+        () => undefined,
+        (thrown: unknown) => thrown as Error,
+      );
+      expect(error?.message).toContain(
+        'The open pull requests could not be read: GitHub answered "Resource not accessible by integration" for the pull requests.',
+      );
+      if (named === undefined) expect(error?.message).not.toContain("needs the permission");
+      else expect(error?.message).toContain(`${named} (record 0119).`);
+      expect(h.github.merges).toEqual([]);
+      expect(merges(h).map(({ ticked }) => ticked)).toEqual([true]);
+    }
   });
 });
 

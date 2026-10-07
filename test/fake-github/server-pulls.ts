@@ -47,7 +47,38 @@ function node(pullRequest: OpenPullRequest): unknown {
 
 // A page of 100, oldest first, with GraphQL's cursor: the fake's cursor is the
 // number of pull requests before the page (record 0064).
-export function openPullRequestsQuery(fake: FakeGitHub, variables: unknown): Answer {
+// A query for the rollup's contexts themselves is refused, as a private repo
+// refuses a token without `statuses: read` each commit status among them
+// (issue 292). The fake answers as one would with the documented permissions.
+export function openPullRequestsQuery(fake: FakeGitHub, query: string, variables: unknown): Answer {
+  if (/contexts\([^)]*\)\s*\{\s*nodes\b/.test(query)) {
+    return {
+      status: 200,
+      json: {
+        data: null,
+        errors: [
+          {
+            type: "FORBIDDEN",
+            path: [
+              "repository",
+              "pullRequests",
+              "nodes",
+              0,
+              "commits",
+              "nodes",
+              0,
+              "commit",
+              "statusCheckRollup",
+              "contexts",
+              "nodes",
+              0,
+            ],
+            message: "Resource not accessible by integration",
+          },
+        ],
+      },
+    };
+  }
   const after = (variables as { after?: unknown } | undefined)?.after;
   const from = typeof after === "string" ? Number(after) : 0;
   const { defaultBranch, pullRequests: page, total } = fake.openPullRequestsPage(from, PAGE);

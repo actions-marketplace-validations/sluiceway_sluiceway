@@ -180,7 +180,7 @@ The deploy. A merge made with the workflow token starts no run of its push, so `
     if: always() && ((needs.resolve.outputs.matrix != '' && needs.resolve.outputs.matrix != '[]') || (needs.scan.outputs.matrix != '' && needs.scan.outputs.matrix != '[]'))
 ```
 
-The pull requests. The scan reads them with `pull-requests: read`, which the block above already gives.
+The pull requests. The scan reads them with `pull-requests: read`, which the block above already gives. It needs no `statuses: read`, on a private repo too: it reads the checks of each pull request as counts (record 0119).
 
 The scan after the merge. `resolve` names the pull requests it merged in a dispatch input, and the scan then previews only what changed, as for a push. GitHub refuses a dispatch with an input the workflow does not declare, so `resolve` sends it only when the workflow's `workflow_dispatch` trigger declares it. Without it the scan after a merge is a full scan:
 
