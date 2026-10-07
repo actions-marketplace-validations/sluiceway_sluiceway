@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { createGitHubClient } from "../../src/github/client.ts";
 import { createOctokitPort } from "../../src/github/octokit-port.ts";
+import { TokenRefused } from "../../src/github/port.ts";
 
 // The real Octokit with its fetch swapped for one that answers from a list, as
 // in octokit-port.test.ts. The answers have the shape of GitHub's REST and
-// GraphQL documentation (slice 4.2). They were not probed on real GitHub.
+// GraphQL documentation (slice 4.2). They were not probed on real GitHub,
+// apart from the rollup's counts and the refusals of issue 292.
 
 interface Answer {
   status?: number;
@@ -146,25 +148,41 @@ describe("listing the open pull requests", () => {
 
   // Slice 5.17: a pull request whose checks have not all finished waits on
   // them, and one whose checks have failed anywhere does not, whatever the
-  // rollup puts first.
+  // rollup puts first. The rollup's counts by state say it (record 0119).
+  const rollup = (
+    checkRuns: Record<string, number>,
+    statuses: Record<string, number> = {},
+    state = "PENDING",
+  ) => ({
+    commits: {
+      nodes: [
+        {
+          commit: {
+            statusCheckRollup: {
+              state,
+              contexts: {
+                checkRunCountsByState: Object.entries(checkRuns).map(([key, count]) => ({
+                  state: key,
+                  count,
+                })),
+                statusContextCountsByState: Object.entries(statuses).map(([key, count]) => ({
+                  state: key,
+                  count,
+                })),
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+
   test("reads a check run or a commit status that has not finished as pending", async () => {
-    const rollup = (contexts: unknown[]) => ({
-      commits: {
-        nodes: [
-          { commit: { statusCheckRollup: { state: "PENDING", contexts: { nodes: contexts } } } },
-        ],
-      },
-    });
     const { port } = portThatAnswers([
       listed([
-        node(rollup([{ __typename: "CheckRun", status: "IN_PROGRESS", conclusion: null }])),
-        node(
-          rollup([
-            { __typename: "CheckRun", status: "COMPLETED", conclusion: "SUCCESS" },
-            { __typename: "StatusContext", state: "PENDING" },
-          ]),
-        ),
-        node(rollup([{ __typename: "CheckRun", status: "QUEUED", conclusion: null }])),
+        node(rollup({ IN_PROGRESS: 1, FAILURE: 0 })),
+        node(rollup({ SUCCESS: 1 }, { PENDING: 1, ERROR: 0 })),
+        node(rollup({ QUEUED: 1, WAITING: 1, PENDING: 1, NEUTRAL: 1, SKIPPED: 1 })),
       ]),
     ]);
     const { pullRequests } = await port.listOpenPullRequests();
@@ -172,58 +190,83 @@ describe("listing the open pull requests", () => {
   });
 
   test("reads a failed check next to one that has not finished as a failure", async () => {
-    const rollup = (contexts: unknown[]) => ({
-      commits: {
-        nodes: [
-          { commit: { statusCheckRollup: { state: "PENDING", contexts: { nodes: contexts } } } },
-        ],
-      },
-    });
     const { port } = portThatAnswers([
       listed([
-        node(
-          rollup([
-            { __typename: "CheckRun", status: "COMPLETED", conclusion: "FAILURE" },
-            { __typename: "StatusContext", state: "PENDING" },
-          ]),
-        ),
-        node(
-          rollup([
-            { __typename: "StatusContext", state: "ERROR" },
-            { __typename: "CheckRun", status: "IN_PROGRESS", conclusion: null },
-          ]),
-        ),
-        node(
-          rollup([
-            { __typename: "CheckRun", status: "COMPLETED", conclusion: "TIMED_OUT" },
-            { __typename: "CheckRun", status: "IN_PROGRESS", conclusion: null },
-          ]),
-        ),
-        node({
-          commits: {
-            nodes: [
-              { commit: { statusCheckRollup: { state: "FAILURE", contexts: { nodes: [] } } } },
-            ],
-          },
-        }),
+        node(rollup({ FAILURE: 1 }, { PENDING: 1 })),
+        node(rollup({ IN_PROGRESS: 1 }, { ERROR: 1 })),
+        node(rollup({ TIMED_OUT: 1, IN_PROGRESS: 1 })),
+        node(rollup({ STARTUP_FAILURE: 1, QUEUED: 1 })),
+        node(rollup({ CANCELLED: 1 }, { FAILURE: 1 })),
+        // A check run that ended with no conclusion did not pass.
+        node(rollup({ COMPLETED: 1, IN_PROGRESS: 1 })),
+        node(rollup({}, {}, "FAILURE")),
       ]),
     ]);
     const { pullRequests } = await port.listOpenPullRequests();
-    expect(pullRequests.map(({ checks }) => checks)).toEqual([
-      "failure",
-      "failure",
-      "failure",
-      "failure",
-    ]);
+    expect(pullRequests.map(({ checks }) => checks)).toEqual(Array(7).fill("failure"));
   });
 
-  test("asks for the checks of the head commit in the same query", async () => {
+  // Issue 292: on a private repo GitHub refuses a token without
+  // `statuses: read` every commit status among the rollup's contexts, seen on
+  // sluiceway/issue-292-probe. Its counts by state need no more than
+  // `pull-requests: read`.
+  test("asks for the checks of the head commit as counts, never as the checks themselves", async () => {
     const { port, sent } = portThatAnswers([listed([node()])]);
     await port.listOpenPullRequests();
     const { query } = (sent[0]?.body ?? { query: "" }) as { query: string };
-    expect(query).toContain("contexts(first: 100)");
-    expect(query).toContain("... on CheckRun");
-    expect(query).toContain("... on StatusContext");
+    expect(query).toContain("checkRunCountsByState");
+    expect(query).toContain("statusContextCountsByState");
+    expect(query).not.toContain("StatusContext {");
+    expect(query).not.toContain("... on");
+    expect(query).not.toMatch(/contexts\([^)]*\)\s*\{\s*nodes/);
+  });
+
+  // Issue 292: the error names the permission the token lacks, from the part
+  // GitHub refused, as GitHub answered on sluiceway/issue-292-probe.
+  test("a token GitHub refuses the pull requests names pull-requests: read", async () => {
+    const { port } = portThatAnswers([
+      {
+        json: {
+          data: { repository: null },
+          errors: [
+            {
+              type: "FORBIDDEN",
+              path: ["repository", "pullRequests"],
+              message: "Resource not accessible by integration",
+            },
+          ],
+        },
+      },
+    ]);
+    const error = await port.listOpenPullRequests().then(
+      () => undefined,
+      (thrown: unknown) => thrown,
+    );
+    expect(error).toBeInstanceOf(TokenRefused);
+    expect((error as TokenRefused).permission).toBe("pull-requests: read");
+    expect((error as TokenRefused).message).toBe(
+      'GitHub answered "Resource not accessible by integration" for the pull requests',
+    );
+  });
+
+  test("a part GitHub refuses that names no permission says where, once", async () => {
+    const at = (index: number) => ({
+      type: "FORBIDDEN",
+      path: ["repository", "pullRequests", "nodes", index, "commits"],
+      message: "Resource not accessible by integration",
+    });
+    const { port } = portThatAnswers([
+      { json: { data: { repository: null }, errors: [at(0), at(1), at(2)] } },
+    ]);
+    const error = await port.listOpenPullRequests().then(
+      () => undefined,
+      (thrown: unknown) => thrown,
+    );
+    expect(error).toBeInstanceOf(TokenRefused);
+    expect((error as TokenRefused).permission).toBeUndefined();
+    expect((error as TokenRefused).message).toBe(
+      'GitHub answered "Resource not accessible by integration" for 3 parts of the pull requests, the first at repository.pullRequests.nodes.0.commits',
+    );
   });
 
   test("says when the branch lives in a fork (slice 5.4)", async () => {

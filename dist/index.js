@@ -59964,6 +59964,16 @@ function deploymentCalls(octokit, repo) {
   };
 }
 
+// src/github/port.ts
+class TokenRefused extends Error {
+  permission;
+  constructor(message, permission) {
+    super(message);
+    this.name = "TokenRefused";
+    this.permission = permission;
+  }
+}
+
 // src/github/octokit-pulls.ts
 var OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: String) {
   repository(owner: $owner, name: $repo) {
@@ -60000,15 +60010,13 @@ var OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: String
               statusCheckRollup {
                 state
                 contexts(first: 100) {
-                  nodes {
-                    __typename
-                    ... on CheckRun {
-                      status
-                      conclusion
-                    }
-                    ... on StatusContext {
-                      state
-                    }
+                  checkRunCountsByState {
+                    state
+                    count
+                  }
+                  statusContextCountsByState {
+                    state
+                    count
                   }
                 }
               }
@@ -60029,15 +60037,25 @@ var CHECKS = {
   FAILURE: "failure",
   ERROR: "failure"
 };
-var PASSED = new Set(["SUCCESS", "NEUTRAL", "SKIPPED"]);
-function failed(context3) {
-  return context3.__typename === "CheckRun" ? context3.status === "COMPLETED" && !PASSED.has(context3.conclusion ?? "") : context3.state === "FAILURE" || context3.state === "ERROR";
+var PASSED_OR_RUNNING = new Set([
+  "SUCCESS",
+  "NEUTRAL",
+  "SKIPPED",
+  "IN_PROGRESS",
+  "PENDING",
+  "QUEUED",
+  "WAITING"
+]);
+var FAILED_STATUS = new Set(["FAILURE", "ERROR"]);
+function anyFailed(contexts) {
+  const some = (counts2, failed) => (counts2 ?? []).some(({ state: state2, count }) => count > 0 && failed(state2));
+  return some(contexts?.checkRunCountsByState, (state2) => !PASSED_OR_RUNNING.has(state2)) || some(contexts?.statusContextCountsByState, (state2) => FAILED_STATUS.has(state2));
 }
 function checksOf(rollup) {
   if (!rollup)
     return "none";
   const checks3 = CHECKS[rollup.state] ?? "failure";
-  if (checks3 === "pending" && present2(rollup.contexts?.nodes).some(failed))
+  if (checks3 === "pending" && anyFailed(rollup.contexts))
     return "failure";
   return checks3;
 }
@@ -60071,6 +60089,22 @@ function messageOf(error63) {
     return message;
   return error63 instanceof Error ? error63.message : String(error63);
 }
+function refusedOrAsIs(error63) {
+  const errors4 = error63?.errors;
+  if (!Array.isArray(errors4) || errors4.length === 0)
+    return error63;
+  const refused = errors4;
+  if (!refused.every((one) => one.type === "FORBIDDEN"))
+    return error63;
+  const paths2 = refused.map(({ path }) => Array.isArray(path) ? path.map(String) : []);
+  const words = typeof refused[0]?.message === "string" ? refused[0].message : "refused";
+  const first = paths2[0] ?? [];
+  if (paths2.every((path) => path.join(".") === "repository.pullRequests")) {
+    return new TokenRefused(`GitHub answered "${words}" for the pull requests`, "pull-requests: read");
+  }
+  const parts = paths2.length === 1 ? "a part" : `${paths2.length} parts`;
+  return new TokenRefused(`GitHub answered "${words}" for ${parts} of the pull requests, the first at ${first.join(".")}`);
+}
 function pullCalls(octokit, repo) {
   return {
     async listOpenPullRequests() {
@@ -60078,7 +60112,9 @@ function pullCalls(octokit, repo) {
       const pullRequests = [];
       let after = null;
       for (;; ) {
-        const data = await octokit.graphql(OPEN_PULL_REQUESTS, { ...repo, after });
+        const data = await octokit.graphql(OPEN_PULL_REQUESTS, { ...repo, after }).catch((error63) => {
+          throw refusedOrAsIs(error63);
+        });
         defaultBranch ??= data.repository?.defaultBranchRef?.name;
         const list = data.repository?.pullRequests;
         pullRequests.push(...present2(list?.nodes).map(toPullRequest2));
@@ -60644,10 +60680,10 @@ function bulkSweepText(live, written) {
 
 // src/render/dashboard-facts.ts
 var MAX_CRATES = 20;
-function headerStateOf(total, known, facts, failed2) {
+function headerStateOf(total, known, facts, failed) {
   if (total === 0)
     return "first-run";
-  if (facts.previewFailed.length > 0 || failed2 > 0)
+  if (facts.previewFailed.length > 0 || failed > 0)
     return "failing";
   if (known.some((row) => row.state === "deploying"))
     return "deploying";
@@ -60699,7 +60735,7 @@ function dashboardFacts(rows) {
   const previewFailed = of("preview-failed").filter((row) => !row.busy);
   const busy = of("preview-failed").filter((row) => row.busy);
   const inSync = of("in-sync");
-  const failed2 = known.filter((row) => row.failed).length;
+  const failed = known.filter((row) => row.failed).length;
   const destroying = pending.filter((row) => row.destroys > 0);
   const gone = drift.filter((row) => (row.gone ?? 0) > 0);
   const sections = { pending, deploying, drift, previewFailed, inSync };
@@ -60715,13 +60751,13 @@ function dashboardFacts(rows) {
       inSync: inSync.length,
       busy: busy.length,
       destroying: destroying.length,
-      failedDeploys: failed2
+      failedDeploys: failed
     },
     shortened: {
       pending: pending.filter((row) => row.shortened > 0).length,
       drift: drift.filter((row) => row.shortened > 0).length
     },
-    headerState: headerStateOf(rows.length, known, sections, failed2),
+    headerState: headerStateOf(rows.length, known, sections, failed),
     crates: pending.length > MAX_CRATES ? "more" : pending.length,
     signs: signsOf([...pending, ...deploying]),
     alert: alertOf(destroying, gone)
@@ -60977,10 +61013,10 @@ function failingAlt({ previews, deploys }) {
     return `Sluiceway: ${some(deploys, "deploy")} failed`;
   return "Sluiceway: something failed";
 }
-function countedAlt(state2, crates, failed2) {
+function countedAlt(state2, crates, failed) {
   if (state2 === "pending")
     return `Sluiceway: ${pendingWords(crates)}`;
-  const alt = state2 === "failing" ? failingAlt(failed2) : ALT[state2];
+  const alt = state2 === "failing" ? failingAlt(failed) : ALT[state2];
   return crates === 0 ? alt : `${alt}, ${pendingWords(crates)}`;
 }
 function signed(state2, signs) {
@@ -61001,13 +61037,13 @@ function rowBlock(row, options = {}) {
     throw new Error("A rendered row did not read back as a row block.");
   return block;
 }
-function picture(state2, crates, signs, actionRef2, busy, failed2) {
+function picture(state2, crates, signs, actionRef2, busy, failed) {
   let name = state2;
   let alt;
   if (isCounted(state2)) {
     const { suffix, fact } = signed(state2, signs);
     name = `${state2}-${crates}${suffix}`;
-    alt = `${countedAlt(state2, crates, failed2)}${fact}`;
+    alt = `${countedAlt(state2, crates, failed)}${fact}`;
   } else {
     alt = ALT[state2];
   }
@@ -61025,7 +61061,7 @@ function picture(state2, crates, signs, actionRef2, busy, failed2) {
 }
 function countsLine(counts2, dots, zeros = true) {
   const { pending, drifted, deploying, previewFailed, inSync, destroying } = counts2;
-  const failed2 = counts2.failedDeploys;
+  const failed = counts2.failedDeploys;
   const dot = (kind, count) => dots ? `${count === 0 ? DOT_AT_ZERO : COUNT_DOT[kind]}&nbsp;` : "";
   const shown3 = (count) => zeros || count > 0;
   const parts = [
@@ -61040,8 +61076,8 @@ function countsLine(counts2, dots, zeros = true) {
     const words = destroying === 1 ? "stack deletes or replaces" : "stacks delete or replace";
     parts.push(`:warning: **${destroying} pending ${words} resources**`);
   }
-  if (failed2 > 0)
-    parts.push(`${dot("failed", failed2)}${plural4(failed2, "failed deploy")}`);
+  if (failed > 0)
+    parts.push(`${dot("failed", failed)}${plural4(failed, "failed deploy")}`);
   return parts.join(" · ");
 }
 function time3(iso, timeZone) {
@@ -61810,14 +61846,14 @@ function decide(input2, drift) {
   if (drift !== undefined && !drift.ok) {
     return {
       kind: "drift-failed",
-      end: failed2({ kind: "preview-failed", reason: drift.reason }),
+      end: failed({ kind: "preview-failed", reason: drift.reason }),
       checked: previewed
     };
   }
   if (!previewed.ok) {
     return {
       kind: "preview-failed",
-      end: failed2({ kind: "preview-failed", reason: previewed.reason }),
+      end: failed({ kind: "preview-failed", reason: previewed.reason }),
       checked: previewed
     };
   }
@@ -61828,14 +61864,14 @@ function decide(input2, drift) {
   }
   const hash2 = diffHash(fresh.diff);
   if (hash2 !== approved.hash) {
-    return { kind: "moved", end: failed2({ kind: "moved" }), hash: hash2, checked: fresh };
+    return { kind: "moved", end: failed({ kind: "moved" }), hash: hash2, checked: fresh };
   }
   const fingerprint = valueFingerprint(fresh.diff);
   if (fingerprint !== undefined && fingerprint !== approved.fingerprint) {
     const everyRun = differsEveryRun(approved, { hash: hash2, fingerprint }, input2.sameCommit ?? false);
     return {
       kind: "value-changed",
-      end: failed2({ kind: "value-changed", everyRun }),
+      end: failed({ kind: "value-changed", everyRun }),
       hash: hash2,
       fingerprint,
       everyRun,
@@ -61850,14 +61886,14 @@ function deployEnd(result2, ranOut, timeoutMinutes) {
   if (result2.ok)
     return { kind: "deployed", end: { kind: "deployed" } };
   if (result2.reason.kind === "moved")
-    return { kind: "moved", end: failed2(result2.reason) };
+    return { kind: "moved", end: failed(result2.reason) };
   if (result2.reason.kind === "tool-error" && ranOut) {
-    return { kind: "failed", end: failed2({ kind: "timed-out", minutes: timeoutMinutes ?? 0 }) };
+    return { kind: "failed", end: failed({ kind: "timed-out", minutes: timeoutMinutes ?? 0 }) };
   }
-  return { kind: "failed", end: failed2(result2.reason) };
+  return { kind: "failed", end: failed(result2.reason) };
 }
 function unplannedEnd(deploying) {
-  return failed2(deploying ? { kind: "tool-error", exitCode: null } : { kind: "not-started" });
+  return failed(deploying ? { kind: "tool-error", exitCode: null } : { kind: "not-started" });
 }
 function applyOutcome(end) {
   switch (end.kind) {
@@ -61872,7 +61908,7 @@ function applyOutcome(end) {
       return "failed";
   }
 }
-function failed2(reason) {
+function failed(reason) {
   return { kind: "failed", reason };
 }
 
@@ -62388,7 +62424,7 @@ function byCodeUnit20(a, b) {
 var READS_PER_JOB = 100;
 function attributionSource(github, input2, onFailure) {
   let walk4;
-  let failed3 = false;
+  let failed2 = false;
   const pushFiles = new Map;
   const pullRequestFiles = new Map;
   const asked = new Set;
@@ -62396,7 +62432,7 @@ function attributionSource(github, input2, onFailure) {
   const { lookback, trailLength, ...rest } = input2;
   const read5 = async (ranges) => {
     try {
-      if (failed3)
+      if (failed2)
         return false;
       if (!isCommitId(input2.scanSha))
         throw new Error("the scanned commit is no commit id");
@@ -62423,7 +62459,7 @@ function attributionSource(github, input2, onFailure) {
       }
       return true;
     } catch (error63) {
-      failed3 = true;
+      failed2 = true;
       const words = error63 instanceof Error ? error63.message : String(error63);
       onFailure(words.replace(/\.+$/, ""));
       return false;
@@ -63447,16 +63483,16 @@ function envFileFailure(detail) {
   return { ok: false, reason: { kind: "env-file-not-loaded" }, detail, toolLog: "" };
 }
 async function prepareStacks(context3, stacks2, defaultTimeoutMinutes, envs) {
-  const failed3 = new Map;
+  const failed2 = new Map;
   if (envs === undefined) {
-    await prepareWith(context3, stacks2, defaultTimeoutMinutes, context3.env, failed3);
-    return failed3;
+    await prepareWith(context3, stacks2, defaultTimeoutMinutes, context3.env, failed2);
+    return failed2;
   }
   const loaded = [];
   for (const one of stacks2) {
     const own2 = envs.get(stackId(one.stack));
     if (own2?.ok === false)
-      failed3.set(stackId(one.stack), envFileFailure(own2.detail));
+      failed2.set(stackId(one.stack), envFileFailure(own2.detail));
     else
       loaded.push(one);
   }
@@ -63466,11 +63502,11 @@ async function prepareStacks(context3, stacks2, defaultTimeoutMinutes, envs) {
       continue;
     const own2 = envs.get(stackId(first.stack));
     const env = own2?.ok ? own2.env : context3.env;
-    await prepareWith(context3, group, defaultTimeoutMinutes, env, failed3);
+    await prepareWith(context3, group, defaultTimeoutMinutes, env, failed2);
   }
-  return failed3;
+  return failed2;
 }
-async function prepareWith(context3, stacks2, defaultTimeoutMinutes, env, failed3) {
+async function prepareWith(context3, stacks2, defaultTimeoutMinutes, env, failed2) {
   if (stacks2.length === 0 || context3.adapter.prepare === undefined)
     return;
   const timeouts = new Map(stacks2.map((one) => [stackId(one.stack), one.previewTimeout ?? defaultTimeoutMinutes]));
@@ -63498,7 +63534,7 @@ async function prepareWith(context3, stacks2, defaultTimeoutMinutes, env, failed
       ...told
     ]);
     for (const id of ids2) {
-      failed3.set(id, {
+      failed2.set(id, {
         ok: false,
         reason: result2.reason,
         detail: [
@@ -66037,7 +66073,8 @@ async function mergeAll(context3, config2, read5, ticks) {
   try {
     open2 = await github.listOpenPullRequests();
   } catch (error63) {
-    result2.failure = `The open pull requests could not be read: ${message2(error63)}. The resolve job needs the permission \`pull-requests: read\` (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
+    const needs = error63 instanceof TokenRefused && error63.permission !== undefined ? ` The resolve job needs the permission \`${error63.permission}\` (record 0119).` : "";
+    result2.failure = `The open pull requests could not be read: ${message2(error63)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
     return result2;
   }
   try {
@@ -67622,14 +67659,14 @@ async function runPool(items2, size, work) {
   }
   const results = new Array(items2.length);
   let next = 0;
-  let failed3 = false;
+  let failed2 = false;
   const slot = async () => {
-    while (!failed3 && next < items2.length) {
+    while (!failed2 && next < items2.length) {
       const index = next++;
       try {
         results[index] = await work(items2[index]);
       } catch (error63) {
-        failed3 = true;
+        failed2 = true;
         throw error63;
       }
     }
@@ -68041,13 +68078,13 @@ async function previewPullRequest(context3, repo) {
     throw error63;
   }
   const envs = stackEnvFiles({ root: context3.root, env: context3.env, mask: context3.mask, log })(stacks2.map(({ stack, envFile }) => ({ id: stackId(stack), envFile })));
-  const failed3 = await prepareStacks({ ...tool, log, adapter }, stacks2, context3.previewTimeoutMinutes, envs);
+  const failed2 = await prepareStacks({ ...tool, log, adapter }, stacks2, context3.previewTimeoutMinutes, envs);
   const showValues = shownValues(repo.config.dashboard);
   const results = await runPool(stacks2, context3.pool.size, async (configured) => {
     const id = stackId(configured.stack);
     const started = now().getTime();
     const own2 = envs.get(id);
-    const result2 = failed3.get(id) ?? await adapter.preview(configured.stack, {
+    const result2 = failed2.get(id) ?? await adapter.preview(configured.stack, {
       ...tool,
       env: own2?.ok ? own2.env : tool.env,
       timeoutMinutes: configured.previewTimeout ?? context3.previewTimeoutMinutes,
@@ -68561,8 +68598,8 @@ function waitingLines(listing, live, redact) {
 }
 
 // src/core/scan-result.ts
-function everyPreviewFailed(attempted, failed3) {
-  return attempted > 1 && failed3 === attempted;
+function everyPreviewFailed(attempted, failed2) {
+  return attempted > 1 && failed2 === attempted;
 }
 
 // src/policy/conftest.ts
@@ -68620,6 +68657,11 @@ async function checkConftest(context3) {
 
 // src/render/summary.ts
 var SUMMARY_BUDGET = 1e6;
+function pullRequestsUnreadText(unread, escaped = (text9) => text9) {
+  const kept = "The updates waiting to merge on the dashboard are kept as an earlier scan left them";
+  const needs = unread.permission === undefined ? "" : `. The scan job needs the permission \`${unread.permission}\``;
+  return `${escaped(unread.why)}. ${kept}${needs} (record 0119).`;
+}
 function stackAnchor(stackId2) {
   let encoded = "";
   for (const char of stackId2) {
@@ -68787,12 +68829,12 @@ function renderSummary(stacks2, options = {}) {
   const drifted = diffs.filter((stack) => stack.diff.changes.length === 0 && hasDrift(stack));
   const inSync = diffs.filter((stack) => stack.diff.changes.length === 0 && !hasDrift(stack));
   const notPreviewed = sorted.filter((stack) => stack.kind === "preview-failed");
-  const failed3 = notPreviewed.filter((stack) => !stack.busy);
+  const failed2 = notPreviewed.filter((stack) => !stack.busy);
   const busy = notPreviewed.filter((stack) => stack.busy);
   const counted2 = stacks2.length === 0 ? "No stacks previewed." : `${plural2(stacks2.length, "stack")} previewed: ${[
     pending.length && `${pending.length} pending`,
     drifted.length && `${drifted.length} drifted`,
-    failed3.length && `${failed3.length} preview failed`,
+    failed2.length && `${failed2.length} preview failed`,
     inSync.length && `${inSync.length} in sync`,
     busy.length && `${busy.length} busy`
   ].filter(Boolean).join(", ")}.`;
@@ -68805,8 +68847,8 @@ function renderSummary(stacks2, options = {}) {
 `));
     }
   }
-  if (failed3.length > 0) {
-    tail.push("### Preview failed", failed3.map((stack) => failedLine(stack, options)).join(`
+  if (failed2.length > 0) {
+    tail.push("### Preview failed", failed2.map((stack) => failedLine(stack, options)).join(`
 `));
   }
   if (busy.length > 0) {
@@ -68823,13 +68865,16 @@ function renderSummary(stacks2, options = {}) {
   const index = [
     pending.length > 0 && `- Pending: ${pending.map((stack) => indexLink(stack.diff.stackId)).join(" · ")}`,
     drifted.length > 0 && `- Drifted: ${drifted.map((stack) => indexLink(stack.diff.stackId)).join(" · ")}`,
-    failed3.length > 0 && `- Preview failed: ${failed3.map((stack) => indexLink(stack.stackId)).join(" · ")}`,
+    failed2.length > 0 && `- Preview failed: ${failed2.map((stack) => indexLink(stack.stackId)).join(" · ")}`,
     busy.length > 0 && `- Busy: ${busy.map((stack) => indexLink(stack.stackId)).join(" · ")}`
   ].filter((line3) => line3 !== false);
   const frame = (shortened2) => [
     "## Sluiceway scan",
     ...shortened2 > 0 ? [note(shortened2, pending.length, options)] : [],
     counted2,
+    ...options.pullRequestsUnread === undefined ? [] : [
+      `> **The open pull requests could not be read.** ${pullRequestsUnreadText(options.pullRequestsUnread, escapeText)}`
+    ],
     ...options.toolDiffInLog && pending.length > 0 ? [toolDiffLine(options)] : [],
     ...index.length > 0 ? [index.join(`
 `)] : [],
@@ -68906,13 +68951,13 @@ async function previewOne(context3, number4, head, files, stacks2, envFiles) {
     }
     const tool = { root: copy, env: context3.env, run: context3.run };
     const envs = envFiles(stacks2.map(({ stack, envFile }) => ({ id: stackId(stack), envFile })));
-    const failed3 = await prepareStacks({ ...tool, log, adapter: context3.adapter }, stacks2, context3.previewTimeoutMinutes, envs);
+    const failed2 = await prepareStacks({ ...tool, log, adapter: context3.adapter }, stacks2, context3.previewTimeoutMinutes, envs);
     const previews = [];
     for (const configured of stacks2) {
       const id = stackId(configured.stack);
       const started = now().getTime();
       const own2 = envs.get(id);
-      const result2 = failed3.get(id) ?? await context3.adapter.preview(configured.stack, {
+      const result2 = failed2.get(id) ?? await context3.adapter.preview(configured.stack, {
         ...tool,
         env: own2?.ok ? own2.env : tool.env,
         timeoutMinutes: configured.previewTimeout ?? context3.previewTimeoutMinutes,
@@ -69119,7 +69164,7 @@ async function scanning(context3, report2) {
     versionChecked = true;
   }
   const firstWrite = await sayRunning(context3, config2, stacks2, ignored, attribution, at);
-  const listing = await listUpdates(context3, config2, stacks2);
+  const { listing, unread: pullRequestsUnread } = await listUpdates(context3, config2, stacks2);
   let branchPreviews = new Map;
   if (listing.kind === "listed" && config2.mergeAndDeploy.preview && listing.updates.length > 0) {
     await checkVersion5(context3, stacks2.map(({ stack }) => stack));
@@ -69160,7 +69205,7 @@ async function scanning(context3, report2) {
     logResults(context3, round);
     const all = [...previewed.values()].sort((a, b) => byCodeUnit(a.id, b.id));
     if (round.length > 0 || rounds === 0) {
-      await writeSummary2(context3, all, { logDiff, unclaimed });
+      await writeSummary2(context3, all, { logDiff, unclaimed, pullRequestsUnread });
       report2.previewed = all;
     }
     rounds++;
@@ -69305,19 +69350,19 @@ async function scanning(context3, report2) {
   }), config2.notify.events);
   if ([...attributed.values()].some(({ merges }) => merges.length > 0)) {
     const all = [...previewed.values()].sort((a, b) => byCodeUnit(a.id, b.id));
-    await writeSummary2(context3, all, { logDiff, unclaimed }, attributed);
+    await writeSummary2(context3, all, { logDiff, unclaimed, pullRequestsUnread }, attributed);
   }
-  const failed3 = [...previewed.values()].filter(({ result: result2 }) => !result2.ok && !isBusy(result2));
-  const faults = failed3.filter(({ result: result2 }) => !result2.ok && result2.reason.kind === "internal-error").map(({ id }) => id).sort(byCodeUnit);
+  const failed2 = [...previewed.values()].filter(({ result: result2 }) => !result2.ok && !isBusy(result2));
+  const faults = failed2.filter(({ result: result2 }) => !result2.ok && result2.reason.kind === "internal-error").map(({ id }) => id).sort(byCodeUnit);
   if (faults.length > 0) {
     throw new ScanFailedError(`The preview of ${faults.join(", ")} failed inside Sluiceway, which is a bug. The dashboard was written first and shows ${faults.length === 1 ? "it" : "them"} as a preview failure. The job log holds the error in the group of the stack. Please report it at https://github.com/sluiceway/sluiceway/issues.`);
   }
-  if (everyPreviewFailed(previewed.size, failed3.length)) {
-    throw new ScanFailedError(`Every preview failed (${failed3.length} of ${previewed.size}). That nearly always means the environment is broken, such as missing credentials or a backend that cannot be reached. The dashboard was written first and shows a preview failure on every row of a previewed stack, which is true: nothing can be deployed either. The job log holds what the tool printed, in the group of each stack.`);
+  if (everyPreviewFailed(previewed.size, failed2.length)) {
+    throw new ScanFailedError(`Every preview failed (${failed2.length} of ${previewed.size}). That nearly always means the environment is broken, such as missing credentials or a backend that cannot be reached. The dashboard was written first and shows a preview failure on every row of a previewed stack, which is true: nothing can be deployed either. The job log holds what the tool printed, in the group of each stack.`);
   }
-  if (context3.strict && failed3.length > 0) {
-    const ids3 = failed3.map(({ id }) => id).sort(byCodeUnit);
-    throw new ScanFailedError(`${plural2(failed3.length, "preview")} failed (${ids3.join(", ")}), and the strict input turns the job red on any preview failure. The dashboard was written first and shows ${failed3.length === 1 ? "it" : "them"}.`);
+  if (context3.strict && failed2.length > 0) {
+    const ids3 = failed2.map(({ id }) => id).sort(byCodeUnit);
+    throw new ScanFailedError(`${plural2(failed2.length, "preview")} failed (${ids3.join(", ")}), and the strict input turns the job red on any preview failure. The dashboard was written first and shows ${failed2.length === 1 ? "it" : "them"}.`);
   }
 }
 var PREVIEW_FIRST = {
@@ -69556,16 +69601,16 @@ async function previewAll(context3, stacks2, logDiff, showValues, valueFingerpri
     return own2?.ok ? own2.env : tool.env;
   };
   const unprepared = stacks2.filter(({ stack }) => !prepared.has(stackId(stack)));
-  const failed3 = await prepareStacks({ ...tool, log, adapter, createInBackend: true }, unprepared, context3.previewTimeoutMinutes, envs);
+  const failed2 = await prepareStacks({ ...tool, log, adapter, createInBackend: true }, unprepared, context3.previewTimeoutMinutes, envs);
   for (const { stack } of unprepared) {
-    if (!failed3.has(stackId(stack)))
+    if (!failed2.has(stackId(stack)))
       prepared.add(stackId(stack));
   }
   const unpreparedFailures = stacks2.flatMap(({ stack }) => {
-    const result2 = failed3.get(stackId(stack));
+    const result2 = failed2.get(stackId(stack));
     return result2 === undefined ? [] : [{ id: stackId(stack), result: result2, startedAt: now(), milliseconds: 0 }];
   });
-  stacks2 = stacks2.filter(({ stack }) => !failed3.has(stackId(stack)));
+  stacks2 = stacks2.filter(({ stack }) => !failed2.has(stackId(stack)));
   if (stacks2.length === 0)
     return unpreparedFailures;
   sayPool();
@@ -69846,13 +69891,18 @@ async function writePages(context3, pages, round, urls, options) {
     log.info(`GitHub answered "${refused.message}" while the preview pages were written. No more pages are written in this scan, and the preview links of ${plural2(written.skipped.length, "stack")} land on ${fallBack}.`);
   }
 }
-async function writeSummary2(context3, previewed, { logDiff, unclaimed }, attributed = new Map) {
+async function writeSummary2(context3, previewed, {
+  logDiff,
+  unclaimed,
+  pullRequestsUnread
+}, attributed = new Map) {
   const { log } = context3;
   const summary3 = renderSummary(previewed.map(({ id, result: result2, policies }) => previewSummary(id, result2, attributed.get(id)?.merges, policies)), {
     budget: context3.limits?.summaryBudget,
     jobLogUrl: context3.jobId === undefined ? undefined : runLinks(context3).log,
     toolDiffInLog: logDiff,
-    unclaimed
+    unclaimed,
+    pullRequestsUnread
   });
   if (!summary3.fits) {
     log.warning("The summary of this run is too large for GitHub even with every stack shortened as far as it goes, so it was not written. The dashboard is still brought up to date, and the job log of this run holds every diff in full.", "Summary not written");
@@ -69940,15 +69990,20 @@ function reportDashboard(context3, written, lastPlaced) {
 }
 async function listUpdates(context3, config2, stacks2) {
   const { authors } = config2.mergeAndDeploy;
-  if (authors.length === 0 || !config2.deploys || config2.dashboard.readOnly)
-    return { kind: "off" };
+  if (authors.length === 0 || !config2.deploys || config2.dashboard.readOnly) {
+    return { listing: { kind: "off" } };
+  }
   const { log } = context3;
   let open2;
   try {
     open2 = await context3.github.listOpenPullRequests();
   } catch (error63) {
-    log.info(`The open pull requests could not be read: ${error63 instanceof Error ? error63.message : error63}. The updates waiting to merge are kept as they were. The scan job needs the permission \`pull-requests: read\` (record 0054).`);
-    return { kind: "failed" };
+    const unread = {
+      why: error63 instanceof Error ? error63.message : String(error63),
+      permission: error63 instanceof TokenRefused ? error63.permission : undefined
+    };
+    log.warning(`The open pull requests could not be read: ${pullRequestsUnreadText(unread)}`, "Open pull requests not read");
+    return { listing: { kind: "failed" }, unread };
   }
   const options = {
     authors,
@@ -69976,7 +70031,7 @@ async function listUpdates(context3, config2, stacks2) {
   if (rest.length > 0) {
     log.info(`${plural2(rest.length, "more pull request")} ${rest.length === 1 ? "waits on its checks and is" : "wait on their checks and are"} not listed: ${numbers(rest)}.`);
   }
-  return { kind: "listed", updates, onChecks: shown3 };
+  return { listing: { kind: "listed", updates, onChecks: shown3 } };
 }
 async function handOffMerges(context3, config2, stacks2, previewed, waiting, handedOn, now) {
   const { log } = context3;

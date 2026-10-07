@@ -250,6 +250,8 @@ permissions:
 
 With one job, the token of every run can then push to the repo, also while your programs preview. The [split workflow](split-workflow.md#merge-and-deploy) gives `contents: write` to the job that merges alone.
 
+The pull requests. The scan reads them with `pull-requests: read`, which the block above already gives. It needs no `statuses: read`, on a private repo too: it reads the checks of each pull request as counts (record 0119).
+
 The deploy needs nothing more. A merge made with the workflow token starts no run of its push, so Sluiceway starts the workflow again instead, and the scan of that run deploys the merged change in the same step.
 
 The scan after the merge. Sluiceway names the pull requests it merged in a dispatch input, and the scan then previews only what changed, as for a push. GitHub refuses a dispatch with an input the workflow does not declare, so it sends the input only when the workflow's `workflow_dispatch` trigger declares it. Without it the scan after a merge is a full scan:

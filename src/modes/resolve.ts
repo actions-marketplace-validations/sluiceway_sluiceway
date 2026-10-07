@@ -66,7 +66,7 @@ import {
 import { type EventIssue, editedIssue } from "../github/event.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { dashboardUrl } from "../github/outputs.ts";
-import type { GitHubPort } from "../github/port.ts";
+import { type GitHubPort, TokenRefused } from "../github/port.ts";
 import {
   commentOnRefusedTicks,
   judgeTicks as lookUpTickers,
@@ -746,7 +746,12 @@ async function mergeAll(
   try {
     open = await github.listOpenPullRequests();
   } catch (error) {
-    result.failure = `The open pull requests could not be read: ${message(error)}. The resolve job needs the permission \`pull-requests: read\` (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
+    // The permission only when GitHub's refusal says which (record 0119).
+    const needs =
+      error instanceof TokenRefused && error.permission !== undefined
+        ? ` The resolve job needs the permission \`${error.permission}\` (record 0119).`
+        : "";
+    result.failure = `The open pull requests could not be read: ${message(error)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
     return result;
   }
   try {

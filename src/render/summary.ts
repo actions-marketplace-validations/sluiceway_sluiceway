@@ -84,6 +84,33 @@ export interface SummaryOptions {
   // changed files (record 0010). The summary names them and offers the block
   // the check prints (record 0042, onboarding log hurdle 5).
   unclaimed?: UnclaimedFiles | undefined;
+  // The open pull requests could not be read (record 0119). The summary says
+  // so under its counts, because the dashboard then lists no update that was
+  // not listed before.
+  pullRequestsUnread?: PullRequestsUnread | undefined;
+}
+
+// Why the open pull requests could not be read: GitHub's words, and the
+// permission the token lacks when the part GitHub refused says which.
+export interface PullRequestsUnread {
+  why: string;
+  permission?: string | undefined;
+}
+
+// What the run's warning and the summary say after "The open pull requests
+// could not be read". The summary escapes GitHub's words, as it does a
+// reason on a row.
+export function pullRequestsUnreadText(
+  unread: PullRequestsUnread,
+  escaped: (text: string) => string = (text) => text,
+): string {
+  const kept =
+    "The updates waiting to merge on the dashboard are kept as an earlier scan left them";
+  const needs =
+    unread.permission === undefined
+      ? ""
+      : `. The scan job needs the permission \`${unread.permission}\``;
+  return `${escaped(unread.why)}. ${kept}${needs} (record 0119).`;
 }
 
 export interface UnclaimedFiles {
@@ -385,6 +412,11 @@ export function renderSummary(stacks: SummaryStack[], options: SummaryOptions = 
     "## Sluiceway scan",
     ...(shortened > 0 ? [note(shortened, pending.length, options)] : []),
     counted,
+    ...(options.pullRequestsUnread === undefined
+      ? []
+      : [
+          `> **The open pull requests could not be read.** ${pullRequestsUnreadText(options.pullRequestsUnread, escapeText)}`,
+        ]),
     ...(options.toolDiffInLog && pending.length > 0 ? [toolDiffLine(options)] : []),
     ...(index.length > 0 ? [index.join("\n")] : []),
     ...(pending.length > 0 ? ["### Pending"] : []),

@@ -60,3 +60,22 @@ test("more than 100 open pull requests come in pages over HTTP, one request each
   );
   expect(fake.requests.filter((request) => request === "listOpenPullRequests")).toHaveLength(3);
 });
+
+// Issue 292: a private repo refuses a token without `statuses: read` every
+// commit status among the rollup's contexts, and the fake answers as one, so
+// a query that asks for them fails here as it would there.
+test("a query for the rollup's contexts themselves is refused, as on a private repo", async () => {
+  const fake = new FakeGitHub();
+  const server = await startFakeGitHubServer(fake);
+  servers.push(server);
+  const octokit = createGitHubClient("a-token", { baseUrl: server.url });
+  fake.seedOpenPullRequest({ number: 50, head: HEAD });
+
+  await expect(
+    octokit.graphql(
+      `query { repository(owner: "acme", name: "infra") { pullRequests(states: OPEN, first: 100) { nodes { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes { __typename } } } } } } } } } }`,
+    ),
+  ).rejects.toMatchObject({
+    errors: [{ type: "FORBIDDEN", message: "Resource not accessible by integration" }],
+  });
+});

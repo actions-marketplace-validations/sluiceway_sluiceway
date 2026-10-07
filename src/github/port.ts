@@ -46,6 +46,20 @@ export interface OpenPullRequests {
   pullRequests: OpenPullRequest[];
 }
 
+// GitHub refused the workflow token a part of what a read asked for (issue
+// 292). `permission` is the one the token lacks, as a permissions block
+// writes it, when the refused part says which. The message is GitHub's own
+// words and the part.
+export class TokenRefused extends Error {
+  readonly permission: string | undefined;
+
+  constructor(message: string, permission?: string) {
+    super(message);
+    this.name = "TokenRefused";
+    this.permission = permission;
+  }
+}
+
 // What GitHub answered a merge. A refusal is an answer about the pull
 // request: GitHub will not merge it, such as for branch protection (405), its
 // head is not the commit that was ticked (409), or it refused what was asked
@@ -270,8 +284,9 @@ export interface GitHubPort {
   // Every open pull request, oldest first, each with its files and the
   // combined checks of its head commit, one GraphQL query per page of 100
   // (record 0054, slice 5.9). Needs
-  // `pull-requests: read`. Only a scan with `mergeAndDeploy.authors` makes it,
-  // and `resolve` before it merges.
+  // `pull-requests: read` and nothing more, on a private repo too (record
+  // 0119). A part GitHub refuses throws TokenRefused. Only a scan with
+  // `mergeAndDeploy.authors` makes it, and `resolve` before it merges.
   listOpenPullRequests(): Promise<OpenPullRequests>;
 
   // The merge methods the repo allows. GitHub gives them to a token with

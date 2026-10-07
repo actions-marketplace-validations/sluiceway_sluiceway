@@ -106,7 +106,7 @@ import {
 import { type StackEnvFilesLoad, stackEnvFiles } from "../github/env-file.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { dashboardUrl, type StepOutputs, writeResultFile } from "../github/outputs.ts";
-import type { GitHubPort } from "../github/port.ts";
+import { type GitHubPort, TokenRefused } from "../github/port.ts";
 import {
   type PreviewPages,
   type PreviewPageToWrite,
@@ -140,7 +140,12 @@ import { previewOutcome, previewSummary } from "../render/preview-result.ts";
 import { type DashboardCounts, scanResultFile } from "../render/result-file.ts";
 import { byCodeUnit, driftCounts, onMergeNote, plural } from "../render/row.ts";
 import { scanRunningLogLine } from "../render/scan-running.ts";
-import { renderSummary, type UnclaimedFiles } from "../render/summary.ts";
+import {
+  type PullRequestsUnread,
+  pullRequestsUnreadText,
+  renderSummary,
+  type UnclaimedFiles,
+} from "../render/summary.ts";
 import { waitingRunLogLine } from "../render/waiting-run.ts";
 import { previewBranches } from "./branch-preview.ts";
 import { readHistories } from "./outside-deploys.ts";
@@ -441,7 +446,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
 
   // The updates waiting to merge (record 0054): read once, before the slow
   // work, and drawn at the late read, where the ticks are.
-  const listing = await listUpdates(context, config, stacks);
+  const { listing, unread: pullRequestsUnread } = await listUpdates(context, config, stacks);
   // With mergeAndDeploy.preview, each listed update as it would be after the
   // merge (record 0071). The tools are checked first, as for any preview.
   let branchPreviews = new Map<number, BranchPreview[]>();
@@ -520,7 +525,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     // every stack this scan previewed, so a later round writes it again.
     const all = [...previewed.values()].sort((a, b) => byCodeUnit(a.id, b.id));
     if (round.length > 0 || rounds === 0) {
-      await writeSummary(context, all, { logDiff, unclaimed });
+      await writeSummary(context, all, { logDiff, unclaimed, pullRequestsUnread });
       report.previewed = all;
     }
     rounds++;
@@ -739,7 +744,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   // written once more with the pull requests of every previewed stack.
   if ([...attributed.values()].some(({ merges }) => merges.length > 0)) {
     const all = [...previewed.values()].sort((a, b) => byCodeUnit(a.id, b.id));
-    await writeSummary(context, all, { logDiff, unclaimed }, attributed);
+    await writeSummary(context, all, { logDiff, unclaimed, pullRequestsUnread }, attributed);
   }
 
   // A busy stack is not a failed one (record 0117), so it turns no job red.
@@ -1670,7 +1675,15 @@ async function writePages(
 async function writeSummary(
   context: ScanContext,
   previewed: Previewed[],
-  { logDiff, unclaimed }: { logDiff: boolean; unclaimed: UnclaimedFiles | undefined },
+  {
+    logDiff,
+    unclaimed,
+    pullRequestsUnread,
+  }: {
+    logDiff: boolean;
+    unclaimed: UnclaimedFiles | undefined;
+    pullRequestsUnread: PullRequestsUnread | undefined;
+  },
   attributed: Attributed = new Map(),
 ): Promise<void> {
   const { log } = context;
@@ -1683,6 +1696,7 @@ async function writeSummary(
       jobLogUrl: context.jobId === undefined ? undefined : runLinks(context).log,
       toolDiffInLog: logDiff,
       unclaimed,
+      pullRequestsUnread,
     },
   );
   if (!summary.fits) {
@@ -1830,18 +1844,29 @@ async function listUpdates(
   context: ScanContext,
   config: Config,
   stacks: ConfiguredStack[],
-): Promise<Listing> {
+): Promise<{ listing: Listing; unread?: PullRequestsUnread }> {
   const { authors } = config.mergeAndDeploy;
-  if (authors.length === 0 || !config.deploys || config.dashboard.readOnly) return { kind: "off" };
+  if (authors.length === 0 || !config.deploys || config.dashboard.readOnly) {
+    return { listing: { kind: "off" } };
+  }
   const { log } = context;
   let open: Awaited<ReturnType<GitHubPort["listOpenPullRequests"]>>;
   try {
     open = await context.github.listOpenPullRequests();
   } catch (error) {
-    log.info(
-      `The open pull requests could not be read: ${error instanceof Error ? error.message : error}. The updates waiting to merge are kept as they were. The scan job needs the permission \`pull-requests: read\` (record 0054).`,
+    // A warning on the run and a line in the summary (record 0119): no
+    // update is listed until it reads, and an info line hid that for weeks
+    // (issue 292). The permission is named only when GitHub's refusal says
+    // which one.
+    const unread: PullRequestsUnread = {
+      why: error instanceof Error ? error.message : String(error),
+      permission: error instanceof TokenRefused ? error.permission : undefined,
+    };
+    log.warning(
+      `The open pull requests could not be read: ${pullRequestsUnreadText(unread)}`,
+      "Open pull requests not read",
     );
-    return { kind: "failed" };
+    return { listing: { kind: "failed" }, unread };
   }
   const options = {
     authors,
@@ -1890,7 +1915,7 @@ async function listUpdates(
       `${plural(rest.length, "more pull request")} ${rest.length === 1 ? "waits on its checks and is" : "wait on their checks and are"} not listed: ${numbers(rest)}.`,
     );
   }
-  return { kind: "listed", updates, onChecks: shown };
+  return { listing: { kind: "listed", updates, onChecks: shown } };
 }
 
 // The hand-off of record 0054. A scan of a commit that holds the merge ends
