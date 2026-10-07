@@ -70,10 +70,31 @@ export interface Stack {
   preview: { name: string; url: string } | null;
   run: string | null;
   lastDeploy: Deploy | null;
+  // What a tick of a stack that deletes or replaces sends back (the app's
+  // record 0320), or null for one that needs nothing.
+  confirm?: Confirm | null;
 }
 
+export interface Confirm {
+  destroys: number;
+  scan: string | null;
+}
+
+// queued: the record is open and waits behind the stacks this one depends on,
+// or for a deploy window or the end of a freeze, and a later run of resolve
+// starts it. waits: a stack this one depends on has a change nobody ticked,
+// so nothing was asked (the app's record 0330).
 export interface TickAnswer {
-  outcome: "asked" | "refused" | "github" | "moved" | "taken" | "failed";
+  outcome:
+    | "asked"
+    | "queued"
+    | "waits"
+    | "refused"
+    | "unconfirmed"
+    | "github"
+    | "moved"
+    | "taken"
+    | "failed";
   sentence: string;
   deployment: { id: number } | null;
   dashboard: string;

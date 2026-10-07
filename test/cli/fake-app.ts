@@ -90,6 +90,9 @@ export interface FakeStack {
   row: Record<string, Json>;
   // What a tick of it comes to.
   tick?: { outcome: string; sentence: string; deployment?: number };
+  // What the live row asks a tick to confirm, when it moved on since the row
+  // was read; the row's own confirm otherwise.
+  confirmNow?: Json;
 }
 
 export interface Call {
@@ -172,6 +175,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
     run: null,
     lastDeploy: null,
     at: "2026-09-26T08:00:00Z",
+    confirm: null,
     ...extra,
   });
   const state: FakeApp["state"] = {
@@ -224,6 +228,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
           },
           changes: "1 update, 1 replace",
           destroys: "1 replace",
+          confirm: { destroys: 1, scan: "0a1b2c3d4e5f" },
         }),
         tick: {
           outcome: "asked",
@@ -432,6 +437,19 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
       case "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/tick": {
         const found = repo === "infra" ? state.stacks[id ?? ""] : undefined;
         if (found?.tick === undefined) return notFound(route, method);
+        // A stack that deletes or replaces is ticked only with its own
+        // confirm sent back (the app's record 0320).
+        const confirm = found.confirmNow ?? found.row.confirm ?? null;
+        const sent = (body as { confirm?: Json } | undefined)?.confirm;
+        if (confirm !== null && JSON.stringify(sent) !== JSON.stringify(confirm)) {
+          return answer(route, method, 200, {
+            outcome: "unconfirmed",
+            sentence: `${id} deletes or replaces 1 resource. Read the stack and send its confirm with the tick.`,
+            deployment: null,
+            dashboard: "https://github.com/acme/infra/issues/7",
+            confirm,
+          });
+        }
         const { outcome, sentence, deployment } = found.tick;
         return answer(route, method, 200, {
           outcome,
@@ -444,6 +462,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
                   status: `${origin}/api/v1/orgs/acme/repos/infra/deployments/${deployment}`,
                 },
           dashboard: "https://github.com/acme/infra/issues/7",
+          confirm: null,
         });
       }
       case "/api/v1/orgs/{org}/repos/{repo}/deployments/{deployment}": {
