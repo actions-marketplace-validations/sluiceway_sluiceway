@@ -1,5 +1,7 @@
 # The bot is always the workflow's own token
 
+> Amended by 0119: every write that sticks reads the newest two entries of the edit history, one GraphQL query. A scan writes twice, so the worst case becomes 413 requests on the first try and 817 with three tries that each went over an edit.
+>
 > Amended by 0108: every scan also writes the dashboard once before its previews, to say it is running: five requests, so the worst case becomes 411 requests on the first try and 813 with three.
 >
 > Amended by 0086: every scan also lists the queued runs of its own workflow, one request, so the worst case becomes 406 requests on the first try and 808 with three.

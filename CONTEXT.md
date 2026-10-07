@@ -193,7 +193,7 @@ GitHub's own list of every edit of the dashboard issue, newest first: who made t
 _Avoid_: Revisions, audit log, event log
 
 **Stretch**:
-The unbroken run of edit history entries, from the newest one back, in which a row is ticked with the same stack id and diff hash. The ticker is the editor of its oldest entry. A stretch that holds an entry without a body, or that reaches the end of the kept history, names nobody.
+The unbroken run of edit history entries, from the newest one back, in which a row is ticked with the same stack id and diff hash. The ticker is the editor of its oldest entry. A stretch that holds an entry without a body, or that reaches the end of the kept history, names nobody. It looks through one entry by the bot without the tick when the bot wrote the tick back right after it and the entry before it holds the tick: a write that went over the tick and wrote it back.
 _Avoid_: Streak, window, range
 
 **Tick rule**:

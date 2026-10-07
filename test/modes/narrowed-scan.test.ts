@@ -710,7 +710,7 @@ describe("the job of a narrowed scan", () => {
     expect(scanned.log.warnings).toHaveLength(1);
   });
 
-  test("costs sixteen requests: the first read, the comparison, the first write that says a scan is running, the preview page of its pending stack, the queued runs of the workflow, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
+  test("costs eighteen requests: the first read, the comparison, the first write that says a scan is running, the preview page of its pending stack, the queued runs of the workflow, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
     const scanned = await pushed(TABLE, ahead("site/index.ts"), {
       next: { "site:prod": pending("site:prod", change("page")) },
     });
@@ -720,12 +720,14 @@ describe("the job of a narrowed scan", () => {
       "listIssues",
       "compareCommits",
       // Record 0108: the first write, which says a scan is running: find,
-      // read, the records of the trail, write, read back.
+      // read, the records of the trail, write, read back, and the history
+      // (record 0119).
       "listIssues",
       "getIssue",
       "listNewestDeployments",
       "updateIssueBody",
       "getIssue",
+      "readEditHistory",
       // Record 0050: the commit's check runs, and the one page.
       "listCheckRuns",
       "createCheckRun",
@@ -736,6 +738,7 @@ describe("the job of a narrowed scan", () => {
       "listNewestDeployments",
       "updateIssueBody",
       "getIssue",
+      "readEditHistory",
       // Slice 5.9: the dashboard is pinned already, so no pin.
       "listPinnedIssues",
     ]);

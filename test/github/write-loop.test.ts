@@ -10,8 +10,8 @@ describe("a write that lands", () => {
     const result = await writeBody(github, number, (live) => `${live} and new`);
 
     expect(github.issue(number).body).toBe("old and new");
-    expect(result).toEqual({ written: true, tries: 1, body: "old and new" });
-    expect(github.requests).toEqual(["getIssue", "updateIssueBody", "getIssue"]);
+    expect(result).toEqual({ written: true, tries: 1, body: "old and new", rewritten: false });
+    expect(github.requests).toEqual(["getIssue", "updateIssueBody", "getIssue", "readEditHistory"]);
   });
 
   test("a body that is byte-identical to the live one is not written", async () => {
@@ -20,7 +20,7 @@ describe("a write that lands", () => {
 
     const result = await writeBody(github, number, () => "same");
 
-    expect(result).toEqual({ written: false, tries: 1, body: "same" });
+    expect(result).toEqual({ written: false, tries: 1, body: "same", rewritten: false });
     expect(github.requests).toEqual(["getIssue"]);
   });
 });
@@ -45,7 +45,12 @@ describe("a write that is lost", () => {
     const result = await writeBody(github, number, (live) => `${live} + b`);
 
     expect(github.issue(number).body).toBe("rows: a, ticked + b");
-    expect(result).toEqual({ written: true, tries: 2, body: "rows: a, ticked + b" });
+    expect(result).toEqual({
+      written: true,
+      tries: 2,
+      body: "rows: a, ticked + b",
+      rewritten: false,
+    });
   });
 
   test("the read back of a lost write is the late read of the next try", async () => {
@@ -61,6 +66,7 @@ describe("a write that is lost", () => {
       "getIssue",
       "updateIssueBody",
       "getIssue",
+      "readEditHistory",
     ]);
   });
 
@@ -72,7 +78,7 @@ describe("a write that is lost", () => {
 
     const result = await writeBody(github, number, withB);
 
-    expect(result).toEqual({ written: false, tries: 2, body: "a, b, c" });
+    expect(result).toEqual({ written: false, tries: 2, body: "a, b, c", rewritten: false });
     expect(github.requests).toEqual(["getIssue", "updateIssueBody", "getIssue"]);
   });
 
@@ -83,7 +89,7 @@ describe("a write that is lost", () => {
 
     const result = await writeBody(github, number, (live) => `${live}!`);
 
-    expect(result).toEqual({ written: true, tries: 3, body: "2!" });
+    expect(result).toEqual({ written: true, tries: 3, body: "2!", rewritten: false });
   });
 
   test("three tries, then an error that turns the job red", async () => {
@@ -115,6 +121,82 @@ describe("a write that is lost", () => {
     );
     expect(github.requests.filter((request) => request === "updateIssueBody")).toHaveLength(3);
     expect(github.issue(number).body).toBe("old");
+  });
+});
+
+// Lets a person edit the body at the moment the nth update is sent, after the
+// late read, so the update goes over the edit (issue 291).
+function anEditDuringUpdate(github: FakeGitHub, number: number, bodies: string[]): void {
+  github.onRequest = (request) => {
+    const body = request === "updateIssueBody" ? bodies.shift() : undefined;
+    if (body !== undefined) github.editBody(number, body);
+  };
+}
+
+describe("a write that went over an edit (record 0119)", () => {
+  test("is written again, built from the body it went over", async () => {
+    const github = new FakeGitHub();
+    const { number } = github.seedIssue({ body: "rows: a" });
+    anEditDuringUpdate(github, number, ["rows: a, ticked"]);
+
+    const result = await writeBody(github, number, (live) => `${live} + b`);
+
+    expect(github.issue(number).body).toBe("rows: a, ticked + b");
+    expect(result).toEqual({
+      written: true,
+      tries: 2,
+      body: "rows: a, ticked + b",
+      rewritten: true,
+    });
+    expect(github.requests).toEqual([
+      "getIssue",
+      "updateIssueBody",
+      "getIssue",
+      "readEditHistory",
+      "updateIssueBody",
+      "getIssue",
+      "readEditHistory",
+    ]);
+  });
+
+  test("an edit the body leaves out anyway is not written again", async () => {
+    const github = new FakeGitHub();
+    const { number } = github.seedIssue({ body: "old" });
+    anEditDuringUpdate(github, number, ["old, edited"]);
+
+    const result = await writeBody(github, number, () => "new");
+
+    expect(github.issue(number).body).toBe("new");
+    expect(result).toEqual({ written: true, tries: 2, body: "new", rewritten: false });
+    expect(github.requests.filter((request) => request === "updateIssueBody")).toHaveLength(1);
+  });
+
+  test("an entry whose content was deleted cannot be built from, and the write stands", async () => {
+    const github = new FakeGitHub();
+    const { number } = github.seedIssue({ body: "old" });
+    github.onRequest = (request) => {
+      if (request !== "updateIssueBody") return;
+      github.editBody(number, "old, edited");
+      github.deleteHistoryEntry(number, 0);
+    };
+
+    const result = await writeBody(github, number, (live) => `${live}!`);
+
+    expect(result).toEqual({ written: true, tries: 1, body: "old!", rewritten: false });
+  });
+
+  test("three tries that each went over an edit: an error that turns the job red", async () => {
+    const github = new FakeGitHub();
+    const { number } = github.seedIssue({ body: "0" });
+    anEditDuringUpdate(github, number, ["1", "2", "3"]);
+
+    const failed = writeBody(github, number, (live) => `${live}!`);
+
+    await expect(failed).rejects.toBeInstanceOf(DashboardWriteError);
+    await expect(failed).rejects.toThrow(
+      `The dashboard (#${number}) was written, and Sluiceway tried 3 times to write it without going over an edit that landed between its read and its write. Each time another edit landed. The last edit it went over is in the issue's edit history, and a box ticked in it needs a fresh tick.`,
+    );
+    expect(github.issue(number).body).toBe("2!");
   });
 });
 

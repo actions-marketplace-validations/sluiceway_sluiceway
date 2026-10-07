@@ -1,5 +1,7 @@
 # The issue body is a cache of row blocks, written without a lock
 
+> Amended by 0119: a write that stuck reads the newest two entries of the edit history. When the entry before its own is not the body it was built from, an edit landed between the late read and the write and the write went over it, so the write is tried again, built from that entry, as one of the three tries. A tick in that window no longer has to heal itself, because it cannot: it is written back.
+>
 > Amended by 0113: `settle` swaps a row again, the one of each deploy it ended, with the failure line and no tool, and still starts the full scan.
 >
 > Amended by 0108: a scan writes the body twice. Its first write, before any preview, is a row swap with no row of its own that says a scan is running on the root marker, and its write at the end takes that away.

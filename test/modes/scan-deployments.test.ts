@@ -444,6 +444,8 @@ describe("the reads are bounded", () => {
       "listNewestDeployments",
       "updateIssueBody",
       "getIssue",
+      // What the write went over (record 0119).
+      "readEditHistory",
       // The preview page of the pending stack, updated in place (record 0050).
       "listCheckRuns",
       "updateCheckRun",
@@ -456,6 +458,7 @@ describe("the reads are bounded", () => {
       // The scan line moved, so the body is written and read back.
       "updateIssueBody",
       "getIssue",
+      "readEditHistory",
       // Slice 5.9: the dashboard is pinned already, so no pin.
       "listPinnedIssues",
     ]);

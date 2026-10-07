@@ -68,6 +68,15 @@ export type Ticker =
   | { named: true; editor: Editor; editedAt: string }
   | { named: false; reason: NobodyReason };
 
+// The bot as the history names it: the workflow token, without the "[bot]"
+// that REST puts on the login (issue 28). Every writer of the dashboard is it
+// (record 0017).
+const BOT: Editor = { login: "github-actions", type: "Bot" };
+
+function isBot(editor: Editor): boolean {
+  return editor.login === BOT.login && editor.type === BOT.type;
+}
+
 // GitHub keeps this many entries for an issue: the original body and the
 // newest 99 edits (issue 28). A history this long has a gap in front of its
 // oldest entry, and nothing says how many edits fell into it.
@@ -151,6 +160,13 @@ export function ticksIn(body: string): Tick[] {
 // The ticker of every tick, in the order of the ticks. The history is read
 // page by page, newest first, through `readPage`, and no page is read once
 // every tick has its answer. One page is the normal case.
+//
+// An entry by the bot without the tick, between an entry by the bot that
+// holds it and an older entry that holds it, is looked through (record 0119).
+// It is a write that went over the edit before it, and its write loop wrote
+// that edit back on top of it. The walk still ends at the oldest entry of an
+// unbroken run of entries that hold the tick, so it names only someone who
+// made this tick.
 export async function nameTickers(
   ticks: readonly Tick[],
   readPage: (after: string | undefined) => Promise<HistoryPage>,
@@ -158,7 +174,16 @@ export async function nameTickers(
   const answers = new Array<Ticker | undefined>(ticks.length).fill(undefined);
   // The oldest entry so far in each tick's stretch.
   const oldest = new Array<HistoryEntry | undefined>(ticks.length).fill(undefined);
+  // A tick whose stretch stopped at an entry that may be looked through: the
+  // entry after it decides.
+  const looking = new Array<boolean>(ticks.length).fill(false);
   const open = () => answers.some((answer) => answer === undefined);
+  const named = (index: number): Ticker => {
+    const made = oldest[index];
+    return made
+      ? { named: true, editor: made.editor, editedAt: made.editedAt }
+      : { named: false, reason: "not-in-newest-entry" };
+  };
 
   let after: string | undefined;
   let capped = false;
@@ -174,15 +199,21 @@ export async function nameTickers(
       const dashboard = entry.body ? parseDashboard(entry.body) : undefined;
       ticks.forEach((tick, index) => {
         if (answers[index] !== undefined) return;
+        const lookedThrough = looking[index];
+        looking[index] = false;
         if (dashboard === undefined) {
-          answers[index] = { named: false, reason: "entry-without-body" };
+          // Not looked into: the stretch ended at the entry looked through.
+          answers[index] = lookedThrough
+            ? named(index)
+            : { named: false, reason: "entry-without-body" };
         } else if (holds(dashboard, tick)) {
           oldest[index] = entry;
+        } else if (lookedThrough) {
+          answers[index] = named(index);
+        } else if (isBot(entry.editor) && oldest[index] && isBot(oldest[index].editor)) {
+          looking[index] = true;
         } else {
-          const made = oldest[index];
-          answers[index] = made
-            ? { named: true, editor: made.editor, editedAt: made.editedAt }
-            : { named: false, reason: "not-in-newest-entry" };
+          answers[index] = named(index);
         }
       });
     }
@@ -192,9 +223,12 @@ export async function nameTickers(
 
   return answers.map(
     (answer, index): Ticker =>
-      answer ?? {
-        named: false,
-        reason: oldest[index] ? "end-of-history" : "not-in-newest-entry",
-      },
+      answer ??
+      (looking[index]
+        ? named(index)
+        : {
+            named: false,
+            reason: oldest[index] ? "end-of-history" : "not-in-newest-entry",
+          }),
   );
 }
