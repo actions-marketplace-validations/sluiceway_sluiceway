@@ -16,6 +16,7 @@ const ACTION: ActionMetadata = {
     "preview-timeout": { default: "10" },
     "github-token": { default: expression("github.token") },
     "job-id": { default: expression("job.check_run_id") },
+    "job-status": { default: expression("job.status") },
     "no default": {},
   },
   runs: { using: "node24", main: "dist/index.js" },
@@ -55,6 +56,21 @@ describe("the environment of a step", () => {
   test("the job id default is the id of the job", () => {
     const env = stepEnvironment(ACTION, { mode: "scan" }, FACTS, {});
     expect(env["INPUT_JOB-ID"]).toBe("777");
+  });
+
+  // Record 0120: no step before this one failed, as in every job of the e2e,
+  // unless the facts say otherwise.
+  test("the job status default is success, or what the facts say", () => {
+    expect(stepEnvironment(ACTION, { mode: "scan" }, FACTS, {})["INPUT_JOB-STATUS"]).toBe(
+      "success",
+    );
+    const failed = stepEnvironment(
+      ACTION,
+      { mode: "scan" },
+      { ...FACTS, jobStatus: "failure" },
+      {},
+    );
+    expect(failed["INPUT_JOB-STATUS"]).toBe("failure");
   });
 
   test("a default with any other expression is refused, because only a runner can work it out", () => {

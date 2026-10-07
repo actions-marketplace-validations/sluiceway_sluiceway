@@ -12,6 +12,7 @@ import {
   autoModes,
   scanSkippedAfterResolve,
 } from "../core/auto-mode.ts";
+import { ConfigError } from "../core/config.ts";
 import { loadConfig } from "../core/config-file.ts";
 import { type MatrixEntry, matrixOutput, parseMatrixOutput } from "../core/resolve.ts";
 import { editedIssue } from "../github/event.ts";
@@ -142,10 +143,15 @@ export async function auto(context: AutoContext): Promise<void> {
       handed: () => handed,
     };
   };
+  // The first problem in the config, handed on as the cause of the step's
+  // error, so the step can say on the dashboard that the config has one
+  // (record 0120).
+  let configProblem: ConfigError | undefined;
   const attempt = async (what: string, run: () => Promise<void>): Promise<void> => {
     try {
       await run();
     } catch (error) {
+      if (error instanceof ConfigError) configProblem ??= error;
       failures.push(`${what}: ${message(error)}`);
     }
   };
@@ -193,7 +199,9 @@ export async function auto(context: AutoContext): Promise<void> {
   } finally {
     context.outputs.set("matrix", matrixOutput(started));
   }
-  if (failures.length > 0) throw new Error(failures.join(" "));
+  if (failures.length > 0) {
+    throw new Error(failures.join(" "), configProblem ? { cause: configProblem } : undefined);
+  }
 }
 
 async function runMode(

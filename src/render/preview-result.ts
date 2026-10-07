@@ -28,7 +28,12 @@ export function previewRow(
   result: PreviewResult,
   links: RunLinks,
   failure?: FailureLine | undefined,
-  options: { toolDiffInLog?: boolean | undefined; pageUrl?: string | undefined } = {},
+  options: {
+    toolDiffInLog?: boolean | undefined;
+    pageUrl?: string | undefined;
+    // The drift check of the stack failed (record 0121).
+    driftUnchecked?: boolean | undefined;
+  } = {},
 ): Row {
   if (!result.ok) {
     return {
@@ -44,6 +49,8 @@ export function previewRow(
   // What the preview read from the program's stack references (record 0059).
   const read = result.dependencies?.stackIds ?? [];
   const dependsOn = read.length === 0 ? {} : { dependsOn: read };
+  // A row whose drift check failed says so, quietly (record 0121).
+  const unchecked = options.driftUnchecked ? { driftUnchecked: true } : {};
   if (result.diff.changes.length === 0) {
     // Nothing to deploy from the code, and drift found (record 0055). The
     // row links to its preview page, which lists the drift like a pending
@@ -60,7 +67,7 @@ export function previewRow(
         ...dependsOn,
       };
     }
-    return { state: "in-sync", stackId, failure, ...dependsOn };
+    return { state: "in-sync", stackId, failure, ...dependsOn, ...unchecked };
   }
   // What the change costs a month (record 0105), when the estimate came
   // back. A failed one is a missing line, and the job log says why.
@@ -75,6 +82,7 @@ export function previewRow(
     failure,
     ...dependsOn,
     ...cost,
+    ...unchecked,
   };
 }
 

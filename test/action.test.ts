@@ -79,6 +79,25 @@ describe("action.yml", () => {
     expect(action.inputs["job-id"]?.required).toBe(false);
   });
 
+  // The runner reads an expression in a description as one, and fails to
+  // load the action on a function it does not allow there, such as
+  // cancelled(). The smoke job of CI saw it on 2026-10-07.
+  test("holds no expression in a description", () => {
+    for (const [name, input] of Object.entries(action.inputs)) {
+      expect({ name, expression: (input?.description ?? "").includes("${{") }).toEqual({
+        name,
+        expression: false,
+      });
+    }
+  });
+
+  // Record 0120: like the job's id, the status of the job before the step
+  // reaches it as the default of an input.
+  test("takes the status of the job from job.status", () => {
+    expect(action.inputs["job-status"]?.default).toBe("${{ job.status }}");
+    expect(action.inputs["job-status"]?.required).toBe(false);
+  });
+
   // Slice 5.12 (record 0077): a step without a mode picks its own.
   test("the mode input is optional, auto by default, and names every mode", () => {
     expect(action.inputs.mode?.required).toBe(false);
@@ -114,7 +133,8 @@ describe("action.yml", () => {
   });
 
   // Record 0035: the five inputs of v1, `job-id` of record 0044, the four
-  // channels of record 0078, and the env file of record 0100.
+  // channels of record 0078, the env file of record 0100, and `job-status` of
+  // record 0120.
   test("declares only the inputs the decision records fix", () => {
     expect(Object.keys(action.inputs).sort()).toEqual([
       "backend",
@@ -125,6 +145,7 @@ describe("action.yml", () => {
       "env-file",
       "github-token",
       "job-id",
+      "job-status",
       "mode",
       "preview-timeout",
       "pull-request-preview",

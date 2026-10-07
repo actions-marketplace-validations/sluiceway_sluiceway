@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Config, ConfigError, parseConfig } from "./config.ts";
+import { parse } from "yaml";
+import { type Config, ConfigError, isTimeZone, parseConfig } from "./config.ts";
 
 // At the repo root, and nowhere else. The name Sluiceway writes and the docs
 // use.
@@ -52,4 +53,37 @@ function read(file: string): string | undefined {
     if (code === "EISDIR") throw new ConfigError([{ kind: "not-a-file", path: [] }]);
     throw error;
   }
+}
+
+// The two settings a run that failed needs to put its line on the dashboard
+// (record 0120): the label that finds it and the zone of its time. From the
+// config when it loads. When it does not, the two keys as the file writes
+// them, when they make sense, and the defaults for the rest. A run with a
+// broken config can trust nothing more.
+export function dashboardSettingsOf(root: string): { label: string; timeZone: string | undefined } {
+  const defaults = parseConfig(undefined).dashboard;
+  try {
+    const { label, timeZone } = loadConfig(root).dashboard;
+    return { label, timeZone: timeZone === "UTC" ? undefined : timeZone };
+  } catch {
+    // Read below, as far as it goes.
+  }
+  let dashboard: unknown;
+  try {
+    const name = configFileName(root);
+    const text = name === undefined ? undefined : read(join(root, name));
+    dashboard = (parse(text ?? "") as { dashboard?: unknown } | null)?.dashboard;
+  } catch {
+    dashboard = undefined;
+  }
+  const keys = typeof dashboard === "object" && dashboard !== null ? dashboard : {};
+  const label =
+    "label" in keys && typeof keys.label === "string" && keys.label.trim() !== ""
+      ? keys.label
+      : defaults.label;
+  const zone = "timeZone" in keys && typeof keys.timeZone === "string" ? keys.timeZone : undefined;
+  return {
+    label,
+    timeZone: zone !== undefined && zone !== "UTC" && isTimeZone(zone) ? zone : undefined,
+  };
 }

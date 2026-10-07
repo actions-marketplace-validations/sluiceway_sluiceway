@@ -108,6 +108,7 @@ export function codeIn(cell: string): string[] {
 
 export interface Step {
   id?: string;
+  if?: string;
   uses?: string;
   run?: string;
   with?: Record<string, unknown>;

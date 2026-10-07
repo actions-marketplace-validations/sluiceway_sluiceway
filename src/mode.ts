@@ -1,11 +1,18 @@
 import * as core from "@actions/core";
 import { isMode, MODES, type Mode } from "./core/auto-mode.ts";
+import { ConfigError } from "./core/config.ts";
+import { createGitHubClient } from "./github/client.ts";
 import {
   type GetInput,
+  parseJobStatus,
+  readToken,
   refuseDeploymentId,
   unusedEnvFileInput,
   unusedNotifyInputs,
 } from "./github/inputs.ts";
+import { readJob } from "./github/job.ts";
+import { actionsLog } from "./github/job-log.ts";
+import { createOctokitPort } from "./github/octokit-port.ts";
 import { runApply } from "./modes/apply-job.ts";
 import { HANDED_ON_STATE, runAuto, SETTLED_STATE } from "./modes/auto-job.ts";
 import { backendContext } from "./modes/check-backend.ts";
@@ -13,6 +20,7 @@ import { runCheck } from "./modes/check-job.ts";
 import { pullRequestPreviewContext } from "./modes/check-pull-request.ts";
 import { runInit } from "./modes/init-job.ts";
 import { runResolve } from "./modes/resolve-job.ts";
+import { sayRunFailed, type WhyRunFailed, writesDashboard } from "./modes/run-failed.ts";
 import { runScan } from "./modes/scan-job.ts";
 import { runSettle } from "./modes/settle-job.ts";
 
@@ -56,6 +64,7 @@ export async function run(
   getInput: GetInput = core.getInput,
   warn: (message: string, title: string) => void = (message, title) =>
     core.warning(message, { title }),
+  failure: RunFailure = jobFailure(getInput),
 ): Promise<void> {
   refuseDeploymentId(mode, getInput);
   // Only scan, resolve and apply send (record 0078). A channel on another
@@ -71,7 +80,83 @@ export async function run(
   // any other step the input is a warning, and the file is never opened.
   const envFile = unusedEnvFileInput(mode, getInput);
   if (envFile !== undefined) warn(envFile, "Env file input not used");
-  return handlers[mode](directory);
+  return guarded(mode, getInput("job-status"), () => handlers[mode](directory), failure);
+}
+
+// What a run that failed needs (record 0120): the event that started it, and
+// the way to put its line on the dashboard.
+export interface RunFailure {
+  event: string;
+  say: (why: WhyRunFailed) => Promise<void>;
+  log?: ((line: string) => void) | undefined;
+}
+
+// The step around the work of a mode (record 0120). A step that runs with
+// `if: ${{ !cancelled() }}` and `job-status: ${{ job.status }}` runs after an
+// earlier step failed too, and then does none of its work: it puts the line
+// on the dashboard and ends. A problem in the config fails the job as before,
+// with the line on the dashboard first. Neither ever writes from a pull
+// request, which is not the default branch.
+export async function guarded(
+  mode: Mode,
+  jobStatusInput: string,
+  work: () => Promise<void>,
+  failure: RunFailure,
+): Promise<void> {
+  const jobStatus = parseJobStatus(jobStatusInput);
+  const writes = writesDashboard(mode, failure.event);
+  if (jobStatus === "failure" || jobStatus === "cancelled") {
+    failure.log?.(
+      `An earlier step of this job ${jobStatus === "failure" ? "failed" : "was cancelled"}, so this step does not run ${mode} mode (record 0120).`,
+    );
+    if (jobStatus === "failure" && writes) await failure.say({ why: "step" });
+    return;
+  }
+  try {
+    await work();
+  } catch (error) {
+    // Auto mode hands a problem in the config on as the cause of its own
+    // error, after the other modes it ran.
+    const problem =
+      error instanceof ConfigError
+        ? error
+        : error instanceof Error && error.cause instanceof ConfigError
+          ? error.cause
+          : undefined;
+    if (problem && writes) await failure.say({ why: "config", file: problem.file });
+    throw error;
+  }
+}
+
+// The run's own facts, read only when a run failed. Outside a job there is
+// nothing to write to, and the job log says so.
+function jobFailure(getInput: GetInput): RunFailure {
+  const log = actionsLog();
+  return {
+    event: process.env.GITHUB_EVENT_NAME ?? "",
+    log: (line) => log.info(line),
+    say: async (why) => {
+      try {
+        const job = readJob(process.env);
+        const octokit = createGitHubClient(readToken(getInput));
+        await sayRunFailed(
+          {
+            root: job.root,
+            github: createOctokitPort(octokit, { owner: job.owner, repo: job.repo }),
+            log,
+            repoUrl: job.repoUrl,
+            runId: job.runId,
+            now: () => new Date(),
+          },
+          why,
+        );
+      } catch (error) {
+        log.info(
+          `The dashboard could not say this run failed: ${error instanceof Error ? error.message : error} (record 0120).`,
+        );
+      }
+    },
+  };
 }
 
 // The post step of action.yml (record 0077). The split workflow ends the

@@ -119,6 +119,7 @@ import { bulkSweepText } from "../render/bulk-box.ts";
 import { whereFilesBelong } from "../render/check.ts";
 import { costLine } from "../render/cost.ts";
 import { COUNT_DOT, HEADER_DOT } from "../render/dots.ts";
+import { failedRunsLogLine } from "../render/failed-run.ts";
 import { dashboardSearchUrl, type RunLinks, runLinks, runUrl } from "../render/links.ts";
 import {
   diffLogLines,
@@ -371,6 +372,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   const at = startedAt.toISOString();
   const links = runLinks(context);
   let waitingRunFacts: { found: WaitingRunFacts | undefined } | undefined;
+  let endedRuns: { runs: RunOfTheWorkflow[] | undefined } | undefined;
 
   // Config and discovery come first and cost no preview. An error in either
   // fails the job before the tool or GitHub is touched (record 0012). Every
@@ -545,6 +547,9 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     // Once a job, after the previews, so a run that started meanwhile is not
     // named (record 0086).
     if (waitingRunFacts === undefined) waitingRunFacts = await findWaitingRun(context, at);
+    // Once a job too, and counted at the late read against the scan the live
+    // body shows (record 0120).
+    if (endedRuns === undefined) endedRuns = await readEndedRuns(context);
     const writer: DashboardWriter = {
       github: context.github,
       runId: context.runId,
@@ -582,6 +587,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
         runId: context.runId,
         at,
         waitingRun: waitingRunFacts.found,
+        endedRuns: endedRuns.runs,
       },
       repoUrl: context.repoUrl,
       links,
@@ -706,6 +712,8 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
   }
 
   reportDashboard(context, written, lastPlaced);
+  const runsFailed = parseDashboard(written.body).root?.failedRuns;
+  if (runsFailed) log.info(failedRunsLogLine(runsFailed, context.workflow, context.repoUrl));
   for (const [id, wait] of [...waitsOnMerge].sort(([a], [b]) => byCodeUnit(a, b))) {
     log.info(onMergeLogLine(id, wait));
   }
@@ -945,6 +953,22 @@ async function findWaitingRun(
   return { found };
 }
 
+// The runs of this workflow that ended, for the line about the ones that
+// failed since the scan before (record 0120). Like the waiting run, it is a
+// line and nothing else: a read that fails leaves it out and the scan goes on.
+async function readEndedRuns(
+  context: ScanContext,
+): Promise<{ runs: RunOfTheWorkflow[] | undefined }> {
+  try {
+    return { runs: await context.github.listEndedRuns(context.workflow) };
+  } catch (error) {
+    context.log.info(
+      `The runs of ${context.workflow} that ended could not be read: ${error instanceof Error ? error.message : error}. The dashboard says nothing about runs that failed since the scan before this time. The scan job needs the permission \`actions: read\` (record 0120).`,
+    );
+    return { runs: undefined };
+  }
+}
+
 // The other half of the orphan tick rule (record 0025): whether a run that an
 // issue edit started is queued or in progress. Any `resolve` run handles every
 // tick, so while one is on its way the scan keeps its hands off. Only a late
@@ -996,7 +1020,11 @@ async function makePlan(
     ? await findDashboard(context.github, config.dashboard.label)
     : undefined;
   const live = dashboard && parseDashboard(dashboard.body);
-  for (const row of live?.rows ?? []) if (row.known && row.drift) knownDrift.add(row.stackId);
+  // A row whose drift check failed is checked again too (record 0121), so its
+  // note does not go with a push that did not look.
+  for (const row of live?.rows ?? []) {
+    if (row.known && (row.drift || row.driftUnchecked)) knownDrift.add(row.stackId);
+  }
   const base = comparisonBase(context.event, live, MARKER_VERSION, afterMerge);
   if (base.kind !== "compare") return full(base);
 
@@ -1350,17 +1378,19 @@ async function previewAll(
       milliseconds = now().getTime() - started;
     }
     result = withoutDocument(result);
+    // A failed check is a quiet note on the row (record 0121).
+    const driftFailed = drift !== undefined && !drift.ok;
     // The second run of the tool takes the same slot of the pool and the same
     // time limit, and only a pending stack gets one (record 0048).
     if (!logDiff || !result.ok || result.diff.changes.length === 0) {
-      return { id, result, startedAt, milliseconds, drift, ...tested };
+      return { id, result, startedAt, milliseconds, drift, driftFailed, ...tested };
     }
     const toolDiffStarted = now().getTime();
     const toolDiff = await adapter.toolDiff(configured.stack, options);
     log.info(
       `Ran the tool's own diff of ${logGroupTitle(id)} in ${seconds(now().getTime() - toolDiffStarted)}${toolDiff.ok ? "" : `: ${previewFailureText(toolDiff.reason)}`}.`,
     );
-    return { id, result, startedAt, milliseconds, toolDiff, drift, ...tested };
+    return { id, result, startedAt, milliseconds, toolDiff, drift, driftFailed, ...tested };
   };
   const previewed = await runPool(stacks, context.pool.size, (configured) =>
     previewOne(configured, false),
@@ -1578,7 +1608,7 @@ function logResults(context: ScanContext, previewed: Previewed[]): void {
     // (record 0055).
     if (drift !== undefined && !drift.ok) {
       log.warning(
-        `The drift check of ${logGroupTitle(id)} failed: ${previewFailureText(drift.reason)}. Its row shows the preview alone.`,
+        `The drift check of ${logGroupTitle(id)} failed: ${previewFailureText(drift.reason)}. Its row says drift not checked.`,
         "Drift check failed",
       );
     }

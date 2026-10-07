@@ -799,6 +799,9 @@ export type CircleStep = { stack: string } | { phase: string };
 export class ConfigError extends Error {
   readonly issues: ConfigIssue[];
   readonly problems: string[];
+  // The config file the problems are in. A run that fails on them names it on
+  // the dashboard (record 0120).
+  readonly file: string;
 
   // A string is a problem already in words, such as an adapter's. `file` is
   // the name of the config file, sluiceway.yaml unless the repo uses the
@@ -813,6 +816,7 @@ export class ConfigError extends Error {
     this.name = "ConfigError";
     this.issues = all;
     this.problems = problems;
+    this.file = file;
   }
 }
 

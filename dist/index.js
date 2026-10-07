@@ -26381,29 +26381,29 @@ var require_lib = __commonJS((exports) => {
   }();
   var __awaiter2 = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
     function adopt(value) {
-      return value instanceof P ? value : new P(function(resolve2) {
-        resolve2(value);
+      return value instanceof P ? value : new P(function(resolve) {
+        resolve(value);
       });
     }
-    return new (P || (P = Promise))(function(resolve2, reject) {
+    return new (P || (P = Promise))(function(resolve, reject) {
       function fulfilled(value) {
         try {
-          step3(generator.next(value));
+          step(generator.next(value));
         } catch (e) {
           reject(e);
         }
       }
       function rejected(value) {
         try {
-          step3(generator["throw"](value));
+          step(generator["throw"](value));
         } catch (e) {
           reject(e);
         }
       }
-      function step3(result2) {
-        result2.done ? resolve2(result2.value) : adopt(result2.value).then(fulfilled, rejected);
+      function step(result2) {
+        result2.done ? resolve(result2.value) : adopt(result2.value).then(fulfilled, rejected);
       }
-      step3((generator = generator.apply(thisArg, _arguments || [])).next());
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
   };
   Object.defineProperty(exports, "__esModule", { value: true });
@@ -26490,26 +26490,26 @@ var require_lib = __commonJS((exports) => {
     }
     readBody() {
       return __awaiter2(this, undefined, undefined, function* () {
-        return new Promise((resolve2) => __awaiter2(this, undefined, undefined, function* () {
-          let output3 = Buffer.alloc(0);
+        return new Promise((resolve) => __awaiter2(this, undefined, undefined, function* () {
+          let output2 = Buffer.alloc(0);
           this.message.on("data", (chunk) => {
-            output3 = Buffer.concat([output3, chunk]);
+            output2 = Buffer.concat([output2, chunk]);
           });
           this.message.on("end", () => {
-            resolve2(output3.toString());
+            resolve(output2.toString());
           });
         }));
       });
     }
     readBodyBuffer() {
       return __awaiter2(this, undefined, undefined, function* () {
-        return new Promise((resolve2) => __awaiter2(this, undefined, undefined, function* () {
+        return new Promise((resolve) => __awaiter2(this, undefined, undefined, function* () {
           const chunks = [];
           this.message.on("data", (chunk) => {
             chunks.push(chunk);
           });
           this.message.on("end", () => {
-            resolve2(Buffer.concat(chunks));
+            resolve(Buffer.concat(chunks));
           });
         }));
       });
@@ -26701,14 +26701,14 @@ var require_lib = __commonJS((exports) => {
     }
     requestRaw(info2, data) {
       return __awaiter2(this, undefined, undefined, function* () {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve, reject) => {
           function callbackForResult(err, res) {
             if (err) {
               reject(err);
             } else if (!res) {
               reject(new Error("Unknown error"));
             } else {
-              resolve2(res);
+              resolve(res);
             }
           }
           this.requestRawWithCallback(info2, data, callbackForResult);
@@ -26927,12 +26927,12 @@ var require_lib = __commonJS((exports) => {
       return __awaiter2(this, undefined, undefined, function* () {
         retryNumber = Math.min(ExponentialBackoffCeiling, retryNumber);
         const ms = ExponentialBackoffTimeSlice * Math.pow(2, retryNumber);
-        return new Promise((resolve2) => setTimeout(() => resolve2(), ms));
+        return new Promise((resolve) => setTimeout(() => resolve(), ms));
       });
     }
     _processResponse(res, options) {
       return __awaiter2(this, undefined, undefined, function* () {
-        return new Promise((resolve2, reject) => __awaiter2(this, undefined, undefined, function* () {
+        return new Promise((resolve, reject) => __awaiter2(this, undefined, undefined, function* () {
           const statusCode = res.message.statusCode || 0;
           const response = {
             statusCode,
@@ -26940,7 +26940,7 @@ var require_lib = __commonJS((exports) => {
             headers: {}
           };
           if (statusCode === HttpCodes2.NotFound) {
-            resolve2(response);
+            resolve(response);
           }
           function dateTimeDeserializer(key, value) {
             if (typeof value === "string") {
@@ -26978,7 +26978,7 @@ var require_lib = __commonJS((exports) => {
             err.result = response.result;
             reject(err);
           } else {
-            resolve2(response);
+            resolve(response);
           }
         }));
       });
@@ -27564,271 +27564,6 @@ function autoModesOn(triggers, config) {
   }
   return MODES.filter((mode) => runs.has(mode));
 }
-
-// src/github/inputs.ts
-var DEFAULT_PREVIEW_TIMEOUT_MINUTES = 10;
-function wholeNumber(getInput2, name, fallback, hint = "") {
-  const text = getInput2(name).trim();
-  if (text === "")
-    return fallback;
-  if (!/^[1-9]\d*$/.test(text)) {
-    throw new Error(`The "${name}" input must be a whole number of 1 or more, and it is ${JSON.stringify(text)}.${hint}`);
-  }
-  return Number(text);
-}
-function readToken(getInput2) {
-  const token = getInput2("github-token");
-  if (token.trim() === "") {
-    throw new Error('The "github-token" input is empty. Leave it out of the workflow, so it takes the GITHUB_TOKEN of the run.');
-  }
-  return token;
-}
-var MINUTES = " It is a number of whole minutes.";
-function readScanInputs(getInput2) {
-  const concurrency = wholeNumber(getInput2, "concurrency", undefined);
-  const previewTimeoutMinutes = wholeNumber(getInput2, "preview-timeout", DEFAULT_PREVIEW_TIMEOUT_MINUTES, MINUTES);
-  return {
-    concurrency,
-    previewTimeoutMinutes,
-    token: readToken(getInput2),
-    strict: readBoolean(getInput2, "strict")
-  };
-}
-function readJobId(getInput2) {
-  const text = getInput2("job-id").trim();
-  if (text === "")
-    return;
-  if (!/^[1-9]\d*$/.test(text)) {
-    throw new Error(`The "job-id" input must be the id of the running job, a whole number, and it is ${JSON.stringify(text)}. Leave it out of the workflow, so it takes the id GitHub gives the job.`);
-  }
-  return text;
-}
-function readApplyInputs(getInput2) {
-  const text = getInput2("deployment-id").trim();
-  if (text === "") {
-    throw new Error('The "deployment-id" input is required in apply mode. Set it to the deployment of the matrix entry: deployment-id: ${{ matrix.deployment }}.');
-  }
-  if (!/^[1-9]\d*$/.test(text)) {
-    throw new Error(`The "deployment-id" input must be the id of a deployment record, a whole number, and it is ${JSON.stringify(text)}.`);
-  }
-  const previewTimeoutMinutes = wholeNumber(getInput2, "preview-timeout", DEFAULT_PREVIEW_TIMEOUT_MINUTES, MINUTES);
-  return {
-    deploymentId: Number(text),
-    previewTimeoutMinutes,
-    token: readToken(getInput2),
-    dryRun: readBoolean(getInput2, "dry-run"),
-    deployTimeoutMinutes: wholeNumber(getInput2, "deploy-timeout", undefined, MINUTES)
-  };
-}
-function readBoolean(getInput2, name) {
-  const text = getInput2(name).trim();
-  if (text === "" || text === "false")
-    return false;
-  if (text === "true")
-    return true;
-  throw new Error(`The "${name}" input is true or false, and it is ${JSON.stringify(text)}.`);
-}
-function readBackend(getInput2) {
-  const text = getInput2("backend").trim();
-  if (text === "" || text === "false")
-    return false;
-  if (text === "true")
-    return true;
-  throw new Error(`The "backend" input is true or false, and it is ${JSON.stringify(text)}.`);
-}
-function readPullRequestPreview(getInput2) {
-  const text = getInput2("pull-request-preview").trim();
-  if (text === "" || text === "false")
-    return false;
-  if (text === "true")
-    return true;
-  throw new Error(`The "pull-request-preview" input is true or false, and it is ${JSON.stringify(text)}.`);
-}
-function refuseDeploymentId(mode, getInput2) {
-  const only = (name, of = "apply") => new Error(`The "${name}" input is only for ${of} mode, and this step runs ${mode} mode. Take it out of this step.`);
-  const auto = mode === "auto";
-  if (!auto && mode !== "check" && getInput2("backend").trim() === "true") {
-    throw only("backend", "check");
-  }
-  if (!auto && mode !== "check" && getInput2("pull-request-preview").trim() === "true") {
-    throw only("pull-request-preview", "check");
-  }
-  if (!auto && mode !== "scan" && getInput2("strict").trim() === "true") {
-    throw only("strict", "scan");
-  }
-  if (mode === "apply")
-    return;
-  if (getInput2("deployment-id").trim() !== "")
-    throw only("deployment-id");
-  if (auto)
-    return;
-  if (getInput2("deploy-timeout").trim() !== "")
-    throw only("deploy-timeout");
-  if (getInput2("dry-run").trim() === "true")
-    throw only("dry-run");
-}
-var NOTIFY_INPUTS = [
-  "slack-webhook-url",
-  "telegram-bot-token",
-  "telegram-chat-id",
-  "telegram-thread-id",
-  "webhook-url"
-];
-var TELEGRAM_TOKEN = /^\d+:[\w-]+$/;
-var TELEGRAM_CHAT = /^(-?\d+|@\w+)$/;
-var TELEGRAM_THREAD = /^[1-9]\d*$/;
-function readNotifyTargets(getInput2) {
-  const [slack, token, chatId, threadId, webhook] = NOTIFY_INPUTS.map((name) => getInput2(name).trim());
-  const targets = {};
-  const problems = [];
-  const secrets = [slack, token, chatId, webhook].filter((value) => !!value);
-  if (slack) {
-    if (/^https:\/\//.test(slack))
-      targets.slack = slack;
-    else
-      problems.push('The "slack-webhook-url" input is not an https:// address, so nothing is sent to Slack. Set it to the address of an incoming webhook, from a secret.');
-  }
-  if (token && !chatId) {
-    problems.push('The "telegram-bot-token" input is set and "telegram-chat-id" is not, so nothing is sent to Telegram. Set both.');
-  } else if (chatId && !token) {
-    problems.push('The "telegram-chat-id" input is set and "telegram-bot-token" is not, so nothing is sent to Telegram. Set both.');
-  } else if (token && chatId) {
-    if (!TELEGRAM_TOKEN.test(token)) {
-      problems.push('The "telegram-bot-token" input is not a bot token as BotFather gives it, so nothing is sent to Telegram.');
-    } else if (!TELEGRAM_CHAT.test(chatId)) {
-      problems.push('The "telegram-chat-id" input is not a chat id or an @ name, so nothing is sent to Telegram.');
-    } else if (threadId && !TELEGRAM_THREAD.test(threadId)) {
-      problems.push('The "telegram-thread-id" input is not the id of a topic, a whole number above 0, so nothing is sent to Telegram.');
-    } else {
-      targets.telegram = { token, chatId, ...threadId ? { threadId: Number(threadId) } : {} };
-    }
-  }
-  if (webhook) {
-    if (/^https?:\/\//.test(webhook))
-      targets.webhook = webhook;
-    else
-      problems.push('The "webhook-url" input is not an http:// or https:// address, so nothing is sent to it.');
-  }
-  return { targets, problems, secrets };
-}
-function unusedNotifyInputs(mode, getInput2) {
-  if (mode === "auto" || mode === "scan" || mode === "resolve" || mode === "apply")
-    return [];
-  return NOTIFY_INPUTS.filter((name) => getInput2(name).trim() !== "");
-}
-function readEnvFileInput(getInput2) {
-  const text = getInput2("env-file").trim();
-  if (text === "")
-    return;
-  if (/[\r\n]/.test(text)) {
-    throw new Error('The "env-file" input names one file, and it holds more than one line. To load several files, join them in a step before Sluiceway.');
-  }
-  return text;
-}
-function unusedEnvFileInput(mode, getInput2) {
-  if (getInput2("env-file").trim() === "")
-    return;
-  if (mode === "auto" || mode === "scan" || mode === "apply")
-    return;
-  if (mode === "check" && (getInput2("backend").trim() === "true" || getInput2("pull-request-preview").trim() === "true")) {
-    return;
-  }
-  const where = mode === "check" ? "check mode without backend: true or pull-request-preview: true" : `${mode} mode`;
-  return `"env-file" is set on a step in ${where}, which never runs the tool, so the file is not read. Only scan, apply and the check with backend: true or pull-request-preview: true do. Take it out of this step.`;
-}
-
-// src/modes/apply-job.ts
-import { readFileSync as readFileSync11 } from "node:fs";
-
-// src/adapters/process.ts
-import { spawn } from "node:child_process";
-var GRACE_MS = 5000;
-var OUTPUT_LIMIT_BYTES = 128 * 1024 * 1024;
-var PIPES_MS = 1000;
-function runProcess(run, graceMs = GRACE_MS, limitBytes = OUTPUT_LIMIT_BYTES) {
-  const [command = "", ...args] = run.argv;
-  return new Promise((done) => {
-    const child = spawn(command, args, {
-      cwd: run.cwd,
-      env: run.env,
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: true
-    });
-    const { pid, stdout, stderr } = child;
-    if (pid === undefined) {
-      child.on("error", () => done({ status: "not-started" }));
-      return;
-    }
-    let cut = false;
-    const keep = (chunks) => {
-      let held = 0;
-      return (chunk) => {
-        const room = limitBytes - held;
-        if (chunk.length > room)
-          cut = true;
-        const kept = chunk.length > room ? chunk.subarray(0, Math.max(room, 0)) : chunk;
-        if (kept.length === 0)
-          return;
-        chunks.push(kept);
-        held += kept.length;
-      };
-    };
-    const out = [];
-    const err = [];
-    stdout.on("data", keep(out));
-    stderr.on("data", keep(err));
-    const { onStderrLine } = run;
-    let partial = "";
-    const decoder = new TextDecoder;
-    if (onStderrLine) {
-      stderr.on("data", (chunk) => {
-        const parts = (partial + decoder.decode(chunk, { stream: true })).split(/\r?\n/);
-        partial = parts.pop() ?? "";
-        for (const line of parts)
-          onStderrLine(line);
-      });
-    }
-    const signalGroup = (signal) => {
-      try {
-        process.kill(-pid, signal);
-      } catch {
-        child.kill(signal);
-      }
-    };
-    let timedOut = false;
-    let killing;
-    let closing;
-    const limit = run.timeoutMs === undefined ? undefined : setTimeout(() => {
-      timedOut = true;
-      signalGroup("SIGINT");
-      killing = setTimeout(() => {
-        signalGroup("SIGKILL");
-        closing = setTimeout(() => {
-          stdout.destroy();
-          stderr.destroy();
-        }, PIPES_MS);
-      }, run.graceMs ?? graceMs);
-    }, run.timeoutMs);
-    child.on("error", () => {});
-    child.on("close", (exitCode) => {
-      for (const timer of [limit, killing, closing])
-        clearTimeout(timer);
-      partial += decoder.decode();
-      if (onStderrLine && partial !== "")
-        onStderrLine(partial);
-      const text = {
-        stdout: Buffer.concat(out).toString("utf8"),
-        stderr: Buffer.concat(err).toString("utf8"),
-        ...cut ? { outputCutAt: limitBytes } : {}
-      };
-      done(timedOut ? { status: "timed-out", ...text } : { status: "exited", exitCode, ...text });
-    });
-  });
-}
-
-// src/core/config-file.ts
-import { existsSync as existsSync2, readFileSync } from "node:fs";
-import { join as join2 } from "node:path";
 
 // node_modules/zod/v4/classic/external.js
 var exports_external = {};
@@ -47802,6 +47537,9 @@ function rootMarker(facts) {
   if (facts.scanRunning !== undefined) {
     pairs.push(["scan-running", facts.scanRunning.run], ["scan-running-since", facts.scanRunning.since]);
   }
+  if (facts.failedRuns !== undefined) {
+    pairs.push(["runs-failed", String(facts.failedRuns.count)], ["runs-failed-newest", facts.failedRuns.run], ["runs-failed-at", facts.failedRuns.at]);
+  }
   return marker("dashboard", pairs);
 }
 var COUNT_KEYS = ["creates", "updates", "replaces", "tracking"];
@@ -47841,6 +47579,8 @@ function rowMarker(facts) {
     pairs.push(["behind", encodeIds(facts.behind)]);
   if (facts.busy)
     pairs.push(["busy", "true"]);
+  if (facts.driftUnchecked)
+    pairs.push(["drift-check", "failed"]);
   return marker("row", pairs);
 }
 function mergeMarker(facts) {
@@ -47915,8 +47655,19 @@ function readRoot(line) {
     fullScanAt: pairs.get("full-scan-at"),
     fullScanRun: pairs.get("full-scan-run"),
     waitingRun: readWaitingRun(pairs),
-    scanRunning: readScanRunning(pairs)
+    scanRunning: readScanRunning(pairs),
+    failedRuns: readFailedRuns(pairs)
   };
+}
+function readFailedRuns(pairs) {
+  const count = pairs.get("runs-failed");
+  const run = pairs.get("runs-failed-newest");
+  const at = pairs.get("runs-failed-at");
+  if (count === undefined || run === undefined || at === undefined)
+    return;
+  if (!/^\d+$/.test(count))
+    return;
+  return { run, at, count: Number(count) };
 }
 function readScanRunning(pairs) {
   const run = pairs.get("scan-running");
@@ -48029,6 +47780,7 @@ function parseDashboard(body) {
       ...Object.fromEntries(COUNT_KEYS.filter((key) => count(key) > 0).map((key) => [key, count(key)])),
       ...behind === "" ? {} : { behind: decodeIds(behind) },
       ...state === "preview-failed" && pairs.get("busy") === "true" ? { busy: true } : {},
+      ...pairs.get("drift-check") === "failed" ? { driftUnchecked: true } : {},
       ticked: match[1] === "x" || match[1] === "X",
       text
     });
@@ -48459,7 +48211,7 @@ function pendingRow(row, options) {
   const policyFailed = row.policies?.kind === "failed";
   const box = options.readOnly || policyFailed ? "" : `[${row.ticked ? "x" : " "}] `;
   const drift = sortedDrift(row.diff);
-  const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : "";
+  const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
   const { creates, updates, tracking } = changeCounts(changes);
   const detail = options.detail ?? "full";
   const full = detail === "full";
@@ -48480,7 +48232,8 @@ function pendingRow(row, options) {
       creates,
       updates,
       replaces: replaces.length,
-      tracking
+      tracking,
+      driftUnchecked: row.driftUnchecked
     })}`
   ];
   if (row.cost && full)
@@ -48563,6 +48316,7 @@ function deployingRow(row, options) {
     lines.push(row.attribution.full, ...outsideFold(row.attribution, 0));
   return lines;
 }
+var DRIFT_NOT_CHECKED = "drift not checked";
 var BUSY_ROW_WORDS = "the next scan previews it";
 function previewFailedRow(row, options) {
   const words = row.busy ? `busy: ${escapeText(row.reason)}, ${BUSY_ROW_WORDS}` : `preview failed: ${escapeText(row.reason)}`;
@@ -48579,12 +48333,14 @@ function previewFailedRow(row, options) {
   return lines;
 }
 function inSyncRow(row, options) {
+  const unchecked = row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
   const lines = [
-    `- ${escapeText(row.stackId)} ${rowMarker({
+    `- ${escapeText(row.stackId)}${unchecked} ${rowMarker({
       stackId: row.stackId,
       state: "in-sync",
       failed: row.failure !== undefined,
-      dependsOn: row.dependsOn
+      dependsOn: row.dependsOn,
+      driftUnchecked: row.driftUnchecked
     })}`
   ];
   if (row.failure)
@@ -49232,6 +48988,7 @@ var configSchema = exports_external.strictObject({
 class ConfigError extends Error {
   issues;
   problems;
+  file;
   constructor(issues, file2 = "sluiceway.yaml") {
     const all = issues.map((issue3) => typeof issue3 === "string" ? { kind: "worded", text: issue3, path: [] } : issue3);
     const problems = all.map(configProblemText);
@@ -49239,6 +48996,7 @@ class ConfigError extends Error {
     this.name = "ConfigError";
     this.issues = all;
     this.problems = problems;
+    this.file = file2;
   }
 }
 function parseConfig(text2) {
@@ -49718,5500 +49476,8 @@ function miss(entry2, inPath, ignored) {
   };
 }
 
-// src/core/config-file.ts
-var CONFIG_FILE = "sluiceway.yaml";
-var CONFIG_FILE_YML = "sluiceway.yml";
-var CONFIG_FILES = [CONFIG_FILE, CONFIG_FILE_YML];
-function configFileName(root) {
-  const present = CONFIG_FILES.filter((name) => existsSync2(join2(root, name)));
-  if (present.length > 1) {
-    throw new ConfigError([
-      { kind: "two-config-files", files: [CONFIG_FILE, CONFIG_FILE_YML], path: [] }
-    ]);
-  }
-  return present[0];
-}
-function loadConfig(root) {
-  const name = configFileName(root);
-  if (name === undefined)
-    return parseConfig(undefined);
-  try {
-    return parseConfig(read(join2(root, name)));
-  } catch (error63) {
-    if (error63 instanceof ConfigError && name !== CONFIG_FILE) {
-      throw new ConfigError(error63.issues, name);
-    }
-    throw error63;
-  }
-}
-function hasConfigFile(root) {
-  return configFileName(root) !== undefined;
-}
-function read(file2) {
-  try {
-    return readFileSync(file2, "utf8");
-  } catch (error63) {
-    const code2 = error63.code;
-    if (code2 === "ENOENT")
-      return;
-    if (code2 === "EISDIR")
-      throw new ConfigError([{ kind: "not-a-file", path: [] }]);
-    throw error63;
-  }
-}
-
-// src/core/credentials.ts
-import { readFileSync as readFileSync2 } from "node:fs";
-import { resolve } from "node:path";
-var WAYS = {
-  aws: [
-    { names: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"] },
-    { names: ["AWS_PROFILE"] },
-    { names: [], uses: "aws-actions/configure-aws-credentials" }
-  ],
-  google: [
-    { names: ["GOOGLE_APPLICATION_CREDENTIALS"] },
-    { names: ["GOOGLE_CREDENTIALS"] },
-    { names: ["GOOGLE_OAUTH_ACCESS_TOKEN"] },
-    { names: [], uses: "google-github-actions/auth" }
-  ],
-  azure: [
-    { names: ["ARM_CLIENT_ID", "ARM_TENANT_ID", "ARM_SUBSCRIPTION_ID", "ARM_CLIENT_SECRET"] },
-    { names: ["ARM_CLIENT_ID", "ARM_TENANT_ID", "ARM_SUBSCRIPTION_ID", "ARM_USE_OIDC"] },
-    { names: [], uses: "azure/login" }
-  ],
-  kubernetes: [
-    { names: ["KUBECONFIG"] },
-    { names: [], runs: "update-kubeconfig" },
-    { names: [], runs: "get-credentials" },
-    { names: [], uses: "azure/aks-set-context" },
-    { names: [], uses: "google-github-actions/get-gke-credentials" }
-  ],
-  cloudflare: [
-    { names: ["CLOUDFLARE_API_TOKEN"] },
-    { names: ["CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL"] }
-  ],
-  digitalocean: [{ names: ["DIGITALOCEAN_TOKEN"] }],
-  github: [{ names: ["GITHUB_TOKEN"] }],
-  hcloud: [{ names: ["HCLOUD_TOKEN"] }],
-  linode: [{ names: ["LINODE_TOKEN"] }],
-  vault: [{ names: ["VAULT_ADDR", "VAULT_TOKEN"] }],
-  vultr: [{ names: ["VULTR_API_KEY"] }]
-};
-function cloudWays(cloud) {
-  return WAYS[cloud].map((way) => ({ ...way, names: [...way.names] }));
-}
-function regionWays(cloud) {
-  if (cloud !== "aws")
-    return;
-  return [
-    { names: ["AWS_REGION"] },
-    { names: ["AWS_DEFAULT_REGION"] },
-    { names: [], uses: "aws-actions/configure-aws-credentials" }
-  ];
-}
-function wayWords(way) {
-  if (way.names.length > 0)
-    return way.names.join(" with ");
-  if (way.uses !== undefined)
-    return `a step that uses ${way.uses}`;
-  return `a step that runs ${way.runs ?? ""}`;
-}
-var LOADERS = new Set([
-  "hashicorp/vault-action",
-  "dopplerhq/secrets-fetch-action",
-  "aws-actions/aws-secretsmanager-get-secrets",
-  "google-github-actions/get-secretmanager-secrets",
-  "1password/load-secrets-action"
-]);
-var ENV_FILE = /(^|\/)(\.env(\.[^/]+)?|[^/]+\.env)$/;
-var ENV_LINE = /^\s*(export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/;
-function jobEnvironment(provides, root) {
-  const names = new Map;
-  for (const { name, where: where2 } of provides.names)
-    if (!names.has(name))
-      names.set(name, where2);
-  const uses = [];
-  const runs = [];
-  const opaque = [];
-  for (const step of provides.steps) {
-    if (!step.before)
-      continue;
-    let seen = step.secret === true;
-    if (step.uses !== undefined) {
-      uses.push(step.uses);
-      if (LOADERS.has(step.uses))
-        seen = true;
-    }
-    if (step.run !== undefined) {
-      runs.push(step.run);
-      if (step.run.includes("GITHUB_ENV"))
-        seen = true;
-      for (const file2 of envFilesNamed(step.run)) {
-        const listed2 = envFileNames(root, file2);
-        if (listed2 === undefined) {
-          seen = true;
-          continue;
-        }
-        for (const name of listed2)
-          if (!names.has(name))
-            names.set(name, `listed in ${file2}`);
-      }
-    }
-    if (seen && !opaque.includes(step.step))
-      opaque.push(step.step);
-  }
-  return { names, uses, runs, opaque, unread: [] };
-}
-function stackEnvironment(job, envFile, root) {
-  if (envFile === undefined)
-    return job;
-  const listed2 = envFileNames(root, envFile);
-  if (listed2 === undefined)
-    return { ...job, unread: [...job.unread, envFile] };
-  const names = new Map(job.names);
-  for (const name of listed2) {
-    if (!names.has(name))
-      names.set(name, `listed in ${envFile}, the envFile of the stack`);
-  }
-  return { ...job, names };
-}
-function envFilesNamed(text2) {
-  const found = [];
-  for (const token of text2.split(/[\s=]+/)) {
-    const path = token.replace(/^["']|["']$/g, "");
-    if (/^[\w./-]+$/.test(path) && ENV_FILE.test(path) && !found.includes(path))
-      found.push(path);
-  }
-  return found;
-}
-function envFileNames(root, file2) {
-  let text2;
-  try {
-    text2 = readFileSync2(resolve(root, file2), "utf8");
-  } catch {
-    return;
-  }
-  const names = [];
-  for (const line of text2.split(`
-`)) {
-    const name = ENV_LINE.exec(line)?.[2];
-    if (name !== undefined && !names.includes(name))
-      names.push(name);
-  }
-  return names;
-}
-function judgeNeeds(needs, job) {
-  return needs.map((need) => {
-    if (need.ways.length === 0)
-      return { need, met: "unknown" };
-    for (const way of need.ways) {
-      const by2 = meets(way, job);
-      if (by2 !== undefined)
-        return { need, met: true, by: by2 };
-    }
-    return { need, met: false, maybe: [...job.opaque], unread: [...job.unread] };
-  });
-}
-function meets(way, job) {
-  if (way.names.length > 0) {
-    const wheres = way.names.map((name) => job.names.get(name));
-    if (wheres.some((where3) => where3 === undefined))
-      return;
-    const where2 = [...new Set(wheres)].join(" and ");
-    return `${wayWords(way)}, ${where2}`;
-  }
-  if (way.uses !== undefined)
-    return job.uses.includes(way.uses) ? wayWords(way) : undefined;
-  if (way.runs !== undefined) {
-    const word = way.runs;
-    return job.runs.some((run) => run.includes(word)) ? wayWords(way) : undefined;
-  }
-  return;
-}
-function judgeJobs(stacks, workflows, root) {
-  return workflows.flatMap(({ path, jobs }) => jobs.filter(({ runs }) => runs.includes("scan") || runs.includes("apply")).map(({ job, provides }) => {
-    const environment = jobEnvironment(provides, root);
-    return {
-      path,
-      job,
-      judged: stacks.flatMap(({ stackId: stackId2, needs, envFile }) => judgeNeeds(needs, stackEnvironment(environment, envFile, root)).map((one) => ({
-        ...one,
-        stackId: stackId2
-      })))
-    };
-  }));
-}
-
-// src/adapters/helm/options.ts
-var text2 = exports_external.string().min(1);
-var RELEASE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/;
-var NAMESPACE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
-var LOCAL_CHART = /^\.\.?(\/|$)/;
-var REFERENCE = /^(oci:\/\/|https?:\/\/)[^\s]+$|^[A-Za-z0-9][\w.-]*\/[\w.-]+$/;
-var EXACT = /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
-var helmOptionsSchema = exports_external.strictObject({
-  release: text2.max(53).regex(RELEASE).describe("The name of the Helm release. Helm's rule: lower case letters, digits, - and ."),
-  namespace: text2.max(63).regex(NAMESPACE).describe("The namespace of the release, passed with --namespace to every command."),
-  chart: text2.regex(new RegExp(`${LOCAL_CHART.source}|${REFERENCE.source}`)).describe('The chart: a path relative to the directory of the stack that starts with "./" or "../", or a chart reference such as repo/name or oci://registry/name.'),
-  version: text2.regex(EXACT).describe("The exact version of a chart reference. A local chart takes none.").exactOptional(),
-  valuesFiles: exports_external.array(text2).describe("Values files, relative to the directory of the stack, passed with --values in this order to every command.").default([]),
-  createNamespace: exports_external.boolean().describe("Create the namespace of the release when it is not there, with --create-namespace on the deploy. The preview works without it.").default(false)
-});
-var HELM = "helm";
-function isHelmOptions(options) {
-  return options.tool === HELM;
-}
-var PATTERN_PROBLEMS = {
-  release: 'expected a release name of lower case letters, digits, "-" and ".", that starts and ends with a letter or a digit, at most 53 characters.',
-  namespace: 'expected a namespace of lower case letters, digits and "-", that starts and ends with a letter or a digit, at most 63 characters.',
-  chart: 'expected a local chart as a path that starts with "./" or "../", or a chart reference such as repo/name or oci://registry/name.',
-  version: "expected an exact chart version, such as 1.2.3."
-};
-function parseHelmOptions(raw, index) {
-  const at = `stacks[${index}].options`;
-  const parsed = helmOptionsSchema.safeParse(raw ?? {});
-  if (!parsed.success) {
-    const known = Object.keys(helmOptionsSchema.shape).join(", ");
-    const order = Object.keys(helmOptionsSchema.shape);
-    const rank = (issue3) => issue3.code === "unrecognized_keys" ? -1 : order.indexOf(String(issue3.path[0]));
-    const issues = [...parsed.error.issues].sort((a, b) => rank(a) - rank(b));
-    const problems = issues.flatMap((issue3) => {
-      if (issue3.code === "unrecognized_keys") {
-        return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for helm: ${known}.`);
-      }
-      const [name] = issue3.path;
-      const where2 = `${at}${issue3.path.map((part) => typeof part === "number" ? `[${part}]` : `.${String(part)}`).join("")}`;
-      if (name === "createNamespace")
-        return [`${where2}: expected true or false.`];
-      if (issue3.code === "invalid_type" && issue3.input === undefined) {
-        return [`${where2}: required for tool: helm.`];
-      }
-      if (issue3.code === "too_small")
-        return [`${where2}: must not be empty.`];
-      if (issue3.path.length === 1 && name === "valuesFiles") {
-        return [`${where2}: expected a list of file names.`];
-      }
-      if (issue3.code === "invalid_type")
-        return [`${where2}: expected text.`];
-      return [`${where2}: ${PATTERN_PROBLEMS[String(name)] ?? "expected something else."}`];
-    });
-    return { ok: false, problems: [...new Set(problems)] };
-  }
-  const options = parsed.data;
-  const local = LOCAL_CHART.test(options.chart);
-  if (local && options.version !== undefined) {
-    return {
-      ok: false,
-      problems: [
-        `${at}.version: only a chart reference takes a version. A local chart is used as the repo holds it.`
-      ]
-    };
-  }
-  if (!local && options.version === undefined) {
-    return {
-      ok: false,
-      problems: [
-        `${at}.version: required for a chart reference, so that the deploy installs the chart the preview saw.`
-      ]
-    };
-  }
-  return { ok: true, options };
-}
-
-// src/adapters/kubectl/options.ts
-var text3 = exports_external.string().min(1);
-var NAMESPACE2 = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
-var NAMESPACE_PROBLEM = 'expected a namespace of lower case letters, digits and "-", that starts and ends with a letter or a digit, at most 63 characters.';
-var FIELD_MANAGER = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-var FIELD_MANAGER_PROBLEM = 'expected a field manager of letters, digits, ".", "_" and "-", that starts with a letter or a digit, at most 128 characters.';
-var kubectlOptionsSchema = exports_external.strictObject({
-  context: text3.describe("The kubeconfig context of the stack, passed with --context to every command. Without it, the current context of the kubeconfig.").exactOptional(),
-  namespace: text3.max(63).regex(NAMESPACE2).describe("The namespace of objects that name none, passed with --namespace to every command. Without it, the namespace of the context.").exactOptional(),
-  recursive: exports_external.boolean().describe("Read the manifests of every subdirectory too, as kubectl apply -R does. Only for a directory of manifests. Default false: one level.").exactOptional(),
-  prune: exports_external.boolean().describe("Delete an object taken out of the manifests when the stack deploys, and show it as a delete on the row. Sluiceway keeps the list of the stack's objects in a ConfigMap next to them. Default false.").exactOptional(),
-  forceConflicts: exports_external.boolean().describe("Take a field that another field manager holds, with --force-conflicts on the preview and the deploy. Without it such a field fails the preview. Default false.").exactOptional(),
-  fieldManager: text3.max(128).regex(FIELD_MANAGER).describe("The field manager of the preview and the deploy, passed with --field-manager. Without it, kubectl's own, kubectl.").exactOptional()
-});
-var KUBECTL = "kubectl";
-var SWITCHES = new Set(["recursive", "prune", "forceConflicts"]);
-function isKubectlOptions(options) {
-  return options.tool === KUBECTL;
-}
-function parseKubectlOptions(raw, index) {
-  const parsed = kubectlOptionsSchema.safeParse(raw ?? {});
-  if (parsed.success)
-    return { ok: true, options: parsed.data };
-  const at = `stacks[${index}].options`;
-  const known = Object.keys(kubectlOptionsSchema.shape).join(", ");
-  const issues = [...parsed.error.issues].sort((a, b) => Number(b.code === "unrecognized_keys") - Number(a.code === "unrecognized_keys"));
-  const problems = issues.flatMap((issue3) => {
-    if (issue3.code === "unrecognized_keys") {
-      return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for kubectl: ${known}.`);
-    }
-    const name = String(issue3.path[0]);
-    const where2 = `${at}${issue3.path.map((part) => `.${String(part)}`).join("")}`;
-    if (SWITCHES.has(name))
-      return [`${where2}: expected true or false.`];
-    if (issue3.code === "too_small")
-      return [`${where2}: must not be empty.`];
-    if (issue3.code === "too_big" || issue3.code === "invalid_format") {
-      return [`${where2}: ${name === "fieldManager" ? FIELD_MANAGER_PROBLEM : NAMESPACE_PROBLEM}`];
-    }
-    return [`${where2}: expected text.`];
-  });
-  return { ok: false, problems };
-}
-
-// src/adapters/opentofu/credentials.ts
-import { readdirSync, readFileSync as readFileSync3 } from "node:fs";
-import { join as join3, posix } from "node:path";
-
-// src/adapters/opentofu/hcl.ts
-function readHcl(text4) {
-  const { tokens, code: code2 } = tokenize(text4);
-  const reader = { tokens, at: 0 };
-  const top = body(reader, false);
-  return { blocks: top.blocks, attributes: top.attributes, code: code2 };
-}
-function body(reader, inner) {
-  const block = { type: "", labels: [], strings: {}, attributes: [], blocks: [] };
-  items(reader, block, inner);
-  return block;
-}
-function items(reader, into, inner) {
-  const { tokens } = reader;
-  while (reader.at < tokens.length) {
-    const token = tokens[reader.at];
-    if (token === undefined)
-      return;
-    if (token.kind === "newline") {
-      reader.at++;
-      continue;
-    }
-    if (token.kind === "close") {
-      if (inner)
-        reader.at++;
-      else {
-        reader.at++;
-        continue;
-      }
-      return;
-    }
-    if (token.kind !== "word") {
-      skipLine(reader);
-      continue;
-    }
-    reader.at++;
-    const next = tokens[reader.at];
-    if (next?.kind === "equals") {
-      reader.at++;
-      into.attributes.push(token.text);
-      const value = expression(reader);
-      if (value !== undefined)
-        into.strings[token.text] = value;
-      continue;
-    }
-    const labels = [];
-    while (reader.at < tokens.length) {
-      const label = tokens[reader.at];
-      if (label?.kind === "string" && label.literal !== undefined)
-        labels.push(label.literal);
-      else if (label?.kind === "word")
-        labels.push(label.text);
-      else
-        break;
-      reader.at++;
-    }
-    if (tokens[reader.at]?.kind !== "open") {
-      skipLine(reader);
-      continue;
-    }
-    reader.at++;
-    const child = { type: token.text, labels, strings: {}, attributes: [], blocks: [] };
-    items(reader, child, true);
-    into.blocks.push(child);
-  }
-}
-function expression(reader) {
-  const { tokens } = reader;
-  let depth = 0;
-  const seen = [];
-  while (reader.at < tokens.length) {
-    const token = tokens[reader.at];
-    if (token === undefined)
-      break;
-    if (depth === 0 && (token.kind === "newline" || token.kind === "close"))
-      break;
-    if (token.kind === "open" || token.kind === "bracket" && "([".includes(token.text))
-      depth++;
-    if (token.kind === "close" || token.kind === "bracket" && ")]".includes(token.text))
-      depth--;
-    seen.push(token);
-    reader.at++;
-  }
-  const [only] = seen;
-  return seen.length === 1 && only?.kind === "string" ? only.literal : undefined;
-}
-function skipLine(reader) {
-  expression(reader);
-}
-function tokenize(text4) {
-  const tokens = [];
-  let code2 = "";
-  let at = 0;
-  while (at < text4.length) {
-    const char = text4[at] ?? "";
-    const rest = text4.slice(at, at + 2);
-    if (char === "#" || rest === "//") {
-      while (at < text4.length && text4[at] !== `
-`)
-        at++;
-      continue;
-    }
-    if (rest === "/*") {
-      const end = text4.indexOf("*/", at + 2);
-      at = end < 0 ? text4.length : end + 2;
-      code2 += " ";
-      continue;
-    }
-    if (char === `
-`) {
-      tokens.push({ kind: "newline" });
-      code2 += char;
-      at++;
-      continue;
-    }
-    if (char === '"') {
-      const end = stringEnd(text4, at);
-      const raw = text4.slice(at + 1, end - 1);
-      tokens.push({ kind: "string", literal: literalOf(raw) });
-      code2 += text4.slice(at, end);
-      at = end;
-      continue;
-    }
-    const heredoc = /^<<-?([A-Za-z_][A-Za-z0-9_]*)[ \t]*\n/.exec(text4.slice(at));
-    if (heredoc !== null) {
-      const marker2 = heredoc[1] ?? "";
-      let end = at + heredoc[0].length;
-      while (end < text4.length) {
-        const lineEnd = text4.indexOf(`
-`, end);
-        const line = text4.slice(end, lineEnd < 0 ? text4.length : lineEnd);
-        end = lineEnd < 0 ? text4.length : lineEnd + 1;
-        if (line.trim() === marker2)
-          break;
-      }
-      tokens.push({ kind: "string", literal: undefined });
-      code2 += text4.slice(at, end);
-      tokens.push({ kind: "newline" });
-      at = end;
-      continue;
-    }
-    const word = /^[A-Za-z_][A-Za-z0-9_.-]*/.exec(text4.slice(at));
-    if (word !== null) {
-      tokens.push({ kind: "word", text: word[0] });
-      code2 += word[0];
-      at += word[0].length;
-      continue;
-    }
-    if (char === "{")
-      tokens.push({ kind: "open" });
-    else if (char === "}")
-      tokens.push({ kind: "close" });
-    else if (char === "=" && text4[at + 1] !== "=" && text4[at + 1] !== ">")
-      tokens.push({ kind: "equals" });
-    else if ("[]()".includes(char))
-      tokens.push({ kind: "bracket", text: char });
-    else if (!/\s/.test(char))
-      tokens.push({ kind: "other" });
-    if (char === "=" && (text4[at + 1] === "=" || text4[at + 1] === ">")) {
-      code2 += text4.slice(at, at + 2);
-      at += 2;
-      continue;
-    }
-    code2 += char;
-    at++;
-  }
-  return { tokens, code: code2 };
-}
-function stringEnd(text4, start) {
-  let at = start + 1;
-  while (at < text4.length) {
-    const char = text4[at];
-    if (char === "\\") {
-      at += 2;
-      continue;
-    }
-    if (char === '"')
-      return at + 1;
-    if (char === `
-`)
-      return at;
-    if ((char === "$" || char === "%") && text4[at + 1] === char && text4[at + 2] === "{") {
-      at += 3;
-      continue;
-    }
-    if ((char === "$" || char === "%") && text4[at + 1] === "{") {
-      at = templateEnd(text4, at + 2);
-      continue;
-    }
-    at++;
-  }
-  return text4.length;
-}
-function templateEnd(text4, start) {
-  let depth = 1;
-  let at = start;
-  while (at < text4.length && depth > 0) {
-    const char = text4[at];
-    if (char === '"') {
-      at = stringEnd(text4, at);
-      continue;
-    }
-    if (char === "{")
-      depth++;
-    if (char === "}")
-      depth--;
-    at++;
-  }
-  return at;
-}
-function literalOf(raw) {
-  if (/\$\{|%\{/.test(raw))
-    return;
-  if (/\\[^"\\]/.test(raw))
-    return;
-  return raw.replace(/\\(["\\])/g, "$1");
-}
-
-// src/adapters/opentofu/options.ts
-var text4 = exports_external.string().min(1);
-var TERRAGRUNT = "terragrunt";
-var CDKTF = "cdktf";
-var WRAPPERS = [TERRAGRUNT, CDKTF];
-var openTofuOptionsSchema = exports_external.strictObject({
-  workspace: text4.describe("The workspace of the stack, selected with TF_WORKSPACE for every command. Without it, the one the environment selects, which is default.").exactOptional(),
-  varFiles: exports_external.array(text4).describe("Var files, relative to the directory of the stack, passed with -var-file in this order to every plan. Not with a wrapper.").default([]),
-  wrapper: exports_external.enum(WRAPPERS).describe("What stands in front of the tool. terragrunt: path is one Terragrunt unit, and terragrunt runs the tool there. cdktf: path is a CDK for Terraform app, cdktf synth writes its stacks, and name picks the one this entry deploys.").exactOptional()
-});
-var OPENTOFU = "opentofu";
-var TERRAFORM = "terraform";
-var TERRAFORM_FAMILY = [OPENTOFU, TERRAFORM];
-function isFamilyTool(tool) {
-  return TERRAFORM_FAMILY.includes(tool);
-}
-function isOpenTofuOptions(options) {
-  return isFamilyTool(options.tool);
-}
-function parseOpenTofuOptions(raw, index, tool = OPENTOFU) {
-  const parsed = openTofuOptionsSchema.safeParse(raw ?? {});
-  if (parsed.success)
-    return { ok: true, options: parsed.data };
-  const at = `stacks[${index}].options`;
-  const known = Object.keys(openTofuOptionsSchema.shape).join(", ");
-  const issues = [...parsed.error.issues].sort((a, b) => Number(b.code === "unrecognized_keys") - Number(a.code === "unrecognized_keys"));
-  const problems = issues.flatMap((issue3) => {
-    if (issue3.code === "unrecognized_keys") {
-      return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for ${tool}: ${known}.`);
-    }
-    const where2 = `${at}${issue3.path.map((part) => typeof part === "number" ? `[${part}]` : `.${String(part)}`).join("")}`;
-    if (issue3.code === "too_small")
-      return [`${where2}: must not be empty.`];
-    if (issue3.path.length === 1 && issue3.path[0] === "varFiles") {
-      return [`${where2}: expected a list of file names.`];
-    }
-    if (issue3.path.length === 1 && issue3.path[0] === "wrapper") {
-      return [`${where2}: expected one of ${WRAPPERS.map((w) => JSON.stringify(w)).join(" or ")}.`];
-    }
-    return [`${where2}: expected text.`];
-  });
-  return { ok: false, problems };
-}
-
-// src/adapters/opentofu/credentials.ts
-var PROVIDERS = {
-  aws: "aws",
-  awscc: "aws",
-  google: "google",
-  "google-beta": "google",
-  azurerm: "azure",
-  azuread: "azure",
-  azapi: "azure",
-  kubernetes: "kubernetes",
-  helm: "kubernetes",
-  cloudflare: "cloudflare",
-  digitalocean: "digitalocean",
-  github: "github",
-  hcloud: "hcloud",
-  linode: "linode",
-  vault: "vault",
-  vultr: "vultr",
-  random: "nothing",
-  null: "nothing",
-  local: "nothing",
-  tls: "nothing",
-  time: "nothing",
-  archive: "nothing",
-  external: "nothing",
-  http: "nothing",
-  terraform: "nothing",
-  assert: "nothing"
-};
-var BACKENDS = {
-  s3: "aws",
-  gcs: "google",
-  azurerm: "azure",
-  kubernetes: "kubernetes",
-  local: "nothing",
-  remote: [{ names: ["TF_TOKEN_app_terraform_io"] }],
-  pg: [{ names: ["PG_CONN_STR"] }],
-  consul: [{ names: ["CONSUL_HTTP_TOKEN"] }]
-};
-var MODULE_FILE = /\.(tf|tofu)$/;
-var LOCK_FILE = ".terraform.lock.hcl";
-var AUTO_VAR_FILE = /^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/;
-async function credentialNeeds(root, stack) {
-  const { wrapper, varFiles } = stack.options;
-  if (wrapper === TERRAGRUNT)
-    return terragruntNeeds(root, stack.path);
-  if (wrapper === CDKTF)
-    return cdktfNeeds(root, stack.path);
-  const files = Array.isArray(varFiles) ? varFiles.filter((f) => typeof f === "string") : [];
-  return rootModuleNeeds(root, stack.path, files);
-}
-function rootModuleNeeds(root, path, varFiles) {
-  const directory = readDirectory(root, path);
-  const needs = [];
-  const backend = backendNeed(directory);
-  if (backend !== undefined)
-    needs.push(backend);
-  needs.push(...providerNeeds(directory));
-  const set2 = new Set;
-  const chosen = varFiles.map((file2) => posix.join(path, file2));
-  const auto = directory.files.filter((file2) => AUTO_VAR_FILE.test(posix.basename(file2)));
-  for (const file2 of [...chosen, ...auto])
-    for (const name of varNames(root, file2))
-      set2.add(name);
-  for (const { file: file2, blocks } of directory.code) {
-    for (const block of blocks) {
-      if (block.type !== "variable" || block.attributes.includes("default"))
-        continue;
-      const [name] = block.labels;
-      if (name === undefined || set2.has(name))
-        continue;
-      needs.push({
-        what: `the variable ${name}`,
-        namedIn: file2,
-        ways: [{ names: [`TF_VAR_${name}`] }]
-      });
-    }
-  }
-  return needs;
-}
-function terragruntNeeds(root, path) {
-  const file2 = ["terragrunt.hcl", "terragrunt.hcl.json"].map((name) => posix.join(path, name)).find((name) => text5(join3(root, name)) !== "");
-  if (file2 === undefined || file2.endsWith(".json"))
-    return [];
-  const { blocks } = readHcl(text5(join3(root, file2)));
-  const needs = [];
-  const remote = blocks.find((block) => block.type === "remote_state");
-  const label = remote?.strings.backend;
-  if (label !== undefined) {
-    const known = BACKENDS[label];
-    if (known !== "nothing") {
-      needs.push({ what: `the ${label} remote state`, namedIn: file2, ways: waysOf(known) });
-    }
-  }
-  const source = blocks.find((block) => block.type === "terraform")?.strings.source;
-  const module = source === undefined ? undefined : localSource(path, source);
-  if (module !== undefined)
-    needs.push(...providerNeeds(readDirectory(root, module)));
-  return needs;
-}
-function cdktfNeeds(root, path) {
-  const file2 = posix.join(path, "cdktf.json");
-  let parsed;
-  try {
-    parsed = JSON.parse(text5(join3(root, file2)));
-  } catch {
-    return [];
-  }
-  const listed2 = typeof parsed === "object" && parsed !== null && "terraformProviders" in parsed ? parsed.terraformProviders : undefined;
-  const needs = [
-    { what: "the backend the app sets in code", namedIn: file2, ways: [] }
-  ];
-  const named = new Map;
-  for (const entry2 of Array.isArray(listed2) ? listed2 : []) {
-    const spec = typeof entry2 === "string" ? entry2 : typeof entry2 === "object" && entry2 !== null && typeof entry2.name === "string" ? entry2.name : undefined;
-    if (spec === undefined)
-      continue;
-    const name = (spec.split("@")[0] ?? "").split("/").at(-1) ?? "";
-    if (name !== "" && !named.has(name))
-      named.set(name, file2);
-  }
-  needs.push(...needsOf(named, new Set));
-  return needs;
-}
-function readDirectory(root, path) {
-  let names;
-  try {
-    names = readdirSync(join3(root, path)).sort(byCodeUnit4);
-  } catch {
-    names = [];
-  }
-  const at = (name) => posix.join(path, name);
-  const parsed = (name) => ({
-    file: at(name),
-    blocks: readHcl(text5(join3(root, at(name)))).blocks
-  });
-  return {
-    files: names.map(at),
-    lock: names.includes(LOCK_FILE) ? parsed(LOCK_FILE) : undefined,
-    code: names.filter((name) => MODULE_FILE.test(name)).map(parsed)
-  };
-}
-function providerNeeds(directory) {
-  const named = new Map;
-  const name = (provider, file2) => {
-    if (provider !== "" && !named.has(provider))
-      named.set(provider, file2);
-  };
-  if (directory.lock !== undefined) {
-    for (const block of directory.lock.blocks.filter((one) => one.type === "provider")) {
-      name(block.labels[0]?.split("/").at(-1) ?? "", directory.lock.file);
-    }
-  }
-  for (const { file: file2, blocks } of directory.code) {
-    for (const block of blocks.filter((one) => one.type === "terraform")) {
-      for (const inner of block.blocks.filter((one) => one.type === "required_providers")) {
-        for (const provider of inner.attributes)
-          name(provider, file2);
-      }
-    }
-  }
-  const regionSet = new Set;
-  for (const { file: file2, blocks } of directory.code) {
-    for (const block of blocks.filter((one) => one.type === "provider")) {
-      const [label] = block.labels;
-      if (label === undefined)
-        continue;
-      name(label, file2);
-      if (block.attributes.includes("region"))
-        regionSet.add(label);
-    }
-  }
-  return needsOf(named, regionSet);
-}
-function needsOf(named, regionSet) {
-  const needs = [];
-  for (const [provider, namedIn] of named) {
-    const cloud = PROVIDERS[provider];
-    if (cloud === "nothing")
-      continue;
-    needs.push({
-      what: `the ${provider} provider`,
-      namedIn,
-      ways: cloud === undefined ? [] : cloudWays(cloud)
-    });
-    const region = cloud === undefined ? undefined : regionWays(cloud);
-    if (region !== undefined && !regionSet.has(provider)) {
-      needs.push({ what: `a region for the ${provider} provider`, namedIn, ways: region });
-    }
-  }
-  return needs;
-}
-function backendNeed(directory) {
-  for (const { file: file2, blocks } of directory.code) {
-    for (const block of blocks.filter((one) => one.type === "terraform")) {
-      for (const inner of block.blocks) {
-        if (inner.type === "backend") {
-          const [label] = inner.labels;
-          if (label === undefined)
-            continue;
-          const known = BACKENDS[label];
-          if (known === "nothing")
-            return;
-          return { what: `the ${label} backend`, namedIn: file2, ways: waysOf(known) };
-        }
-        if (inner.type === "cloud") {
-          const host = inner.strings.hostname ?? "app.terraform.io";
-          return {
-            what: "the cloud block",
-            namedIn: file2,
-            ways: [{ names: [`TF_TOKEN_${host.replaceAll(".", "_").replaceAll("-", "__")}`] }]
-          };
-        }
-      }
-    }
-  }
-  return;
-}
-function waysOf(known) {
-  if (known === undefined || known === "nothing")
-    return [];
-  return typeof known === "string" ? cloudWays(known) : known.map((way) => ({ ...way }));
-}
-function varNames(root, file2) {
-  const content = text5(join3(root, file2));
-  if (file2.endsWith(".json")) {
-    try {
-      const parsed = JSON.parse(content);
-      return typeof parsed === "object" && parsed !== null ? Object.keys(parsed) : [];
-    } catch {
-      return [];
-    }
-  }
-  return readHcl(content).attributes;
-}
-function localSource(from, source) {
-  if (/^[a-z+]+::|:\/\//i.test(source) || source.includes("//"))
-    return;
-  if (!source.startsWith("."))
-    return;
-  const target = posix.normalize(posix.join(from, source)).replace(/\/+$/, "") || ".";
-  if (target === ".." || target.startsWith("../"))
-    return;
-  return target;
-}
-function text5(file2) {
-  try {
-    return readFileSync3(file2, "utf8");
-  } catch {
-    return "";
-  }
-}
-function byCodeUnit4(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/pulumi/credentials.ts
-import { readdirSync as readdirSync2, readFileSync as readFileSync4, statSync } from "node:fs";
-import { join as join4, posix as posix2, relative, sep } from "node:path";
-var EXTENSIONS = [".json", ".yaml", ".yml"];
-var PACKAGES = {
-  aws: "aws",
-  "aws-native": "aws",
-  gcp: "google",
-  "google-native": "google",
-  azure: "azure",
-  "azure-native": "azure",
-  azuread: "azure",
-  kubernetes: "kubernetes",
-  cloudflare: "cloudflare",
-  digitalocean: "digitalocean",
-  github: "github",
-  hcloud: "hcloud",
-  linode: "linode",
-  vault: "vault",
-  vultr: "vultr",
-  random: "nothing",
-  command: "nothing",
-  local: "nothing",
-  null: "nothing",
-  time: "nothing",
-  tls: "nothing",
-  std: "nothing",
-  archive: "nothing",
-  external: "nothing",
-  http: "nothing",
-  pulumi: "nothing"
-};
-var BACKENDS2 = {
-  s3: "aws",
-  gs: "google",
-  azblob: "azure",
-  file: "nothing"
-};
-var SECRETS = {
-  awskms: "aws",
-  gcpkms: "google",
-  azurekeyvault: "azure",
-  hashivault: "vault"
-};
-var TOKEN = [{ names: ["PULUMI_ACCESS_TOKEN"] }];
-var PASSPHRASE = [
-  { names: ["PULUMI_CONFIG_PASSPHRASE"] },
-  { names: ["PULUMI_CONFIG_PASSPHRASE_FILE"] }
-];
-async function credentialNeeds2(root, stack) {
-  const projectDir = join4(root, stack.path);
-  const extension = EXTENSIONS.find((ext) => isFile(join4(projectDir, `Pulumi${ext}`)));
-  if (extension === undefined)
-    return [];
-  const projectPath = join4(projectDir, `Pulumi${extension}`);
-  const project = read2(projectPath);
-  if (!isRecord(project))
-    return [];
-  const projectFile = repoPath(root, projectPath);
-  const needs = [];
-  const url2 = isRecord(project.backend) ? project.backend.url : undefined;
-  const scheme = typeof url2 === "string" ? schemeOf(url2) : undefined;
-  if (scheme === undefined) {
-    needs.push({
-      what: "the Pulumi backend",
-      namedIn: projectFile,
-      ways: [{ names: ["PULUMI_ACCESS_TOKEN"] }, { names: ["PULUMI_BACKEND_URL"] }]
-    });
-  } else if (scheme === "https" || scheme === "http") {
-    needs.push({ what: "the Pulumi Cloud backend", namedIn: projectFile, ways: TOKEN });
-  } else {
-    const cloud = BACKENDS2[scheme];
-    if (cloud !== "nothing") {
-      needs.push({
-        what: `the ${scheme} backend`,
-        namedIn: projectFile,
-        ways: cloud === undefined ? [] : cloudWays(cloud)
-      });
-    }
-  }
-  const stackDir = typeof project.stackConfigDir === "string" ? join4(projectDir, project.stackConfigDir) : projectDir;
-  const stackPath2 = stack.name === undefined ? undefined : join4(stackDir, `Pulumi.${stack.name}${extension}`);
-  const stackFile = stackPath2 === undefined ? undefined : read2(stackPath2);
-  const stackRepoPath = stackPath2 === undefined ? projectFile : repoPath(root, stackPath2);
-  if (isRecord(stackFile)) {
-    const provider = typeof stackFile.secretsprovider === "string" ? schemeOf(stackFile.secretsprovider) : undefined;
-    if ("encryptionsalt" in stackFile || provider === "passphrase") {
-      needs.push({
-        what: "the passphrase of its secrets",
-        namedIn: stackRepoPath,
-        ways: PASSPHRASE
-      });
-    }
-    if (provider !== undefined && provider !== "passphrase") {
-      const cloud = SECRETS[provider];
-      needs.push({
-        what: `the ${provider} secrets provider`,
-        namedIn: stackRepoPath,
-        ways: cloud === undefined ? [] : cloudWays(cloud)
-      });
-    }
-  }
-  const providers = new Map;
-  const name = (provider, file2) => {
-    if (!providers.has(provider))
-      providers.set(provider, file2);
-  };
-  const runtime = runtimeName(project.runtime);
-  if (runtime === "yaml") {
-    for (const provider of yamlProviders(projectDir, projectPath, project))
-      name(...provider);
-  } else if (runtime === "nodejs") {
-    for (const provider of nodeProviders(root, stack.path))
-      name(...provider);
-  } else if (runtime === "python") {
-    for (const provider of pythonProviders(projectDir))
-      name(...provider);
-  } else if (runtime === "go") {
-    for (const provider of goProviders(projectDir))
-      name(...provider);
-  } else if (runtime === "dotnet") {
-    for (const provider of dotnetProviders(projectDir))
-      name(...provider);
-  }
-  const configKeys = new Set;
-  for (const [file2, config2] of [
-    [projectPath, project.config],
-    [stackPath2, isRecord(stackFile) ? stackFile.config : undefined]
-  ]) {
-    if (file2 === undefined || !isRecord(config2))
-      continue;
-    for (const key of Object.keys(config2)) {
-      configKeys.add(key);
-      const namespace = key.split(":")[0] ?? "";
-      if (key.includes(":") && namespace in PACKAGES)
-        name(namespace, file2);
-    }
-  }
-  for (const [provider, file2] of providers) {
-    const cloud = PACKAGES[provider];
-    if (cloud === "nothing")
-      continue;
-    const namedIn = repoPath(root, file2);
-    needs.push({
-      what: `the ${provider} provider`,
-      namedIn,
-      ways: cloud === undefined ? [] : cloudWays(cloud)
-    });
-    const region = cloud === undefined ? undefined : regionWays(cloud);
-    if (region !== undefined && !configKeys.has(`${provider}:region`)) {
-      needs.push({ what: `a region for the ${provider} provider`, namedIn, ways: region });
-    }
-  }
-  return needs;
-}
-function yamlProviders(projectDir, projectPath, project) {
-  const programDir = isRecord(project) && typeof project.main === "string" ? join4(projectDir, project.main) : projectDir;
-  const programs = programDir === projectDir ? [projectPath, join4(projectDir, "Main.yaml")] : [join4(programDir, "Main.yaml"), join4(programDir, "Pulumi.yaml")];
-  const found = [];
-  for (const file2 of programs.filter(isFile)) {
-    const program = file2 === projectPath ? project : read2(file2);
-    walk(program, (key, value) => {
-      if (key !== "type" || typeof value !== "string")
-        return;
-      const [first, second, third] = value.split(":");
-      const provider = first === "pulumi" && second === "providers" ? third : first;
-      if (provider !== undefined && provider !== "")
-        found.push([provider, file2]);
-    });
-  }
-  return found;
-}
-function nodeProviders(root, path) {
-  for (const directory of ancestors(path)) {
-    const file2 = join4(root, directory, "package.json");
-    if (!isFile(file2))
-      continue;
-    const manifest = readJson(file2);
-    if (!isRecord(manifest))
-      return [];
-    return [manifest.dependencies, manifest.devDependencies].flatMap((block) => isRecord(block) ? Object.keys(block).flatMap((key) => key.startsWith("@pulumi/") ? [[key.slice("@pulumi/".length), file2]] : []) : []);
-  }
-  return [];
-}
-var PYTHON_PACKAGE = /\bpulumi[-_]([a-z0-9-]+)/gi;
-function pythonProviders(projectDir) {
-  return ["requirements.txt", "pyproject.toml"].flatMap((name) => {
-    const file2 = join4(projectDir, name);
-    if (!isFile(file2))
-      return [];
-    return [...text6(file2).matchAll(PYTHON_PACKAGE)].map((match) => [
-      (match[1] ?? "").toLowerCase().replaceAll("_", "-"),
-      file2
-    ]);
-  });
-}
-var GO_PACKAGE = /github\.com\/pulumi\/pulumi-([a-z0-9-]+?)(?:-sdk)?\/(?:sdk|v\d+)/g;
-function goProviders(projectDir) {
-  const file2 = join4(projectDir, "go.mod");
-  if (!isFile(file2))
-    return [];
-  return [...text6(file2).matchAll(GO_PACKAGE)].map((match) => [match[1] ?? "", file2]);
-}
-var DOTNET_PACKAGE = /Include="Pulumi\.([A-Za-z0-9]+)"/g;
-function dotnetProviders(projectDir) {
-  let names;
-  try {
-    names = readdirSync2(projectDir).filter((name) => /\.(cs|fs|vb)proj$/.test(name));
-  } catch {
-    return [];
-  }
-  return names.sort().flatMap((name) => {
-    const file2 = join4(projectDir, name);
-    return [...text6(file2).matchAll(DOTNET_PACKAGE)].map((match) => [kebab(match[1] ?? ""), file2]);
-  });
-}
-function kebab(name) {
-  return name.replace(/(?<=[a-z0-9])(?=[A-Z])/g, "-").toLowerCase();
-}
-function runtimeName(runtime) {
-  return isRecord(runtime) ? runtime.name : runtime;
-}
-function schemeOf(url2) {
-  const colon = url2.indexOf("://");
-  return (colon === -1 ? url2 : url2.slice(0, colon)).toLowerCase();
-}
-function ancestors(path) {
-  const found = [path];
-  let current = path;
-  while (current !== ".") {
-    current = posix2.dirname(current);
-    found.push(current);
-  }
-  return found;
-}
-function walk(value, visit3) {
-  if (Array.isArray(value)) {
-    for (const item of value)
-      walk(item, visit3);
-  } else if (isRecord(value)) {
-    for (const [key, inner] of Object.entries(value)) {
-      visit3(key, inner);
-      walk(inner, visit3);
-    }
-  }
-}
-function read2(path) {
-  try {
-    return $parse(readFileSync4(path, "utf8"), { uniqueKeys: false });
-  } catch {
-    return;
-  }
-}
-function readJson(path) {
-  try {
-    return JSON.parse(readFileSync4(path, "utf8"));
-  } catch {
-    return;
-  }
-}
-function text6(path) {
-  try {
-    return readFileSync4(path, "utf8");
-  } catch {
-    return "";
-  }
-}
-function isFile(path) {
-  try {
-    return statSync(path).isFile();
-  } catch {
-    return false;
-  }
-}
-function repoPath(root, path) {
-  return relative(root, path).split(sep).join("/");
-}
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-// src/adapters/credentials.ts
-async function credentialNeeds3(root, stack) {
-  if (isHelmOptions(stack.options) || isKubectlOptions(stack.options)) {
-    return [
-      {
-        what: "the cluster",
-        namedIn: configFileName(root) ?? "sluiceway.yaml",
-        ways: cloudWays("kubernetes")
-      }
-    ];
-  }
-  if (isOpenTofuOptions(stack.options))
-    return credentialNeeds(root, stack);
-  return credentialNeeds2(root, stack);
-}
-
-// src/adapters/helm/discover.ts
-import { readFileSync as readFileSync5, statSync as statSync2 } from "node:fs";
-import { isAbsolute, join as join5, normalize, relative as relative2, sep as sep2 } from "node:path";
-var WHAT_PATH_IS = "An entry with tool: helm names the directory its chart and values files are relative to.";
-function discoverHelm(root, config2) {
-  const stacks = [];
-  const optionProblems = [];
-  const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== HELM)
-      return;
-    const parsed = parseHelmOptions(entry2.options, index);
-    if (!parsed.ok) {
-      optionProblems.push(...parsed.problems);
-      return;
-    }
-    const { options } = parsed;
-    const dir = join5(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
-    if (!isDirectory2(dir)) {
-      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${WHAT_PATH_IS}`);
-      return;
-    }
-    const before = problems.length;
-    const inRepo = (file2) => {
-      const fromRoot = relative2(root, normalize(join5(dir, file2)));
-      if (fromRoot === ".." || fromRoot.startsWith(`..${sep2}`) || isAbsolute(fromRoot)) {
-        return;
-      }
-      return fromRoot === "" ? "." : fromRoot.split(sep2).join("/");
-    };
-    let chart;
-    if (LOCAL_CHART.test(options.chart)) {
-      const where2 = `stacks[${index}].options.chart: ${JSON.stringify(options.chart)}`;
-      const chartDir = inRepo(options.chart);
-      if (chartDir === undefined) {
-        problems.push(`${where2} must stay inside the repo.`);
-      } else {
-        const found = chartFile(root, chartDir);
-        if (found === "missing") {
-          problems.push(`${where2} is not a chart in ${shown}: it holds no Chart.yaml.`);
-        } else if (found === "unreadable") {
-          problems.push(`stacks[${index}].options.chart: the Chart.yaml of ${JSON.stringify(options.chart)} could not be read as YAML.`);
-        } else {
-          chart = { chartDir, builds: chartTree(root, chartDir, found) };
-        }
-      }
-    }
-    options.valuesFiles.forEach((file2, at) => {
-      const where2 = `stacks[${index}].options.valuesFiles[${at}]: ${JSON.stringify(file2)}`;
-      if (isAbsolute(file2)) {
-        problems.push(`${where2} must be relative to the directory of the stack.`);
-        return;
-      }
-      const fromRoot = inRepo(file2);
-      if (fromRoot === undefined) {
-        problems.push(`${where2} must stay inside the repo.`);
-        return;
-      }
-      if (!isFile2(join5(root, fromRoot)))
-        problems.push(`${where2} is not a file in ${shown}.`);
-    });
-    if (problems.length > before)
-      return;
-    const bag = {
-      tool: HELM,
-      ...options,
-      ...chart === undefined ? { builds: [] } : chart
-    };
-    stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
-      options: { ...bag }
-    });
-  });
-  if (optionProblems.length === 0 && problems.length > 0)
-    throw new DiscoveryError(problems);
-  return { stacks, optionProblems };
-}
-function chartFile(root, chartDir) {
-  let text7;
-  try {
-    text7 = readFileSync5(join5(root, chartDir, "Chart.yaml"), "utf8");
-  } catch {
-    return "missing";
-  }
-  try {
-    const chart = $parse(text7);
-    const dependencies = typeof chart === "object" && chart !== null ? chart.dependencies : undefined;
-    if (!Array.isArray(dependencies))
-      return [];
-    return dependencies.map((one) => {
-      const { name, repository } = typeof one === "object" && one !== null ? one : {};
-      return {
-        name: typeof name === "string" ? name : "",
-        repository: typeof repository === "string" ? repository : ""
-      };
-    });
-  } catch {
-    return "unreadable";
-  }
-}
-var LOCAL_DEPENDENCY = "file://";
-function chartTree(root, top, topDependencies) {
-  const levels = new Map;
-  const builds = [];
-  const visit3 = (chartDir, dependencies, path) => {
-    const known = levels.get(chartDir);
-    if (known !== undefined)
-      return known;
-    let level = 0;
-    for (const { repository } of dependencies) {
-      if (!repository.startsWith(LOCAL_DEPENDENCY))
-        continue;
-      const target = relative2(root, normalize(join5(root, chartDir, repository.slice(LOCAL_DEPENDENCY.length))));
-      if (target === ".." || target.startsWith(`..${sep2}`) || isAbsolute(target))
-        continue;
-      const dependencyDir = target === "" ? "." : target.split(sep2).join("/");
-      if (path.includes(dependencyDir))
-        continue;
-      const found = chartFile(root, dependencyDir);
-      if (typeof found === "string")
-        continue;
-      level = Math.max(level, visit3(dependencyDir, found, [...path, dependencyDir]) + 1);
-    }
-    levels.set(chartDir, level);
-    if (dependencies.length > 0)
-      builds.push({ chart: chartDir, level });
-    return level;
-  };
-  visit3(top, topDependencies, [top]);
-  return builds.sort((a, b) => a.level - b.level || (a.chart < b.chart ? -1 : a.chart > b.chart ? 1 : 0));
-}
-function isDirectory2(path) {
-  try {
-    return statSync2(path).isDirectory();
-  } catch {
-    return false;
-  }
-}
-function isFile2(path) {
-  try {
-    return statSync2(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-// src/adapters/kubectl/discover.ts
-import { join as join7 } from "node:path";
-
-// src/adapters/kubectl/render.ts
-import { readdirSync as readdirSync3, readFileSync as readFileSync6 } from "node:fs";
-import { basename, join as join6 } from "node:path";
-var KUSTOMIZATION = new Set(["kustomization.yaml", "kustomization.yml", "Kustomization"]);
-var MANIFEST = /\.(yaml|yml|json)$/;
-function isKustomization(file2) {
-  return KUSTOMIZATION.has(file2);
-}
-function isManifestFile(file2) {
-  return MANIFEST.test(file2) && !isKustomization(file2);
-}
-function sourceOf(dir) {
-  return (filesIn(dir) ?? []).some(isKustomization) ? "kustomization" : "manifests";
-}
-function bundleManifests(dir, recursive2 = false) {
-  return manifestFiles(dir, recursive2).map((file2) => {
-    const text7 = readFileSync6(join6(dir, file2), "utf8");
-    return text7.endsWith(`
-`) ? text7 : `${text7}
-`;
-  }).join(`---
-`);
-}
-function manifestFiles(dir, recursive2 = false) {
-  return walk2(dir, recursive2).filter((file2) => isManifestFile(basename(file2)));
-}
-function nestedKustomizations(dir) {
-  return [
-    ...new Set(walk2(dir, true).filter((file2) => file2.includes("/") && isKustomization(basename(file2))).map((file2) => file2.slice(0, file2.lastIndexOf("/"))))
-  ];
-}
-function walk2(dir, recursive2, prefix = "") {
-  let entries;
-  try {
-    entries = readdirSync3(join6(dir, prefix), { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  return entries.sort((a, b) => byCodeUnit5(a.name, b.name)).flatMap((entry2) => {
-    const path = prefix === "" ? entry2.name : `${prefix}/${entry2.name}`;
-    if (entry2.isDirectory())
-      return recursive2 ? walk2(dir, true, path) : [];
-    return entry2.isFile() ? [path] : [];
-  });
-}
-function byCodeUnit5(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-function filesIn(dir) {
-  try {
-    return readdirSync3(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
-  } catch {
-    return;
-  }
-}
-
-// src/adapters/kubectl/discover.ts
-var NAMES = "An entry with tool: kubectl names a directory of manifests or a kustomization.";
-function discoverKubectl(root, config2) {
-  const stacks = [];
-  const optionProblems = [];
-  const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== KUBECTL)
-      return;
-    const parsed = parseKubectlOptions(entry2.options, index);
-    if (!parsed.ok) {
-      optionProblems.push(...parsed.problems);
-      return;
-    }
-    const shown = JSON.stringify(entry2.path);
-    const dir = join7(root, entry2.path);
-    const files = filesIn(dir);
-    if (files === undefined) {
-      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${NAMES}`);
-      return;
-    }
-    const recursive2 = parsed.options.recursive === true;
-    if (recursive2 && files.some(isKustomization)) {
-      problems.push(`stacks[${index}]: ${shown} is a kustomization, which lists its own files. recursive is for a directory of manifests: take it out of the options.`);
-      return;
-    }
-    const nested = recursive2 ? nestedKustomizations(dir) : [];
-    if (nested.length > 0) {
-      for (const sub of nested) {
-        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry2.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
-      }
-      return;
-    }
-    if (!files.some(isKustomization) && manifestFiles(dir, recursive2).length === 0) {
-      problems.push(`stacks[${index}]: ${shown} holds no manifests (*.yaml, *.yml, *.json) and no kustomization. ${NAMES}`);
-      return;
-    }
-    const options = { tool: KUBECTL, ...parsed.options };
-    stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
-      options: { ...options }
-    });
-  });
-  if (optionProblems.length === 0 && problems.length > 0)
-    throw new DiscoveryError(problems);
-  return { stacks, optionProblems };
-}
-
-// src/adapters/opentofu/discover.ts
-import { readdirSync as readdirSync4, statSync as statSync3 } from "node:fs";
-import { isAbsolute as isAbsolute2, join as join8, normalize as normalize2, relative as relative3, sep as sep3 } from "node:path";
-var MODULE_FILES = {
-  opentofu: {
-    pattern: /\.(tf|tofu|tf\.json|tofu\.json)$/,
-    shown: "*.tf, *.tofu, *.tf.json, *.tofu.json",
-    word: "OpenTofu"
-  },
-  terraform: { pattern: /\.(tf|tf\.json)$/, shown: "*.tf, *.tf.json", word: "Terraform" }
-};
-var TERRAGRUNT_FILES = ["terragrunt.hcl", "terragrunt.hcl.json"];
-var CDKTF_FILE = "cdktf.json";
-var CDKTF_STACK_NAME = /^[A-Za-z0-9_-]+$/;
-function discoverOpenTofu(root, config2) {
-  const stacks = [];
-  const optionProblems = [];
-  const problems = [];
-  const declaredBy = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (!isFamilyTool(entry2.tool))
-      return;
-    const tool = entry2.tool;
-    const parsed = parseOpenTofuOptions(entry2.options, index, tool);
-    if (!parsed.ok) {
-      optionProblems.push(...parsed.problems);
-      return;
-    }
-    const { wrapper } = parsed.options;
-    const before = optionProblems.length;
-    if (wrapper !== undefined && parsed.options.varFiles.length > 0) {
-      optionProblems.push(wrapper === TERRAGRUNT ? `stacks[${index}].options.varFiles: a Terragrunt unit passes its var files in its own terragrunt.hcl (extra_arguments), so the entry takes none.` : `stacks[${index}].options.varFiles: a CDK for Terraform app sets its variables in code, so the entry takes none.`);
-    }
-    if (wrapper === CDKTF && entry2.name === undefined) {
-      optionProblems.push(`stacks[${index}].name: an entry with wrapper: cdktf names the CDK for Terraform stack it deploys, as the app calls it.`);
-    }
-    if (wrapper === CDKTF && entry2.name !== undefined && !CDKTF_STACK_NAME.test(entry2.name)) {
-      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry2.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
-    }
-    const kind = `tool: ${tool}${wrapper === undefined ? "" : ` and wrapper: ${wrapper}`}`;
-    const earlier = declaredBy.get(entry2.path);
-    if (earlier === undefined) {
-      declaredBy.set(entry2.path, { index, kind });
-    } else if (earlier.kind !== kind) {
-      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry2.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
-    }
-    if (optionProblems.length > before)
-      return;
-    const dir = join8(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
-    const files = filesIn2(dir);
-    const names = wrapper === TERRAGRUNT ? "the directory of one Terragrunt unit" : wrapper === CDKTF ? "the directory of a CDK for Terraform app" : "the directory of a root module";
-    const about = wrapper === undefined ? `An entry with tool: ${tool}` : `An entry with wrapper: ${wrapper}`;
-    if (files === undefined) {
-      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${about} names ${names}.`);
-      return;
-    }
-    if (wrapper === TERRAGRUNT && !files.some((file2) => TERRAGRUNT_FILES.includes(file2))) {
-      problems.push(`stacks[${index}]: ${shown} holds no terragrunt.hcl or terragrunt.hcl.json. ${about} names ${names}.`);
-      return;
-    }
-    if (wrapper === CDKTF && !files.includes(CDKTF_FILE)) {
-      problems.push(`stacks[${index}]: ${shown} holds no ${CDKTF_FILE}. ${about} names ${names}.`);
-      return;
-    }
-    const module = MODULE_FILES[tool];
-    if (wrapper === undefined && !files.some((file2) => module.pattern.test(file2))) {
-      problems.push(`stacks[${index}]: ${shown} holds no ${module.word} files (${module.shown}). ${about} names ${names}.`);
-      return;
-    }
-    const varProblems = problems.length;
-    parsed.options.varFiles.forEach((file2, at) => {
-      const where2 = `stacks[${index}].options.varFiles[${at}]: ${JSON.stringify(file2)}`;
-      if (isAbsolute2(file2)) {
-        problems.push(`${where2} must be relative to the directory of the stack.`);
-        return;
-      }
-      const fromRoot = relative3(root, normalize2(join8(dir, file2)));
-      if (fromRoot === ".." || fromRoot.startsWith(`..${sep3}`) || isAbsolute2(fromRoot)) {
-        problems.push(`${where2} must stay inside the repo.`);
-        return;
-      }
-      if (!isFile3(join8(root, fromRoot)))
-        problems.push(`${where2} is not a file in ${shown}.`);
-    });
-    if (problems.length > varProblems)
-      return;
-    const options = { tool, ...parsed.options };
-    stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
-      options: { ...options }
-    });
-  });
-  if (optionProblems.length === 0 && problems.length > 0)
-    throw new DiscoveryError(problems);
-  return { stacks, optionProblems };
-}
-function filesIn2(dir) {
-  try {
-    return readdirSync4(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
-  } catch {
-    return;
-  }
-}
-function isFile3(path) {
-  try {
-    return statSync3(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-// src/adapters/opentofu/root-modules.ts
-import { readdirSync as readdirSync5, readFileSync as readFileSync7 } from "node:fs";
-import { join as join9, posix as posix3 } from "node:path";
-var ROOT_MODULES = "rootModules";
-var MODULE_FILE2 = /\.(tf|tofu|tf\.json|tofu\.json)$/;
-var TOFU_FILE = /\.tofu(\.json)?$/;
-var LOCK_FILE2 = ".terraform.lock.hcl";
-var TERRAGRUNT_FILE = /^terragrunt(\.stack)?\.hcl(\.json)?$/;
-var AUTO_VAR_FILE2 = /^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/;
-var VAR_FILE = /\.tfvars(\.json)?$/;
-var BACKEND_FILE = /\.tfbackend$/;
-var READS_WORKSPACE = /\b(terraform|tofu)\.workspace\b/;
-var SKIPPED = new Set(["node_modules", "cdktf.out"]);
-var REGISTRIES = {
-  "registry.opentofu.org": OPENTOFU,
-  "registry.terraform.io": TERRAFORM
-};
-var TOOL_WORDS = { opentofu: "OpenTofu", terraform: "Terraform" };
-function findRootModules(root, config2) {
-  return judge(root, config2).flatMap(({ path, tool }) => tool === undefined ? [] : [{ path, options: { tool, varFiles: [] } }]);
-}
-function explainRootModules(root, config2) {
-  return judge(root, config2).map(({ path, tool, declared, because }) => ({
-    path,
-    outcome: tool !== undefined ? "found" : declared ? "declared" : "left-out",
-    ...tool === undefined ? {} : { stackId: path },
-    because
-  }));
-}
-function judge(root, config2) {
-  const repo = readRepo(root);
-  const declared = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== undefined && !declared.has(entry2.path))
-      declared.set(entry2.path, index);
-  });
-  const namedBy = new Map;
-  for (const directory of repo.directories) {
-    for (const source of directory.sources) {
-      const target = localSource2(directory.path, source);
-      if (target !== undefined && target !== directory.path && !namedBy.has(target)) {
-        namedBy.set(target, directory.path);
-      }
-    }
-  }
-  const off = config2.discovery[ROOT_MODULES] === false;
-  return repo.directories.map((directory) => {
-    const { path } = directory;
-    const left = (because) => ({ path, because });
-    const index = declared.get(path);
-    if (index !== undefined) {
-      return { path, declared: true, because: `declared by stacks[${index}], which it keeps` };
-    }
-    if (off)
-      return left(`discovery.${ROOT_MODULES} is false in the config file`);
-    if (repo.terragrunt !== undefined) {
-      return left(`the repo uses Terragrunt (${repo.terragrunt}): its units are declared with wrapper: terragrunt, and the modules they run are not stacks`);
-    }
-    const user = namedBy.get(path);
-    if (user !== undefined)
-      return left(`${user} uses it as a module source`);
-    if (path.split("/").includes("modules"))
-      return left("it sits under a modules directory");
-    const { state } = directory;
-    if (state === undefined) {
-      return left("no backend or cloud block: only a root module chooses where its state lives, and state left on the runner is lost");
-    }
-    if (directory.readsWorkspace !== undefined) {
-      return left(`${directory.readsWorkspace} reads the workspace, so the root runs in workspaces its files do not name: declare one stack per workspace`);
-    }
-    if (state.tags) {
-      return left(`the cloud block in ${state.file} picks its workspaces by tags: declare one stack per workspace`);
-    }
-    const chosen = [
-      ...directory.chosenFiles,
-      ...[...repo.varDirectories].filter(([under]) => posix3.dirname(under) === path).flatMap(([under, files]) => files.map((file2) => posix3.relative(path, `${under}/${file2}`)))
-    ].sort(byCodeUnit6);
-    if (chosen.length > 0) {
-      return left(`${listed2(chosen)} ${chosen.length === 1 ? "is a file" : "are files"} the tool loads only when told to: which one a stack takes is the repo's to say`);
-    }
-    const tools = [...new Set(directory.lockTools)];
-    const tofuFiles = directory.files.some((file2) => TOFU_FILE.test(file2));
-    if (tofuFiles && !tools.includes(OPENTOFU))
-      tools.push(OPENTOFU);
-    const [tool, ...others] = tools.sort();
-    if (tool === undefined || others.length > 0) {
-      return left(tool === undefined ? directory.hasLockFile ? "its lock file names no provider of the OpenTofu or the Terraform registry, and it has no .tofu files, so its files do not say which tool runs it" : "no lock file and no .tofu files, so its files do not say whether OpenTofu or Terraform runs it" : "its files point at both OpenTofu and Terraform, so they do not say which tool runs it");
-    }
-    const where2 = state.label === undefined ? state.kind : `${state.kind} "${state.label}"`;
-    const which2 = tofuFiles && directory.lockTools.length === 0 ? ".tofu files, which only OpenTofu reads" : `a lock file of ${TOOL_WORDS[tool]} providers`;
-    return { path, tool, because: `a ${where2} block in ${state.file}, and ${which2}` };
-  });
-}
-function readRepo(root) {
-  const repo = { directories: [], varDirectories: new Map };
-  const walk3 = (relative4) => {
-    let entries;
-    try {
-      entries = readdirSync5(join9(root, relative4), { withFileTypes: true });
-    } catch {
-      return;
-    }
-    const files = entries.filter((entry2) => entry2.isFile()).map((entry2) => entry2.name).sort(byCodeUnit6);
-    const path = relative4 || ".";
-    const terragrunt = files.find((file2) => TERRAGRUNT_FILE.test(file2));
-    if (terragrunt !== undefined && repo.terragrunt === undefined) {
-      repo.terragrunt = relative4 === "" ? terragrunt : `${relative4}/${terragrunt}`;
-    }
-    const code2 = files.filter((file2) => MODULE_FILE2.test(file2));
-    const chosenFiles = files.filter((file2) => VAR_FILE.test(file2) && !AUTO_VAR_FILE2.test(file2) || BACKEND_FILE.test(file2));
-    if (code2.length > 0) {
-      repo.directories.push(readDirectory2(root, path, files, code2, chosenFiles));
-    } else if (chosenFiles.length > 0) {
-      repo.varDirectories.set(path, chosenFiles);
-    }
-    for (const entry2 of entries) {
-      if (!entry2.isDirectory() || entry2.name.startsWith(".") || SKIPPED.has(entry2.name))
-        continue;
-      walk3(relative4 === "" ? entry2.name : `${relative4}/${entry2.name}`);
-    }
-  };
-  walk3("");
-  repo.directories.sort((a, b) => byCodeUnit6(a.path, b.path));
-  return repo;
-}
-function readDirectory2(root, path, files, code2, chosenFiles) {
-  const directory = {
-    path,
-    files: code2,
-    sources: [],
-    lockTools: [],
-    hasLockFile: files.includes(LOCK_FILE2),
-    chosenFiles
-  };
-  for (const file2 of code2) {
-    const text7 = read3(join9(root, path, file2));
-    const parsed = file2.endsWith(".json") ? readJson2(text7) : readNative(text7);
-    if (parsed.state !== undefined)
-      directory.state ??= { ...parsed.state, file: file2 };
-    if (parsed.readsWorkspace)
-      directory.readsWorkspace ??= file2;
-    directory.sources.push(...parsed.sources);
-  }
-  if (directory.hasLockFile) {
-    const blocks = readHcl(read3(join9(root, path, LOCK_FILE2))).blocks;
-    for (const block of blocks.filter((one) => one.type === "provider")) {
-      const tool = REGISTRIES[block.labels[0]?.split("/")[0] ?? ""];
-      if (tool !== undefined)
-        directory.lockTools.push(tool);
-    }
-  }
-  return directory;
-}
-function readNative(text7) {
-  const { blocks, code: code2 } = readHcl(text7);
-  let state;
-  for (const block of blocks.filter((one) => one.type === "terraform")) {
-    for (const inner of block.blocks) {
-      if (state !== undefined)
-        break;
-      if (inner.type === "backend") {
-        state = { kind: "backend", ...labelOf(inner), tags: false };
-      } else if (inner.type === "cloud") {
-        const tags = inner.blocks.some((one) => one.type === "workspaces" && one.attributes.includes("tags"));
-        state = { kind: "cloud", tags };
-      }
-    }
-  }
-  const sources = blocks.filter((block) => block.type === "module").flatMap((block) => block.strings.source === undefined ? [] : [block.strings.source]);
-  return {
-    ...state === undefined ? {} : { state },
-    readsWorkspace: READS_WORKSPACE.test(code2),
-    sources
-  };
-}
-function labelOf(block) {
-  const [label] = block.labels;
-  return label === undefined ? {} : { label };
-}
-function readJson2(text7) {
-  let parsed;
-  try {
-    parsed = JSON.parse(text7);
-  } catch {
-    return { readsWorkspace: false, sources: [] };
-  }
-  let state;
-  for (const terraform of objects(field(parsed, "terraform"))) {
-    if (state !== undefined)
-      break;
-    const backend = objects(field(terraform, "backend"))[0];
-    const cloud = objects(field(terraform, "cloud"))[0];
-    if (backend !== undefined) {
-      const [label] = Object.keys(backend);
-      state = { kind: "backend", ...label === undefined ? {} : { label }, tags: false };
-    } else if (cloud !== undefined) {
-      const tags = objects(field(cloud, "workspaces")).some((one) => ("tags" in one));
-      state = { kind: "cloud", tags };
-    }
-  }
-  const sources = objects(field(parsed, "module")).flatMap((modules) => Object.values(modules).flatMap((module) => objects(module).flatMap((one) => typeof one.source === "string" ? [one.source] : [])));
-  return {
-    ...state === undefined ? {} : { state },
-    readsWorkspace: READS_WORKSPACE.test(text7),
-    sources
-  };
-}
-function field(value, name) {
-  return isObject2(value) ? value[name] : undefined;
-}
-function objects(value) {
-  if (Array.isArray(value))
-    return value.filter(isObject2);
-  return isObject2(value) ? [value] : [];
-}
-function isObject2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function localSource2(from, source) {
-  if (!source.startsWith("./") && !source.startsWith("../"))
-    return;
-  const joined = posix3.normalize(posix3.join(from, source));
-  const target = joined.replace(/\/+$/, "") || ".";
-  if (target === ".." || target.startsWith("../"))
-    return;
-  return target;
-}
-function listed2(files) {
-  const shown = files.slice(0, 3).join(", ");
-  return files.length > 3 ? `${shown} and ${files.length - 3} more` : shown;
-}
-function read3(file2) {
-  try {
-    return readFileSync7(file2, "utf8");
-  } catch {
-    return "";
-  }
-}
-function byCodeUnit6(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/pulumi/discover.ts
-import { readdir as readdir2, readFile } from "node:fs/promises";
-import { isAbsolute as isAbsolute3, join as join10, relative as relative4, sep as sep4 } from "node:path";
-var PROJECT_FILE = "Pulumi";
-var EXTENSIONS2 = [".json", ".yaml", ".yml"];
-var SKIPPED2 = new Set([".git", "node_modules"]);
-async function discover(root, config2) {
-  const phaseKeys = config2 === undefined ? [] : phaseKeysOf(config2);
-  const stacks = [];
-  const problems = [];
-  const walk3 = async (dir) => {
-    const entries = await readdir2(dir, { withFileTypes: true });
-    const extension = EXTENSIONS2.find((ext) => fileNames(entries).includes(PROJECT_FILE + ext));
-    if (extension !== undefined) {
-      const projectFile = join10(dir, PROJECT_FILE + extension);
-      try {
-        const { stackDir, project } = await readProjectFile(root, projectFile);
-        const files = stackDir === dir ? fileNames(entries) : await fileNamesIn(stackDir);
-        const path = slashed(relative4(root, dir)) || ".";
-        const read4 = keysOf(project, phaseKeys);
-        for (const name of stackNames(files, extension)) {
-          stacks.push({
-            path,
-            name,
-            options: {},
-            ...read4 === undefined ? {} : { phaseKeys: read4 }
-          });
-        }
-      } catch (error63) {
-        if (!(error63 instanceof ProjectFileProblem))
-          throw error63;
-        problems.push(`${slashed(relative4(root, projectFile))}: ${error63.message}`);
-      }
-    }
-    for (const entry2 of entries) {
-      if (entry2.isDirectory() && !SKIPPED2.has(entry2.name))
-        await walk3(join10(dir, entry2.name));
-    }
-  };
-  await walk3(root);
-  if (problems.length > 0)
-    throw new DiscoveryError(problems.sort(compare));
-  return stacks.sort((a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""));
-}
-
-class ProjectFileProblem extends Error {
-}
-async function projectName(root, path) {
-  const dir = join10(root, path);
-  let entries;
-  try {
-    entries = await readdir2(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  const extension = EXTENSIONS2.find((ext) => fileNames(entries).includes(PROJECT_FILE + ext));
-  if (extension === undefined)
-    return;
-  const document = $parseDocument(await readFile(join10(dir, PROJECT_FILE + extension), "utf8"), {
-    uniqueKeys: false
-  });
-  if (document.errors.length > 0)
-    return;
-  const project = document.toJS();
-  if (typeof project !== "object" || project === null || !("name" in project))
-    return;
-  return typeof project.name === "string" ? project.name : undefined;
-}
-function keysOf(project, keys) {
-  if (keys.length === 0 || !isMapping2(project))
-    return;
-  const config2 = isMapping2(project.config) ? project.config : {};
-  const read4 = {};
-  for (const key of keys) {
-    const text7 = configText(config2[key]) ?? project[key];
-    if (typeof text7 === "string")
-      read4[key] = text7;
-  }
-  return Object.keys(read4).length === 0 ? undefined : read4;
-}
-function configText(entry2) {
-  if (typeof entry2 === "string")
-    return entry2;
-  if (!isMapping2(entry2) || entry2.secret === true)
-    return;
-  const text7 = entry2.value ?? entry2.default;
-  return typeof text7 === "string" ? text7 : undefined;
-}
-function isMapping2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-async function readProjectFile(root, projectFile) {
-  const dir = join10(projectFile, "..");
-  const lineCounter2 = new $LineCounter;
-  const document = $parseDocument(await readFile(projectFile, "utf8"), {
-    lineCounter: lineCounter2,
-    prettyErrors: false,
-    uniqueKeys: false
-  });
-  const broken = document.errors[0];
-  if (broken !== undefined) {
-    const { line, col } = lineCounter2.linePos(broken.pos[0]);
-    throw new ProjectFileProblem(`line ${line}, column ${col}: not valid YAML.`);
-  }
-  const project = document.toJS();
-  if (typeof project !== "object" || project === null || !("stackConfigDir" in project))
-    return { stackDir: dir, project };
-  const named = project.stackConfigDir;
-  if (typeof named !== "string") {
-    throw new ProjectFileProblem("stackConfigDir must be text, the directory that holds the stack files.");
-  }
-  const stackDir = join10(dir, named);
-  const fromRoot = relative4(root, stackDir);
-  if (fromRoot === ".." || fromRoot.startsWith(`..${sep4}`) || isAbsolute3(fromRoot)) {
-    throw new ProjectFileProblem(`stackConfigDir points outside the repo (${JSON.stringify(named)}). Sluiceway only reads files inside the repo.`);
-  }
-  return { stackDir, project };
-}
-function stackNames(files, extension) {
-  const prefix = `${PROJECT_FILE}.`;
-  return files.filter((file2) => file2.startsWith(prefix) && file2.endsWith(extension)).map((file2) => file2.slice(prefix.length, -extension.length)).filter((name) => name !== "");
-}
-function fileNames(entries) {
-  return entries.filter((entry2) => !entry2.isDirectory()).map((entry2) => entry2.name);
-}
-async function fileNamesIn(dir) {
-  try {
-    return fileNames(await readdir2(dir, { withFileTypes: true }));
-  } catch (error63) {
-    const code2 = error63.code;
-    if (code2 === "ENOENT" || code2 === "ENOTDIR")
-      return [];
-    throw error63;
-  }
-}
-function slashed(path) {
-  return path.split(sep4).join("/");
-}
-function compare(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/discover-all.ts
-var TOOLS = [OPENTOFU, TERRAFORM, HELM, KUBECTL];
-var DISCOVERY_SWITCHES = [ROOT_MODULES];
-async function discoverAll(root, config2) {
-  const toolProblems = config2.stacks.flatMap((entry2, index) => {
-    if (entry2.tool === undefined)
-      return [];
-    if (!TOOLS.includes(entry2.tool)) {
-      return [
-        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry2.tool)}. Known tools: ${TOOLS.join(", ")}.`
-      ];
-    }
-    return [
-      ...entry2.dependsOn === DEPENDS_ON_AUTO ? [
-        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry2.tool} stack has none. Name the stack ids instead.`
-      ] : [],
-      ...typeof entry2.phase === "object" ? [
-        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry2.tool} stack has none. Name the phase instead.`
-      ] : [],
-      ...entry2.createInBackend !== undefined ? [
-        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry2.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
-      ] : []
-    ];
-  });
-  const switchProblems = Object.keys(config2.discovery).filter((name) => !DISCOVERY_SWITCHES.includes(name)).map((name) => `discovery.${name}: unknown key. Known keys: ${DISCOVERY_SWITCHES.join(", ")}.`);
-  const tofu = tryDiscover(() => discoverOpenTofu(root, config2));
-  const charts = tryDiscover(() => discoverHelm(root, config2));
-  const manifests = tryDiscover(() => discoverKubectl(root, config2));
-  const problems = [
-    ...switchProblems,
-    ...toolProblems,
-    ...tofu.optionProblems,
-    ...charts.optionProblems,
-    ...manifests.optionProblems
-  ];
-  if (problems.length > 0)
-    throw new ConfigError(problems.sort(byEntry));
-  const errors4 = [tofu.error, charts.error, manifests.error].filter((error63) => error63 !== undefined);
-  const other = errors4.find((error63) => !(error63 instanceof DiscoveryError));
-  if (other !== undefined)
-    throw other;
-  if (errors4.length > 0) {
-    throw new DiscoveryError(errors4.flatMap((error63) => error63.problems).sort(byEntry));
-  }
-  const declared = [
-    ...tofu.stacks,
-    ...findRootModules(root, config2),
-    ...charts.stacks,
-    ...manifests.stacks
-  ];
-  const discovered = await discover(root, config2);
-  if (declared.length === 0)
-    return withIds(config2, discovered);
-  return withIds(config2, [...discovered, ...declared].sort((a, b) => compare2(a.path, b.path) || compare2(a.name ?? "", b.name ?? "")));
-}
-function tryDiscover(discover2) {
-  try {
-    return discover2();
-  } catch (error63) {
-    return { stacks: [], optionProblems: [], error: error63 };
-  }
-}
-function byEntry(a, b) {
-  const index = (text7) => Number(/^stacks\[(\d+)\]/.exec(text7)?.[1] ?? 0);
-  return index(a) - index(b);
-}
-function compare2(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/helm/file-references.ts
-import { join as join11, normalize as normalize3 } from "node:path";
-async function readsFiles(_root, stack) {
-  const options = stack.options;
-  const namedIn = "sluiceway.yaml";
-  const chart = options.chartDir === undefined || options.chartDir === "." ? [] : [{ path: options.chartDir, kind: "directory", namedIn }];
-  const values = options.valuesFiles.map((file2) => ({
-    path: normalize3(join11(stack.path, file2)).split("\\").join("/"),
-    kind: "file",
-    namedIn
-  }));
-  return [...chart, ...values];
-}
-
-// src/adapters/pulumi/file-references.ts
-import { readFileSync as readFileSync8, statSync as statSync4 } from "node:fs";
-import { isAbsolute as isAbsolute4, join as join12, normalize as normalize4, relative as relative5, sep as sep5 } from "node:path";
-var EXTENSIONS3 = [".json", ".yaml", ".yml"];
-var PROGRAM_FUNCTIONS = {
-  "fn::readFile": "file",
-  "fn::fileAsset": "file",
-  "fn::fileArchive": "either"
-};
-async function readsFiles2(root, stack) {
-  const found = new Map;
-  const projectDir = join12(root, stack.path);
-  const extension = EXTENSIONS3.find((ext) => isFile4(join12(projectDir, `Pulumi${ext}`)));
-  if (extension === undefined)
-    return [];
-  const projectPath = join12(projectDir, `Pulumi${extension}`);
-  const project = read4(projectPath);
-  if (!isRecord2(project))
-    return [];
-  const keep = (path, from, namedIn, want) => {
-    if (isAbsolute4(path) || path.includes("${"))
-      return;
-    const full = normalize4(join12(from, path));
-    const fromRoot = relative5(root, full);
-    if (fromRoot === "" || fromRoot === ".." || fromRoot.startsWith(`..${sep5}`) || isAbsolute4(fromRoot)) {
-      return;
-    }
-    const kind = kindOf(full);
-    if (kind === undefined)
-      return;
-    if (want === "file" && kind !== "file")
-      return;
-    if (want === "directory" && kind !== "directory")
-      return;
-    const slashed2 = fromRoot.split(sep5).join("/");
-    found.set(`${slashed2}
-${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
-  };
-  if (runtimeName2(project.runtime) === "yaml") {
-    const programDir = typeof project.main === "string" ? join12(projectDir, project.main) : projectDir;
-    const programs = programDir === projectDir ? [projectPath, join12(projectDir, "Main.yaml")] : [join12(programDir, "Main.yaml"), join12(programDir, "Pulumi.yaml")];
-    for (const file2 of programs.filter(isFile4)) {
-      const program = file2 === projectPath ? project : read4(file2);
-      walk3(program, (key, value) => {
-        const want = PROGRAM_FUNCTIONS[key];
-        if (want === undefined || typeof value !== "string")
-          return;
-        keep(value.replaceAll("${pulumi.cwd}", "."), programDir, file2, want);
-      });
-    }
-  }
-  const pathLike = (value) => value.includes("/") || value.startsWith(".");
-  if (isRecord2(project.config)) {
-    for (const declared of Object.values(project.config)) {
-      if (typeof declared === "string" && pathLike(declared)) {
-        keep(declared, projectDir, projectPath, "any");
-      }
-      if (!isRecord2(declared) || declared.secret === true)
-        continue;
-      for (const value of [declared.default, declared.value]) {
-        if (typeof value === "string" && pathLike(value))
-          keep(value, projectDir, projectPath, "any");
-      }
-    }
-  }
-  if (stack.name !== undefined) {
-    const stackDir = typeof project.stackConfigDir === "string" ? join12(projectDir, project.stackConfigDir) : projectDir;
-    const stackPath2 = join12(stackDir, `Pulumi.${stack.name}${extension}`);
-    const stackFile = read4(stackPath2);
-    if (isRecord2(stackFile) && isRecord2(stackFile.config)) {
-      plainStrings(stackFile.config, (value) => {
-        if (pathLike(value))
-          keep(value, projectDir, stackPath2, "any");
-      });
-    }
-  }
-  return [...found.values()].sort((a, b) => compare3(a.path, b.path));
-}
-function runtimeName2(runtime) {
-  return isRecord2(runtime) ? runtime.name : runtime;
-}
-function walk3(value, visit3) {
-  if (Array.isArray(value)) {
-    for (const item of value)
-      walk3(item, visit3);
-  } else if (isRecord2(value)) {
-    for (const [key, inner] of Object.entries(value)) {
-      visit3(key, inner);
-      walk3(inner, visit3);
-    }
-  }
-}
-function plainStrings(value, visit3) {
-  if (typeof value === "string")
-    visit3(value);
-  else if (Array.isArray(value))
-    for (const item of value)
-      plainStrings(item, visit3);
-  else if (isRecord2(value) && !("secure" in value)) {
-    for (const inner of Object.values(value))
-      plainStrings(inner, visit3);
-  }
-}
-function read4(path) {
-  try {
-    return $parse(readFileSync8(path, "utf8"), { uniqueKeys: false });
-  } catch {
-    return;
-  }
-}
-function kindOf(path) {
-  try {
-    const stat2 = statSync4(path);
-    return stat2.isDirectory() ? "directory" : stat2.isFile() ? "file" : undefined;
-  } catch {
-    return;
-  }
-}
-function isFile4(path) {
-  return kindOf(path) === "file";
-}
-function repoPath2(root, path) {
-  return relative5(root, path).split(sep5).join("/");
-}
-function isRecord2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function compare3(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/file-references.ts
-async function readsFiles3(root, stack) {
-  if (isHelmOptions(stack.options))
-    return readsFiles(root, stack);
-  if (isOpenTofuOptions(stack.options) || isKubectlOptions(stack.options))
-    return [];
-  return readsFiles2(root, stack);
-}
-
-// src/adapters/helm/apply.ts
-import { join as join13 } from "node:path";
-
-// src/adapters/tool-run.ts
-async function runTool(runner, spec) {
-  const { timeoutMinutes, exitCodes = {}, ...command } = spec;
-  const result2 = await runner({ ...command, timeoutMs: timeoutMinutes * 60000 });
-  if (result2.status === "not-started") {
-    return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
-  }
-  const { stdout, stderr } = result2;
-  if (result2.status === "timed-out") {
-    return { ok: false, reason: { kind: "timed-out", minutes: timeoutMinutes }, stdout, stderr };
-  }
-  const { exitCode } = result2;
-  if (exitCode !== null && (exitCodes.success ?? [0]).includes(exitCode)) {
-    return {
-      ok: true,
-      exitCode,
-      stdout,
-      stderr,
-      ...result2.outputCutAt === undefined ? {} : { outputCutAt: result2.outputCutAt }
-    };
-  }
-  const own2 = exitCode === null ? undefined : exitCodes.reasons?.[exitCode];
-  return { ok: false, reason: own2 ?? { kind: "tool-error", exitCode }, stdout, stderr };
-}
-async function runDeploy(runner, command) {
-  const result2 = await runner(command);
-  if (result2.status === "not-started") {
-    return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
-  }
-  const { stdout, stderr } = result2;
-  if (result2.status === "exited" && result2.exitCode === 0)
-    return { ok: true, stdout, stderr };
-  const exitCode = result2.status === "exited" ? result2.exitCode : null;
-  return { ok: false, reason: { kind: "tool-error", exitCode }, stdout, stderr };
-}
-var ANSI_ESCAPES = new RegExp([
-  "\\u001b\\[[0-?]*[ -/]*[@-~]",
-  "\\u001b\\][^\\u0007\\u001b]*(?:\\u0007|\\u001b\\\\)",
-  "\\u001b[@-Z\\\\^_]"
-].join("|"), "g");
-function stripAnsi(text7) {
-  return text7.replace(ANSI_ESCAPES, "");
-}
-
-// src/adapters/helm/commands.ts
-var HELM2 = "helm";
-function release(options) {
-  return [
-    options.release,
-    options.chart,
-    `--namespace=${options.namespace}`,
-    ...options.version === undefined ? [] : [`--version=${options.version}`]
-  ];
-}
-function values(options) {
-  return options.valuesFiles.map((file2) => `--values=${file2}`);
-}
-function diffCommand(options) {
-  return [
-    HELM2,
-    "diff",
-    "upgrade",
-    ...release(options),
-    "--install",
-    "--reset-values",
-    "--dry-run=server",
-    "--output=structured",
-    "--no-color",
-    ...values(options)
-  ];
-}
-function renderCommand(options) {
-  return [HELM2, "template", ...release(options), "--dry-run=server", ...values(options)];
-}
-function threeWayDiffCommand(options) {
-  return [
-    HELM2,
-    "diff",
-    "upgrade",
-    ...release(options),
-    "--install",
-    "--reset-values",
-    "--dry-run=server",
-    "--three-way-merge",
-    "--no-hooks",
-    "--output=structured",
-    "--no-color",
-    ...values(options)
-  ];
-}
-function deployCommand(options, flags) {
-  return [
-    HELM2,
-    "upgrade",
-    ...release(options),
-    "--install",
-    "--reset-values",
-    flags.major >= 4 ? "--rollback-on-failure" : "--atomic",
-    ...flags.forceConflicts ? ["--force-conflicts"] : [],
-    ...options.createNamespace ? ["--create-namespace"] : [],
-    "--hide-notes",
-    ...values(options)
-  ];
-}
-function metadataCommand(options) {
-  return [
-    HELM2,
-    "get",
-    "metadata",
-    options.release,
-    `--namespace=${options.namespace}`,
-    "--output=json"
-  ];
-}
-function toolDiffCommand(options) {
-  return [
-    HELM2,
-    "diff",
-    "upgrade",
-    ...release(options),
-    "--install",
-    "--reset-values",
-    "--dry-run=server",
-    "--output=diff",
-    "--no-color",
-    ...values(options)
-  ];
-}
-function dependencyCommand() {
-  return [HELM2, "dependency", "build", "."];
-}
-function versionCommand() {
-  return [HELM2, "version", "--template={{.Version}}"];
-}
-function pluginVersionCommand() {
-  return [HELM2, "diff", "version"];
-}
-
-// src/adapters/environment.ts
-function toolEnvironment(env) {
-  const kept = {};
-  for (const [name, value] of Object.entries(env)) {
-    if (value !== undefined && !name.startsWith("INPUT_"))
-      kept[name] = value;
-  }
-  return kept;
-}
-
-// src/adapters/helm/environment.ts
-function helmEnvironment(env) {
-  return toolEnvironment(env);
-}
-function optionsOf(stack) {
-  return stack.options;
-}
-
-// src/adapters/helm/rendered.ts
-import { createHash } from "node:crypto";
-
-class RenderedManifests {
-  stackId;
-  digest;
-  constructor(stackId2, manifests) {
-    this.stackId = stackId2;
-    this.digest = digestOf(manifests);
-  }
-  matches(manifests) {
-    return digestOf(manifests) === this.digest;
-  }
-  async dispose() {}
-  toJSON() {
-    return { stackId: this.stackId };
-  }
-}
-function digestOf(manifests) {
-  return createHash("sha256").update(manifests).digest("hex");
-}
-
-// src/adapters/adapter.ts
-class ToolVersionError extends Error {
-  toolLog;
-  constructor(message, toolLog = "") {
-    super(message);
-    this.name = "ToolVersionError";
-    this.toolLog = toolLog;
-  }
-}
-
-// src/adapters/helm/version.ts
-var MINIMUM_VERSION = [3, 18, 0];
-var MINIMUM_DIFF_VERSION = [3, 15, 11];
-var NEEDS = `Sluiceway needs helm v${MINIMUM_VERSION.join(".")} or newer`;
-var NEEDS_DIFF = `Sluiceway needs helm-diff v${MINIMUM_DIFF_VERSION.join(".")} or newer`;
-var TIME_LIMIT_MS = 60000;
-var VERSION = /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/;
-async function checkVersion(context, _stacks) {
-  const run = (argv) => context.run({
-    argv,
-    cwd: context.root,
-    env: helmEnvironment(context.env),
-    timeoutMs: TIME_LIMIT_MS
-  });
-  const helm = await run(versionCommand());
-  if (helm.status === "not-started") {
-    throw new ToolVersionError(`Could not start helm. ${NEEDS} on PATH and does not install it. Add a workflow step that installs helm before the step that runs Sluiceway.`);
-  }
-  const found = helm.status === "exited" && helm.exitCode === 0 ? readVersion(helm.stdout) : undefined;
-  if (found === undefined) {
-    throw new ToolVersionError(`"${versionCommand().join(" ")}" did not print a version Sluiceway can read. ${NEEDS}. The job log holds what the tool printed.`, stripAnsi(helm.stdout + helm.stderr));
-  }
-  if (older(found.numbers, MINIMUM_VERSION)) {
-    throw new ToolVersionError(`Found helm ${found.text}. ${NEEDS}. Change the workflow step that installs helm so it installs a newer version.`);
-  }
-  const plugin = await run(pluginVersionCommand());
-  const diff = plugin.status === "exited" && plugin.exitCode === 0 ? readVersion(plugin.stdout) : undefined;
-  if (diff === undefined) {
-    throw new ToolVersionError(`The helm diff plugin did not say which version it is. ${NEEDS_DIFF} and does not install it. Add a workflow step that runs helm plugin install https://github.com/databus23/helm-diff before the step that runs Sluiceway.`, plugin.status === "not-started" ? "" : stripAnsi(plugin.stdout + plugin.stderr));
-  }
-  if (older(diff.numbers, MINIMUM_DIFF_VERSION)) {
-    throw new ToolVersionError(`Found helm-diff ${diff.text}. ${NEEDS_DIFF}. Change the workflow step that installs the plugin so it installs a newer version.`);
-  }
-}
-function readVersion(stdout) {
-  const trimmed = stdout.trim();
-  const found = VERSION.exec(trimmed);
-  if (found === null)
-    return;
-  const text7 = trimmed.startsWith("v") ? trimmed : `v${trimmed}`;
-  return { text: text7, numbers: [Number(found[1]), Number(found[2]), Number(found[3])] };
-}
-function older(numbers, floor) {
-  const difference = floor.map((minimum, index) => (numbers[index] ?? 0) - minimum).find((one) => one !== 0);
-  return difference !== undefined && difference < 0;
-}
-
-// src/adapters/helm/apply.ts
-async function apply(stack, context, plan, options) {
-  if (!(plan instanceof RenderedManifests) || plan.stackId !== stackId(stack)) {
-    throw new Error("A Helm stack deploys only what its fresh preview rendered.");
-  }
-  const helm = optionsOf(stack);
-  const run = (argv) => runDeploy(context.run, {
-    argv,
-    cwd: join13(context.root, stack.path),
-    env: helmEnvironment(context.env)
-  });
-  const failed = (result2, toolLog2) => ({
-    ok: false,
-    reason: result2.ok ? { kind: "tool-error", exitCode: 0 } : result2.reason,
-    toolLog: toolLog2
-  });
-  const rendered = await run(renderCommand(helm));
-  let toolLog = stripAnsi(rendered.stderr);
-  if (!rendered.ok)
-    return failed(rendered, toolLog);
-  if (!plan.matches(rendered.stdout)) {
-    return { ok: false, reason: { kind: "moved" }, toolLog };
-  }
-  const version2 = await run(versionCommand());
-  toolLog += stripAnsi(version2.stderr);
-  const major = version2.ok ? readVersion(version2.stdout)?.numbers[0] : undefined;
-  if (major === undefined) {
-    return failed(version2, toolLog + (version2.ok ? stripAnsi(version2.stdout) : ""));
-  }
-  let forceConflicts = false;
-  if (options?.repairDrift === true && major >= 4) {
-    const metadata = await run(metadataCommand(helm));
-    toolLog += stripAnsi(metadata.stderr);
-    if (!metadata.ok)
-      return failed(metadata, toolLog);
-    forceConflicts = appliedServerSide(metadata.stdout);
-  }
-  const deployed = await run(deployCommand(helm, { major, forceConflicts }));
-  toolLog += stripAnsi(deployed.stdout + deployed.stderr);
-  return deployed.ok ? { ok: true, toolLog } : failed(deployed, toolLog);
-}
-var metadataSchema = exports_external.object({ applyMethod: exports_external.string().optional() });
-function appliedServerSide(stdout) {
-  try {
-    return metadataSchema.safeParse(JSON.parse(stdout)).data?.applyMethod === "ssa";
-  } catch {
-    return false;
-  }
-}
-
-// src/adapters/helm/drift.ts
-import { join as join14 } from "node:path";
-
-// src/core/value-fingerprint.ts
-import { createHash as createHash2 } from "node:crypto";
-var SECRET_MARK = Symbol("sluiceway:secret");
-function byCodeUnit7(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-function canonicalJson(value) {
-  if (Array.isArray(value))
-    return `[${value.map(canonicalJson).join(",")}]`;
-  if (typeof value === "object" && value !== null) {
-    const members2 = Object.keys(value).sort(byCodeUnit7).flatMap((key) => {
-      const member = value[key];
-      return member === undefined ? [] : [`${JSON.stringify(key)}:${canonicalJson(member)}`];
-    });
-    return `{${members2.join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
-function isAbsent(value) {
-  return value === undefined || value === null;
-}
-function hiddenDocument(values2) {
-  const entries = values2.flatMap((value) => {
-    if ("secret" in value)
-      return [{ path: value.path, text: canonicalJson({ path: value.path, secret: true }) }];
-    const old = isAbsent(value.old) ? {} : { old: value.old };
-    const next = isAbsent(value.new) ? {} : { new: value.new };
-    if (isAbsent(value.old) && isAbsent(value.new))
-      return [];
-    return [{ path: value.path, text: canonicalJson({ path: value.path, ...old, ...next }) }];
-  });
-  entries.sort((a, b) => byCodeUnit7(a.path, b.path) || byCodeUnit7(a.text, b.text));
-  return `[${entries.map((entry2) => entry2.text).join(",")}]`;
-}
-function first16(text7) {
-  return createHash2("sha256").update(text7, "utf8").digest("hex").slice(0, 16);
-}
-function changeFingerprint(values2) {
-  const document = hiddenDocument(values2);
-  return document === "[]" ? undefined : first16(document);
-}
-function segment(key, top) {
-  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
-    return top ? key : `.${key}`;
-  return `["${key.replaceAll('"', "\\\"")}"]`;
-}
-function isContainer(node2) {
-  return typeof node2 === "object" && node2 !== null;
-}
-function keysOf2(node2) {
-  if (Array.isArray(node2))
-    return node2.map((_, index) => index);
-  if (isContainer(node2))
-    return Object.keys(node2);
-  return [];
-}
-function childOf(node2, key) {
-  if (typeof key === "number")
-    return Array.isArray(node2) ? node2[key] : undefined;
-  return isContainer(node2) && !Array.isArray(node2) ? node2[key] : undefined;
-}
-function differingLeaves(before, after, options = {}) {
-  const found = [];
-  const secret = (node2) => node2 === SECRET_MARK || (options.isSecret?.(node2) ?? false);
-  const walk4 = (old, next, path) => {
-    if (secret(old) || secret(next)) {
-      found.push({ path, secret: true });
-      return;
-    }
-    const oldIn = isContainer(old);
-    const nextIn = isContainer(next);
-    if (oldIn || nextIn) {
-      if (!oldIn && !isAbsent(old))
-        found.push({ path, old });
-      if (!nextIn && !isAbsent(next))
-        found.push({ path, new: next });
-      const keys = new Map;
-      for (const key of [
-        ...keysOf2(oldIn ? old : undefined),
-        ...keysOf2(nextIn ? next : undefined)
-      ]) {
-        keys.set(typeof key === "number" ? `[${key}]` : segment(key, path === ""), key);
-      }
-      for (const [written, key] of keys) {
-        walk4(childOf(oldIn ? old : undefined, key), childOf(nextIn ? next : undefined, key), path + written);
-      }
-      return;
-    }
-    if (isAbsent(old) && isAbsent(next))
-      return;
-    if (old === next)
-      return;
-    found.push({
-      path,
-      ...isAbsent(old) ? {} : { old },
-      ...isAbsent(next) ? {} : { new: next }
-    });
-  };
-  walk4(before, after, options.prefix ?? "");
-  return found;
-}
-function valueFingerprint(diff) {
-  const list = (changes2) => (changes2 ?? []).flatMap((change) => change.fingerprint === undefined ? [] : [{ address: change.address, fingerprint: change.fingerprint }]).sort((a, b) => byCodeUnit7(a.address, b.address) || byCodeUnit7(a.fingerprint, b.fingerprint)).map((entry2) => canonicalJson(entry2));
-  const changes = list(diff.changes);
-  const drift = list(diff.drift);
-  if (changes.length === 0 && drift.length === 0)
-    return;
-  const driftText = drift.length === 0 ? "" : `"drift":[${drift.join(",")}],`;
-  return first16(`{"changes":[${changes.join(",")}],${driftText}"stackId":${JSON.stringify(diff.stackId)}}`);
-}
-function differsEveryRun(approved, fresh, sameCommit) {
-  return sameCommit && approved.hash === fresh.hash && approved.fingerprint !== undefined && fresh.fingerprint !== undefined && approved.fingerprint !== fresh.fingerprint;
-}
-
-// src/adapters/opentofu/paths.ts
-function changedPaths(sides, showValues) {
-  const paths = [];
-  const values2 = [];
-  const changed = (path, value) => {
-    if (path === "")
-      return;
-    paths.push(path);
-    if (value === undefined || !isListedPath(showValues, path))
-      return;
-    const old = shown(value.old);
-    const next = shown(value.new);
-    if (old === "refused" || next === "refused")
-      return;
-    if (old === undefined && next === undefined)
-      return;
-    values2.push({
-      path,
-      ...old === undefined ? {} : { old },
-      ...next === undefined ? {} : { new: next }
-    });
-  };
-  const walk4 = (before, after, unknown2, beforeSensitive, afterSensitive, path) => {
-    if (beforeSensitive === true || afterSensitive === true) {
-      if (!equal(before, after) || holdsUnknown(unknown2))
-        changed(path);
-      return;
-    }
-    if (unknown2 === true) {
-      changed(path);
-      return;
-    }
-    if (isObject3(before) && isObject3(after)) {
-      const keys = new Set([
-        ...Object.keys(before),
-        ...Object.keys(after),
-        ...isObject3(unknown2) ? Object.keys(unknown2) : []
-      ]);
-      for (const key of keys) {
-        walk4(before[key], after[key], child(unknown2, key), child(beforeSensitive, key), child(afterSensitive, key), path + segment2(key, path === ""));
-      }
-      return;
-    }
-    if (Array.isArray(before) && Array.isArray(after)) {
-      const length = Math.max(before.length, after.length, arrayLength(unknown2));
-      for (let index = 0;index < length; index++) {
-        walk4(before[index], after[index], child(unknown2, index), child(beforeSensitive, index), child(afterSensitive, index), `${path}[${index}]`);
-      }
-      return;
-    }
-    if (holdsUnknown(unknown2) || !equal(before, after)) {
-      changed(path, holdsUnknown(unknown2) ? undefined : { old: before, new: after });
-    }
-  };
-  walk4(sides.before, sides.after, sides.afterUnknown, sides.beforeSensitive, sides.afterSensitive, "");
-  return { paths, values: values2 };
-}
-function maskSensitive(value, sensitive) {
-  if (sensitive === true)
-    return SECRET_MARK;
-  if (Array.isArray(value)) {
-    return value.map((item, index) => maskSensitive(item, child(sensitive, index)));
-  }
-  if (isObject3(value)) {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskSensitive(item, child(sensitive, key))]));
-  }
-  return value;
-}
-function hiddenFingerprint(sides, shown) {
-  const leaves = differingLeaves(maskSensitive(sides.before, sides.beforeSensitive), maskSensitive(sides.after, sides.afterSensitive));
-  return changeFingerprint(leaves.filter((leaf) => !shown.includes(leaf.path)));
-}
-function replacePath(steps, beforeSensitive, afterSensitive) {
-  let path = "";
-  let before = beforeSensitive;
-  let after = afterSensitive;
-  for (const step of steps) {
-    path += typeof step === "number" ? `[${step}]` : segment2(step, path === "");
-    before = child(before, step);
-    after = child(after, step);
-    if (before === true || after === true)
-      break;
-  }
-  return path;
-}
-function segment2(key, top) {
-  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
-    return top ? key : `.${key}`;
-  return `["${key.replaceAll('"', "\\\"")}"]`;
-}
-function child(node2, key) {
-  if (typeof key === "number")
-    return Array.isArray(node2) ? node2[key] : undefined;
-  return isObject3(node2) ? node2[key] : undefined;
-}
-function arrayLength(node2) {
-  return Array.isArray(node2) ? node2.length : 0;
-}
-function holdsUnknown(node2) {
-  if (node2 === true)
-    return true;
-  if (Array.isArray(node2))
-    return node2.some(holdsUnknown);
-  if (isObject3(node2))
-    return Object.values(node2).some(holdsUnknown);
-  return false;
-}
-function isObject3(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-function equal(a, b) {
-  if (a === undefined || a === null)
-    return b === undefined || b === null;
-  if (Array.isArray(a)) {
-    return Array.isArray(b) && a.length === b.length && a.every((item, index) => equal(item, b[index]));
-  }
-  if (isObject3(a)) {
-    if (!isObject3(b))
-      return false;
-    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-    return [...keys].every((key) => equal(a[key], b[key]));
-  }
-  return a === b;
-}
-function shown(value) {
-  if (value === undefined || value === null)
-    return;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
-  if (typeof value !== "string")
-    return "refused";
-  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
-    return "refused";
-  return shortValue(value);
-}
-
-// src/adapters/helm/fold.ts
-var OPS = {
-  ADD: "create",
-  MODIFY: "update",
-  REMOVE: "delete"
-};
-function foldEntries(entries, namespace, showValues, fingerprint = false) {
-  const changes = [];
-  const unknown2 = [];
-  const unreadable = [];
-  const firstAt = new Map;
-  entries.forEach((entry2, index) => {
-    const at = `The tool's output, at [${index}]`;
-    const op = Object.hasOwn(OPS, entry2.changeType) ? OPS[entry2.changeType] : undefined;
-    if (op === undefined) {
-      unknown2.push(`${at}.changeType: expected ADD, MODIFY or REMOVE.`);
-      return;
-    }
-    if (entry2.changesSuppressed === true) {
-      unreadable.push(`${at}.changesSuppressed: expected every change to be shown.`);
-      return;
-    }
-    const type = typeOf(entry2);
-    const where2 = entry2.namespace ?? "";
-    const address = addressOf(entry2);
-    const earlier = firstAt.get(address);
-    if (earlier !== undefined) {
-      unreadable.push(`${at}: expected an object that no earlier entry has, and [${earlier}] has it.`);
-      return;
-    }
-    firstAt.set(address, index);
-    const found = op === "update" ? keys(entry2, showValues, fingerprint) : { changedKeys: [] };
-    if (found === undefined) {
-      unreadable.push(`${at}.changes: expected the paths that change on a MODIFY.`);
-      return;
-    }
-    changes.push({
-      address,
-      type,
-      name: where2 === "" || where2 === namespace ? entry2.name : `${where2}/${entry2.name}`,
-      op,
-      replaceKeys: [],
-      ...found
-    });
-  });
-  if (unreadable.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: unreadable };
-  if (unknown2.length > 0)
-    return { ok: false, reason: "unknown-step", detail: unknown2 };
-  changes.sort((a, b) => byCodeUnit8(a.address, b.address));
-  return { ok: true, changes };
-}
-function addressOf(entry2) {
-  return `${typeOf(entry2)}/${entry2.namespace ?? ""}/${entry2.name}`;
-}
-function typeOf(entry2) {
-  const slash = entry2.apiVersion.lastIndexOf("/");
-  return slash < 0 ? entry2.kind : `${entry2.kind}.${entry2.apiVersion.slice(0, slash)}`;
-}
-function keys(entry2, showValues, fingerprint) {
-  const found = entry2.changes ?? [];
-  if (found.length === 0)
-    return;
-  const secret = entry2.kind === "Secret" && !entry2.apiVersion.includes("/");
-  const values2 = [];
-  const paths = found.map((change) => {
-    const path = propertyPath(change);
-    if (!secret && isListedPath(showValues, path)) {
-      const value = shownValue(path, change);
-      if (value !== undefined)
-        values2.push(value);
-    }
-    return path;
-  });
-  const changedKeys = [...new Set(paths.filter((path) => path !== ""))].sort(byCodeUnit8);
-  const shown2 = values2.filter((value, index) => values2.findIndex((one) => one.path === value.path) === index).sort((a, b) => byCodeUnit8(a.path, b.path));
-  const shownPaths = new Set(shown2.map((value) => value.path));
-  const hidden = found.flatMap((change) => {
-    const path = propertyPath(change);
-    if (path === "" || shownPaths.has(path))
-      return [];
-    if (secret)
-      return [{ path, secret: true }];
-    return [{ path, old: change.oldValue, new: change.newValue }];
-  });
-  const hiddenFingerprint2 = fingerprint ? changeFingerprint(hidden) : undefined;
-  return {
-    changedKeys,
-    ...shown2.length === 0 ? {} : { values: shown2 },
-    ...hiddenFingerprint2 === undefined ? {} : { fingerprint: hiddenFingerprint2 }
-  };
-}
-function propertyPath(change) {
-  let path = "";
-  for (const part of (change.path ?? "").split(".")) {
-    if (part === "")
-      continue;
-    const [, name = "", indexes = ""] = /^(.*?)((?:\[\d+\])*)$/.exec(part) ?? [];
-    if (name !== "")
-      path += segment2(name, path === "");
-    path += indexes;
-  }
-  const { field: field2 } = change;
-  return path + (/^\d+$/.test(field2) ? `[${field2}]` : segment2(field2, path === ""));
-}
-function shownValue(path, change) {
-  const old = shown2(change.oldValue);
-  const next = shown2(change.newValue);
-  if (old === "refused" || next === "refused")
-    return;
-  if (old === undefined && next === undefined)
-    return;
-  return {
-    path,
-    ...old === undefined ? {} : { old },
-    ...next === undefined ? {} : { new: next }
-  };
-}
-function shown2(value) {
-  if (value === undefined || value === null)
-    return;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
-  if (typeof value !== "string")
-    return "refused";
-  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
-    return "refused";
-  return shortValue(value);
-}
-function byCodeUnit8(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/opentofu/schema.ts
-var formatVersion = exports_external.string().regex(/^1\.\d+$/);
-var change = exports_external.object({
-  actions: exports_external.array(exports_external.string()),
-  before: exports_external.unknown().optional(),
-  after: exports_external.unknown().optional(),
-  after_unknown: exports_external.unknown().optional(),
-  before_sensitive: exports_external.unknown().optional(),
-  after_sensitive: exports_external.unknown().optional(),
-  replace_paths: exports_external.array(exports_external.array(exports_external.union([exports_external.string(), exports_external.number()]))).optional(),
-  importing: exports_external.unknown().optional().transform((importing) => importing != null)
-});
-var resourceChange = exports_external.object({
-  address: exports_external.string().min(1),
-  previous_address: exports_external.string().min(1).optional(),
-  module_address: exports_external.string().min(1).optional(),
-  mode: exports_external.string(),
-  type: exports_external.string().min(1),
-  name: exports_external.string().min(1),
-  deposed: exports_external.string().min(1).optional(),
-  change
-});
-var planDocument = exports_external.object({
-  format_version: formatVersion,
-  errored: exports_external.literal(false).optional(),
-  complete: exports_external.literal(true).optional(),
-  resource_changes: exports_external.array(resourceChange).default([])
-});
-function parsePlan(stdout) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
-  }
-  const parsed = planDocument.safeParse(json2);
-  if (!parsed.success)
-    return { ok: false, problems: parsed.error.issues.map(problem) };
-  return { ok: true, changes: parsed.data.resource_changes };
-}
-var EXPECTED2 = {
-  string: "text",
-  array: "a list",
-  object: "an object",
-  boolean: "true or false"
-};
-function problem(issue3) {
-  const at = place(issue3.path);
-  if (at === "format_version") {
-    return `The tool's output, at format_version: expected a plan format version 1.x, which Sluiceway reads.`;
-  }
-  if (at === "errored")
-    return "The tool's output, at errored: expected a plan that did not fail.";
-  if (at === "complete") {
-    return "The tool's output, at complete: expected a plan that holds every change, not one with changes left for later.";
-  }
-  const expected = issue3.code === "invalid_type" ? EXPECTED2[issue3.expected] : undefined;
-  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
-}
-function place(path) {
-  if (path.length === 0)
-    return "the top";
-  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
-}
-
-// src/adapters/helm/schema.ts
-var change2 = exports_external.object({
-  path: exports_external.string().optional(),
-  field: exports_external.string(),
-  oldValue: exports_external.unknown().optional(),
-  newValue: exports_external.unknown().optional()
-});
-var entry2 = exports_external.object({
-  apiVersion: exports_external.string().min(1),
-  kind: exports_external.string().min(1),
-  namespace: exports_external.string().optional(),
-  name: exports_external.string().min(1),
-  changeType: exports_external.string(),
-  changes: exports_external.array(change2).optional(),
-  changesSuppressed: exports_external.boolean().optional()
-});
-function parseEntries(stdout) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
-  }
-  const parsed = exports_external.array(entry2).safeParse(json2);
-  if (!parsed.success)
-    return { ok: false, problems: parsed.error.issues.map(problem2) };
-  return { ok: true, entries: parsed.data };
-}
-var EXPECTED3 = {
-  string: "text",
-  array: "a list",
-  object: "an object",
-  boolean: "true or false"
-};
-function problem2(issue3) {
-  const at = place(issue3.path);
-  const expected = issue3.code === "invalid_type" ? EXPECTED3[issue3.expected] : issue3.code === "too_small" ? "text" : undefined;
-  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
-}
-
-// src/adapters/helm/drift.ts
-async function detectDrift(stack, options) {
-  const helm = optionsOf(stack);
-  const run = (argv) => runTool(options.run, {
-    argv,
-    cwd: join14(options.root, stack.path),
-    env: helmEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes
-  });
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const outputs = [];
-  let words = "";
-  for (const argv of [diffCommand(helm), threeWayDiffCommand(helm)]) {
-    const result2 = await run(argv);
-    words += stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return failed(result2.reason, words);
-    outputs.push(result2.stdout);
-  }
-  const [plain, threeWay] = outputs.map(parseEntries);
-  for (const parsed of [plain, threeWay]) {
-    if (parsed !== undefined && !parsed.ok) {
-      return failed({ kind: "unreadable-output" }, words, parsed.problems);
-    }
-  }
-  if (!plain?.ok || !threeWay?.ok)
-    return failed({ kind: "unreadable-output" }, words);
-  const found = driftOf(plain.entries, threeWay.entries, helm.namespace);
-  if (!found.ok)
-    return failed({ kind: found.reason }, words, found.detail);
-  return { ok: true, drift: found.changes, toolLog: words };
-}
-function driftOf(plain, threeWay, namespace) {
-  const code2 = foldEntries(plain, namespace, []);
-  if (!code2.ok)
-    return code2;
-  const live = foldEntries(threeWay, namespace, []);
-  if (!live.ok)
-    return live;
-  const byAddress = new Map(code2.changes.map((change3) => [change3.address, change3]));
-  const at = new Map(threeWay.map((entry3, index) => [addressOf(entry3), index]));
-  const drift = [];
-  const unreadable = [];
-  for (const change3 of live.changes) {
-    const known = byAddress.get(change3.address);
-    if (change3.op === "delete") {
-      if (known?.op !== "delete") {
-        unreadable.push(`The tool's output of the three-way diff, at [${at.get(change3.address)}].changeType: expected a removal the plain diff has too.`);
-      }
-    } else if (change3.op === "create") {
-      if (known?.op !== "create")
-        drift.push({ ...change3, op: "delete", changedKeys: [] });
-    } else {
-      const code3 = new Set(known?.changedKeys ?? []);
-      const changedKeys = change3.changedKeys.filter((path) => !code3.has(path));
-      if (changedKeys.length > 0)
-        drift.push({ ...change3, changedKeys });
-    }
-  }
-  if (unreadable.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: unreadable };
-  return { ok: true, changes: drift };
-}
-
-// src/adapters/helm/prepare.ts
-import { join as join15 } from "node:path";
-function prepare(stacks) {
-  const byChart = new Map;
-  for (const stack of stacks) {
-    for (const { chart, level } of optionsOf(stack).builds) {
-      const found = byChart.get(chart) ?? { level, stacks: [] };
-      found.stacks.push(stack);
-      byChart.set(chart, found);
-    }
-  }
-  return [...byChart].sort(([a, one], [b, other]) => one.level - other.level || (a < b ? -1 : a > b ? 1 : 0)).map(([chartDir, { stacks: grouped }]) => ({
-    title: chartDir,
-    stacks: grouped,
-    run: async (context) => {
-      const result2 = await runTool(context.run, {
-        argv: dependencyCommand(),
-        cwd: join15(context.root, chartDir),
-        env: helmEnvironment(context.env),
-        timeoutMinutes: context.timeoutMinutes
-      });
-      const toolLog = stripAnsi(result2.stdout + result2.stderr);
-      return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
-    }
-  }));
-}
-
-// src/adapters/helm/preview.ts
-import { join as join16 } from "node:path";
-async function preview(stack, options) {
-  const helm = optionsOf(stack);
-  const run = (argv) => runTool(options.run, {
-    argv,
-    cwd: join16(options.root, stack.path),
-    env: helmEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes
-  });
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const diffed = await run(diffCommand(helm));
-  const words = stripAnsi(diffed.stderr);
-  if (!diffed.ok)
-    return failed(diffed.reason, words);
-  const parsed = parseEntries(diffed.stdout);
-  if (!parsed.ok)
-    return failed({ kind: "unreadable-output" }, words, parsed.problems);
-  const folded = foldEntries(parsed.entries, helm.namespace, options.showValues ?? [], options.valueFingerprint === true);
-  if (!folded.ok)
-    return failed({ kind: folded.reason }, words, folded.detail);
-  const diff = { stackId: stackId(stack), changes: folded.changes };
-  if (!options.savePlan && !options.keepDocument)
-    return { ok: true, diff, toolLog: words };
-  const rendered = await run(renderCommand(helm));
-  const log = words + stripAnsi(rendered.stderr);
-  if (!rendered.ok)
-    return failed(rendered.reason, log);
-  return {
-    ok: true,
-    diff,
-    ...options.savePlan ? { plan: new RenderedManifests(stackId(stack), rendered.stdout) } : {},
-    ...options.keepDocument ? { document: { text: rendered.stdout, format: "yaml" } } : {},
-    toolLog: log
-  };
-}
-
-// src/adapters/helm/tool-diff.ts
-import { join as join17 } from "node:path";
-async function toolDiff(stack, options) {
-  const result2 = await runTool(options.run, {
-    argv: toolDiffCommand(optionsOf(stack)),
-    cwd: join17(options.root, stack.path),
-    env: helmEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes
-  });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
-  }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
-}
-
-// src/adapters/helm/index.ts
-var helm = {
-  async discover(root, config2) {
-    const { stacks, optionProblems } = discoverHelm(root, config2);
-    if (optionProblems.length > 0)
-      throw new ConfigError(optionProblems);
-    return stacks;
-  },
-  checkVersion,
-  prepare,
-  preview,
-  toolDiff,
-  detectDrift,
-  apply
-};
-
-// src/adapters/kubectl/apply.ts
-import { join as join19 } from "node:path";
-
-// src/adapters/kubectl/commands.ts
-var KUBECTL_COMMAND = "kubectl";
-function target(options) {
-  return [
-    ...options.context === undefined ? [] : [`--context=${options.context}`],
-    ...options.namespace === undefined ? [] : [`--namespace=${options.namespace}`]
-  ];
-}
-function kustomizeCommand() {
-  return [KUBECTL_COMMAND, "kustomize", "."];
-}
-function applier(options) {
-  return [
-    ...options.forceConflicts === true ? ["--force-conflicts"] : [],
-    ...options.fieldManager === undefined ? [] : [`--field-manager=${options.fieldManager}`]
-  ];
-}
-var DIFF_EXIT_CODES = { success: [0, 1] };
-function diffCommand2(file2, options, extra = {}) {
-  return [
-    KUBECTL_COMMAND,
-    "diff",
-    "--server-side",
-    ...target(options),
-    ...applier(options),
-    ...extra.managedFields === true ? ["--show-managed-fields"] : [],
-    "-f",
-    file2
-  ];
-}
-function applyCommand(file2, options) {
-  return [
-    KUBECTL_COMMAND,
-    "apply",
-    "--server-side",
-    ...target(options),
-    ...applier(options),
-    "-f",
-    file2
-  ];
-}
-function inventoryCommand(name, options) {
-  return [
-    KUBECTL_COMMAND,
-    "get",
-    "configmap",
-    name,
-    ...target(options),
-    "--ignore-not-found",
-    "--output=json"
-  ];
-}
-function liveCommand(file2, options) {
-  return [
-    KUBECTL_COMMAND,
-    "get",
-    ...target(options),
-    "--ignore-not-found",
-    "--show-managed-fields",
-    "--output=json",
-    "-f",
-    file2
-  ];
-}
-function deleteCommand(file2, options) {
-  return [KUBECTL_COMMAND, "delete", ...target(options), "--ignore-not-found", "-f", file2];
-}
-function versionCommand2() {
-  return [KUBECTL_COMMAND, "version", "--client", "--output=json"];
-}
-var PREVIEW_DIFF = "diff -N -U1000000";
-
-// src/adapters/kubectl/environment.ts
-function kubectlEnvironment(env, extra = {}) {
-  return { ...toolEnvironment(env), ...extra };
-}
-function optionsOf2(stack) {
-  return stack.options;
-}
-
-// src/adapters/kubectl/rendered-set.ts
-import { createHash as createHash4 } from "node:crypto";
-import { mkdtemp, readFile as readFile2, rm as rm2, writeFile as writeFile2 } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join as join18 } from "node:path";
-
-// src/adapters/kubectl/inventory.ts
-import { createHash as createHash3 } from "node:crypto";
-function inventoryName(stackId2, repository = "") {
-  const digest = createHash3("sha256").update(`${repository}
-${stackId2}`, "utf8").digest("hex");
-  return `sluiceway-${digest.slice(0, 16)}`;
-}
-function objectsOf(text7) {
-  const objects2 = [];
-  for (const document of $parseAllDocuments(text7)) {
-    if ("errors" in document && document.errors.length > 0)
-      continue;
-    const node2 = document.toJS();
-    const items2 = isObject4(node2) && node2.kind === "List" && Array.isArray(node2.items);
-    for (const item of items2 ? node2.items : [node2]) {
-      const object2 = listed3(item);
-      if (object2 !== undefined && !objects2.some((known) => sameObject(known, object2))) {
-        objects2.push(object2);
-      }
-    }
-  }
-  return objects2;
-}
-function listed3(node2) {
-  if (!isObject4(node2) || !isObject4(node2.metadata))
-    return;
-  const { apiVersion, kind } = node2;
-  const { name, namespace } = node2.metadata;
-  if (typeof apiVersion !== "string" || typeof kind !== "string")
-    return;
-  if (typeof name !== "string" || name === "")
-    return;
-  return {
-    apiVersion,
-    kind,
-    ...typeof namespace === "string" && namespace !== "" ? { namespace } : {},
-    name
-  };
-}
-function inventoryManifest(name, stackId2, objects2) {
-  const lines = [...new Set(objects2.map((object2) => JSON.stringify(listedLine(object2))))].sort(byCodeUnit9);
-  return [
-    "apiVersion: v1",
-    "kind: ConfigMap",
-    "metadata:",
-    `  name: ${name}`,
-    "  labels:",
-    "    app.kubernetes.io/managed-by: sluiceway",
-    "  annotations:",
-    `    sluiceway.dev/stack: ${JSON.stringify(stackId2)}`,
-    "data:",
-    ...lines.length === 0 ? ['  objects: ""'] : ["  objects: |", ...lines.map((l) => `    ${l}`)],
-    ""
-  ].join(`
-`);
-}
-function readInventory(stdout) {
-  if (stdout.trim() === "")
-    return { ok: true, objects: [] };
-  const at = "The stack's inventory";
-  let printed;
-  try {
-    printed = JSON.parse(stdout);
-  } catch {
-    return { ok: false, problems: [`${at}: expected the ConfigMap as JSON.`] };
-  }
-  const data = isObject4(printed) && isObject4(printed.data) ? printed.data : undefined;
-  const text7 = typeof data?.objects === "string" ? data.objects : undefined;
-  if (text7 === undefined)
-    return { ok: false, problems: [`${at}: expected a list of objects.`] };
-  const objects2 = [];
-  for (const [index, line] of text7.split(`
-`).entries()) {
-    if (line.trim() === "")
-      continue;
-    let object2;
-    try {
-      object2 = listedLine(JSON.parse(line));
-    } catch {
-      object2 = undefined;
-    }
-    if (object2 === undefined) {
-      return {
-        ok: false,
-        problems: [`${at}, at line ${index + 1}: expected an object Sluiceway listed.`]
-      };
-    }
-    objects2.push(object2);
-  }
-  return { ok: true, objects: objects2 };
-}
-function listedLine(node2) {
-  if (!isObject4(node2))
-    return;
-  const { apiVersion, kind, namespace, name } = node2;
-  if (typeof apiVersion !== "string" || typeof kind !== "string")
-    return;
-  if (typeof name !== "string" || name === "")
-    return;
-  if (namespace !== undefined && typeof namespace !== "string")
-    return;
-  return listed3({ apiVersion, kind, metadata: { name, namespace } });
-}
-function sameObject(a, b) {
-  return groupOf(a.apiVersion) === groupOf(b.apiVersion) && a.kind === b.kind && a.namespace === b.namespace && a.name === b.name;
-}
-function lists(listing, object2) {
-  return groupOf(listing.apiVersion) === groupOf(object2.apiVersion) && listing.kind === object2.kind && listing.name === object2.name && (listing.namespace === undefined || listing.namespace === object2.namespace);
-}
-function pruneCandidates(inventory, set2) {
-  return inventory.filter((object2) => !set2.some((kept) => sameObject(kept, object2)));
-}
-function stubs(objects2) {
-  return objects2.map((object2) => [
-    `apiVersion: ${JSON.stringify(object2.apiVersion)}`,
-    `kind: ${JSON.stringify(object2.kind)}`,
-    "metadata:",
-    `  name: ${JSON.stringify(object2.name)}`,
-    ...object2.namespace === undefined ? [] : [`  namespace: ${JSON.stringify(object2.namespace)}`],
-    ""
-  ].join(`
-`)).join(`---
-`);
-}
-function readLive(stdout) {
-  if (stdout.trim() === "")
-    return { ok: true, objects: [] };
-  let printed;
-  try {
-    printed = JSON.parse(stdout);
-  } catch {
-    printed = undefined;
-  }
-  if (!isObject4(printed)) {
-    return {
-      ok: false,
-      problems: ["The live objects: expected one object or a List, as JSON."]
-    };
-  }
-  if (printed.kind !== "List")
-    return { ok: true, objects: [printed] };
-  const items2 = Array.isArray(printed.items) ? printed.items : [];
-  return { ok: true, objects: items2.filter(isObject4) };
-}
-function appliedBy(object2, manager) {
-  const metadata = isObject4(object2.metadata) ? object2.metadata : {};
-  const entries = Array.isArray(metadata.managedFields) ? metadata.managedFields : [];
-  return entries.some((entry3) => isObject4(entry3) && entry3.manager === manager && entry3.operation === "Apply");
-}
-function groupOf(apiVersion) {
-  const slash = apiVersion.indexOf("/");
-  return slash < 0 ? "" : apiVersion.slice(0, slash);
-}
-function isObject4(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-function byCodeUnit9(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-function withInventory(text7, name, stackId2, pruned) {
-  const manifests = text7 === "" || text7.endsWith(`
-`) ? text7 : `${text7}
-`;
-  return `${manifests}---
-${inventoryManifest(name, stackId2, [...objectsOf(text7), ...pruned])}`;
-}
-
-// src/adapters/kubectl/ownership.ts
-function ownedPaths(object2, fields) {
-  const paths = [];
-  const walk4 = (node2, set2, path) => {
-    if (!isObject5(set2))
-      return;
-    for (const [key, below] of Object.entries(set2)) {
-      if (key === ".") {
-        if (path !== "")
-          paths.push(path);
-        continue;
-      }
-      const step = stepOf(node2, key, path);
-      if (step === undefined)
-        continue;
-      if (isObject5(below) && Object.keys(below).length === 0)
-        paths.push(step.path);
-      else
-        walk4(step.node, below, step.path);
-    }
-  };
-  walk4(object2, fields, "");
-  return paths;
-}
-function stepOf(node2, key, path) {
-  const colon = key.indexOf(":");
-  const kind = key.slice(0, colon);
-  const rest = key.slice(colon + 1);
-  if (kind === "f") {
-    return {
-      node: isObject5(node2) ? node2[rest] : undefined,
-      path: path + segment2(rest, path === "")
-    };
-  }
-  if (!Array.isArray(node2))
-    return;
-  let index = -1;
-  if (kind === "i")
-    index = Number(rest);
-  else {
-    let wanted;
-    try {
-      wanted = JSON.parse(rest);
-    } catch {
-      return;
-    }
-    if (kind === "k" && isObject5(wanted)) {
-      index = node2.findIndex((item) => isObject5(item) && Object.entries(wanted).every(([name, value]) => same(item[name], value)));
-    } else if (kind === "v") {
-      index = node2.findIndex((item) => same(item, wanted));
-    }
-  }
-  if (!Number.isInteger(index) || index < 0 || index >= node2.length)
-    return;
-  return { node: node2[index], path: `${path}[${index}]` };
-}
-function heldByOthers(object2, paths, manager) {
-  const metadata = isObject5(object2.metadata) ? object2.metadata : {};
-  const entries = (Array.isArray(metadata.managedFields) ? metadata.managedFields : []).filter(isObject5);
-  const ours = [];
-  const others = [];
-  for (const entry3 of entries) {
-    const held = ownedPaths(object2, entry3.fieldsV1);
-    if (entry3.manager === manager && entry3.operation === "Apply")
-      ours.push(...held);
-    else
-      others.push(...held);
-  }
-  return paths.filter((path) => !ours.some((held) => within(path, held)) && others.some((held) => within(path, held) || within(held, path)));
-}
-function within(path, held) {
-  if (path === held)
-    return true;
-  if (!path.startsWith(held))
-    return false;
-  const next = path[held.length];
-  return next === "." || next === "[";
-}
-function same(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-function isObject5(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-
-// src/adapters/kubectl/fold.ts
-var SERVER_FIELDS = [
-  "generation",
-  "resourceVersion",
-  "uid",
-  "creationTimestamp",
-  "managedFields",
-  "selfLink"
-];
-function foldObjects2(pairs, showValues, inventory, fingerprint = false) {
-  const changes = [];
-  const problems = [];
-  const firstAt = new Map;
-  pairs.forEach((pair, index) => {
-    const at = `The tool's output, at object ${index + 1}`;
-    const live = yamlObject(pair.live);
-    const merged = yamlObject(pair.merged);
-    if (live === "unreadable" || merged === "unreadable") {
-      problems.push(`${at}: expected one YAML object on each side.`);
-      return;
-    }
-    const identity2 = identityOf(merged ?? live);
-    if (identity2 === undefined) {
-      problems.push(`${at}: expected an object with apiVersion, kind and metadata.name.`);
-      return;
-    }
-    if (isInventory(identity2, inventory))
-      return;
-    const earlier = firstAt.get(identity2.address);
-    if (earlier !== undefined) {
-      problems.push(`${at}: expected an object that no earlier object is, and object ${earlier} is.`);
-      return;
-    }
-    firstAt.set(identity2.address, index + 1);
-    const op = live === undefined ? "create" : merged === undefined ? "delete" : "update";
-    const base = { address: identity2.address, type: identity2.type, name: identity2.name, op };
-    const sensitive = identity2.secret ? { data: true, stringData: true } : undefined;
-    if (live === undefined || merged === undefined) {
-      const created = fingerprint && merged !== undefined ? hiddenFingerprint({
-        before: undefined,
-        after: withoutServerFields(merged),
-        beforeSensitive: undefined,
-        afterSensitive: sensitive
-      }, []) : undefined;
-      changes.push({
-        ...base,
-        changedKeys: [],
-        replaceKeys: [],
-        ...created === undefined ? {} : { fingerprint: created }
-      });
-      return;
-    }
-    const { paths, values: values2 } = changedPaths({
-      before: withoutServerFields(live),
-      after: withoutServerFields(merged),
-      afterUnknown: undefined,
-      beforeSensitive: sensitive,
-      afterSensitive: sensitive
-    }, showValues);
-    const changedKeys = [...new Set(paths)].sort(byCodeUnit10);
-    if (changedKeys.length === 0)
-      return;
-    const shown3 = values2.sort((a, b) => byCodeUnit10(a.path, b.path));
-    const hidden = fingerprint ? hiddenFingerprint({
-      before: withoutServerFields(live),
-      after: withoutServerFields(merged),
-      beforeSensitive: sensitive,
-      afterSensitive: sensitive
-    }, shown3.map((value) => value.path)) : undefined;
-    changes.push({
-      ...base,
-      changedKeys,
-      replaceKeys: [],
-      ...shown3.length === 0 ? {} : { values: shown3 },
-      ...hidden === undefined ? {} : { fingerprint: hidden }
-    });
-  });
-  if (problems.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: problems };
-  changes.sort((a, b) => byCodeUnit10(a.address, b.address));
-  return { ok: true, changes };
-}
-function yamlObject(text7) {
-  if (text7.trim() === "")
-    return;
-  try {
-    const parsed = $parse(text7);
-    if (parsed === null)
-      return;
-    return isObject6(parsed) ? parsed : "unreadable";
-  } catch {
-    return "unreadable";
-  }
-}
-function identityOf(object2) {
-  if (object2 === undefined)
-    return;
-  const { apiVersion, kind, metadata } = object2;
-  if (typeof apiVersion !== "string" || typeof kind !== "string" || kind === "")
-    return;
-  if (!isObject6(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
-    return;
-  }
-  const slash = apiVersion.indexOf("/");
-  const group = slash < 0 ? "" : apiVersion.slice(0, slash);
-  const namespace = typeof metadata.namespace === "string" ? metadata.namespace : "";
-  const name = namespace === "" ? metadata.name : `${namespace}/${metadata.name}`;
-  const qualified = group === "" ? kind : `${kind}.${group}`;
-  return {
-    address: `${qualified}/${name}`,
-    type: kind,
-    name,
-    secret: group === "" && kind === "Secret",
-    listed: {
-      apiVersion,
-      kind,
-      ...namespace === "" ? {} : { namespace },
-      name: metadata.name
-    }
-  };
-}
-function isInventory(identity2, inventory) {
-  return inventory !== undefined && identity2.type === "ConfigMap" && groupOf(identity2.listed.apiVersion) === "" && identity2.listed.name === inventory;
-}
-function foldDrift(pairs, context) {
-  const drift = [];
-  const problems = [];
-  pairs.forEach((pair, index) => {
-    const live = yamlObject(pair.live);
-    const merged = yamlObject(pair.merged);
-    if (live === "unreadable" || merged === "unreadable")
-      return;
-    const identity2 = identityOf(merged ?? live);
-    if (identity2 === undefined || isInventory(identity2, context.inventory))
-      return;
-    const base = { address: identity2.address, type: identity2.type, name: identity2.name };
-    if (live === undefined && merged !== undefined) {
-      if (context.listed.some((listing) => lists(listing, identity2.listed))) {
-        drift.push({ ...base, op: "delete", changedKeys: [], replaceKeys: [] });
-      }
-      return;
-    }
-    if (live === undefined || merged === undefined)
-      return;
-    const folded = foldObjects2([pair], []);
-    if (!folded.ok) {
-      problems.push(...folded.detail.map((line) => line.replace("object 1", `object ${index + 1}`)));
-      return;
-    }
-    const changedKeys = heldByOthers(live, folded.changes[0]?.changedKeys ?? [], context.manager);
-    if (changedKeys.length > 0)
-      drift.push({ ...base, op: "update", changedKeys, replaceKeys: [] });
-  });
-  if (problems.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: problems };
-  drift.sort((a, b) => byCodeUnit10(a.address, b.address));
-  return { ok: true, changes: drift };
-}
-function withoutServerFields(object2) {
-  const { status: _status, metadata, ...rest } = object2;
-  if (!isObject6(metadata))
-    return rest;
-  const kept = Object.fromEntries(Object.entries(metadata).filter(([key]) => !SERVER_FIELDS.includes(key)));
-  return { ...rest, metadata: kept };
-}
-function isObject6(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-function byCodeUnit10(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/kubectl/rendered-set.ts
-class RenderedSet {
-  path;
-  stackId;
-  dir;
-  digest = "";
-  pruning = false;
-  constructor(dir, stackId2) {
-    this.dir = dir;
-    this.path = join18(dir, "manifests.yaml");
-    this.stackId = stackId2;
-  }
-  static async create(stackId2, text7, prune) {
-    const set2 = await RenderedSet.open(stackId2);
-    await set2.write(text7, prune);
-    return set2;
-  }
-  static async open(stackId2) {
-    return new RenderedSet(await mkdtemp(join18(tmpdir(), "sluiceway-set-")), stackId2);
-  }
-  get prunePath() {
-    return this.pruning ? this.scratchPath : undefined;
-  }
-  get scratchPath() {
-    return join18(this.dir, "prune.yaml");
-  }
-  async write(text7, prune) {
-    await writeFile2(this.path, text7, { mode: 384 });
-    if (prune === undefined)
-      await rm2(this.scratchPath, { force: true });
-    else
-      await writeFile2(this.scratchPath, prune, { mode: 384 });
-    this.pruning = prune !== undefined;
-    this.digest = sha256(text7) + sha256(prune ?? "");
-  }
-  async intact() {
-    try {
-      const text7 = await readFile2(this.path, "utf8");
-      const prune = this.pruning ? await readFile2(this.scratchPath, "utf8") : "";
-      return sha256(text7) + sha256(prune) === this.digest;
-    } catch {
-      return false;
-    }
-  }
-  async dispose() {
-    await rm2(this.dir, { recursive: true, force: true });
-  }
-}
-function sha256(text7) {
-  return createHash4("sha256").update(text7, "utf8").digest("hex");
-}
-async function renderSet(stack, context) {
-  const dir = join18(context.root, stack.path);
-  const options = optionsOf2(stack);
-  let text7;
-  let toolLog = "";
-  if (sourceOf(dir) === "manifests") {
-    text7 = bundleManifests(dir, options.recursive === true);
-  } else {
-    const result2 = await runTool(context.run, {
-      argv: kustomizeCommand(),
-      cwd: dir,
-      env: kubectlEnvironment(context.env),
-      timeoutMinutes: context.timeoutMinutes
-    });
-    toolLog = stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, detail: [], toolLog };
-    text7 = result2.stdout;
-  }
-  if (options.prune !== true) {
-    return { ok: true, set: await RenderedSet.create(stackId(stack), text7), toolLog };
-  }
-  const set2 = await RenderedSet.open(stackId(stack));
-  const pruned = await prune(stack, context, set2, text7);
-  if (!pruned.ok) {
-    await set2.dispose();
-    return { ...pruned, toolLog: toolLog + pruned.toolLog };
-  }
-  return { ok: true, set: set2, toolLog: toolLog + pruned.toolLog, pruning: pruned.pruning };
-}
-async function prune(stack, context, set2, text7) {
-  const options = optionsOf2(stack);
-  const id = stackId(stack);
-  const name = inventoryName(id, context.env.GITHUB_REPOSITORY);
-  const run = (argv) => runTool(context.run, {
-    argv,
-    cwd: join18(context.root, stack.path),
-    env: kubectlEnvironment(context.env),
-    timeoutMinutes: context.timeoutMinutes
-  });
-  const inventory = await run(inventoryCommand(name, options));
-  let toolLog = stripAnsi(inventory.stderr);
-  if (!inventory.ok)
-    return { ok: false, reason: inventory.reason, detail: [], toolLog };
-  const read5 = readInventory(inventory.stdout);
-  if (!read5.ok) {
-    return { ok: false, reason: { kind: "unreadable-output" }, detail: read5.problems, toolLog };
-  }
-  const candidates = pruneCandidates(read5.objects, objectsOf(text7));
-  const kept = [];
-  if (candidates.length > 0) {
-    await writeFile2(set2.scratchPath, stubs(candidates), { mode: 384 });
-    const live = await run(liveCommand(set2.scratchPath, options));
-    toolLog += stripAnsi(live.stderr);
-    if (!live.ok)
-      return { ok: false, reason: live.reason, detail: [], toolLog };
-    const found = readLive(live.stdout);
-    if (!found.ok) {
-      return { ok: false, reason: { kind: "unreadable-output" }, detail: found.problems, toolLog };
-    }
-    const manager = options.fieldManager ?? "kubectl";
-    for (const object2 of found.objects) {
-      const identity2 = identityOf(object2);
-      const listed4 = identity2 === undefined ? undefined : candidates.find((candidate) => lists(candidate, identity2.listed));
-      if (listed4 !== undefined && appliedBy(object2, manager))
-        kept.push({ listed: listed4, live: object2 });
-    }
-  }
-  const deletes = [];
-  const resolved = [];
-  for (const { live } of kept) {
-    const identity2 = identityOf(live);
-    if (identity2 === undefined)
-      continue;
-    deletes.push({
-      address: identity2.address,
-      type: identity2.type,
-      name: identity2.name,
-      op: "delete",
-      changedKeys: [],
-      replaceKeys: []
-    });
-    resolved.push(identity2.listed);
-  }
-  await set2.write(withInventory(text7, name, id, kept.map(({ listed: listed4 }) => listed4)), resolved.length === 0 ? undefined : stubs(resolved));
-  return { ok: true, pruning: { inventory: name, listed: read5.objects, deletes }, toolLog };
-}
-
-// src/adapters/kubectl/apply.ts
-async function apply2(stack, context, plan) {
-  if (!(plan instanceof RenderedSet) || plan.stackId !== stackId(stack)) {
-    throw new Error("A Kubernetes manifests stack deploys only the rendered set its fresh preview kept.");
-  }
-  if (!await plan.intact()) {
-    throw new Error(`The rendered set of ${stackId(stack)} changed after its preview. Nothing was deployed.`);
-  }
-  const result2 = await runDeploy(context.run, {
-    argv: applyCommand(plan.path, optionsOf2(stack)),
-    cwd: join19(context.root, stack.path),
-    env: kubectlEnvironment(context.env)
-  });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  if (!result2.ok)
-    return { ok: false, reason: result2.reason, toolLog };
-  if (plan.prunePath === undefined)
-    return { ok: true, toolLog };
-  const deleted = await runDeploy(context.run, {
-    argv: deleteCommand(plan.prunePath, optionsOf2(stack)),
-    cwd: join19(context.root, stack.path),
-    env: kubectlEnvironment(context.env)
-  });
-  const log = toolLog + stripAnsi(deleted.stdout + deleted.stderr);
-  return deleted.ok ? { ok: true, toolLog: log } : { ok: false, reason: deleted.reason, toolLog: log };
-}
-
-// src/adapters/kubectl/drift.ts
-import { join as join20 } from "node:path";
-
-// src/adapters/kubectl/unified.ts
-var HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
-function readDiff(stdout) {
-  const lines = stdout.split(`
-`);
-  if (lines.at(-1) === "")
-    lines.pop();
-  const pairs = [];
-  const problem3 = (at, expected) => ({
-    ok: false,
-    problems: [`The tool's output, at line ${at + 1}: expected ${expected}.`]
-  });
-  let index = 0;
-  while (index < lines.length) {
-    const line = lines[index] ?? "";
-    if (line.startsWith("diff ")) {
-      index++;
-      continue;
-    }
-    if (!line.startsWith("--- "))
-      return problem3(index, "the start of a file");
-    if (!(lines[index + 1] ?? "").startsWith("+++ "))
-      return problem3(index + 1, "a +++ line");
-    const header = HUNK.exec(lines[index + 2] ?? "");
-    if (header === null)
-      return problem3(index + 2, "a hunk");
-    const liveStart = Number(header[1]);
-    const liveCount = header[2] === undefined ? 1 : Number(header[2]);
-    const mergedStart = Number(header[3]);
-    const mergedCount = header[4] === undefined ? 1 : Number(header[4]);
-    if (liveStart !== (liveCount === 0 ? 0 : 1) || mergedStart !== (mergedCount === 0 ? 0 : 1)) {
-      return problem3(index + 2, "a hunk that holds the whole object");
-    }
-    index += 3;
-    const live = [];
-    const merged = [];
-    let liveLeft = liveCount;
-    let mergedLeft = mergedCount;
-    while (liveLeft > 0 || mergedLeft > 0) {
-      if (index >= lines.length)
-        return problem3(index, "more lines of the hunk");
-      const hunkLine = lines[index] ?? "";
-      const text7 = hunkLine.slice(1);
-      if (hunkLine.startsWith(" ") && liveLeft > 0 && mergedLeft > 0) {
-        live.push(text7);
-        merged.push(text7);
-        liveLeft--;
-        mergedLeft--;
-      } else if (hunkLine.startsWith("-") && liveLeft > 0) {
-        live.push(text7);
-        liveLeft--;
-      } else if (hunkLine.startsWith("+") && mergedLeft > 0) {
-        merged.push(text7);
-        mergedLeft--;
-      } else if (!hunkLine.startsWith("\\")) {
-        return problem3(index, "a line of the hunk");
-      }
-      index++;
-    }
-    while ((lines[index] ?? "").startsWith("\\"))
-      index++;
-    if (HUNK.test(lines[index] ?? ""))
-      return problem3(index, "one hunk per object");
-    pairs.push({ live: joined(live), merged: joined(merged) });
-  }
-  return { ok: true, pairs };
-}
-function joined(lines) {
-  return lines.length === 0 ? "" : `${lines.join(`
-`)}
-`;
-}
-
-// src/adapters/kubectl/drift.ts
-async function detectDrift2(stack, options) {
-  const stackOptions = optionsOf2(stack);
-  if (stackOptions.prune !== true && stackOptions.forceConflicts !== true)
-    return;
-  const rendered = await renderSet(stack, options);
-  if (!rendered.ok)
-    return rendered;
-  try {
-    const result2 = await runTool(options.run, {
-      argv: diffCommand2(rendered.set.path, stackOptions, { managedFields: true }),
-      cwd: join20(options.root, stack.path),
-      env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
-      timeoutMinutes: options.timeoutMinutes,
-      exitCodes: DIFF_EXIT_CODES
-    });
-    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, detail: [], toolLog };
-    const read5 = readDiff(result2.stdout);
-    if (!read5.ok) {
-      return { ok: false, reason: { kind: "unreadable-output" }, detail: read5.problems, toolLog };
-    }
-    const folded = foldDrift(read5.pairs, {
-      ...rendered.pruning === undefined ? {} : { inventory: rendered.pruning.inventory },
-      listed: rendered.pruning?.listed ?? [],
-      manager: stackOptions.fieldManager ?? "kubectl"
-    });
-    if (!folded.ok) {
-      return { ok: false, reason: { kind: folded.reason }, detail: folded.detail, toolLog };
-    }
-    return { ok: true, drift: folded.changes, toolLog };
-  } finally {
-    await rendered.set.dispose();
-  }
-}
-
-// src/adapters/kubectl/preview.ts
-import { readFile as readFile3 } from "node:fs/promises";
-import { join as join21 } from "node:path";
-async function preview2(stack, options) {
-  const rendered = await renderSet(stack, options);
-  if (!rendered.ok) {
-    return {
-      ok: false,
-      reason: rendered.reason,
-      detail: rendered.detail,
-      toolLog: rendered.toolLog
-    };
-  }
-  let kept = false;
-  try {
-    const result2 = await diff(stack, options, rendered);
-    if (result2.ok && options.savePlan) {
-      kept = true;
-      return { ...result2, plan: rendered.set };
-    }
-    return result2;
-  } finally {
-    if (!kept)
-      await rendered.set.dispose();
-  }
-}
-async function diff(stack, options, { set: set2, toolLog: renderLog, pruning }) {
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const result2 = await runTool(options.run, {
-    argv: diffCommand2(set2.path, optionsOf2(stack)),
-    cwd: join21(options.root, stack.path),
-    env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
-    timeoutMinutes: options.timeoutMinutes,
-    exitCodes: DIFF_EXIT_CODES
-  });
-  const log = renderLog + stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return failed(result2.reason, log);
-  const read5 = readDiff(result2.stdout);
-  if (!read5.ok)
-    return failed({ kind: "unreadable-output" }, log, read5.problems);
-  if (result2.exitCode === 1 && read5.pairs.length === 0) {
-    return failed({ kind: "unreadable-output" }, log, [
-      "The tool's output: expected the objects that differ, as the exit code says there are."
-    ]);
-  }
-  const folded = foldObjects2(read5.pairs, options.showValues ?? [], pruning?.inventory, options.valueFingerprint === true);
-  if (!folded.ok)
-    return failed({ kind: folded.reason }, log, folded.detail);
-  const changes = [...folded.changes, ...pruning?.deletes ?? []].sort((a, b) => a.address < b.address ? -1 : a.address > b.address ? 1 : 0);
-  const document = options.keepDocument ? { document: { text: await readFile3(set2.path, "utf8"), format: "yaml" } } : {};
-  return { ok: true, diff: { stackId: stackId(stack), changes }, toolLog: log, ...document };
-}
-
-// src/adapters/kubectl/tool-diff.ts
-import { join as join22 } from "node:path";
-async function toolDiff2(stack, options) {
-  const rendered = await renderSet(stack, options);
-  if (!rendered.ok)
-    return { ok: false, reason: rendered.reason, toolLog: rendered.toolLog };
-  try {
-    const result2 = await runTool(options.run, {
-      argv: diffCommand2(rendered.set.path, optionsOf2(stack)),
-      cwd: join22(options.root, stack.path),
-      env: kubectlEnvironment(options.env),
-      timeoutMinutes: options.timeoutMinutes,
-      exitCodes: DIFF_EXIT_CODES
-    });
-    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, toolLog };
-    return { ok: true, text: stripAnsi(result2.stdout), toolLog };
-  } finally {
-    await rendered.set.dispose();
-  }
-}
-
-// src/adapters/kubectl/version.ts
-var MINIMUM_VERSION2 = [1, 34, 0];
-var NEEDS2 = `Sluiceway needs kubectl v${MINIMUM_VERSION2.join(".")} or newer`;
-var TIME_LIMIT_MS2 = 60000;
-async function checkVersion2(context, _stacks) {
-  const result2 = await context.run({
-    argv: versionCommand2(),
-    cwd: context.root,
-    env: kubectlEnvironment(context.env),
-    timeoutMs: TIME_LIMIT_MS2
-  });
-  if (result2.status === "not-started") {
-    throw new ToolVersionError(`Could not start kubectl. ${NEEDS2} on PATH and does not install it. Add a workflow step that installs kubectl before the step that runs Sluiceway.`);
-  }
-  const version2 = result2.status === "exited" && result2.exitCode === 0 ? readVersion2(result2.stdout) : undefined;
-  const found = version2 === undefined ? null : /^v(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
-  if (found === null || version2 === undefined) {
-    throw new ToolVersionError(`"${versionCommand2().join(" ")}" did not print a version Sluiceway can read. ${NEEDS2}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
-  }
-  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
-  const older2 = MINIMUM_VERSION2.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
-  if (older2 !== undefined && older2 < 0) {
-    throw new ToolVersionError(`Found kubectl ${version2}. ${NEEDS2}. Change the workflow step that installs kubectl so it installs a newer version.`);
-  }
-}
-function readVersion2(stdout) {
-  try {
-    const parsed = JSON.parse(stdout);
-    if (typeof parsed !== "object" || parsed === null)
-      return;
-    const client = parsed.clientVersion;
-    return typeof client?.gitVersion === "string" ? client.gitVersion : undefined;
-  } catch {
-    return;
-  }
-}
-
-// src/adapters/kubectl/index.ts
-var kubectl = {
-  async discover(root, config2) {
-    const { stacks, optionProblems } = discoverKubectl(root, config2);
-    if (optionProblems.length > 0)
-      throw new ConfigError(optionProblems);
-    return stacks;
-  },
-  checkVersion: checkVersion2,
-  preview: preview2,
-  toolDiff: toolDiff2,
-  detectDrift: detectDrift2,
-  apply: apply2
-};
-
-// src/adapters/opentofu/commands.ts
-import { join as join23 } from "node:path";
-
-// src/adapters/opentofu/environment.ts
-function tofuEnvironment(env, stack) {
-  const workspace = stack === undefined ? undefined : optionsOf3(stack).workspace;
-  return {
-    ...toolEnvironment(env),
-    TF_IN_AUTOMATION: "true",
-    ...workspace === undefined ? {} : { TF_WORKSPACE: workspace }
-  };
-}
-function optionsOf3(stack) {
-  return stack.options;
-}
-
-// src/adapters/opentofu/commands.ts
-var TOFU = "tofu";
-function binaryOf(tool) {
-  return tool === TERRAFORM ? "terraform" : TOFU;
-}
-var TERRAGRUNT_RUN = ["run", "--tf-forward-stdout", "--no-color", "--no-auto-init"];
-function command(stack, args) {
-  const { tool, wrapper } = optionsOf3(stack);
-  const binary = binaryOf(tool);
-  if (wrapper !== TERRAGRUNT)
-    return [binary, ...args];
-  return [TERRAGRUNT, ...TERRAGRUNT_RUN, "--tf-path", binary, "--", ...args];
-}
-var CDKTF_OUT = "cdktf.out";
-function workingDirectory(root, stack) {
-  if (optionsOf3(stack).wrapper === "cdktf") {
-    return join23(root, stack.path, CDKTF_OUT, "stacks", stack.name ?? "");
-  }
-  return join23(root, stack.path);
-}
-function initArgs() {
-  return ["init", "-input=false", "-no-color"];
-}
-function planArgs(planFile, varFiles) {
-  return [
-    "plan",
-    "-input=false",
-    "-no-color",
-    "-refresh=false",
-    "-json",
-    `-out=${planFile}`,
-    ...varFiles.map((file2) => `-var-file=${file2}`)
-  ];
-}
-function showArgs(planFile) {
-  return ["show", "-json", "-no-color", planFile];
-}
-function applyArgs(planFile) {
-  return ["apply", "-input=false", "-no-color", "-json", planFile];
-}
-function toolDiffArgs(varFiles) {
-  return [
-    "plan",
-    "-input=false",
-    "-no-color",
-    "-refresh=false",
-    ...varFiles.map((file2) => `-var-file=${file2}`)
-  ];
-}
-function versionCommand3(binary = TOFU) {
-  return [binary, "version", "-json"];
-}
-function terragruntVersionCommand() {
-  return [TERRAGRUNT, "--version"];
-}
-function cdktfVersionCommand() {
-  return ["cdktf", "--version"];
-}
-function synthCommand() {
-  return ["cdktf", "synth", "--output", CDKTF_OUT];
-}
-
-// src/adapters/opentofu/plan-file.ts
-import { mkdtemp as mkdtemp2, rm as rm3 } from "node:fs/promises";
-import { tmpdir as tmpdir2 } from "node:os";
-import { join as join24 } from "node:path";
-
-// src/adapters/opentofu/cost.ts
-import { writeFile as writeFile3 } from "node:fs/promises";
-var INFRACOST = "infracost";
-var PLAN_JSON = "plan.json";
-function costArgs() {
-  return [INFRACOST, "diff", "--path", PLAN_JSON, "--format", "json", "--no-color"];
-}
-function infracostEnvironment(env) {
-  return {
-    ...toolEnvironment(env),
-    INFRACOST_SKIP_UPDATE_CHECK: "true",
-    INFRACOST_ENABLE_CLOUD: "false"
-  };
-}
-var output2 = exports_external.object({
-  currency: exports_external.string(),
-  diffTotalMonthlyCost: exports_external.string(),
-  projects: exports_external.array(exports_external.object({
-    metadata: exports_external.object({
-      type: exports_external.string(),
-      errors: exports_external.array(exports_external.object({ message: exports_external.string() })).optional()
-    })
-  }))
-});
-function readCostOutput(stdout) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    return unreadable();
-  }
-  const read5 = output2.safeParse(parsed);
-  const monthly = read5.success ? Number(read5.data.diffTotalMonthlyCost) : Number.NaN;
-  if (!read5.success || !Number.isFinite(monthly))
-    return unreadable();
-  const reported = read5.data.projects.reduce((sum, project) => sum + (project.metadata.errors?.length ?? 0), 0);
-  const failed = read5.data.projects.some((project) => project.metadata.type === "error");
-  if (reported > 0 || failed || read5.data.projects.length === 0) {
-    const errors4 = Math.max(reported, 1);
-    return {
-      ok: false,
-      reason: { kind: "reported-error" },
-      detail: [
-        `The Infracost CLI's output reports ${errors4 === 1 ? "1 error" : `${errors4} errors`} for the plan. Its words are in the log below.`
-      ]
-    };
-  }
-  return { ok: true, estimate: { monthly, currency: read5.data.currency } };
-}
-function unreadable() {
-  return {
-    ok: false,
-    reason: { kind: "unreadable-output" },
-    detail: [
-      "Expected the JSON of infracost diff --format json with currency, diffTotalMonthlyCost and projects, and the output does not fit."
-    ]
-  };
-}
-async function estimateCost(planJson, plan, options) {
-  await writeFile3(plan.jsonPath, planJson);
-  const result2 = await options.run({
-    argv: costArgs(),
-    cwd: plan.dir,
-    env: infracostEnvironment(options.env),
-    timeoutMs: options.timeoutMinutes * 60000
-  });
-  if (result2.status === "not-started") {
-    return {
-      ok: false,
-      reason: { kind: "not-started" },
-      detail: [
-        "The Infracost CLI could not be started. Add a workflow step that installs it before the step that runs Sluiceway, or turn cost.enabled off."
-      ],
-      toolLog: ""
-    };
-  }
-  const toolLog = stripAnsi(result2.stderr);
-  if (result2.status === "timed-out") {
-    return {
-      ok: false,
-      reason: { kind: "timed-out", minutes: options.timeoutMinutes },
-      detail: [],
-      toolLog
-    };
-  }
-  if (result2.exitCode !== 0) {
-    const reason = { kind: "exited", exitCode: result2.exitCode };
-    return { ok: false, reason, detail: [], toolLog };
-  }
-  return { ...readCostOutput(result2.stdout), toolLog };
-}
-
-// src/adapters/opentofu/plan-file.ts
-class PlanFile {
-  path;
-  stackId;
-  dir;
-  jsonPath;
-  constructor(dir, stackId2) {
-    this.dir = dir;
-    this.path = join24(dir, "tfplan");
-    this.jsonPath = join24(dir, PLAN_JSON);
-    this.stackId = stackId2;
-  }
-  static async create(stackId2) {
-    return new PlanFile(await mkdtemp2(join24(tmpdir2(), "sluiceway-plan-")), stackId2);
-  }
-  async dispose() {
-    await rm3(this.dir, { recursive: true, force: true });
-  }
-}
-
-// src/adapters/opentofu/tool-log.ts
-var LEFT_OUT = new Set(["outputs", "planned_change", "resource_drift", "version"]);
-function jsonLogWords(stdout) {
-  const words = [];
-  for (const line of stdout.split(/\r?\n/)) {
-    if (line.trim() === "")
-      continue;
-    let message;
-    try {
-      message = JSON.parse(line);
-    } catch {
-      words.push(line);
-      continue;
-    }
-    if (typeof message !== "object" || message === null)
-      continue;
-    const { type, diagnostic } = message;
-    if (typeof type === "string" && LEFT_OUT.has(type))
-      continue;
-    if (type === "diagnostic" && typeof diagnostic === "object" && diagnostic !== null) {
-      words.push(...diagnosticWords(diagnostic));
-      continue;
-    }
-    const text7 = message["@message"];
-    if (typeof text7 === "string")
-      words.push(text7);
-  }
-  return stripAnsi(words.map((line) => `${line}
-`).join(""));
-}
-function diagnosticWords(diagnostic) {
-  const severity = diagnostic.severity === "warning" ? "Warning" : "Error";
-  const where2 = [
-    typeof diagnostic.range?.filename === "string" ? diagnostic.range.filename : undefined,
-    typeof diagnostic.range?.start?.line === "number" ? `line ${diagnostic.range.start.line}` : undefined
-  ].filter((part) => part !== undefined);
-  return [
-    `${severity}: ${typeof diagnostic.summary === "string" ? diagnostic.summary : ""}`,
-    ...where2.length > 0 ? [`  on ${where2.join(", ")}`] : [],
-    ...typeof diagnostic.address === "string" ? [`  at ${diagnostic.address}`] : [],
-    ...typeof diagnostic.detail === "string" && diagnostic.detail !== "" ? diagnostic.detail.split(`
-`).map((line) => `  ${line}`) : []
-  ];
-}
-
-// src/adapters/opentofu/apply.ts
-async function apply3(stack, context, plan) {
-  if (!(plan instanceof PlanFile) || plan.stackId !== stackId(stack)) {
-    throw new Error("An OpenTofu stack deploys only the plan its fresh preview saved.");
-  }
-  const result2 = await runDeploy(context.run, {
-    argv: command(stack, applyArgs(plan.path)),
-    cwd: workingDirectory(context.root, stack),
-    env: tofuEnvironment(context.env, stack)
-  });
-  const toolLog = stripAnsi(result2.stderr) + jsonLogWords(result2.stdout);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
-}
-
-// src/adapters/opentofu/prepare.ts
-import { join as join25 } from "node:path";
-function prepare2(stacks) {
-  const byPath = Map.groupBy(stacks, (stack) => stack.path);
-  return [...byPath].sort(([a], [b]) => byCodeUnit11(a, b)).map(([path, grouped]) => ({
-    title: path,
-    stacks: grouped,
-    run: async (context) => {
-      const [first] = grouped;
-      if (first === undefined || optionsOf3(first).wrapper !== CDKTF) {
-        return step(context, first ? command(first, initArgs()) : [], join25(context.root, path));
-      }
-      const synth = await step(context, synthCommand(), join25(context.root, path));
-      if (!synth.ok)
-        return synth;
-      let toolLog = synth.toolLog;
-      const named = [...grouped].sort((a, b) => byCodeUnit11(a.name ?? "", b.name ?? ""));
-      for (const stack of named) {
-        const init = await step(context, command(stack, initArgs()), workingDirectory(context.root, stack));
-        toolLog += init.toolLog;
-        if (!init.ok)
-          return { ...init, toolLog };
-      }
-      return { ok: true, toolLog };
-    }
-  }));
-}
-async function step(context, argv, cwd) {
-  const result2 = await runTool(context.run, {
-    argv,
-    cwd,
-    env: tofuEnvironment(context.env),
-    timeoutMinutes: context.timeoutMinutes
-  });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
-}
-function byCodeUnit11(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/opentofu/fold.ts
-var ACTIONS = {
-  "no-op": "drop",
-  read: "drop",
-  create: { op: "create" },
-  update: { op: "update" },
-  "delete,create": { op: "replace" },
-  "create,delete": { op: "replace" },
-  delete: { op: "delete" },
-  forget: { op: "none", tracking: "forget" },
-  "forget,create": { op: "create", tracking: "forget" }
-};
-function foldChanges(found, showValues, fingerprint = false) {
-  const changes = [];
-  const unknown2 = [];
-  const unreadable2 = [];
-  const firstAt = new Map;
-  found.forEach((resource, index) => {
-    const at = `The tool's output, at resource_changes[${index}]`;
-    const key = resource.change.actions.join(",");
-    const known = Object.hasOwn(ACTIONS, key) ? ACTIONS[key] : undefined;
-    if (known === undefined) {
-      unknown2.push(`${at}.change.actions: expected actions that Sluiceway knows.`);
-      return;
-    }
-    const moved = resource.previous_address !== undefined;
-    const imported = resource.change.importing;
-    if (moved && imported) {
-      unreadable2.push(`${at}: expected a move or an import, not both.`);
-      return;
-    }
-    if (resource.mode === "data") {
-      if (known !== "drop")
-        unknown2.push(`${at}.change.actions: expected a read of a data source.`);
-      return;
-    }
-    const flagged = moved ? "move" : imported ? "import" : undefined;
-    if (flagged !== undefined && known !== "drop" && known.tracking !== undefined) {
-      unreadable2.push(`${at}: expected one tracking change, found two.`);
-      return;
-    }
-    const folded = withTracking(known, flagged);
-    if (folded === undefined)
-      return;
-    const address = resource.deposed === undefined ? resource.address : `${resource.address} deposed ${resource.deposed}`;
-    const earlier = firstAt.get(address);
-    if (earlier !== undefined) {
-      unreadable2.push(`${at}.address: expected an address that no earlier change has, and resource_changes[${earlier}] has it.`);
-      return;
-    }
-    firstAt.set(address, index);
-    changes.push({
-      address,
-      type: resource.type,
-      name: displayName(resource),
-      ...folded,
-      ...moved && resource.previous_address !== undefined ? { previousAddress: resource.previous_address } : {},
-      ...keys2(resource, folded.op, showValues, fingerprint)
-    });
-  });
-  if (unreadable2.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: unreadable2 };
-  if (unknown2.length > 0)
-    return { ok: false, reason: "unknown-step", detail: unknown2 };
-  changes.sort((a, b) => byCodeUnit12(a.address, b.address));
-  return { ok: true, changes };
-}
-function withTracking(known, tracking) {
-  if (known === "drop")
-    return tracking === undefined ? undefined : { op: "none", tracking };
-  if (tracking === undefined)
-    return known;
-  return { ...known, tracking };
-}
-function displayName(resource) {
-  const module = resource.module_address === undefined ? "" : `${resource.module_address}.`;
-  const prefix = `${module}${resource.type}.`;
-  const rest = resource.address.startsWith(prefix) ? resource.address.slice(prefix.length) : resource.name;
-  const name = `${module}${rest}`;
-  return resource.deposed === undefined ? name : `${name} (deposed ${resource.deposed})`;
-}
-function keys2(resource, op, showValues, fingerprint) {
-  const { change: change3 } = resource;
-  const sides = {
-    before: change3.before,
-    after: change3.after,
-    beforeSensitive: change3.before_sensitive,
-    afterSensitive: change3.after_sensitive
-  };
-  if (op === "create" && fingerprint) {
-    const created = hiddenFingerprint({ ...sides, before: undefined }, []);
-    return {
-      changedKeys: [],
-      replaceKeys: [],
-      ...created === undefined ? {} : { fingerprint: created }
-    };
-  }
-  if (op !== "update" && op !== "replace")
-    return { changedKeys: [], replaceKeys: [] };
-  const { paths, values: values2 } = changedPaths({
-    before: change3.before,
-    after: change3.after,
-    afterUnknown: change3.after_unknown,
-    beforeSensitive: change3.before_sensitive,
-    afterSensitive: change3.after_sensitive
-  }, showValues);
-  const replaceKeys = op === "replace" ? sortedSet((change3.replace_paths ?? []).map((steps) => replacePath(steps, change3.before_sensitive, change3.after_sensitive))) : [];
-  const changedKeys = sortedSet([...paths, ...replaceKeys]);
-  const shown3 = values2.filter((value) => changedKeys.includes(value.path)).sort((a, b) => byCodeUnit12(a.path, b.path));
-  const hidden = fingerprint ? hiddenFingerprint(sides, shown3.map((value) => value.path)) : undefined;
-  return {
-    changedKeys,
-    replaceKeys,
-    ...shown3.length === 0 ? {} : { values: shown3 },
-    ...hidden === undefined ? {} : { fingerprint: hidden }
-  };
-}
-function sortedSet(names) {
-  return [...new Set(names.filter((name) => name !== ""))].sort(byCodeUnit12);
-}
-function byCodeUnit12(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/opentofu/state-lock.ts
-var STATE_LOCK_SUMMARY = "Error acquiring the state lock";
-function stateLockHeld(planStdout) {
-  for (const line of planStdout.split(/\r?\n/)) {
-    if (!line.includes(STATE_LOCK_SUMMARY))
-      continue;
-    let message;
-    try {
-      message = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    if (typeof message !== "object" || message === null)
-      continue;
-    const { type, diagnostic } = message;
-    if (type === "diagnostic" && diagnostic?.severity === "error" && diagnostic.summary === STATE_LOCK_SUMMARY) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// src/adapters/opentofu/preview.ts
-async function preview3(stack, options) {
-  const plan = await PlanFile.create(stackId(stack));
-  let kept = false;
-  try {
-    const result2 = await planAndShow(stack, options, plan);
-    if (result2.ok && options.savePlan) {
-      kept = true;
-      return { ...result2, plan };
-    }
-    return result2;
-  } finally {
-    if (!kept)
-      await plan.dispose();
-  }
-}
-async function planAndShow(stack, options, plan) {
-  const run = (argv) => runTool(options.run, {
-    argv: command(stack, argv),
-    cwd: workingDirectory(options.root, stack),
-    env: tofuEnvironment(options.env, stack),
-    timeoutMinutes: options.timeoutMinutes
-  });
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const planned = await run(planArgs(plan.path, optionsOf3(stack).varFiles));
-  const planWords = stripAnsi(planned.stderr) + jsonLogWords(planned.stdout);
-  if (!planned.ok) {
-    const busy = planned.reason.kind === "tool-error" && stateLockHeld(planned.stdout);
-    return failed(busy ? { kind: "stack-busy" } : planned.reason, planWords);
-  }
-  const shown3 = await run(showArgs(plan.path));
-  const log = planWords + stripAnsi(shown3.stderr);
-  if (!shown3.ok)
-    return failed(shown3.reason, log);
-  const parsed = parsePlan(shown3.stdout);
-  if (!parsed.ok)
-    return failed({ kind: "unreadable-output" }, log, parsed.problems);
-  const folded = foldChanges(parsed.changes, options.showValues ?? [], options.valueFingerprint === true);
-  if (!folded.ok)
-    return failed({ kind: folded.reason }, log, folded.detail);
-  const estimated = options.cost === true && folded.changes.length > 0 ? await estimateCost(shown3.stdout, plan, options) : undefined;
-  const { toolLog: costLog = "", ...cost } = estimated ?? {};
-  return {
-    ok: true,
-    diff: { stackId: stackId(stack), changes: folded.changes },
-    toolLog: log + costLog,
-    ...estimated === undefined ? {} : { cost },
-    ...options.keepDocument ? { document: { text: shown3.stdout, format: "json" } } : {}
-  };
-}
-
-// src/adapters/opentofu/tool-diff.ts
-async function toolDiff3(stack, options) {
-  const result2 = await runTool(options.run, {
-    argv: command(stack, toolDiffArgs(optionsOf3(stack).varFiles)),
-    cwd: workingDirectory(options.root, stack),
-    env: tofuEnvironment(options.env, stack),
-    timeoutMinutes: options.timeoutMinutes
-  });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
-  }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
-}
-
-// src/adapters/opentofu/version.ts
-var MINIMUM_VERSION3 = [1, 11, 0];
-var MINIMUM_TERRAFORM_VERSION = [1, 14, 0];
-var MINIMUM_TERRAGRUNT_VERSION = [1, 0, 0];
-var MINIMUM_CDKTF_VERSION = [0, 21, 0];
-var TIME_LIMIT_MS3 = 60000;
-async function checkVersion3(context, stacks) {
-  const binaries = new Set(stacks.map((stack) => binaryOf(optionsOf3(stack).tool)));
-  const wrappers = new Set(stacks.map((stack) => optionsOf3(stack).wrapper));
-  const checks3 = [];
-  if (binaries.has("tofu") || stacks.length === 0) {
-    checks3.push({
-      name: "tofu",
-      argv: versionCommand3("tofu"),
-      floor: MINIMUM_VERSION3,
-      read: readJsonVersion
-    });
-  }
-  if (binaries.has("terraform")) {
-    checks3.push({
-      name: "terraform",
-      argv: versionCommand3("terraform"),
-      floor: MINIMUM_TERRAFORM_VERSION,
-      read: readJsonVersion
-    });
-  }
-  if (wrappers.has(TERRAGRUNT)) {
-    checks3.push({
-      name: TERRAGRUNT,
-      argv: terragruntVersionCommand(),
-      floor: MINIMUM_TERRAGRUNT_VERSION,
-      read: (stdout) => /^terragrunt version v(\S+)\s*$/.exec(stdout.trim())?.[1]
-    });
-  }
-  if (wrappers.has(CDKTF)) {
-    checks3.push({
-      name: CDKTF,
-      argv: cdktfVersionCommand(),
-      floor: MINIMUM_CDKTF_VERSION,
-      read: (stdout) => stdout.trim() || undefined
-    });
-  }
-  for (const check2 of checks3)
-    await checkOne(context, check2);
-}
-async function checkOne(context, check2) {
-  const { name, floor } = check2;
-  const needs = `Sluiceway needs ${name} v${floor.join(".")} or newer`;
-  const result2 = await context.run({
-    argv: check2.argv,
-    cwd: context.root,
-    env: tofuEnvironment(context.env),
-    timeoutMs: TIME_LIMIT_MS3
-  });
-  if (result2.status === "not-started") {
-    throw new ToolVersionError(`Could not start ${name}. ${needs} on PATH and does not install it. Add a workflow step that installs ${name} before the step that runs Sluiceway.`);
-  }
-  const version2 = result2.status === "exited" && result2.exitCode === 0 ? check2.read(result2.stdout) : undefined;
-  const found = version2 === undefined ? null : /^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
-  if (found === null || version2 === undefined) {
-    throw new ToolVersionError(`"${check2.argv.join(" ")}" did not print a version Sluiceway can read. ${needs}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
-  }
-  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
-  const older2 = floor.map((least, index) => (numbers[index] ?? 0) - least).find((difference) => difference !== 0);
-  if (older2 !== undefined && older2 < 0) {
-    throw new ToolVersionError(`Found ${name} v${version2}. ${needs}. Change the workflow step that installs ${name} so it installs a newer version.`);
-  }
-}
-function readJsonVersion(stdout) {
-  try {
-    const parsed = JSON.parse(stdout);
-    if (typeof parsed !== "object" || parsed === null)
-      return;
-    const version2 = parsed.terraform_version;
-    return typeof version2 === "string" ? version2 : undefined;
-  } catch {
-    return;
-  }
-}
-
-// src/adapters/opentofu/index.ts
-var opentofu = {
-  async discover(root, config2) {
-    const { stacks, optionProblems } = discoverOpenTofu(root, config2);
-    if (optionProblems.length > 0)
-      throw new ConfigError(optionProblems);
-    return stacks;
-  },
-  checkVersion: checkVersion3,
-  prepare: prepare2,
-  preview: preview3,
-  toolDiff: toolDiff3,
-  apply: apply3
-};
-
-// src/adapters/pulumi/apply.ts
-import { join as join26 } from "node:path";
-
-// src/adapters/pulumi/environment.ts
-function pulumiEnvironment(env) {
-  return { ...toolEnvironment(env), PULUMI_SKIP_UPDATE_CHECK: "true" };
-}
-
-// src/adapters/pulumi/apply.ts
-function upCommand(name, repairDrift) {
-  return [
-    "pulumi",
-    "up",
-    "--yes",
-    "--skip-preview",
-    ...repairDrift ? ["--refresh"] : [],
-    "--suppress-outputs",
-    "--non-interactive",
-    "--color",
-    "never",
-    "--stack",
-    name
-  ];
-}
-async function apply4(stack, context, _plan, options = {}) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runDeploy(context.run, {
-    argv: upCommand(stack.name, options.repairDrift === true),
-    cwd: join26(context.root, stack.path),
-    env: pulumiEnvironment(context.env)
-  });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
-}
-
-// src/adapters/pulumi/backend.ts
-import { join as join27 } from "node:path";
-var LIST = ["pulumi", "stack", "ls", "--json", "--non-interactive", "--color", "never"];
-var BACKEND_TIMEOUT_MINUTES = 10;
-var listed4 = exports_external.array(exports_external.object({ name: exports_external.string() }));
-async function findInBackend(stacks, context) {
-  const answers = [];
-  const logs = [];
-  for (const [path, inPath] of Map.groupBy(stacks, (stack) => stack.path)) {
-    const listed5 = await listStacks(context, path, BACKEND_TIMEOUT_MINUTES);
-    if (listed5.toolLog !== "")
-      logs.push(listed5.toolLog);
-    if (!listed5.ok) {
-      answers.push(...inPath.map((stack) => ({ stack, found: "unknown", reason: listed5.reason })));
-      continue;
-    }
-    answers.push(...inPath.map((stack) => ({ stack, found: listed5.names.has(stack.name) })));
-  }
-  return { answers, toolLog: logs.join("") };
-}
-async function listStacks(context, path, timeoutMinutes, exitCodes) {
-  const result2 = await runTool(context.run, {
-    argv: LIST,
-    cwd: join27(context.root, path),
-    env: pulumiEnvironment(context.env),
-    timeoutMinutes,
-    exitCodes
-  });
-  const toolLog = stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return { ok: false, reason: result2.reason, toolLog };
-  const parsed = parseList(result2.stdout);
-  if (parsed === undefined)
-    return { ok: false, reason: { kind: "unreadable-output" }, toolLog };
-  return { ok: true, names: new Set(parsed.map(({ name }) => name.split("/").at(-1))), toolLog };
-}
-function parseList(stdout) {
-  try {
-    const parsed = listed4.safeParse(JSON.parse(stdout));
-    return parsed.success ? parsed.data : undefined;
-  } catch {
-    return;
-  }
-}
-
-// src/adapters/pulumi/drift.ts
-import { join as join28 } from "node:path";
-
-// src/adapters/pulumi/exit-codes.ts
-var STACK_NOT_FOUND_EXIT_CODE = 6;
-var PULUMI_EXIT_CODES = {
-  reasons: {
-    2: { kind: "configuration-error" },
-    3: { kind: "authentication-error" },
-    4: { kind: "resource-error" },
-    [STACK_NOT_FOUND_EXIT_CODE]: { kind: "stack-not-found" },
-    9: { kind: "tool-timed-out" }
-  }
-};
-var HISTORY_EXIT_CODES = {
-  reasons: { [STACK_NOT_FOUND_EXIT_CODE]: { kind: "stack-not-found" } }
-};
-
-// src/adapters/pulumi/fold.ts
-var STEP_OPS = {
-  same: "drop",
-  read: "drop",
-  refresh: "drop",
-  create: { op: "create" },
-  update: { op: "update" },
-  replace: { op: "replace" },
-  delete: { op: "delete" },
-  import: { op: "none", tracking: "import" }
-};
-var FORGET = { op: "none", tracking: "forget" };
-function foldSteps(steps) {
-  const changes = [];
-  const unknown2 = [];
-  const unreadable2 = [];
-  const firstAt = new Map;
-  let rootCreate;
-  steps.forEach((step2, index) => {
-    const at = `The tool's output, at steps[${index}]`;
-    const known = Object.hasOwn(STEP_OPS, step2.op) ? STEP_OPS[step2.op] : undefined;
-    if (known === undefined) {
-      unknown2.push(`${at}.op: expected a step op that Sluiceway knows.`);
-      return;
-    }
-    if (known === "drop")
-      return;
-    if (isRootStack(step2.urn) && step2.op === "update")
-      return;
-    const resource = typeAndName(step2.urn);
-    if (resource === undefined) {
-      unreadable2.push(`${at}.urn: expected the URN of a resource.`);
-      return;
-    }
-    const earlier = firstAt.get(step2.urn);
-    if (earlier !== undefined) {
-      unreadable2.push(`${at}.urn: expected an address that no earlier step has, and steps[${earlier}] has it.`);
-      return;
-    }
-    firstAt.set(step2.urn, index);
-    const folded = step2.op === "delete" && step2.oldState?.retainOnDelete === true ? FORGET : known;
-    const change3 = { address: step2.urn, ...resource, ...folded, ...keys3(step2, folded.op) };
-    if (isRootStack(step2.urn) && step2.op === "create")
-      rootCreate = change3;
-    else
-      changes.push(change3);
-  });
-  if (unreadable2.length > 0)
-    return { ok: false, reason: "unreadable-output", detail: unreadable2 };
-  if (unknown2.length > 0)
-    return { ok: false, reason: "unknown-step", detail: unknown2 };
-  if (rootCreate !== undefined && changes.length === 0)
-    changes.push(rootCreate);
-  changes.sort((a, b) => byCodeUnit13(a.address, b.address));
-  return { ok: true, changes };
-}
-var ROOT_STACK_TYPE = "pulumi:pulumi:Stack";
-function isRootStack(urn) {
-  return urn.startsWith("urn:pulumi:") && urn.split("::")[2] === ROOT_STACK_TYPE;
-}
-function typeAndName(urn) {
-  if (!urn.startsWith("urn:pulumi:"))
-    return;
-  const [, , qualifiedType, ...rest] = urn.split("::");
-  const type = qualifiedType?.split("$").at(-1);
-  const name = rest.join("::");
-  return type === undefined || type === "" || name === "" ? undefined : { type, name };
-}
-function keys3(step2, op) {
-  const fingerprint = step2.fingerprint !== undefined && (op === "create" || op === "update" || op === "replace") ? { fingerprint: step2.fingerprint } : {};
-  if (op !== "update" && op !== "replace")
-    return { changedKeys: [], replaceKeys: [], ...fingerprint };
-  const paths = step2.detailedDiff ?? [];
-  const changed = paths.length > 0 ? paths : step2.diffReasons ?? [];
-  const replaceKeys = op === "replace" ? sortedSet2(step2.replaceReasons ?? []) : [];
-  const changedKeys = sortedSet2([...changed, ...replaceKeys]);
-  const values2 = (step2.values ?? []).filter((value) => changedKeys.includes(value.path));
-  return { changedKeys, replaceKeys, ...values2.length === 0 ? {} : { values: values2 }, ...fingerprint };
-}
-function sortedSet2(names) {
-  return [...new Set(names)].sort(byCodeUnit13);
-}
-function byCodeUnit13(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/pulumi/drift.ts
-function driftCommand(name) {
-  return [
-    "pulumi",
-    "refresh",
-    "--preview-only",
-    "--json",
-    "--non-interactive",
-    "--color",
-    "never",
-    "--stack",
-    name
-  ];
-}
-var STREAM_EVENTS = { PULUMI_ENABLE_STREAMING_JSON_PREVIEW: "true" };
-var state = exports_external.object({ outputs: exports_external.unknown().optional() }).nullish();
-var outputsEvent = exports_external.object({
-  resOutputsEvent: exports_external.object({
-    metadata: exports_external.object({
-      op: exports_external.string(),
-      urn: exports_external.string(),
-      old: state,
-      new: state,
-      diffs: exports_external.array(exports_external.string()).nullish(),
-      detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish().transform((paths) => paths == null ? undefined : Object.keys(paths))
-    })
-  })
-});
-var summaryEvent = exports_external.object({
-  summaryEvent: exports_external.object({ resourceChanges: exports_external.record(exports_external.string(), exports_external.number()).nullish() })
-});
-var diagnosticEvent = exports_external.object({ diagnosticEvent: exports_external.object({ message: exports_external.string() }) });
-var DRIFT_OPS = {
-  same: "drop",
-  refresh: "drop",
-  update: "update",
-  delete: "delete"
-};
-var isSecret = (node2) => node2 === "[secret]";
-function fingerprintOf(hidden) {
-  const fingerprint = changeFingerprint(hidden);
-  return fingerprint === undefined ? {} : { fingerprint };
-}
-async function detectDrift3(stack, options) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
-    argv: driftCommand(stack.name),
-    cwd: join28(options.root, stack.path),
-    env: { ...pulumiEnvironment(options.env), ...STREAM_EVENTS },
-    timeoutMinutes: options.timeoutMinutes,
-    exitCodes: PULUMI_EXIT_CODES
-  });
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  if (!result2.ok && result2.reason.kind === "timed-out") {
-    return failed(result2.reason, stripAnsi(result2.stderr));
-  }
-  const read5 = readEvents(result2.stdout, options.valueFingerprint === true);
-  const words = stripAnsi([result2.stderr, ...typeof read5 === "string" ? [] : read5.diagnostics].join(""));
-  if (!result2.ok)
-    return failed(result2.reason, words);
-  if (typeof read5 === "string")
-    return failed({ kind: "unreadable-output" }, words, [read5]);
-  if (read5.unknown.length > 0)
-    return failed({ kind: "unknown-step" }, words, read5.unknown);
-  if (read5.summary === undefined) {
-    return failed({ kind: "unreadable-output" }, words, [
-      "The tool's output: expected a summary event at the end."
-    ]);
-  }
-  const counted = Object.entries(read5.summary).filter(([op]) => op !== "same").reduce((sum, [, count]) => sum + count, 0);
-  if (counted > read5.drift.length) {
-    return failed({ kind: "unreadable-output" }, words, [
-      `The tool's output: expected an event for every change the summary counts, and ${counted - read5.drift.length} is missing.`
-    ]);
-  }
-  read5.drift.sort((a, b) => a.address < b.address ? -1 : a.address > b.address ? 1 : 0);
-  return { ok: true, drift: read5.drift, toolLog: words };
-}
-function readEvents(stdout, fingerprint) {
-  const events = { drift: [], unknown: [], diagnostics: [], summary: undefined };
-  const seen = new Set;
-  let count = 0;
-  const lines = stdout.split(`
-`);
-  for (const [index, line] of lines.entries()) {
-    if (line.trim() === "")
-      continue;
-    let json2;
-    try {
-      json2 = JSON.parse(line);
-    } catch {
-      return `The tool's output, at line ${index + 1}: expected one JSON document per line.`;
-    }
-    const diagnostic = diagnosticEvent.safeParse(json2);
-    if (diagnostic.success)
-      events.diagnostics.push(diagnostic.data.diagnosticEvent.message);
-    const summary2 = summaryEvent.safeParse(json2);
-    if (summary2.success)
-      events.summary = summary2.data.summaryEvent.resourceChanges ?? {};
-    const outputs = outputsEvent.safeParse(json2);
-    if (!outputs.success)
-      continue;
-    count++;
-    const { op, urn, diffs, detailedDiff, old, new: next } = outputs.data.resOutputsEvent.metadata;
-    const at = `The tool's output, at event ${count}`;
-    const known = Object.hasOwn(DRIFT_OPS, op) ? DRIFT_OPS[op] : undefined;
-    if (known === undefined) {
-      events.unknown.push(`${at}: expected a drift op that Sluiceway knows.`);
-      continue;
-    }
-    if (known === "drop")
-      continue;
-    const resource = typeAndName(urn);
-    if (resource === undefined || seen.has(urn)) {
-      return `${at}: expected the URN of a resource that no earlier event has.`;
-    }
-    seen.add(urn);
-    const paths = detailedDiff !== undefined && detailedDiff.length > 0 ? detailedDiff : diffs;
-    events.drift.push({
-      address: urn,
-      ...resource,
-      op: known,
-      changedKeys: known === "update" ? [...new Set(paths ?? [])].sort() : [],
-      replaceKeys: [],
-      ...fingerprint && known === "update" ? fingerprintOf(differingLeaves(old?.outputs, next?.outputs, { isSecret })) : {}
-    });
-  }
-  return events;
-}
-
-// src/adapters/pulumi/history.ts
-import { join as join29 } from "node:path";
-function historyCommand(name, limit) {
-  return [
-    "pulumi",
-    "stack",
-    "history",
-    "--json",
-    "--page-size",
-    String(limit),
-    "--non-interactive",
-    "--color",
-    "never",
-    "--stack",
-    name
-  ];
-}
-var entry3 = exports_external.object({
-  kind: exports_external.string(),
-  result: exports_external.string(),
-  endTime: exports_external.string(),
-  resourceChanges: exports_external.record(exports_external.string(), exports_external.number()).nullish(),
-  environment: exports_external.object({
-    "git.head": exports_external.string().optional(),
-    "git.dirty": exports_external.string().optional(),
-    "ci.system": exports_external.string().optional(),
-    "ci.build.id": exports_external.string().optional()
-  }).nullish()
-});
-var KINDS = { update: "deploy", destroy: "destroy" };
-var COMMIT = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
-var RUN_ID = /^[1-9]\d*$/;
-async function deployHistory(stack, options) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
-    argv: historyCommand(stack.name, options.limit),
-    cwd: join29(options.root, stack.path),
-    env: pulumiEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes,
-    exitCodes: HISTORY_EXIT_CODES
-  });
-  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const words = stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return failed(result2.reason, words);
-  const read5 = readHistory(result2.stdout);
-  if (typeof read5 === "string")
-    return failed({ kind: "unreadable-output" }, words, [read5]);
-  return { ok: true, deploys: read5, toolLog: words };
-}
-function readHistory(stdout) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return "The tool's output: expected one JSON document.";
-  }
-  if (!Array.isArray(json2))
-    return "The tool's output: expected a list of updates.";
-  const deploys = [];
-  for (const [index, raw] of json2.entries()) {
-    const parsed = entry3.safeParse(raw);
-    const at = `The tool's output, at update ${index + 1}`;
-    if (!parsed.success)
-      return `${at}: expected a kind, a result and an end time.`;
-    const { kind, result: result2, endTime, resourceChanges, environment } = parsed.data;
-    const endedAt = new Date(endTime);
-    if (Number.isNaN(endedAt.getTime()))
-      return `${at}: expected an end time.`;
-    const deployKind = Object.hasOwn(KINDS, kind) ? KINDS[kind] : undefined;
-    const changed = Object.entries(resourceChanges ?? {}).some(([op, count]) => op !== "same" && count > 0);
-    if (deployKind === undefined || result2 !== "succeeded" || !changed)
-      continue;
-    const sha = environment?.["git.head"] ?? "";
-    const runId = environment?.["ci.build.id"] ?? "";
-    deploys.push({
-      kind: deployKind,
-      endedAt,
-      ...COMMIT.test(sha) ? { commit: { sha, dirty: environment?.["git.dirty"] === "true" } } : {},
-      ...environment?.["ci.system"] === "GitHub Actions" && RUN_ID.test(runId) ? { runId } : {}
-    });
-  }
-  return deploys.sort((a, b) => b.endedAt.getTime() - a.endedAt.getTime());
-}
-
-// src/adapters/pulumi/prepare.ts
-import { join as join30 } from "node:path";
-function prepare3(stacks, options) {
-  const asked = new Set((options?.createInBackend ?? []).map(stackId));
-  return stacks.filter((stack) => asked.has(stackId(stack))).sort((a, b) => byCodeUnit14(stackId(a), stackId(b))).map((stack) => ({
-    title: `the stack ${stackId(stack)} in the backend`,
-    stacks: [stack],
-    run: (context) => createIfMissing(stack, context)
-  }));
-}
-function initCommand(name) {
-  return ["pulumi", "stack", "init", name, "--non-interactive", "--color", "never"];
-}
-async function createIfMissing(stack, context) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const id = stackId(stack);
-  const listed5 = await listStacks(context, stack.path, context.timeoutMinutes, PULUMI_EXIT_CODES);
-  if (!listed5.ok)
-    return { ok: false, reason: listed5.reason, toolLog: listed5.toolLog };
-  if (listed5.names.has(stack.name)) {
-    return {
-      ok: true,
-      toolLog: listed5.toolLog,
-      detail: [`The backend already holds ${id}. Nothing was created.`]
-    };
-  }
-  const init = await runTool(context.run, {
-    argv: initCommand(stack.name),
-    cwd: join30(context.root, stack.path),
-    env: pulumiEnvironment(context.env),
-    timeoutMinutes: context.timeoutMinutes,
-    exitCodes: PULUMI_EXIT_CODES
-  });
-  const toolLog = listed5.toolLog + stripAnsi(init.stdout + init.stderr);
-  if (!init.ok)
-    return { ok: false, reason: init.reason, toolLog };
-  return {
-    ok: true,
-    toolLog,
-    detail: [
-      `The backend did not hold ${id}, so the stack was created. Its preview shows every resource as a create.`
-    ]
-  };
-}
-function byCodeUnit14(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/pulumi/preview.ts
-import { join as join31 } from "node:path";
-
-// src/adapters/pulumi/values.ts
-var SECRET = "[secret]";
-var UNKNOWN = "04da6b54-80e4-46f7-96ec-b56ff0331ba9";
-function listedValues(list, sources) {
-  const shown3 = [];
-  for (const { path, inputDiff } of sources.paths) {
-    if (!isListedPath(list, path))
-      continue;
-    const old = side(valueAt2(inputDiff ? sources.oldInputs : sources.oldOutputs, path));
-    const next = side(valueAt2(sources.newInputs, path));
-    if (old === "refused" || next === "refused")
-      continue;
-    if (old === undefined && next === undefined)
-      continue;
-    shown3.push({
-      path,
-      ...old === undefined ? {} : { old },
-      ...next === undefined ? {} : { new: next }
-    });
-  }
-  return shown3.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
-}
-var isSecret2 = (node2) => node2 === SECRET;
-function hiddenFingerprint2(op, sources, shown3) {
-  if (op === "create") {
-    return changeFingerprint(differingLeaves(undefined, sources.newInputs, { isSecret: isSecret2 }));
-  }
-  if (op !== "update" && op !== "replace")
-    return;
-  const shownPaths = new Set(shown3.map((value) => value.path));
-  const hidden = [];
-  const seen = new Set;
-  const at = (path, oldSide) => {
-    if (seen.has(path) || shownPaths.has(path))
-      return;
-    seen.add(path);
-    const old = valueAt2(oldSide, path);
-    const next = valueAt2(sources.newInputs, path);
-    if (old.kind === "secret" || next.kind === "secret") {
-      hidden.push({ path, secret: true });
-      return;
-    }
-    if (old.kind === "ambiguous" || next.kind === "ambiguous")
-      return;
-    hidden.push(...differingLeaves(old.kind === "found" ? old.value : undefined, next.kind === "found" ? next.value : undefined, { prefix: path, isSecret: isSecret2 }));
-  };
-  for (const { path, inputDiff } of sources.paths) {
-    at(path, inputDiff ? sources.oldInputs : sources.oldOutputs);
-  }
-  const reasons = sources.paths.length > 0 ? [] : sources.diffReasons;
-  for (const name of [...reasons, ...sources.replaceReasons])
-    at(name, sources.oldInputs);
-  return changeFingerprint(hidden);
-}
-function side(found) {
-  if (found.kind === "secret" || found.kind === "ambiguous")
-    return "refused";
-  if (found.kind === "absent" || found.value === null)
-    return;
-  const { value } = found;
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
-  if (typeof value !== "string")
-    return "refused";
-  if (value === SECRET || value === UNKNOWN)
-    return "refused";
-  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
-    return "refused";
-  return shortValue(value);
-}
-function valueAt2(root, path) {
-  const found = [];
-  const walk4 = (node2, prefix) => {
-    if (node2 === SECRET) {
-      found.push({ kind: "secret" });
-      return;
-    }
-    for (const [segment3, child2] of children(node2, prefix === "")) {
-      const at = prefix + segment3;
-      if (at === path)
-        found.push({ kind: "found", value: child2 });
-      else if (path.startsWith(at) && (path[at.length] === "." || path[at.length] === "["))
-        walk4(child2, at);
-    }
-  };
-  walk4(root, "");
-  if (found.some((one) => one.kind === "secret"))
-    return { kind: "secret" };
-  const [only] = found;
-  if (found.length > 1)
-    return { kind: "ambiguous" };
-  return only ?? { kind: "absent" };
-}
-function children(node2, top) {
-  if (Array.isArray(node2))
-    return node2.map((child2, index) => [`[${index}]`, child2]);
-  if (typeof node2 !== "object" || node2 === null)
-    return [];
-  return Object.entries(node2).map(([key, child2]) => [segmentOf(key, top), child2]);
-}
-function segmentOf(key, top) {
-  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
-    return top ? key : `.${key}`;
-  return `["${key.replaceAll('"', "\\\"")}"]`;
-}
-
-// src/adapters/pulumi/schema.ts
-var oldState = exports_external.object({ retainOnDelete: exports_external.boolean().nullish() });
-var stepFields = {
-  op: exports_external.string(),
-  urn: exports_external.string(),
-  diffReasons: exports_external.array(exports_external.string()).nullish(),
-  replaceReasons: exports_external.array(exports_external.string()).nullish()
-};
-var STACK_REFERENCE_TYPE = "pulumi:pulumi:StackReference";
-var referenceState = exports_external.object({ inputs: exports_external.object({ name: exports_external.unknown() }).partial().nullish() }).nullish();
-function stackReferenceOf(urn, state2) {
-  const name = state2?.inputs?.name;
-  const type = urn.split("::")[2]?.split("$").at(-1);
-  return type === STACK_REFERENCE_TYPE && typeof name === "string" && name !== "" ? name : undefined;
-}
-var step2 = exports_external.object({
-  ...stepFields,
-  oldState: oldState.nullish(),
-  newState: referenceState,
-  detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish().transform((paths) => paths == null ? undefined : Object.keys(paths))
-}).transform(({ newState, ...rest }) => {
-  const stackReference = stackReferenceOf(rest.urn, newState);
-  return stackReference === undefined ? rest : { ...rest, stackReference };
-});
-function stepWithValues(list, fingerprint) {
-  const state2 = exports_external.object({ inputs: exports_external.unknown().optional(), outputs: exports_external.unknown().optional() }).nullish();
-  return exports_external.object({
-    ...stepFields,
-    oldState: exports_external.object({
-      retainOnDelete: exports_external.boolean().nullish(),
-      inputs: exports_external.unknown().optional(),
-      outputs: exports_external.unknown().optional()
-    }).nullish(),
-    newState: state2,
-    detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish()
-  }).transform(({ oldState: old, newState, detailedDiff, ...rest }) => {
-    const stackReference = stackReferenceOf(rest.urn, referenceState.safeParse(newState).data ?? undefined);
-    const paths = Object.entries(detailedDiff ?? {}).map(([path, entry4]) => ({
-      path,
-      inputDiff: typeof entry4 === "object" && entry4 !== null && "inputDiff" in entry4 ? entry4.inputDiff === true : false
-    }));
-    const sources = {
-      paths,
-      oldInputs: old?.inputs,
-      oldOutputs: old?.outputs,
-      newInputs: newState?.inputs
-    };
-    const values2 = listedValues(list, sources);
-    const hidden = fingerprint ? hiddenFingerprint2(rest.op, {
-      ...sources,
-      diffReasons: rest.diffReasons ?? [],
-      replaceReasons: rest.replaceReasons ?? []
-    }, values2) : undefined;
-    return {
-      ...rest,
-      oldState: old == null ? old : { retainOnDelete: old.retainOnDelete },
-      detailedDiff: detailedDiff == null ? undefined : Object.keys(detailedDiff),
-      ...values2.length === 0 ? {} : { values: values2 },
-      ...hidden === undefined ? {} : { fingerprint: hidden },
-      ...stackReference === undefined ? {} : { stackReference }
-    };
-  });
-}
-var diagnostics = exports_external.array(exports_external.object({ message: exports_external.string() })).nullish();
-function previewDocument(showValues, fingerprint) {
-  const steps = showValues.length === 0 && !fingerprint ? step2 : stepWithValues(showValues, fingerprint);
-  return exports_external.object({ steps: exports_external.array(steps), diagnostics });
-}
-var failedDocument = exports_external.object({ diagnostics });
-function parsePreview(stdout, showValues = [], fingerprint = false) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
-  }
-  const parsed = previewDocument(showValues, fingerprint).safeParse(json2);
-  if (!parsed.success)
-    return { ok: false, problems: parsed.error.issues.map(problem3) };
-  return {
-    ok: true,
-    steps: parsed.data.steps,
-    diagnostics: messages(parsed.data.diagnostics)
-  };
-}
-function parseDiagnostics(stdout) {
-  try {
-    const parsed = failedDocument.safeParse(JSON.parse(stdout));
-    return parsed.success ? messages(parsed.data.diagnostics) : [];
-  } catch {
-    return [];
-  }
-}
-function messages(found) {
-  return (found ?? []).map((diagnostic) => diagnostic.message);
-}
-var EXPECTED4 = {
-  string: "text",
-  array: "a list",
-  object: "an object",
-  record: "an object",
-  boolean: "true or false"
-};
-function problem3(issue3) {
-  const expected = issue3.code === "invalid_type" ? EXPECTED4[issue3.expected] : undefined;
-  return `The tool's output, at ${place2(issue3.path)}: expected ${expected ?? "something else"}.`;
-}
-function place2(path) {
-  if (path.length === 0)
-    return "the top";
-  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
-}
-
-// src/adapters/pulumi/preview.ts
-function previewCommand(name) {
-  return ["pulumi", "preview", "--json", "--non-interactive", "--color", "never", "--stack", name];
-}
-async function previewWithReferences(stack, options) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
-    argv: previewCommand(stack.name),
-    cwd: join31(options.root, stack.path),
-    env: pulumiEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes,
-    exitCodes: PULUMI_EXIT_CODES
-  });
-  const failed = (reason, toolLog, detail = []) => ({
-    result: { ok: false, reason, detail, toolLog },
-    references: []
-  });
-  if (!result2.ok) {
-    const finished = result2.reason.kind !== "timed-out";
-    return failed(result2.reason, toolLog(result2.stderr, finished ? parseDiagnostics(result2.stdout) : []));
-  }
-  if (result2.outputCutAt !== undefined) {
-    return failed({ kind: "output-too-large", megabytes: Math.floor(result2.outputCutAt / 1024 / 1024) }, toolLog(result2.stderr));
-  }
-  const parsed = parsePreview(result2.stdout, options.showValues, options.valueFingerprint === true);
-  if (!parsed.ok) {
-    return failed({ kind: "unreadable-output" }, toolLog(result2.stderr), parsed.problems);
-  }
-  const log = toolLog(result2.stderr, parsed.diagnostics);
-  const folded = foldSteps(parsed.steps);
-  if (!folded.ok)
-    return failed({ kind: folded.reason }, log, folded.detail);
-  return {
-    result: {
-      ok: true,
-      diff: { stackId: stackId(stack), changes: folded.changes },
-      toolLog: log,
-      ...options.keepDocument ? { document: { text: result2.stdout, format: "json" } } : {}
-    },
-    references: parsed.steps.flatMap((step3) => step3.stackReference ?? [])
-  };
-}
-function toolLog(stderr, diagnostics2 = []) {
-  return stripAnsi([stderr, ...diagnostics2].join(""));
-}
-
-// src/adapters/pulumi/references.ts
-async function readDependencies(stack, names, root, candidates) {
-  const self = stackId(stack);
-  const projects = new Map;
-  const projectOf = async (path) => {
-    if (!projects.has(path))
-      projects.set(path, await projectName(root, path));
-    return projects.get(path);
-  };
-  const own2 = await projectOf(stack.path);
-  const known = await Promise.all(candidates.map(async (one) => ({
-    id: stackId(one),
-    name: one.name,
-    project: await projectOf(one.path)
-  })));
-  const matching = (project, name) => project === undefined || name === undefined ? [] : known.filter((one) => one.project === project && one.name === name);
-  const found = new Set;
-  let elsewhere = 0;
-  for (const reference of names) {
-    const parts = reference.split("/");
-    const fits = parts.length === 3 ? matching(parts[1], parts[2]) : parts.length === 1 ? matching(own2, parts[0]) : parts.length === 2 ? orElse(matching(parts[0], parts[1]), () => matching(own2, parts[1])) : [];
-    const [one] = fits;
-    if (fits.length !== 1 || one === undefined)
-      elsewhere++;
-    else if (one.id !== self)
-      found.add(one.id);
-  }
-  return { stackIds: [...found].sort(byCodeUnit15), elsewhere };
-}
-function orElse(first, second) {
-  return first.length > 0 ? first : second();
-}
-function byCodeUnit15(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/pulumi/tool-diff.ts
-import { join as join32 } from "node:path";
-function toolDiffCommand2(name) {
-  return [
-    "pulumi",
-    "preview",
-    "--diff",
-    "--suppress-outputs",
-    "--non-interactive",
-    "--color",
-    "never",
-    "--stack",
-    name
-  ];
-}
-async function toolDiff4(stack, options) {
-  if (stack.name === undefined)
-    throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
-    argv: toolDiffCommand2(stack.name),
-    cwd: join32(options.root, stack.path),
-    env: pulumiEnvironment(options.env),
-    timeoutMinutes: options.timeoutMinutes,
-    exitCodes: PULUMI_EXIT_CODES
-  });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
-  }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
-}
-
-// src/adapters/pulumi/version.ts
-var MINIMUM_VERSION4 = [3, 229, 0];
-var NEEDS3 = `Sluiceway needs pulumi v${MINIMUM_VERSION4.join(".")} or newer`;
-var TIME_LIMIT_MS4 = 60000;
-async function checkVersion4(context) {
-  const result2 = await context.run({
-    argv: ["pulumi", "version"],
-    cwd: context.root,
-    env: pulumiEnvironment(context.env),
-    timeoutMs: TIME_LIMIT_MS4
-  });
-  if (result2.status === "not-started") {
-    throw new ToolVersionError(`Could not start pulumi. ${NEEDS3} on PATH and does not install it. Add a workflow step that installs pulumi before the step that runs Sluiceway.`);
-  }
-  const found = result2.status === "exited" && result2.exitCode === 0 ? /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?\s*$/.exec(result2.stdout) : null;
-  if (found === null) {
-    throw new ToolVersionError(`"pulumi version" did not print a version Sluiceway can read. ${NEEDS3}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
-  }
-  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
-  const older2 = MINIMUM_VERSION4.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
-  if (older2 !== undefined && older2 < 0) {
-    throw new ToolVersionError(`Found pulumi ${result2.stdout.trim()}. ${NEEDS3}. Change the workflow step that installs pulumi so it installs a newer version.`);
-  }
-}
-
-// src/adapters/pulumi/index.ts
-var preview4 = async (stack, options) => {
-  const { result: result2, references } = await previewWithReferences(stack, options);
-  if (!result2.ok || options.dependencies === undefined)
-    return result2;
-  const dependencies = await readDependencies(stack, references, options.root, options.dependencies);
-  return { ...result2, dependencies };
-};
-var pulumi = {
-  discover,
-  checkVersion: checkVersion4,
-  prepare: prepare3,
-  preview: preview4,
-  toolDiff: toolDiff4,
-  detectDrift: detectDrift3,
-  deployHistory,
-  apply: apply4,
-  readsFiles: readsFiles2,
-  findInBackend
-};
-
-// src/adapters/tools.ts
-function adapterOf(stack) {
-  if (isOpenTofuOptions(stack.options))
-    return opentofu;
-  if (isHelmOptions(stack.options))
-    return helm;
-  if (isKubectlOptions(stack.options))
-    return kubectl;
-  return pulumi;
-}
-var tools = {
-  discover: discoverAll,
-  explainDiscovery: async (root, config2) => explainRootModules(root, config2),
-  readsFiles: readsFiles3,
-  credentialNeeds: credentialNeeds3,
-  async checkVersion(context, stacks) {
-    const tofu = stacks.filter((stack) => isOpenTofuOptions(stack.options));
-    const charts = stacks.filter((stack) => isHelmOptions(stack.options));
-    const manifests = stacks.filter((stack) => isKubectlOptions(stack.options));
-    if (tofu.length + charts.length + manifests.length < stacks.length) {
-      await pulumi.checkVersion(context, []);
-    }
-    if (tofu.length > 0)
-      await opentofu.checkVersion(context, tofu);
-    if (charts.length > 0)
-      await helm.checkVersion(context, charts);
-    if (manifests.length > 0)
-      await kubectl.checkVersion(context, manifests);
-  },
-  prepare(stacks, options) {
-    const isPulumi = (stack) => adapterOf(stack) === pulumi;
-    return [
-      ...pulumi.prepare?.(stacks.filter(isPulumi), {
-        createInBackend: (options?.createInBackend ?? []).filter(isPulumi)
-      }) ?? [],
-      ...opentofu.prepare?.(stacks.filter((stack) => isOpenTofuOptions(stack.options))) ?? [],
-      ...helm.prepare?.(stacks.filter((stack) => isHelmOptions(stack.options))) ?? []
-    ];
-  },
-  preview: (stack, options) => adapterOf(stack).preview(stack, options),
-  toolDiff: (stack, options) => adapterOf(stack).toolDiff(stack, options),
-  detectDrift: async (stack, options) => adapterOf(stack).detectDrift?.(stack, options),
-  deployHistory: async (stack, options) => adapterOf(stack).deployHistory?.(stack, options),
-  apply: (stack, context, plan, options) => adapterOf(stack).apply(stack, context, plan, options),
-  async findInBackend(stacks, context) {
-    const answers = [];
-    const logs = [];
-    for (const [adapter, own2] of Map.groupBy(stacks, adapterOf)) {
-      const result2 = await adapter.findInBackend?.(own2, context);
-      if (result2 === undefined)
-        continue;
-      answers.push(...result2.answers);
-      logs.push(result2.toolLog);
-    }
-    return { answers, toolLog: logs.join("") };
-  }
-};
-
 // node_modules/@actions/github/lib/context.js
-import { readFileSync as readFileSync9, existsSync as existsSync3 } from "fs";
+import { readFileSync, existsSync as existsSync2 } from "fs";
 import { EOL as EOL5 } from "os";
 
 class Context {
@@ -55219,8 +49485,8 @@ class Context {
     var _a3, _b, _c;
     this.payload = {};
     if (process.env.GITHUB_EVENT_PATH) {
-      if (existsSync3(process.env.GITHUB_EVENT_PATH)) {
-        this.payload = JSON.parse(readFileSync9(process.env.GITHUB_EVENT_PATH, { encoding: "utf8" }));
+      if (existsSync2(process.env.GITHUB_EVENT_PATH)) {
+        this.payload = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, { encoding: "utf8" }));
       } else {
         const path = process.env.GITHUB_EVENT_PATH;
         process.stdout.write(`GITHUB_EVENT_PATH ${path} does not exist${EOL5}`);
@@ -55264,29 +49530,29 @@ var httpClient = __toESM(require_lib(), 1);
 var import_undici2 = __toESM(require_undici(), 1);
 var __awaiter2 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve) {
+      resolve(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve, reject) {
     function fulfilled(value) {
       try {
-        step3(generator.next(value));
+        step(generator.next(value));
       } catch (e) {
         reject(e);
       }
     }
     function rejected(value) {
       try {
-        step3(generator["throw"](value));
+        step(generator["throw"](value));
       } catch (e) {
         reject(e);
       }
     }
-    function step3(result2) {
-      result2.done ? resolve2(result2.value) : adopt(result2.value).then(fulfilled, rejected);
+    function step(result2) {
+      result2.done ? resolve(result2.value) : adopt(result2.value).then(fulfilled, rejected);
     }
-    step3((generator = generator.apply(thisArg, _arguments || [])).next());
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
 function getAuthString(token, options) {
@@ -55341,7 +49607,7 @@ function getUserAgent() {
 }
 
 // node_modules/before-after-hook/lib/register.js
-function register(state2, name, method, options) {
+function register(state, name, method, options) {
   if (typeof method !== "function") {
     throw new Error("method for before hook must be a function");
   }
@@ -55350,24 +49616,24 @@ function register(state2, name, method, options) {
   }
   if (Array.isArray(name)) {
     return name.reverse().reduce((callback, name2) => {
-      return register.bind(null, state2, name2, callback, options);
+      return register.bind(null, state, name2, callback, options);
     }, method)();
   }
   return Promise.resolve().then(() => {
-    if (!state2.registry[name]) {
+    if (!state.registry[name]) {
       return method(options);
     }
-    return state2.registry[name].reduce((method2, registered) => {
+    return state.registry[name].reduce((method2, registered) => {
       return registered.hook.bind(null, method2, options);
     }, method)();
   });
 }
 
 // node_modules/before-after-hook/lib/add.js
-function addHook(state2, kind, name, hook) {
+function addHook(state, kind, name, hook) {
   const orig = hook;
-  if (!state2.registry[name]) {
-    state2.registry[name] = [];
+  if (!state.registry[name]) {
+    state.registry[name] = [];
   }
   if (kind === "before") {
     hook = (method, options) => {
@@ -55392,35 +49658,35 @@ function addHook(state2, kind, name, hook) {
       });
     };
   }
-  state2.registry[name].push({
+  state.registry[name].push({
     hook,
     orig
   });
 }
 
 // node_modules/before-after-hook/lib/remove.js
-function removeHook(state2, name, method) {
-  if (!state2.registry[name]) {
+function removeHook(state, name, method) {
+  if (!state.registry[name]) {
     return;
   }
-  const index = state2.registry[name].map((registered) => {
+  const index = state.registry[name].map((registered) => {
     return registered.orig;
   }).indexOf(method);
   if (index === -1) {
     return;
   }
-  state2.registry[name].splice(index, 1);
+  state.registry[name].splice(index, 1);
 }
 
 // node_modules/before-after-hook/index.js
 var bind = Function.bind;
 var bindable = bind.bind(bind);
-function bindApi(hook, state2, name) {
-  const removeHookRef = bindable(removeHook, null).apply(null, name ? [state2, name] : [state2]);
+function bindApi(hook, state, name) {
+  const removeHookRef = bindable(removeHook, null).apply(null, name ? [state, name] : [state]);
   hook.api = { remove: removeHookRef };
   hook.remove = removeHookRef;
   ["before", "error", "after", "wrap"].forEach((kind) => {
-    const args = name ? [state2, kind, name] : [state2, kind];
+    const args = name ? [state, kind, name] : [state, kind];
     hook[kind] = hook.api[kind] = bindable(addHook, null).apply(null, args);
   });
 }
@@ -55434,18 +49700,18 @@ function Singular() {
   return singularHook;
 }
 function Collection() {
-  const state2 = {
+  const state = {
     registry: {}
   };
-  const hook = register.bind(null, state2);
-  bindApi(hook, state2);
+  const hook = register.bind(null, state);
+  bindApi(hook, state);
   return hook;
 }
 var before_after_hook_default = { Singular, Collection };
 
 // node_modules/@octokit/endpoint/dist-bundle/index.js
-var VERSION2 = "0.0.0-development";
-var userAgent = `octokit-endpoint.js/${VERSION2} ${getUserAgent()}`;
+var VERSION = "0.0.0-development";
+var userAgent = `octokit-endpoint.js/${VERSION} ${getUserAgent()}`;
 var DEFAULTS = {
   method: "GET",
   baseUrl: "https://api.github.com",
@@ -55512,9 +49778,9 @@ function merge2(defaults, route, options) {
   const mergedOptions = mergeDeep(defaults || {}, options);
   if (options.url === "/graphql") {
     if (defaults && defaults.mediaType.previews?.length) {
-      mergedOptions.mediaType.previews = defaults.mediaType.previews.filter((preview5) => !mergedOptions.mediaType.previews.includes(preview5)).concat(mergedOptions.mediaType.previews);
+      mergedOptions.mediaType.previews = defaults.mediaType.previews.filter((preview) => !mergedOptions.mediaType.previews.includes(preview)).concat(mergedOptions.mediaType.previews);
     }
-    mergedOptions.mediaType.previews = (mergedOptions.mediaType.previews || []).map((preview5) => preview5.replace(/-preview/, ""));
+    mergedOptions.mediaType.previews = (mergedOptions.mediaType.previews || []).map((preview) => preview.replace(/-preview/, ""));
   }
   return mergedOptions;
 }
@@ -55641,17 +49907,17 @@ function parseUrl(template) {
 }
 function expand(template, context) {
   var operators = ["+", "#", ".", "/", ";", "?", "&"];
-  template = template.replace(/\{([^\{\}]+)\}|([^\{\}]+)/g, function(_, expression2, literal2) {
-    if (expression2) {
+  template = template.replace(/\{([^\{\}]+)\}|([^\{\}]+)/g, function(_, expression, literal2) {
+    if (expression) {
       let operator = "";
-      const values2 = [];
-      if (operators.indexOf(expression2.charAt(0)) !== -1) {
-        operator = expression2.charAt(0);
-        expression2 = expression2.substr(1);
+      const values = [];
+      if (operators.indexOf(expression.charAt(0)) !== -1) {
+        operator = expression.charAt(0);
+        expression = expression.substr(1);
       }
-      expression2.split(/,/g).forEach(function(variable) {
+      expression.split(/,/g).forEach(function(variable) {
         var tmp = /([^:\*]*)(?::(\d+)|(\*))?/.exec(variable);
-        values2.push(getValues(context, operator, tmp[1], tmp[2] || tmp[3]));
+        values.push(getValues(context, operator, tmp[1], tmp[2] || tmp[3]));
       });
       if (operator && operator !== "+") {
         var separator = ",";
@@ -55660,9 +49926,9 @@ function expand(template, context) {
         } else if (operator !== "#") {
           separator = operator;
         }
-        return (values2.length !== 0 ? operator : "") + values2.join(separator);
+        return (values.length !== 0 ? operator : "") + values.join(separator);
       } else {
-        return values2.join(",");
+        return values.join(",");
       }
     } else {
       return encodeReserved(literal2);
@@ -55678,7 +49944,7 @@ function parse5(options) {
   let method = options.method.toUpperCase();
   let url2 = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
   let headers = Object.assign({}, options.headers);
-  let body2;
+  let body;
   let parameters = omit2(options, [
     "method",
     "baseUrl",
@@ -55702,9 +49968,9 @@ function parse5(options) {
     if (url2.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
         const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
-        headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview5) => {
+        headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
           const format3 = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
-          return `application/vnd.github.${preview5}-preview${format3}`;
+          return `application/vnd.github.${preview}-preview${format3}`;
         }).join(",");
       }
     }
@@ -55713,20 +49979,20 @@ function parse5(options) {
     url2 = addQueryParameters(url2, remainingParameters);
   } else {
     if ("data" in remainingParameters) {
-      body2 = remainingParameters.data;
+      body = remainingParameters.data;
     } else {
       if (Object.keys(remainingParameters).length) {
-        body2 = remainingParameters;
+        body = remainingParameters;
       }
     }
   }
-  if (!headers["content-type"] && typeof body2 !== "undefined") {
+  if (!headers["content-type"] && typeof body !== "undefined") {
     headers["content-type"] = "application/json; charset=utf-8";
   }
-  if (["PATCH", "PUT"].includes(method) && typeof body2 === "undefined") {
-    body2 = "";
+  if (["PATCH", "PUT"].includes(method) && typeof body === "undefined") {
+    body = "";
   }
-  return Object.assign({ method, url: url2, headers }, typeof body2 !== "undefined" ? { body: body2 } : null, options.request ? { request: options.request } : null);
+  return Object.assign({ method, url: url2, headers }, typeof body !== "undefined" ? { body } : null, options.request ? { request: options.request } : null);
 }
 function endpointWithDefaults(defaults, route, options) {
   return parse5(merge2(defaults, route, options));
@@ -55952,8 +50218,8 @@ var stringifyIteratively = (rootValue, replacer, spaceParam) => {
   const isFunctionReplacer = typeof replacer === "function";
   const propertyList = Array.isArray(replacer) ? new Set(replacer.map(String)) : null;
   const prepareVal = (parent, key, val) => {
-    const isObject7 = val !== null && typeof val === "object";
-    const hasToJSON = isObject7 && typeof val.toJSON === "function";
+    const isObject2 = val !== null && typeof val === "object";
+    const hasToJSON = isObject2 && typeof val.toJSON === "function";
     if (hasToJSON) {
       val = val.toJSON(key);
     }
@@ -56184,8 +50450,8 @@ var convertMarkedBigIntsReviver = (key, value, context, userReviver) => {
     return value;
   return userReviver(key, value, context);
 };
-var JSONParseV2 = (text7, reviver) => {
-  return JSON.parse(text7, (key, value, context) => {
+var JSONParseV2 = (text2, reviver) => {
+  return JSON.parse(text2, (key, value, context) => {
     const isNumber = typeof value === "number";
     const isOutOfBounds = value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER;
     const isBigNumber = isNumber && isOutOfBounds;
@@ -56213,9 +50479,9 @@ var applyReviverIteratively = (parsed, userReviver) => {
       const value = node2.parent[node2.key];
       const isComplexObject = value !== null && typeof value === "object";
       if (isComplexObject) {
-        const keys4 = Object.keys(value);
-        for (let i = keys4.length - 1;i >= 0; i--) {
-          stack.push({ parent: value, key: keys4[i], visited: false });
+        const keys = Object.keys(value);
+        for (let i = keys.length - 1;i >= 0; i--) {
+          stack.push({ parent: value, key: keys[i], visited: false });
         }
       }
     } else {
@@ -56246,8 +50512,8 @@ var applyReviverIteratively = (parsed, userReviver) => {
   }
   return rootHolder[""];
 };
-var serializeBigInts = (text7) => {
-  return text7.replace(stringsOrLargeNumbers, (match, digits, fractional, exponential) => {
+var serializeBigInts = (text2) => {
+  return text2.replace(stringsOrLargeNumbers, (match, digits, fractional, exponential) => {
     const isString = match[0] === '"';
     const isNoise = isString && noiseValueWithQuotes.test(match);
     if (isNoise)
@@ -56260,17 +50526,17 @@ var serializeBigInts = (text7) => {
     return '"' + match + 'n"';
   });
 };
-var JSONParse = (text7, reviver) => {
-  if (!text7)
-    return originalParse(text7, reviver);
+var JSONParse = (text2, reviver) => {
+  if (!text2)
+    return originalParse(text2, reviver);
   try {
     if (isContextSourceSupported())
-      return JSONParseV2(text7, reviver);
-    const serializedData = serializeBigInts(text7);
+      return JSONParseV2(text2, reviver);
+    const serializedData = serializeBigInts(text2);
     return originalParse(serializedData, (key, value, context) => convertMarkedBigIntsReviver(key, value, context, reviver));
   } catch (error63) {
     if (error63 instanceof RangeError) {
-      const serializedData = serializeBigInts(text7);
+      const serializedData = serializeBigInts(text2);
       const parsed = originalParse(serializedData);
       return applyReviverIteratively(parsed, reviver);
     }
@@ -56306,10 +50572,10 @@ class RequestError extends Error {
 }
 
 // node_modules/@octokit/request/dist-bundle/index.js
-var VERSION3 = "10.0.16";
+var VERSION2 = "10.0.16";
 var defaults_default = {
   headers: {
-    "user-agent": `octokit-request.js/${VERSION3} ${getUserAgent()}`
+    "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
   }
 };
 function isPlainObject3(value) {
@@ -56331,7 +50597,7 @@ async function fetchWrapper(requestOptions) {
   }
   const log = requestOptions.request?.log || console;
   const parseSuccessResponseBody = requestOptions.request?.parseSuccessResponseBody !== false;
-  const body2 = isPlainObject3(requestOptions.body) || Array.isArray(requestOptions.body) ? JSONStringify(requestOptions.body) : requestOptions.body;
+  const body = isPlainObject3(requestOptions.body) || Array.isArray(requestOptions.body) ? JSONStringify(requestOptions.body) : requestOptions.body;
   const requestHeaders = Object.fromEntries(Object.entries(requestOptions.headers).map(([name, value]) => [
     name,
     String(value)
@@ -56340,7 +50606,7 @@ async function fetchWrapper(requestOptions) {
   try {
     fetchResponse = await fetch3(requestOptions.url, {
       method: requestOptions.method,
-      body: body2,
+      body,
       redirect: requestOptions.request?.redirect,
       headers: requestHeaders,
       signal: requestOptions.request?.signal,
@@ -56421,12 +50687,12 @@ async function getResponseData(response) {
   }
   const mimetype = parse6(contentType);
   if (isJSONResponse(mimetype)) {
-    let text7 = "";
+    let text2 = "";
     try {
-      text7 = await response.text();
-      return JSONParse(text7);
+      text2 = await response.text();
+      return JSONParse(text2);
     } catch (err) {
-      return text7;
+      return text2;
     }
   } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8" && mimetype.type !== "application/octet-stream") {
     return response.text().catch(noop);
@@ -56475,7 +50741,7 @@ function withDefaults2(oldEndpoint, newDefaults) {
 var request = withDefaults2(endpoint, defaults_default);
 
 // node_modules/@octokit/graphql/dist-bundle/index.js
-var VERSION4 = "0.0.0-development";
+var VERSION3 = "0.0.0-development";
 function _buildMessageForResponseErrors(data) {
   return `Request failed due to following response errors:
 ` + data.errors.map((e) => ` - ${e.message}`).join(`
@@ -56562,7 +50828,7 @@ function withDefaults3(request2, newDefaults) {
 }
 var graphql2 = withDefaults3(request, {
   headers: {
-    "user-agent": `octokit-graphql.js/${VERSION4} ${getUserAgent()}`
+    "user-agent": `octokit-graphql.js/${VERSION3} ${getUserAgent()}`
   },
   method: "POST",
   url: "/graphql"
@@ -56576,8 +50842,8 @@ function withCustomRequest(customRequest) {
 
 // node_modules/@octokit/auth-token/dist-bundle/index.js
 var b64url = "(?:[a-zA-Z0-9_-]+)";
-var sep6 = "\\.";
-var jwtRE = new RegExp(`^${b64url}${sep6}${b64url}${sep6}${b64url}$`);
+var sep = "\\.";
+var jwtRE = new RegExp(`^${b64url}${sep}${b64url}${sep}${b64url}$`);
 var isJWT = jwtRE.test.bind(jwtRE);
 async function auth(token) {
   const isApp = isJWT(token);
@@ -56615,7 +50881,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 };
 
 // node_modules/@octokit/core/dist-src/version.js
-var VERSION5 = "7.0.8";
+var VERSION4 = "7.0.8";
 
 // node_modules/@octokit/core/dist-src/index.js
 var noop2 = () => {};
@@ -56636,10 +50902,10 @@ function createLogger(logger = {}) {
   }
   return logger;
 }
-var userAgentTrail = `octokit-core.js/${VERSION5} ${getUserAgent()}`;
+var userAgentTrail = `octokit-core.js/${VERSION4} ${getUserAgent()}`;
 
 class Octokit {
-  static VERSION = VERSION5;
+  static VERSION = VERSION4;
   static defaults(defaults) {
     const OctokitWithDefaults = class extends this {
       constructor(...args) {
@@ -56724,7 +50990,7 @@ class Octokit {
 }
 
 // node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-var VERSION6 = "17.0.0";
+var VERSION5 = "17.0.0";
 
 // node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -59043,27 +53309,27 @@ var handler = {
   has({ scope }, methodName) {
     return endpointMethodsMap.get(scope).has(methodName);
   },
-  getOwnPropertyDescriptor(target2, methodName) {
+  getOwnPropertyDescriptor(target, methodName) {
     return {
-      value: this.get(target2, methodName),
+      value: this.get(target, methodName),
       configurable: true,
       writable: true,
       enumerable: true
     };
   },
-  defineProperty(target2, methodName, descriptor) {
-    Object.defineProperty(target2.cache, methodName, descriptor);
+  defineProperty(target, methodName, descriptor) {
+    Object.defineProperty(target.cache, methodName, descriptor);
     return true;
   },
-  deleteProperty(target2, methodName) {
-    delete target2.cache[methodName];
+  deleteProperty(target, methodName) {
+    delete target.cache[methodName];
     return true;
   },
   ownKeys({ scope }) {
     return [...endpointMethodsMap.get(scope).keys()];
   },
-  set(target2, methodName, value) {
-    return target2.cache[methodName] = value;
+  set(target, methodName, value) {
+    return target.cache[methodName] = value;
   },
   get({ octokit, scope, cache }, methodName) {
     if (cache[methodName]) {
@@ -59132,7 +53398,7 @@ function restEndpointMethods(octokit) {
     rest: api2
   };
 }
-restEndpointMethods.VERSION = VERSION6;
+restEndpointMethods.VERSION = VERSION5;
 function legacyRestEndpointMethods(octokit) {
   const api2 = endpointsToMethods(octokit);
   return {
@@ -59140,10 +53406,10 @@ function legacyRestEndpointMethods(octokit) {
     rest: api2
   };
 }
-legacyRestEndpointMethods.VERSION = VERSION6;
+legacyRestEndpointMethods.VERSION = VERSION5;
 
 // node_modules/@octokit/plugin-paginate-rest/dist-bundle/index.js
-var VERSION7 = "0.0.0-development";
+var VERSION6 = "0.0.0-development";
 function normalizePaginatedListResponse(response) {
   if (!response.data) {
     return {
@@ -59250,7 +53516,7 @@ function paginateRest(octokit) {
     })
   };
 }
-paginateRest.VERSION = VERSION7;
+paginateRest.VERSION = VERSION6;
 
 // node_modules/@actions/github/lib/utils.js
 var context = new Context;
@@ -59292,6 +53558,6620 @@ function createGitHubClient(token, options) {
   });
   return octokit;
 }
+
+// src/github/inputs.ts
+var DEFAULT_PREVIEW_TIMEOUT_MINUTES = 10;
+function wholeNumber(getInput2, name, fallback, hint = "") {
+  const text2 = getInput2(name).trim();
+  if (text2 === "")
+    return fallback;
+  if (!/^[1-9]\d*$/.test(text2)) {
+    throw new Error(`The "${name}" input must be a whole number of 1 or more, and it is ${JSON.stringify(text2)}.${hint}`);
+  }
+  return Number(text2);
+}
+function parseJobStatus(input2) {
+  const value = input2.trim();
+  if (value === "")
+    return;
+  if (value === "success" || value === "failure" || value === "cancelled")
+    return value;
+  throw new Error(`The "job-status" input is ${JSON.stringify(value)}. Give it \${{ job.status }}, which is success, failure or cancelled.`);
+}
+function readToken(getInput2) {
+  const token = getInput2("github-token");
+  if (token.trim() === "") {
+    throw new Error('The "github-token" input is empty. Leave it out of the workflow, so it takes the GITHUB_TOKEN of the run.');
+  }
+  return token;
+}
+var MINUTES = " It is a number of whole minutes.";
+function readScanInputs(getInput2) {
+  const concurrency = wholeNumber(getInput2, "concurrency", undefined);
+  const previewTimeoutMinutes = wholeNumber(getInput2, "preview-timeout", DEFAULT_PREVIEW_TIMEOUT_MINUTES, MINUTES);
+  return {
+    concurrency,
+    previewTimeoutMinutes,
+    token: readToken(getInput2),
+    strict: readBoolean(getInput2, "strict")
+  };
+}
+function readJobId(getInput2) {
+  const text2 = getInput2("job-id").trim();
+  if (text2 === "")
+    return;
+  if (!/^[1-9]\d*$/.test(text2)) {
+    throw new Error(`The "job-id" input must be the id of the running job, a whole number, and it is ${JSON.stringify(text2)}. Leave it out of the workflow, so it takes the id GitHub gives the job.`);
+  }
+  return text2;
+}
+function readApplyInputs(getInput2) {
+  const text2 = getInput2("deployment-id").trim();
+  if (text2 === "") {
+    throw new Error('The "deployment-id" input is required in apply mode. Set it to the deployment of the matrix entry: deployment-id: ${{ matrix.deployment }}.');
+  }
+  if (!/^[1-9]\d*$/.test(text2)) {
+    throw new Error(`The "deployment-id" input must be the id of a deployment record, a whole number, and it is ${JSON.stringify(text2)}.`);
+  }
+  const previewTimeoutMinutes = wholeNumber(getInput2, "preview-timeout", DEFAULT_PREVIEW_TIMEOUT_MINUTES, MINUTES);
+  return {
+    deploymentId: Number(text2),
+    previewTimeoutMinutes,
+    token: readToken(getInput2),
+    dryRun: readBoolean(getInput2, "dry-run"),
+    deployTimeoutMinutes: wholeNumber(getInput2, "deploy-timeout", undefined, MINUTES)
+  };
+}
+function readBoolean(getInput2, name) {
+  const text2 = getInput2(name).trim();
+  if (text2 === "" || text2 === "false")
+    return false;
+  if (text2 === "true")
+    return true;
+  throw new Error(`The "${name}" input is true or false, and it is ${JSON.stringify(text2)}.`);
+}
+function readBackend(getInput2) {
+  const text2 = getInput2("backend").trim();
+  if (text2 === "" || text2 === "false")
+    return false;
+  if (text2 === "true")
+    return true;
+  throw new Error(`The "backend" input is true or false, and it is ${JSON.stringify(text2)}.`);
+}
+function readPullRequestPreview(getInput2) {
+  const text2 = getInput2("pull-request-preview").trim();
+  if (text2 === "" || text2 === "false")
+    return false;
+  if (text2 === "true")
+    return true;
+  throw new Error(`The "pull-request-preview" input is true or false, and it is ${JSON.stringify(text2)}.`);
+}
+function refuseDeploymentId(mode, getInput2) {
+  const only = (name, of = "apply") => new Error(`The "${name}" input is only for ${of} mode, and this step runs ${mode} mode. Take it out of this step.`);
+  const auto = mode === "auto";
+  if (!auto && mode !== "check" && getInput2("backend").trim() === "true") {
+    throw only("backend", "check");
+  }
+  if (!auto && mode !== "check" && getInput2("pull-request-preview").trim() === "true") {
+    throw only("pull-request-preview", "check");
+  }
+  if (!auto && mode !== "scan" && getInput2("strict").trim() === "true") {
+    throw only("strict", "scan");
+  }
+  if (mode === "apply")
+    return;
+  if (getInput2("deployment-id").trim() !== "")
+    throw only("deployment-id");
+  if (auto)
+    return;
+  if (getInput2("deploy-timeout").trim() !== "")
+    throw only("deploy-timeout");
+  if (getInput2("dry-run").trim() === "true")
+    throw only("dry-run");
+}
+var NOTIFY_INPUTS = [
+  "slack-webhook-url",
+  "telegram-bot-token",
+  "telegram-chat-id",
+  "telegram-thread-id",
+  "webhook-url"
+];
+var TELEGRAM_TOKEN = /^\d+:[\w-]+$/;
+var TELEGRAM_CHAT = /^(-?\d+|@\w+)$/;
+var TELEGRAM_THREAD = /^[1-9]\d*$/;
+function readNotifyTargets(getInput2) {
+  const [slack, token, chatId, threadId, webhook] = NOTIFY_INPUTS.map((name) => getInput2(name).trim());
+  const targets = {};
+  const problems = [];
+  const secrets = [slack, token, chatId, webhook].filter((value) => !!value);
+  if (slack) {
+    if (/^https:\/\//.test(slack))
+      targets.slack = slack;
+    else
+      problems.push('The "slack-webhook-url" input is not an https:// address, so nothing is sent to Slack. Set it to the address of an incoming webhook, from a secret.');
+  }
+  if (token && !chatId) {
+    problems.push('The "telegram-bot-token" input is set and "telegram-chat-id" is not, so nothing is sent to Telegram. Set both.');
+  } else if (chatId && !token) {
+    problems.push('The "telegram-chat-id" input is set and "telegram-bot-token" is not, so nothing is sent to Telegram. Set both.');
+  } else if (token && chatId) {
+    if (!TELEGRAM_TOKEN.test(token)) {
+      problems.push('The "telegram-bot-token" input is not a bot token as BotFather gives it, so nothing is sent to Telegram.');
+    } else if (!TELEGRAM_CHAT.test(chatId)) {
+      problems.push('The "telegram-chat-id" input is not a chat id or an @ name, so nothing is sent to Telegram.');
+    } else if (threadId && !TELEGRAM_THREAD.test(threadId)) {
+      problems.push('The "telegram-thread-id" input is not the id of a topic, a whole number above 0, so nothing is sent to Telegram.');
+    } else {
+      targets.telegram = { token, chatId, ...threadId ? { threadId: Number(threadId) } : {} };
+    }
+  }
+  if (webhook) {
+    if (/^https?:\/\//.test(webhook))
+      targets.webhook = webhook;
+    else
+      problems.push('The "webhook-url" input is not an http:// or https:// address, so nothing is sent to it.');
+  }
+  return { targets, problems, secrets };
+}
+function unusedNotifyInputs(mode, getInput2) {
+  if (mode === "auto" || mode === "scan" || mode === "resolve" || mode === "apply")
+    return [];
+  return NOTIFY_INPUTS.filter((name) => getInput2(name).trim() !== "");
+}
+function readEnvFileInput(getInput2) {
+  const text2 = getInput2("env-file").trim();
+  if (text2 === "")
+    return;
+  if (/[\r\n]/.test(text2)) {
+    throw new Error('The "env-file" input names one file, and it holds more than one line. To load several files, join them in a step before Sluiceway.');
+  }
+  return text2;
+}
+function unusedEnvFileInput(mode, getInput2) {
+  if (getInput2("env-file").trim() === "")
+    return;
+  if (mode === "auto" || mode === "scan" || mode === "apply")
+    return;
+  if (mode === "check" && (getInput2("backend").trim() === "true" || getInput2("pull-request-preview").trim() === "true")) {
+    return;
+  }
+  const where2 = mode === "check" ? "check mode without backend: true or pull-request-preview: true" : `${mode} mode`;
+  return `"env-file" is set on a step in ${where2}, which never runs the tool, so the file is not read. Only scan, apply and the check with backend: true or pull-request-preview: true do. Take it out of this step.`;
+}
+
+// src/github/job.ts
+function readJob(env) {
+  const need = (name) => {
+    const value = env[name];
+    if (!value) {
+      throw new Error(`${name} is not set. Sluiceway runs as a step of a GitHub Actions job.`);
+    }
+    return value;
+  };
+  const root = need("GITHUB_WORKSPACE");
+  const repository = need("GITHUB_REPOSITORY");
+  const [owner, repo, ...rest] = repository.split("/");
+  if (!owner || !repo || rest.length > 0) {
+    throw new Error(`GITHUB_REPOSITORY is ${JSON.stringify(repository)}, which is not an owner and a repo.`);
+  }
+  const workflowRef = need("GITHUB_WORKFLOW_REF");
+  const workflow = /^[^/]+\/[^/]+\/\.github\/workflows\/([^/]+?\.ya?ml)@/.exec(workflowRef)?.[1];
+  if (!workflow) {
+    throw new Error(`GITHUB_WORKFLOW_REF is ${JSON.stringify(workflowRef)}, which names no workflow file.`);
+  }
+  const server = (env.GITHUB_SERVER_URL || "https://github.com").replace(/\/+$/, "");
+  return {
+    root,
+    owner,
+    repo,
+    repoUrl: `${server}/${owner}/${repo}`,
+    runId: need("GITHUB_RUN_ID"),
+    runAttempt: need("GITHUB_RUN_ATTEMPT"),
+    sha: need("GITHUB_SHA"),
+    event: need("GITHUB_EVENT_NAME"),
+    workflow
+  };
+}
+
+// src/github/job-log.ts
+import { randomUUID as randomUUID2 } from "node:crypto";
+import { writeFile as writeFile2 } from "node:fs/promises";
+function actionsLog() {
+  return {
+    info: (line) => info(line),
+    group(title, lines, verbatim = []) {
+      startGroup(title);
+      for (const line of lines)
+        info(line);
+      if (verbatim.length > 0) {
+        const token = randomUUID2();
+        info(`::stop-commands::${token}`);
+        for (const line of verbatim)
+          info(line);
+        info(`::${token}::`);
+      }
+      endGroup();
+    },
+    warning: (message, title) => warning(message, { title }),
+    async writeSummary(text2) {
+      const file2 = process.env.GITHUB_STEP_SUMMARY;
+      if (!file2) {
+        throw new Error("The runner gave this step no summary file (GITHUB_STEP_SUMMARY is not set).");
+      }
+      await writeFile2(file2, text2, "utf8");
+    }
+  };
+}
+
+// src/github/octokit-attribution.ts
+var WALK = `query ($owner: String!, $repo: String!, $head: GitObjectID!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    defaultBranchRef {
+      name
+    }
+    object(oid: $head) {
+      ... on Commit {
+        history(first: $first, after: $after) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            oid
+            messageHeadline
+            author {
+              user {
+                login
+              }
+            }
+            parents(first: 10) {
+              nodes {
+                oid
+              }
+            }
+            associatedPullRequests(first: 5) {
+              nodes {
+                number
+                title
+                merged
+                baseRefName
+                author {
+                  __typename
+                  login
+                }
+                changedFiles
+                files(first: 100) {
+                  nodes {
+                    path
+                    changeType
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+var PAGE = 100;
+var FILE_LIMIT = 3000;
+function paths(files) {
+  return files.flatMap((file2) => file2.previous_filename === undefined ? [file2.filename] : [file2.filename, file2.previous_filename]);
+}
+function nextPage(link) {
+  return /<([^>]+)>;\s*rel="next"/.exec(link ?? "")?.[1];
+}
+function present(nodes) {
+  return (nodes ?? []).filter((node2) => node2 !== null);
+}
+function toPullRequest(node2) {
+  const { author: author2 } = node2;
+  return {
+    number: node2.number,
+    title: node2.title,
+    author: author2 === null ? undefined : author2.__typename === "Bot" && !author2.login.endsWith("[bot]") ? `${author2.login}[bot]` : author2.login,
+    base: node2.baseRefName,
+    merged: node2.merged,
+    changedFiles: node2.changedFiles,
+    files: present(node2.files?.nodes).map(({ path }) => path),
+    renamed: present(node2.files?.nodes).some(({ changeType }) => changeType === "RENAMED")
+  };
+}
+function toCommit(node2) {
+  return {
+    sha: node2.oid,
+    parents: present(node2.parents.nodes).map(({ oid }) => oid),
+    author: node2.author?.user?.login,
+    message: node2.messageHeadline,
+    pullRequests: present(node2.associatedPullRequests?.nodes).map(toPullRequest)
+  };
+}
+function attributionCalls(octokit, repo) {
+  return {
+    async walkCommits(head, lookback = LOOKBACK) {
+      const commits = [];
+      let defaultBranch;
+      let after = null;
+      do {
+        const first = Math.min(PAGE, lookback - commits.length);
+        const data = await octokit.graphql(WALK, { ...repo, head, first, after });
+        const history = data.repository?.object?.history;
+        if (!history)
+          throw new Error(`GitHub has no commit ${head.slice(0, 7)} to walk back from.`);
+        defaultBranch = data.repository?.defaultBranchRef?.name;
+        if (defaultBranch === undefined)
+          throw new Error("GitHub named no default branch.");
+        commits.push(...present(history.nodes).map(toCommit));
+        after = history.pageInfo.hasNextPage ? history.pageInfo.endCursor : null;
+      } while (after !== null && commits.length < lookback);
+      return { defaultBranch, commits };
+    },
+    async listPullRequestFiles(number4) {
+      const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
+        ...repo,
+        pull_number: number4,
+        per_page: PAGE
+      });
+      return files.length >= FILE_LIMIT ? undefined : paths(files);
+    },
+    async listCommitFiles(sha) {
+      const first = await octokit.rest.repos.getCommit({ ...repo, ref: sha });
+      const files = [...first.data.files ?? []];
+      for (let next = nextPage(first.headers.link);next !== undefined; ) {
+        const page = await octokit.request(`GET ${next}`);
+        files.push(...page.data.files ?? []);
+        next = nextPage(page.headers.link);
+      }
+      return files.length >= FILE_LIMIT ? undefined : paths(files);
+    }
+  };
+}
+
+// src/github/octokit-checks.ts
+function toCheckRun(run) {
+  return { id: run.id, name: run.name, htmlUrl: run.html_url ?? "" };
+}
+function checkCalls(octokit, repo) {
+  return {
+    async listCheckRuns(sha) {
+      const runs = await octokit.paginate(octokit.rest.checks.listForRef, {
+        ...repo,
+        ref: sha,
+        filter: "latest",
+        per_page: 100
+      });
+      return runs.map(toCheckRun);
+    },
+    async createCheckRun({ sha, name, output: output2 }) {
+      const { data } = await octokit.rest.checks.create({
+        ...repo,
+        name,
+        head_sha: sha,
+        status: "completed",
+        conclusion: "neutral",
+        output: output2
+      });
+      return toCheckRun(data);
+    },
+    async updateCheckRun(id, output2) {
+      const { data } = await octokit.rest.checks.update({ ...repo, check_run_id: id, output: output2 });
+      return toCheckRun(data);
+    }
+  };
+}
+
+// src/github/octokit-deployments.ts
+var NEWEST_DEPLOYMENTS = `query ($owner: String!, $repo: String!, $environment: String!) {
+  repository(owner: $owner, name: $repo) {
+    deployments(environments: [$environment], first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
+      pageInfo {
+        hasNextPage
+      }
+      nodes {
+        databaseId
+        task
+        environment
+        commitOid
+        payload
+        createdAt
+        creator {
+          login
+        }
+        latestStatus {
+          state
+          description
+          createdAt
+        }
+        statuses(first: 2) {
+          nodes {
+            state
+            createdAt
+          }
+        }
+      }
+    }
+  }
+}`;
+function parsePayload(payload) {
+  let parsed = payload;
+  for (let depth = 0;depth < 2 && typeof parsed === "string"; depth++) {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      break;
+    }
+  }
+  return parsed;
+}
+function toDeployment(deployment) {
+  return {
+    id: deployment.id,
+    task: deployment.task,
+    environment: deployment.environment,
+    sha: deployment.sha,
+    payload: parsePayload(deployment.payload),
+    createdAt: deployment.created_at,
+    ...deployment.creator?.login ? { creator: deployment.creator.login } : {}
+  };
+}
+function toStatus(status) {
+  return {
+    state: status.state,
+    description: status.description ?? "",
+    createdAt: status.created_at
+  };
+}
+function withSucceededAt(latest, newestFirst) {
+  if (latest.state !== "inactive")
+    return latest;
+  const under = newestFirst[1];
+  return under?.state.toLowerCase() === "success" ? { ...latest, succeededAt: under.createdAt } : latest;
+}
+function deploymentCalls(octokit, repo) {
+  return {
+    async createDeployment({ sha, task, environment, payload }) {
+      const { data } = await octokit.rest.repos.createDeployment({
+        ...repo,
+        ref: sha,
+        task,
+        environment,
+        payload,
+        auto_merge: false,
+        required_contexts: []
+      });
+      if (!("id" in data))
+        throw new Error("GitHub created no deployment record.");
+      return toDeployment(data);
+    },
+    async createDeploymentStatus(id, { state, description, logUrl }) {
+      const { data } = await octokit.rest.repos.createDeploymentStatus({
+        ...repo,
+        deployment_id: id,
+        state,
+        auto_inactive: false,
+        ...description === undefined ? {} : { description },
+        ...logUrl === undefined ? {} : { log_url: logUrl }
+      });
+      return toStatus(data);
+    },
+    async listNewestDeployments(environment) {
+      const { repository } = await octokit.graphql(NEWEST_DEPLOYMENTS, {
+        ...repo,
+        environment
+      });
+      if (!repository)
+        throw new Error("GitHub gave no repository to read deployments from.");
+      return {
+        records: repository.deployments.nodes.flatMap((node2) => node2 === null || node2.databaseId === null ? [] : {
+          id: node2.databaseId,
+          task: node2.task ?? "",
+          environment: node2.environment ?? "",
+          sha: node2.commitOid,
+          payload: parsePayload(node2.payload),
+          createdAt: node2.createdAt,
+          ...node2.creator?.login ? { creator: node2.creator.login } : {},
+          status: node2.latestStatus ? withSucceededAt({
+            state: node2.latestStatus.state.toLowerCase(),
+            description: node2.latestStatus.description ?? "",
+            createdAt: node2.latestStatus.createdAt
+          }, node2.statuses?.nodes ?? []) : undefined
+        }),
+        more: repository.deployments.pageInfo.hasNextPage
+      };
+    },
+    async newestDeploymentOfTask(task) {
+      const { data } = await octokit.rest.repos.listDeployments({ ...repo, task, per_page: 1 });
+      return data[0] ? toDeployment(data[0]) : undefined;
+    },
+    async latestDeploymentStatus(id) {
+      const { data } = await octokit.rest.repos.listDeploymentStatuses({
+        ...repo,
+        deployment_id: id,
+        per_page: 2
+      });
+      return data[0] ? withSucceededAt(toStatus(data[0]), data.map(({ state, created_at }) => ({ state, createdAt: created_at }))) : undefined;
+    },
+    async getDeployment(id) {
+      const { data } = await octokit.rest.repos.getDeployment({ ...repo, deployment_id: id });
+      return toDeployment(data);
+    },
+    async getWorkflowRun(runId) {
+      try {
+        const { data } = await octokit.rest.actions.getWorkflowRun({
+          ...repo,
+          run_id: Number(runId)
+        });
+        return { completed: data.status === "completed" };
+      } catch (error63) {
+        if (error63.status === 404)
+          return;
+        throw error63;
+      }
+    }
+  };
+}
+
+// src/github/port.ts
+class TokenRefused extends Error {
+  permission;
+  constructor(message, permission) {
+    super(message);
+    this.name = "TokenRefused";
+    this.permission = permission;
+  }
+}
+
+// src/github/octokit-pulls.ts
+var OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    defaultBranchRef {
+      name
+    }
+    pullRequests(states: OPEN, first: 100, after: $after, orderBy: {field: CREATED_AT, direction: ASC}) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        number
+        title
+        isDraft
+        baseRefName
+        headRefOid
+        mergeable
+        isCrossRepository
+        author {
+          __typename
+          login
+        }
+        changedFiles
+        files(first: 100) {
+          nodes {
+            path
+            changeType
+          }
+        }
+        commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup {
+                state
+                contexts(first: 100) {
+                  checkRunCountsByState {
+                    state
+                    count
+                  }
+                  statusContextCountsByState {
+                    state
+                    count
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+function present2(nodes) {
+  return (nodes ?? []).filter((node2) => node2 !== null);
+}
+var CHECKS = {
+  SUCCESS: "success",
+  PENDING: "pending",
+  EXPECTED: "pending",
+  FAILURE: "failure",
+  ERROR: "failure"
+};
+var PASSED_OR_RUNNING = new Set([
+  "SUCCESS",
+  "NEUTRAL",
+  "SKIPPED",
+  "IN_PROGRESS",
+  "PENDING",
+  "QUEUED",
+  "WAITING"
+]);
+var FAILED_STATUS = new Set(["FAILURE", "ERROR"]);
+function anyFailed(contexts) {
+  const some = (counts2, failed) => (counts2 ?? []).some(({ state, count }) => count > 0 && failed(state));
+  return some(contexts?.checkRunCountsByState, (state) => !PASSED_OR_RUNNING.has(state)) || some(contexts?.statusContextCountsByState, (state) => FAILED_STATUS.has(state));
+}
+function checksOf(rollup) {
+  if (!rollup)
+    return "none";
+  const checks3 = CHECKS[rollup.state] ?? "failure";
+  if (checks3 === "pending" && anyFailed(rollup.contexts))
+    return "failure";
+  return checks3;
+}
+function toPullRequest2(node2) {
+  const files = present2(node2.files?.nodes);
+  const rollup = present2(node2.commits.nodes)[0]?.commit.statusCheckRollup;
+  const { author: author2 } = node2;
+  return {
+    number: node2.number,
+    title: node2.title,
+    author: author2 === null ? undefined : author2.__typename === "Bot" && !author2.login.endsWith("[bot]") ? `${author2.login}[bot]` : author2.login,
+    draft: node2.isDraft,
+    base: node2.baseRefName,
+    head: node2.headRefOid,
+    mergeable: node2.mergeable === "MERGEABLE" ? "mergeable" : node2.mergeable === "CONFLICTING" ? "conflicting" : "unknown",
+    checks: checksOf(rollup),
+    files: files.map(({ path }) => path),
+    filesComplete: files.length === node2.changedFiles && files.every(({ changeType }) => changeType !== "RENAMED"),
+    fromFork: node2.isCrossRepository
+  };
+}
+var REFUSALS = new Set([405, 409, 422]);
+function statusOf(error63) {
+  const status = error63?.status;
+  return typeof status === "number" ? status : undefined;
+}
+function messageOf(error63) {
+  const response = error63?.response;
+  const message = response?.data?.message;
+  if (typeof message === "string")
+    return message;
+  return error63 instanceof Error ? error63.message : String(error63);
+}
+function refusedOrAsIs(error63) {
+  const errors4 = error63?.errors;
+  if (!Array.isArray(errors4) || errors4.length === 0)
+    return error63;
+  const refused = errors4;
+  if (!refused.every((one) => one.type === "FORBIDDEN"))
+    return error63;
+  const paths2 = refused.map(({ path }) => Array.isArray(path) ? path.map(String) : []);
+  const words = typeof refused[0]?.message === "string" ? refused[0].message : "refused";
+  const first = paths2[0] ?? [];
+  if (paths2.every((path) => path.join(".") === "repository.pullRequests")) {
+    return new TokenRefused(`GitHub answered "${words}" for the pull requests`, "pull-requests: read");
+  }
+  const parts = paths2.length === 1 ? "a part" : `${paths2.length} parts`;
+  return new TokenRefused(`GitHub answered "${words}" for ${parts} of the pull requests, the first at ${first.join(".")}`);
+}
+function pullCalls(octokit, repo) {
+  return {
+    async listOpenPullRequests() {
+      let defaultBranch;
+      const pullRequests = [];
+      let after = null;
+      for (;; ) {
+        const data = await octokit.graphql(OPEN_PULL_REQUESTS, { ...repo, after }).catch((error63) => {
+          throw refusedOrAsIs(error63);
+        });
+        defaultBranch ??= data.repository?.defaultBranchRef?.name;
+        const list = data.repository?.pullRequests;
+        pullRequests.push(...present2(list?.nodes).map(toPullRequest2));
+        const next = list?.pageInfo;
+        if (!next?.hasNextPage || !next.endCursor)
+          break;
+        after = next.endCursor;
+      }
+      if (defaultBranch === undefined)
+        throw new Error("GitHub named no default branch.");
+      return { defaultBranch, pullRequests };
+    },
+    async allowedMergeMethods() {
+      const { data } = await octokit.rest.repos.get(repo);
+      return {
+        squash: data.allow_squash_merge,
+        rebase: data.allow_rebase_merge,
+        merge: data.allow_merge_commit
+      };
+    },
+    async mergePullRequest(number4, { head, method }) {
+      try {
+        const { data } = await octokit.rest.pulls.merge({
+          ...repo,
+          pull_number: number4,
+          sha: head,
+          merge_method: method
+        });
+        return { merged: true, sha: data.sha };
+      } catch (error63) {
+        const status = statusOf(error63);
+        if (status === undefined || !REFUSALS.has(status))
+          throw error63;
+        return { merged: false, status, message: messageOf(error63) };
+      }
+    },
+    async readRepositoryFile({ owner, repo: name, path, ref }) {
+      try {
+        const { data } = await octokit.rest.repos.getContent({
+          owner,
+          repo: name,
+          path,
+          ...ref === undefined ? {} : { ref },
+          mediaType: { format: "raw" }
+        });
+        return typeof data === "string" ? data : undefined;
+      } catch (error63) {
+        if (statusOf(error63) === 404)
+          return;
+        throw error63;
+      }
+    }
+  };
+}
+
+// src/github/octokit-runs.ts
+function runCalls(octokit, repo) {
+  return {
+    async listIssuesRuns(workflow) {
+      const { data } = await octokit.rest.actions.listWorkflowRuns({
+        ...repo,
+        workflow_id: workflow,
+        event: "issues",
+        per_page: 100
+      });
+      return data.workflow_runs.map((run) => ({
+        id: String(run.id),
+        completed: run.status === "completed"
+      }));
+    },
+    async listQueuedRuns(workflow) {
+      const { data } = await octokit.rest.actions.listWorkflowRuns({
+        ...repo,
+        workflow_id: workflow,
+        status: "queued",
+        per_page: 100
+      });
+      return data.workflow_runs.map((run) => ({
+        id: String(run.id),
+        status: run.status ?? "",
+        since: run.run_started_at ?? run.created_at
+      }));
+    },
+    async listEndedRuns(workflow) {
+      const { data } = await octokit.rest.actions.listWorkflowRuns({
+        ...repo,
+        workflow_id: workflow,
+        status: "completed",
+        per_page: 100
+      });
+      return data.workflow_runs.map((run) => ({
+        id: String(run.id),
+        status: run.status ?? "",
+        since: run.run_started_at ?? run.created_at,
+        conclusion: run.conclusion ?? undefined
+      }));
+    }
+  };
+}
+
+// src/github/octokit-port.ts
+var PINNED_ISSUES = `query ($owner: String!, $repo: String!) {
+  repository(owner: $owner, name: $repo) {
+    pinnedIssues(first: 3) {
+      nodes {
+        issue {
+          number
+        }
+      }
+    }
+  }
+}`;
+var PIN_ISSUE = `mutation ($issueId: ID!) {
+  pinIssue(input: {issueId: $issueId}) {
+    issue {
+      id
+    }
+  }
+}`;
+var EDIT_HISTORY = `query ($owner: String!, $repo: String!, $number: Int!, $first: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    issue(number: $number) {
+      body
+      userContentEdits(first: $first, after: $after) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          editedAt
+          deletedAt
+          editor {
+            __typename
+            login
+          }
+          diff
+        }
+      }
+    }
+  }
+}`;
+function createOctokitPort(octokit, repo) {
+  return {
+    async listIssues({ label, state }) {
+      const issues = await octokit.paginate(octokit.rest.issues.listForRepo, {
+        ...repo,
+        labels: label,
+        state,
+        sort: "created",
+        direction: "asc",
+        per_page: 100
+      });
+      return issues.filter((issue3) => !issue3.pull_request).map(toIssue);
+    },
+    async getIssue(number4) {
+      const { data } = await octokit.rest.issues.get({ ...repo, issue_number: number4 });
+      return toIssue(data);
+    },
+    async createIssue({ title, body, labels }) {
+      const { data } = await octokit.rest.issues.create({ ...repo, title, body, labels });
+      return toIssue(data);
+    },
+    async listRecentlyClosedIssues(label) {
+      const { data } = await octokit.rest.issues.listForRepo({
+        ...repo,
+        labels: label,
+        state: "closed",
+        sort: "updated",
+        direction: "desc",
+        per_page: 100
+      });
+      return data.filter((issue3) => !issue3.pull_request).map(toIssue);
+    },
+    async updateIssueTitle(number4, title) {
+      await octokit.rest.issues.update({ ...repo, issue_number: number4, title });
+    },
+    async updateIssueBody(number4, body) {
+      const { data } = await octokit.rest.issues.update({ ...repo, issue_number: number4, body });
+      return toIssue(data);
+    },
+    async closeIssue(number4) {
+      await octokit.rest.issues.update({
+        ...repo,
+        issue_number: number4,
+        state: "closed",
+        state_reason: "not_planned"
+      });
+    },
+    async reopenIssue(number4) {
+      await octokit.rest.issues.update({ ...repo, issue_number: number4, state: "open" });
+    },
+    async createComment(number4, body) {
+      await octokit.rest.issues.createComment({ ...repo, issue_number: number4, body });
+    },
+    async readEditHistory(number4, { size, after }) {
+      const data = await octokit.graphql(EDIT_HISTORY, {
+        ...repo,
+        number: number4,
+        first: size,
+        after: after ?? null
+      });
+      const issue3 = data.repository?.issue;
+      if (!issue3)
+        throw new Error(`GitHub gave no issue ${number4} when the edit history was read.`);
+      const { totalCount, pageInfo, nodes } = issue3.userContentEdits;
+      return {
+        body: issue3.body ?? "",
+        entries: (nodes ?? []).map(toHistoryEntry),
+        total: totalCount,
+        next: pageInfo.hasNextPage && pageInfo.endCursor !== null ? pageInfo.endCursor : undefined
+      };
+    },
+    async readTree(sha) {
+      const { data } = await octokit.rest.git.getTree({
+        ...repo,
+        tree_sha: sha,
+        recursive: "1"
+      });
+      return {
+        entries: data.tree.flatMap((entry2) => entry2.path === undefined || entry2.sha === undefined || entry2.type === undefined ? [] : [{ path: entry2.path, sha: entry2.sha, type: entry2.type }]),
+        truncated: data.truncated
+      };
+    },
+    async compareCommits(base, head) {
+      const { data } = await octokit.rest.repos.compareCommitsWithBasehead({
+        ...repo,
+        basehead: `${base}...${head}`,
+        per_page: 1
+      });
+      return {
+        status: data.status,
+        files: (data.files ?? []).map((file2) => file2.previous_filename === undefined ? { path: file2.filename } : { path: file2.filename, previousPath: file2.previous_filename })
+      };
+    },
+    async getPermission(login) {
+      let data;
+      try {
+        ({ data } = await octokit.rest.repos.getCollaboratorPermissionLevel({
+          ...repo,
+          username: login
+        }));
+      } catch (error63) {
+        if (isNoAccount(error63))
+          return;
+        throw error63;
+      }
+      const permissions = data.user?.permissions;
+      if (!permissions)
+        throw new Error(`GitHub's answer holds no permissions for ${login}.`);
+      return {
+        push: permissions.push === true,
+        maintain: permissions.maintain === true,
+        admin: permissions.admin === true
+      };
+    },
+    ...deploymentCalls(octokit, repo),
+    ...runCalls(octokit, repo),
+    ...attributionCalls(octokit, repo),
+    ...checkCalls(octokit, repo),
+    ...pullCalls(octokit, repo),
+    async pinIssue(nodeId) {
+      await octokit.graphql(PIN_ISSUE, { issueId: nodeId });
+    },
+    async listPinnedIssues() {
+      const data = await octokit.graphql(PINNED_ISSUES, { ...repo });
+      return (data.repository?.pinnedIssues?.nodes ?? []).flatMap((node2) => node2?.issue ? [node2.issue.number] : []);
+    },
+    async dispatchWorkflow(workflow, ref, inputs) {
+      const { data } = await octokit.request("POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches", {
+        ...repo,
+        workflow_id: workflow,
+        ref,
+        ...inputs ? { inputs } : {}
+      });
+      const page = data?.html_url;
+      return typeof page === "string" ? page : undefined;
+    }
+  };
+}
+function toHistoryEntry(edit) {
+  return {
+    editor: edit?.editor ? { login: edit.editor.login, type: edit.editor.__typename } : { login: "", type: "" },
+    editedAt: edit?.editedAt ?? "",
+    body: !edit || edit.deletedAt !== null ? null : edit.diff
+  };
+}
+function toIssue(issue3) {
+  return {
+    number: issue3.number,
+    nodeId: issue3.node_id,
+    state: issue3.state === "closed" ? "closed" : "open",
+    closedAt: issue3.closed_at,
+    title: issue3.title,
+    body: issue3.body ?? "",
+    labels: issue3.labels.flatMap((label) => typeof label === "string" ? label : label.name ?? []),
+    author: issue3.user ? { login: issue3.user.login, type: issue3.user.type } : { login: "", type: "" }
+  };
+}
+function isNoAccount(error63) {
+  const { status, response } = error63 ?? {};
+  const message = response?.data?.message;
+  return status === 404 && typeof message === "string" && / is not a user$/.test(message);
+}
+
+// src/modes/apply-job.ts
+import { readFileSync as readFileSync11 } from "node:fs";
+
+// src/adapters/process.ts
+import { spawn } from "node:child_process";
+var GRACE_MS = 5000;
+var OUTPUT_LIMIT_BYTES = 128 * 1024 * 1024;
+var PIPES_MS = 1000;
+function runProcess(run, graceMs = GRACE_MS, limitBytes = OUTPUT_LIMIT_BYTES) {
+  const [command = "", ...args] = run.argv;
+  return new Promise((done) => {
+    const child = spawn(command, args, {
+      cwd: run.cwd,
+      env: run.env,
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true
+    });
+    const { pid, stdout, stderr } = child;
+    if (pid === undefined) {
+      child.on("error", () => done({ status: "not-started" }));
+      return;
+    }
+    let cut = false;
+    const keep = (chunks) => {
+      let held = 0;
+      return (chunk) => {
+        const room = limitBytes - held;
+        if (chunk.length > room)
+          cut = true;
+        const kept = chunk.length > room ? chunk.subarray(0, Math.max(room, 0)) : chunk;
+        if (kept.length === 0)
+          return;
+        chunks.push(kept);
+        held += kept.length;
+      };
+    };
+    const out = [];
+    const err = [];
+    stdout.on("data", keep(out));
+    stderr.on("data", keep(err));
+    const { onStderrLine } = run;
+    let partial2 = "";
+    const decoder = new TextDecoder;
+    if (onStderrLine) {
+      stderr.on("data", (chunk) => {
+        const parts = (partial2 + decoder.decode(chunk, { stream: true })).split(/\r?\n/);
+        partial2 = parts.pop() ?? "";
+        for (const line of parts)
+          onStderrLine(line);
+      });
+    }
+    const signalGroup = (signal) => {
+      try {
+        process.kill(-pid, signal);
+      } catch {
+        child.kill(signal);
+      }
+    };
+    let timedOut = false;
+    let killing;
+    let closing;
+    const limit = run.timeoutMs === undefined ? undefined : setTimeout(() => {
+      timedOut = true;
+      signalGroup("SIGINT");
+      killing = setTimeout(() => {
+        signalGroup("SIGKILL");
+        closing = setTimeout(() => {
+          stdout.destroy();
+          stderr.destroy();
+        }, PIPES_MS);
+      }, run.graceMs ?? graceMs);
+    }, run.timeoutMs);
+    child.on("error", () => {});
+    child.on("close", (exitCode) => {
+      for (const timer of [limit, killing, closing])
+        clearTimeout(timer);
+      partial2 += decoder.decode();
+      if (onStderrLine && partial2 !== "")
+        onStderrLine(partial2);
+      const text2 = {
+        stdout: Buffer.concat(out).toString("utf8"),
+        stderr: Buffer.concat(err).toString("utf8"),
+        ...cut ? { outputCutAt: limitBytes } : {}
+      };
+      done(timedOut ? { status: "timed-out", ...text2 } : { status: "exited", exitCode, ...text2 });
+    });
+  });
+}
+
+// src/core/config-file.ts
+import { existsSync as existsSync3, readFileSync as readFileSync2 } from "node:fs";
+import { join as join2 } from "node:path";
+var CONFIG_FILE = "sluiceway.yaml";
+var CONFIG_FILE_YML = "sluiceway.yml";
+var CONFIG_FILES = [CONFIG_FILE, CONFIG_FILE_YML];
+function configFileName(root) {
+  const present3 = CONFIG_FILES.filter((name) => existsSync3(join2(root, name)));
+  if (present3.length > 1) {
+    throw new ConfigError([
+      { kind: "two-config-files", files: [CONFIG_FILE, CONFIG_FILE_YML], path: [] }
+    ]);
+  }
+  return present3[0];
+}
+function loadConfig(root) {
+  const name = configFileName(root);
+  if (name === undefined)
+    return parseConfig(undefined);
+  try {
+    return parseConfig(read(join2(root, name)));
+  } catch (error63) {
+    if (error63 instanceof ConfigError && name !== CONFIG_FILE) {
+      throw new ConfigError(error63.issues, name);
+    }
+    throw error63;
+  }
+}
+function hasConfigFile(root) {
+  return configFileName(root) !== undefined;
+}
+function read(file2) {
+  try {
+    return readFileSync2(file2, "utf8");
+  } catch (error63) {
+    const code2 = error63.code;
+    if (code2 === "ENOENT")
+      return;
+    if (code2 === "EISDIR")
+      throw new ConfigError([{ kind: "not-a-file", path: [] }]);
+    throw error63;
+  }
+}
+function dashboardSettingsOf(root) {
+  const defaults2 = parseConfig(undefined).dashboard;
+  try {
+    const { label: label2, timeZone } = loadConfig(root).dashboard;
+    return { label: label2, timeZone: timeZone === "UTC" ? undefined : timeZone };
+  } catch {}
+  let dashboard;
+  try {
+    const name = configFileName(root);
+    const text2 = name === undefined ? undefined : read(join2(root, name));
+    dashboard = $parse(text2 ?? "")?.dashboard;
+  } catch {
+    dashboard = undefined;
+  }
+  const keys = typeof dashboard === "object" && dashboard !== null ? dashboard : {};
+  const label = "label" in keys && typeof keys.label === "string" && keys.label.trim() !== "" ? keys.label : defaults2.label;
+  const zone = "timeZone" in keys && typeof keys.timeZone === "string" ? keys.timeZone : undefined;
+  return {
+    label,
+    timeZone: zone !== undefined && zone !== "UTC" && isTimeZone(zone) ? zone : undefined
+  };
+}
+
+// src/core/credentials.ts
+import { readFileSync as readFileSync3 } from "node:fs";
+import { resolve } from "node:path";
+var WAYS = {
+  aws: [
+    { names: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"] },
+    { names: ["AWS_PROFILE"] },
+    { names: [], uses: "aws-actions/configure-aws-credentials" }
+  ],
+  google: [
+    { names: ["GOOGLE_APPLICATION_CREDENTIALS"] },
+    { names: ["GOOGLE_CREDENTIALS"] },
+    { names: ["GOOGLE_OAUTH_ACCESS_TOKEN"] },
+    { names: [], uses: "google-github-actions/auth" }
+  ],
+  azure: [
+    { names: ["ARM_CLIENT_ID", "ARM_TENANT_ID", "ARM_SUBSCRIPTION_ID", "ARM_CLIENT_SECRET"] },
+    { names: ["ARM_CLIENT_ID", "ARM_TENANT_ID", "ARM_SUBSCRIPTION_ID", "ARM_USE_OIDC"] },
+    { names: [], uses: "azure/login" }
+  ],
+  kubernetes: [
+    { names: ["KUBECONFIG"] },
+    { names: [], runs: "update-kubeconfig" },
+    { names: [], runs: "get-credentials" },
+    { names: [], uses: "azure/aks-set-context" },
+    { names: [], uses: "google-github-actions/get-gke-credentials" }
+  ],
+  cloudflare: [
+    { names: ["CLOUDFLARE_API_TOKEN"] },
+    { names: ["CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL"] }
+  ],
+  digitalocean: [{ names: ["DIGITALOCEAN_TOKEN"] }],
+  github: [{ names: ["GITHUB_TOKEN"] }],
+  hcloud: [{ names: ["HCLOUD_TOKEN"] }],
+  linode: [{ names: ["LINODE_TOKEN"] }],
+  vault: [{ names: ["VAULT_ADDR", "VAULT_TOKEN"] }],
+  vultr: [{ names: ["VULTR_API_KEY"] }]
+};
+function cloudWays(cloud) {
+  return WAYS[cloud].map((way) => ({ ...way, names: [...way.names] }));
+}
+function regionWays(cloud) {
+  if (cloud !== "aws")
+    return;
+  return [
+    { names: ["AWS_REGION"] },
+    { names: ["AWS_DEFAULT_REGION"] },
+    { names: [], uses: "aws-actions/configure-aws-credentials" }
+  ];
+}
+function wayWords(way) {
+  if (way.names.length > 0)
+    return way.names.join(" with ");
+  if (way.uses !== undefined)
+    return `a step that uses ${way.uses}`;
+  return `a step that runs ${way.runs ?? ""}`;
+}
+var LOADERS = new Set([
+  "hashicorp/vault-action",
+  "dopplerhq/secrets-fetch-action",
+  "aws-actions/aws-secretsmanager-get-secrets",
+  "google-github-actions/get-secretmanager-secrets",
+  "1password/load-secrets-action"
+]);
+var ENV_FILE = /(^|\/)(\.env(\.[^/]+)?|[^/]+\.env)$/;
+var ENV_LINE = /^\s*(export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/;
+function jobEnvironment(provides, root) {
+  const names = new Map;
+  for (const { name, where: where2 } of provides.names)
+    if (!names.has(name))
+      names.set(name, where2);
+  const uses = [];
+  const runs = [];
+  const opaque = [];
+  for (const step of provides.steps) {
+    if (!step.before)
+      continue;
+    let seen = step.secret === true;
+    if (step.uses !== undefined) {
+      uses.push(step.uses);
+      if (LOADERS.has(step.uses))
+        seen = true;
+    }
+    if (step.run !== undefined) {
+      runs.push(step.run);
+      if (step.run.includes("GITHUB_ENV"))
+        seen = true;
+      for (const file2 of envFilesNamed(step.run)) {
+        const listed2 = envFileNames(root, file2);
+        if (listed2 === undefined) {
+          seen = true;
+          continue;
+        }
+        for (const name of listed2)
+          if (!names.has(name))
+            names.set(name, `listed in ${file2}`);
+      }
+    }
+    if (seen && !opaque.includes(step.step))
+      opaque.push(step.step);
+  }
+  return { names, uses, runs, opaque, unread: [] };
+}
+function stackEnvironment(job, envFile, root) {
+  if (envFile === undefined)
+    return job;
+  const listed2 = envFileNames(root, envFile);
+  if (listed2 === undefined)
+    return { ...job, unread: [...job.unread, envFile] };
+  const names = new Map(job.names);
+  for (const name of listed2) {
+    if (!names.has(name))
+      names.set(name, `listed in ${envFile}, the envFile of the stack`);
+  }
+  return { ...job, names };
+}
+function envFilesNamed(text2) {
+  const found = [];
+  for (const token of text2.split(/[\s=]+/)) {
+    const path = token.replace(/^["']|["']$/g, "");
+    if (/^[\w./-]+$/.test(path) && ENV_FILE.test(path) && !found.includes(path))
+      found.push(path);
+  }
+  return found;
+}
+function envFileNames(root, file2) {
+  let text2;
+  try {
+    text2 = readFileSync3(resolve(root, file2), "utf8");
+  } catch {
+    return;
+  }
+  const names = [];
+  for (const line of text2.split(`
+`)) {
+    const name = ENV_LINE.exec(line)?.[2];
+    if (name !== undefined && !names.includes(name))
+      names.push(name);
+  }
+  return names;
+}
+function judgeNeeds(needs, job) {
+  return needs.map((need) => {
+    if (need.ways.length === 0)
+      return { need, met: "unknown" };
+    for (const way of need.ways) {
+      const by2 = meets(way, job);
+      if (by2 !== undefined)
+        return { need, met: true, by: by2 };
+    }
+    return { need, met: false, maybe: [...job.opaque], unread: [...job.unread] };
+  });
+}
+function meets(way, job) {
+  if (way.names.length > 0) {
+    const wheres = way.names.map((name) => job.names.get(name));
+    if (wheres.some((where3) => where3 === undefined))
+      return;
+    const where2 = [...new Set(wheres)].join(" and ");
+    return `${wayWords(way)}, ${where2}`;
+  }
+  if (way.uses !== undefined)
+    return job.uses.includes(way.uses) ? wayWords(way) : undefined;
+  if (way.runs !== undefined) {
+    const word = way.runs;
+    return job.runs.some((run) => run.includes(word)) ? wayWords(way) : undefined;
+  }
+  return;
+}
+function judgeJobs(stacks, workflows, root) {
+  return workflows.flatMap(({ path, jobs }) => jobs.filter(({ runs }) => runs.includes("scan") || runs.includes("apply")).map(({ job, provides }) => {
+    const environment = jobEnvironment(provides, root);
+    return {
+      path,
+      job,
+      judged: stacks.flatMap(({ stackId: stackId2, needs, envFile }) => judgeNeeds(needs, stackEnvironment(environment, envFile, root)).map((one) => ({
+        ...one,
+        stackId: stackId2
+      })))
+    };
+  }));
+}
+
+// src/adapters/helm/options.ts
+var text2 = exports_external.string().min(1);
+var RELEASE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/;
+var NAMESPACE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+var LOCAL_CHART = /^\.\.?(\/|$)/;
+var REFERENCE = /^(oci:\/\/|https?:\/\/)[^\s]+$|^[A-Za-z0-9][\w.-]*\/[\w.-]+$/;
+var EXACT = /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
+var helmOptionsSchema = exports_external.strictObject({
+  release: text2.max(53).regex(RELEASE).describe("The name of the Helm release. Helm's rule: lower case letters, digits, - and ."),
+  namespace: text2.max(63).regex(NAMESPACE).describe("The namespace of the release, passed with --namespace to every command."),
+  chart: text2.regex(new RegExp(`${LOCAL_CHART.source}|${REFERENCE.source}`)).describe('The chart: a path relative to the directory of the stack that starts with "./" or "../", or a chart reference such as repo/name or oci://registry/name.'),
+  version: text2.regex(EXACT).describe("The exact version of a chart reference. A local chart takes none.").exactOptional(),
+  valuesFiles: exports_external.array(text2).describe("Values files, relative to the directory of the stack, passed with --values in this order to every command.").default([]),
+  createNamespace: exports_external.boolean().describe("Create the namespace of the release when it is not there, with --create-namespace on the deploy. The preview works without it.").default(false)
+});
+var HELM = "helm";
+function isHelmOptions(options) {
+  return options.tool === HELM;
+}
+var PATTERN_PROBLEMS = {
+  release: 'expected a release name of lower case letters, digits, "-" and ".", that starts and ends with a letter or a digit, at most 53 characters.',
+  namespace: 'expected a namespace of lower case letters, digits and "-", that starts and ends with a letter or a digit, at most 63 characters.',
+  chart: 'expected a local chart as a path that starts with "./" or "../", or a chart reference such as repo/name or oci://registry/name.',
+  version: "expected an exact chart version, such as 1.2.3."
+};
+function parseHelmOptions(raw, index) {
+  const at = `stacks[${index}].options`;
+  const parsed = helmOptionsSchema.safeParse(raw ?? {});
+  if (!parsed.success) {
+    const known = Object.keys(helmOptionsSchema.shape).join(", ");
+    const order = Object.keys(helmOptionsSchema.shape);
+    const rank = (issue3) => issue3.code === "unrecognized_keys" ? -1 : order.indexOf(String(issue3.path[0]));
+    const issues = [...parsed.error.issues].sort((a, b) => rank(a) - rank(b));
+    const problems = issues.flatMap((issue3) => {
+      if (issue3.code === "unrecognized_keys") {
+        return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for helm: ${known}.`);
+      }
+      const [name] = issue3.path;
+      const where2 = `${at}${issue3.path.map((part) => typeof part === "number" ? `[${part}]` : `.${String(part)}`).join("")}`;
+      if (name === "createNamespace")
+        return [`${where2}: expected true or false.`];
+      if (issue3.code === "invalid_type" && issue3.input === undefined) {
+        return [`${where2}: required for tool: helm.`];
+      }
+      if (issue3.code === "too_small")
+        return [`${where2}: must not be empty.`];
+      if (issue3.path.length === 1 && name === "valuesFiles") {
+        return [`${where2}: expected a list of file names.`];
+      }
+      if (issue3.code === "invalid_type")
+        return [`${where2}: expected text.`];
+      return [`${where2}: ${PATTERN_PROBLEMS[String(name)] ?? "expected something else."}`];
+    });
+    return { ok: false, problems: [...new Set(problems)] };
+  }
+  const options = parsed.data;
+  const local = LOCAL_CHART.test(options.chart);
+  if (local && options.version !== undefined) {
+    return {
+      ok: false,
+      problems: [
+        `${at}.version: only a chart reference takes a version. A local chart is used as the repo holds it.`
+      ]
+    };
+  }
+  if (!local && options.version === undefined) {
+    return {
+      ok: false,
+      problems: [
+        `${at}.version: required for a chart reference, so that the deploy installs the chart the preview saw.`
+      ]
+    };
+  }
+  return { ok: true, options };
+}
+
+// src/adapters/kubectl/options.ts
+var text3 = exports_external.string().min(1);
+var NAMESPACE2 = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+var NAMESPACE_PROBLEM = 'expected a namespace of lower case letters, digits and "-", that starts and ends with a letter or a digit, at most 63 characters.';
+var FIELD_MANAGER = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+var FIELD_MANAGER_PROBLEM = 'expected a field manager of letters, digits, ".", "_" and "-", that starts with a letter or a digit, at most 128 characters.';
+var kubectlOptionsSchema = exports_external.strictObject({
+  context: text3.describe("The kubeconfig context of the stack, passed with --context to every command. Without it, the current context of the kubeconfig.").exactOptional(),
+  namespace: text3.max(63).regex(NAMESPACE2).describe("The namespace of objects that name none, passed with --namespace to every command. Without it, the namespace of the context.").exactOptional(),
+  recursive: exports_external.boolean().describe("Read the manifests of every subdirectory too, as kubectl apply -R does. Only for a directory of manifests. Default false: one level.").exactOptional(),
+  prune: exports_external.boolean().describe("Delete an object taken out of the manifests when the stack deploys, and show it as a delete on the row. Sluiceway keeps the list of the stack's objects in a ConfigMap next to them. Default false.").exactOptional(),
+  forceConflicts: exports_external.boolean().describe("Take a field that another field manager holds, with --force-conflicts on the preview and the deploy. Without it such a field fails the preview. Default false.").exactOptional(),
+  fieldManager: text3.max(128).regex(FIELD_MANAGER).describe("The field manager of the preview and the deploy, passed with --field-manager. Without it, kubectl's own, kubectl.").exactOptional()
+});
+var KUBECTL = "kubectl";
+var SWITCHES = new Set(["recursive", "prune", "forceConflicts"]);
+function isKubectlOptions(options) {
+  return options.tool === KUBECTL;
+}
+function parseKubectlOptions(raw, index) {
+  const parsed = kubectlOptionsSchema.safeParse(raw ?? {});
+  if (parsed.success)
+    return { ok: true, options: parsed.data };
+  const at = `stacks[${index}].options`;
+  const known = Object.keys(kubectlOptionsSchema.shape).join(", ");
+  const issues = [...parsed.error.issues].sort((a, b) => Number(b.code === "unrecognized_keys") - Number(a.code === "unrecognized_keys"));
+  const problems = issues.flatMap((issue3) => {
+    if (issue3.code === "unrecognized_keys") {
+      return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for kubectl: ${known}.`);
+    }
+    const name = String(issue3.path[0]);
+    const where2 = `${at}${issue3.path.map((part) => `.${String(part)}`).join("")}`;
+    if (SWITCHES.has(name))
+      return [`${where2}: expected true or false.`];
+    if (issue3.code === "too_small")
+      return [`${where2}: must not be empty.`];
+    if (issue3.code === "too_big" || issue3.code === "invalid_format") {
+      return [`${where2}: ${name === "fieldManager" ? FIELD_MANAGER_PROBLEM : NAMESPACE_PROBLEM}`];
+    }
+    return [`${where2}: expected text.`];
+  });
+  return { ok: false, problems };
+}
+
+// src/adapters/opentofu/credentials.ts
+import { readdirSync, readFileSync as readFileSync4 } from "node:fs";
+import { join as join3, posix } from "node:path";
+
+// src/adapters/opentofu/hcl.ts
+function readHcl(text4) {
+  const { tokens, code: code2 } = tokenize(text4);
+  const reader = { tokens, at: 0 };
+  const top = body(reader, false);
+  return { blocks: top.blocks, attributes: top.attributes, code: code2 };
+}
+function body(reader, inner) {
+  const block = { type: "", labels: [], strings: {}, attributes: [], blocks: [] };
+  items(reader, block, inner);
+  return block;
+}
+function items(reader, into, inner) {
+  const { tokens } = reader;
+  while (reader.at < tokens.length) {
+    const token = tokens[reader.at];
+    if (token === undefined)
+      return;
+    if (token.kind === "newline") {
+      reader.at++;
+      continue;
+    }
+    if (token.kind === "close") {
+      if (inner)
+        reader.at++;
+      else {
+        reader.at++;
+        continue;
+      }
+      return;
+    }
+    if (token.kind !== "word") {
+      skipLine(reader);
+      continue;
+    }
+    reader.at++;
+    const next = tokens[reader.at];
+    if (next?.kind === "equals") {
+      reader.at++;
+      into.attributes.push(token.text);
+      const value = expression(reader);
+      if (value !== undefined)
+        into.strings[token.text] = value;
+      continue;
+    }
+    const labels = [];
+    while (reader.at < tokens.length) {
+      const label = tokens[reader.at];
+      if (label?.kind === "string" && label.literal !== undefined)
+        labels.push(label.literal);
+      else if (label?.kind === "word")
+        labels.push(label.text);
+      else
+        break;
+      reader.at++;
+    }
+    if (tokens[reader.at]?.kind !== "open") {
+      skipLine(reader);
+      continue;
+    }
+    reader.at++;
+    const child = { type: token.text, labels, strings: {}, attributes: [], blocks: [] };
+    items(reader, child, true);
+    into.blocks.push(child);
+  }
+}
+function expression(reader) {
+  const { tokens } = reader;
+  let depth = 0;
+  const seen = [];
+  while (reader.at < tokens.length) {
+    const token = tokens[reader.at];
+    if (token === undefined)
+      break;
+    if (depth === 0 && (token.kind === "newline" || token.kind === "close"))
+      break;
+    if (token.kind === "open" || token.kind === "bracket" && "([".includes(token.text))
+      depth++;
+    if (token.kind === "close" || token.kind === "bracket" && ")]".includes(token.text))
+      depth--;
+    seen.push(token);
+    reader.at++;
+  }
+  const [only] = seen;
+  return seen.length === 1 && only?.kind === "string" ? only.literal : undefined;
+}
+function skipLine(reader) {
+  expression(reader);
+}
+function tokenize(text4) {
+  const tokens = [];
+  let code2 = "";
+  let at = 0;
+  while (at < text4.length) {
+    const char = text4[at] ?? "";
+    const rest = text4.slice(at, at + 2);
+    if (char === "#" || rest === "//") {
+      while (at < text4.length && text4[at] !== `
+`)
+        at++;
+      continue;
+    }
+    if (rest === "/*") {
+      const end = text4.indexOf("*/", at + 2);
+      at = end < 0 ? text4.length : end + 2;
+      code2 += " ";
+      continue;
+    }
+    if (char === `
+`) {
+      tokens.push({ kind: "newline" });
+      code2 += char;
+      at++;
+      continue;
+    }
+    if (char === '"') {
+      const end = stringEnd(text4, at);
+      const raw = text4.slice(at + 1, end - 1);
+      tokens.push({ kind: "string", literal: literalOf(raw) });
+      code2 += text4.slice(at, end);
+      at = end;
+      continue;
+    }
+    const heredoc = /^<<-?([A-Za-z_][A-Za-z0-9_]*)[ \t]*\n/.exec(text4.slice(at));
+    if (heredoc !== null) {
+      const marker2 = heredoc[1] ?? "";
+      let end = at + heredoc[0].length;
+      while (end < text4.length) {
+        const lineEnd = text4.indexOf(`
+`, end);
+        const line = text4.slice(end, lineEnd < 0 ? text4.length : lineEnd);
+        end = lineEnd < 0 ? text4.length : lineEnd + 1;
+        if (line.trim() === marker2)
+          break;
+      }
+      tokens.push({ kind: "string", literal: undefined });
+      code2 += text4.slice(at, end);
+      tokens.push({ kind: "newline" });
+      at = end;
+      continue;
+    }
+    const word = /^[A-Za-z_][A-Za-z0-9_.-]*/.exec(text4.slice(at));
+    if (word !== null) {
+      tokens.push({ kind: "word", text: word[0] });
+      code2 += word[0];
+      at += word[0].length;
+      continue;
+    }
+    if (char === "{")
+      tokens.push({ kind: "open" });
+    else if (char === "}")
+      tokens.push({ kind: "close" });
+    else if (char === "=" && text4[at + 1] !== "=" && text4[at + 1] !== ">")
+      tokens.push({ kind: "equals" });
+    else if ("[]()".includes(char))
+      tokens.push({ kind: "bracket", text: char });
+    else if (!/\s/.test(char))
+      tokens.push({ kind: "other" });
+    if (char === "=" && (text4[at + 1] === "=" || text4[at + 1] === ">")) {
+      code2 += text4.slice(at, at + 2);
+      at += 2;
+      continue;
+    }
+    code2 += char;
+    at++;
+  }
+  return { tokens, code: code2 };
+}
+function stringEnd(text4, start) {
+  let at = start + 1;
+  while (at < text4.length) {
+    const char = text4[at];
+    if (char === "\\") {
+      at += 2;
+      continue;
+    }
+    if (char === '"')
+      return at + 1;
+    if (char === `
+`)
+      return at;
+    if ((char === "$" || char === "%") && text4[at + 1] === char && text4[at + 2] === "{") {
+      at += 3;
+      continue;
+    }
+    if ((char === "$" || char === "%") && text4[at + 1] === "{") {
+      at = templateEnd(text4, at + 2);
+      continue;
+    }
+    at++;
+  }
+  return text4.length;
+}
+function templateEnd(text4, start) {
+  let depth = 1;
+  let at = start;
+  while (at < text4.length && depth > 0) {
+    const char = text4[at];
+    if (char === '"') {
+      at = stringEnd(text4, at);
+      continue;
+    }
+    if (char === "{")
+      depth++;
+    if (char === "}")
+      depth--;
+    at++;
+  }
+  return at;
+}
+function literalOf(raw) {
+  if (/\$\{|%\{/.test(raw))
+    return;
+  if (/\\[^"\\]/.test(raw))
+    return;
+  return raw.replace(/\\(["\\])/g, "$1");
+}
+
+// src/adapters/opentofu/options.ts
+var text4 = exports_external.string().min(1);
+var TERRAGRUNT = "terragrunt";
+var CDKTF = "cdktf";
+var WRAPPERS = [TERRAGRUNT, CDKTF];
+var openTofuOptionsSchema = exports_external.strictObject({
+  workspace: text4.describe("The workspace of the stack, selected with TF_WORKSPACE for every command. Without it, the one the environment selects, which is default.").exactOptional(),
+  varFiles: exports_external.array(text4).describe("Var files, relative to the directory of the stack, passed with -var-file in this order to every plan. Not with a wrapper.").default([]),
+  wrapper: exports_external.enum(WRAPPERS).describe("What stands in front of the tool. terragrunt: path is one Terragrunt unit, and terragrunt runs the tool there. cdktf: path is a CDK for Terraform app, cdktf synth writes its stacks, and name picks the one this entry deploys.").exactOptional()
+});
+var OPENTOFU = "opentofu";
+var TERRAFORM = "terraform";
+var TERRAFORM_FAMILY = [OPENTOFU, TERRAFORM];
+function isFamilyTool(tool) {
+  return TERRAFORM_FAMILY.includes(tool);
+}
+function isOpenTofuOptions(options) {
+  return isFamilyTool(options.tool);
+}
+function parseOpenTofuOptions(raw, index, tool = OPENTOFU) {
+  const parsed = openTofuOptionsSchema.safeParse(raw ?? {});
+  if (parsed.success)
+    return { ok: true, options: parsed.data };
+  const at = `stacks[${index}].options`;
+  const known = Object.keys(openTofuOptionsSchema.shape).join(", ");
+  const issues = [...parsed.error.issues].sort((a, b) => Number(b.code === "unrecognized_keys") - Number(a.code === "unrecognized_keys"));
+  const problems = issues.flatMap((issue3) => {
+    if (issue3.code === "unrecognized_keys") {
+      return issue3.keys.map((key) => `${at}: unknown option ${JSON.stringify(key)}. Known options for ${tool}: ${known}.`);
+    }
+    const where2 = `${at}${issue3.path.map((part) => typeof part === "number" ? `[${part}]` : `.${String(part)}`).join("")}`;
+    if (issue3.code === "too_small")
+      return [`${where2}: must not be empty.`];
+    if (issue3.path.length === 1 && issue3.path[0] === "varFiles") {
+      return [`${where2}: expected a list of file names.`];
+    }
+    if (issue3.path.length === 1 && issue3.path[0] === "wrapper") {
+      return [`${where2}: expected one of ${WRAPPERS.map((w) => JSON.stringify(w)).join(" or ")}.`];
+    }
+    return [`${where2}: expected text.`];
+  });
+  return { ok: false, problems };
+}
+
+// src/adapters/opentofu/credentials.ts
+var PROVIDERS = {
+  aws: "aws",
+  awscc: "aws",
+  google: "google",
+  "google-beta": "google",
+  azurerm: "azure",
+  azuread: "azure",
+  azapi: "azure",
+  kubernetes: "kubernetes",
+  helm: "kubernetes",
+  cloudflare: "cloudflare",
+  digitalocean: "digitalocean",
+  github: "github",
+  hcloud: "hcloud",
+  linode: "linode",
+  vault: "vault",
+  vultr: "vultr",
+  random: "nothing",
+  null: "nothing",
+  local: "nothing",
+  tls: "nothing",
+  time: "nothing",
+  archive: "nothing",
+  external: "nothing",
+  http: "nothing",
+  terraform: "nothing",
+  assert: "nothing"
+};
+var BACKENDS = {
+  s3: "aws",
+  gcs: "google",
+  azurerm: "azure",
+  kubernetes: "kubernetes",
+  local: "nothing",
+  remote: [{ names: ["TF_TOKEN_app_terraform_io"] }],
+  pg: [{ names: ["PG_CONN_STR"] }],
+  consul: [{ names: ["CONSUL_HTTP_TOKEN"] }]
+};
+var MODULE_FILE = /\.(tf|tofu)$/;
+var LOCK_FILE = ".terraform.lock.hcl";
+var AUTO_VAR_FILE = /^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/;
+async function credentialNeeds(root, stack) {
+  const { wrapper, varFiles } = stack.options;
+  if (wrapper === TERRAGRUNT)
+    return terragruntNeeds(root, stack.path);
+  if (wrapper === CDKTF)
+    return cdktfNeeds(root, stack.path);
+  const files = Array.isArray(varFiles) ? varFiles.filter((f) => typeof f === "string") : [];
+  return rootModuleNeeds(root, stack.path, files);
+}
+function rootModuleNeeds(root, path, varFiles) {
+  const directory = readDirectory(root, path);
+  const needs = [];
+  const backend = backendNeed(directory);
+  if (backend !== undefined)
+    needs.push(backend);
+  needs.push(...providerNeeds(directory));
+  const set2 = new Set;
+  const chosen = varFiles.map((file2) => posix.join(path, file2));
+  const auto = directory.files.filter((file2) => AUTO_VAR_FILE.test(posix.basename(file2)));
+  for (const file2 of [...chosen, ...auto])
+    for (const name of varNames(root, file2))
+      set2.add(name);
+  for (const { file: file2, blocks } of directory.code) {
+    for (const block of blocks) {
+      if (block.type !== "variable" || block.attributes.includes("default"))
+        continue;
+      const [name] = block.labels;
+      if (name === undefined || set2.has(name))
+        continue;
+      needs.push({
+        what: `the variable ${name}`,
+        namedIn: file2,
+        ways: [{ names: [`TF_VAR_${name}`] }]
+      });
+    }
+  }
+  return needs;
+}
+function terragruntNeeds(root, path) {
+  const file2 = ["terragrunt.hcl", "terragrunt.hcl.json"].map((name) => posix.join(path, name)).find((name) => text5(join3(root, name)) !== "");
+  if (file2 === undefined || file2.endsWith(".json"))
+    return [];
+  const { blocks } = readHcl(text5(join3(root, file2)));
+  const needs = [];
+  const remote = blocks.find((block) => block.type === "remote_state");
+  const label = remote?.strings.backend;
+  if (label !== undefined) {
+    const known = BACKENDS[label];
+    if (known !== "nothing") {
+      needs.push({ what: `the ${label} remote state`, namedIn: file2, ways: waysOf(known) });
+    }
+  }
+  const source = blocks.find((block) => block.type === "terraform")?.strings.source;
+  const module = source === undefined ? undefined : localSource(path, source);
+  if (module !== undefined)
+    needs.push(...providerNeeds(readDirectory(root, module)));
+  return needs;
+}
+function cdktfNeeds(root, path) {
+  const file2 = posix.join(path, "cdktf.json");
+  let parsed;
+  try {
+    parsed = JSON.parse(text5(join3(root, file2)));
+  } catch {
+    return [];
+  }
+  const listed2 = typeof parsed === "object" && parsed !== null && "terraformProviders" in parsed ? parsed.terraformProviders : undefined;
+  const needs = [
+    { what: "the backend the app sets in code", namedIn: file2, ways: [] }
+  ];
+  const named = new Map;
+  for (const entry2 of Array.isArray(listed2) ? listed2 : []) {
+    const spec = typeof entry2 === "string" ? entry2 : typeof entry2 === "object" && entry2 !== null && typeof entry2.name === "string" ? entry2.name : undefined;
+    if (spec === undefined)
+      continue;
+    const name = (spec.split("@")[0] ?? "").split("/").at(-1) ?? "";
+    if (name !== "" && !named.has(name))
+      named.set(name, file2);
+  }
+  needs.push(...needsOf(named, new Set));
+  return needs;
+}
+function readDirectory(root, path) {
+  let names;
+  try {
+    names = readdirSync(join3(root, path)).sort(byCodeUnit4);
+  } catch {
+    names = [];
+  }
+  const at = (name) => posix.join(path, name);
+  const parsed = (name) => ({
+    file: at(name),
+    blocks: readHcl(text5(join3(root, at(name)))).blocks
+  });
+  return {
+    files: names.map(at),
+    lock: names.includes(LOCK_FILE) ? parsed(LOCK_FILE) : undefined,
+    code: names.filter((name) => MODULE_FILE.test(name)).map(parsed)
+  };
+}
+function providerNeeds(directory) {
+  const named = new Map;
+  const name = (provider, file2) => {
+    if (provider !== "" && !named.has(provider))
+      named.set(provider, file2);
+  };
+  if (directory.lock !== undefined) {
+    for (const block of directory.lock.blocks.filter((one) => one.type === "provider")) {
+      name(block.labels[0]?.split("/").at(-1) ?? "", directory.lock.file);
+    }
+  }
+  for (const { file: file2, blocks } of directory.code) {
+    for (const block of blocks.filter((one) => one.type === "terraform")) {
+      for (const inner of block.blocks.filter((one) => one.type === "required_providers")) {
+        for (const provider of inner.attributes)
+          name(provider, file2);
+      }
+    }
+  }
+  const regionSet = new Set;
+  for (const { file: file2, blocks } of directory.code) {
+    for (const block of blocks.filter((one) => one.type === "provider")) {
+      const [label] = block.labels;
+      if (label === undefined)
+        continue;
+      name(label, file2);
+      if (block.attributes.includes("region"))
+        regionSet.add(label);
+    }
+  }
+  return needsOf(named, regionSet);
+}
+function needsOf(named, regionSet) {
+  const needs = [];
+  for (const [provider, namedIn] of named) {
+    const cloud = PROVIDERS[provider];
+    if (cloud === "nothing")
+      continue;
+    needs.push({
+      what: `the ${provider} provider`,
+      namedIn,
+      ways: cloud === undefined ? [] : cloudWays(cloud)
+    });
+    const region = cloud === undefined ? undefined : regionWays(cloud);
+    if (region !== undefined && !regionSet.has(provider)) {
+      needs.push({ what: `a region for the ${provider} provider`, namedIn, ways: region });
+    }
+  }
+  return needs;
+}
+function backendNeed(directory) {
+  for (const { file: file2, blocks } of directory.code) {
+    for (const block of blocks.filter((one) => one.type === "terraform")) {
+      for (const inner of block.blocks) {
+        if (inner.type === "backend") {
+          const [label] = inner.labels;
+          if (label === undefined)
+            continue;
+          const known = BACKENDS[label];
+          if (known === "nothing")
+            return;
+          return { what: `the ${label} backend`, namedIn: file2, ways: waysOf(known) };
+        }
+        if (inner.type === "cloud") {
+          const host = inner.strings.hostname ?? "app.terraform.io";
+          return {
+            what: "the cloud block",
+            namedIn: file2,
+            ways: [{ names: [`TF_TOKEN_${host.replaceAll(".", "_").replaceAll("-", "__")}`] }]
+          };
+        }
+      }
+    }
+  }
+  return;
+}
+function waysOf(known) {
+  if (known === undefined || known === "nothing")
+    return [];
+  return typeof known === "string" ? cloudWays(known) : known.map((way) => ({ ...way }));
+}
+function varNames(root, file2) {
+  const content = text5(join3(root, file2));
+  if (file2.endsWith(".json")) {
+    try {
+      const parsed = JSON.parse(content);
+      return typeof parsed === "object" && parsed !== null ? Object.keys(parsed) : [];
+    } catch {
+      return [];
+    }
+  }
+  return readHcl(content).attributes;
+}
+function localSource(from, source) {
+  if (/^[a-z+]+::|:\/\//i.test(source) || source.includes("//"))
+    return;
+  if (!source.startsWith("."))
+    return;
+  const target = posix.normalize(posix.join(from, source)).replace(/\/+$/, "") || ".";
+  if (target === ".." || target.startsWith("../"))
+    return;
+  return target;
+}
+function text5(file2) {
+  try {
+    return readFileSync4(file2, "utf8");
+  } catch {
+    return "";
+  }
+}
+function byCodeUnit4(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/pulumi/credentials.ts
+import { readdirSync as readdirSync2, readFileSync as readFileSync5, statSync } from "node:fs";
+import { join as join4, posix as posix2, relative, sep as sep2 } from "node:path";
+var EXTENSIONS = [".json", ".yaml", ".yml"];
+var PACKAGES = {
+  aws: "aws",
+  "aws-native": "aws",
+  gcp: "google",
+  "google-native": "google",
+  azure: "azure",
+  "azure-native": "azure",
+  azuread: "azure",
+  kubernetes: "kubernetes",
+  cloudflare: "cloudflare",
+  digitalocean: "digitalocean",
+  github: "github",
+  hcloud: "hcloud",
+  linode: "linode",
+  vault: "vault",
+  vultr: "vultr",
+  random: "nothing",
+  command: "nothing",
+  local: "nothing",
+  null: "nothing",
+  time: "nothing",
+  tls: "nothing",
+  std: "nothing",
+  archive: "nothing",
+  external: "nothing",
+  http: "nothing",
+  pulumi: "nothing"
+};
+var BACKENDS2 = {
+  s3: "aws",
+  gs: "google",
+  azblob: "azure",
+  file: "nothing"
+};
+var SECRETS = {
+  awskms: "aws",
+  gcpkms: "google",
+  azurekeyvault: "azure",
+  hashivault: "vault"
+};
+var TOKEN = [{ names: ["PULUMI_ACCESS_TOKEN"] }];
+var PASSPHRASE = [
+  { names: ["PULUMI_CONFIG_PASSPHRASE"] },
+  { names: ["PULUMI_CONFIG_PASSPHRASE_FILE"] }
+];
+async function credentialNeeds2(root, stack) {
+  const projectDir = join4(root, stack.path);
+  const extension = EXTENSIONS.find((ext) => isFile(join4(projectDir, `Pulumi${ext}`)));
+  if (extension === undefined)
+    return [];
+  const projectPath = join4(projectDir, `Pulumi${extension}`);
+  const project = read2(projectPath);
+  if (!isRecord(project))
+    return [];
+  const projectFile = repoPath(root, projectPath);
+  const needs = [];
+  const url2 = isRecord(project.backend) ? project.backend.url : undefined;
+  const scheme = typeof url2 === "string" ? schemeOf(url2) : undefined;
+  if (scheme === undefined) {
+    needs.push({
+      what: "the Pulumi backend",
+      namedIn: projectFile,
+      ways: [{ names: ["PULUMI_ACCESS_TOKEN"] }, { names: ["PULUMI_BACKEND_URL"] }]
+    });
+  } else if (scheme === "https" || scheme === "http") {
+    needs.push({ what: "the Pulumi Cloud backend", namedIn: projectFile, ways: TOKEN });
+  } else {
+    const cloud = BACKENDS2[scheme];
+    if (cloud !== "nothing") {
+      needs.push({
+        what: `the ${scheme} backend`,
+        namedIn: projectFile,
+        ways: cloud === undefined ? [] : cloudWays(cloud)
+      });
+    }
+  }
+  const stackDir = typeof project.stackConfigDir === "string" ? join4(projectDir, project.stackConfigDir) : projectDir;
+  const stackPath2 = stack.name === undefined ? undefined : join4(stackDir, `Pulumi.${stack.name}${extension}`);
+  const stackFile = stackPath2 === undefined ? undefined : read2(stackPath2);
+  const stackRepoPath = stackPath2 === undefined ? projectFile : repoPath(root, stackPath2);
+  if (isRecord(stackFile)) {
+    const provider = typeof stackFile.secretsprovider === "string" ? schemeOf(stackFile.secretsprovider) : undefined;
+    if ("encryptionsalt" in stackFile || provider === "passphrase") {
+      needs.push({
+        what: "the passphrase of its secrets",
+        namedIn: stackRepoPath,
+        ways: PASSPHRASE
+      });
+    }
+    if (provider !== undefined && provider !== "passphrase") {
+      const cloud = SECRETS[provider];
+      needs.push({
+        what: `the ${provider} secrets provider`,
+        namedIn: stackRepoPath,
+        ways: cloud === undefined ? [] : cloudWays(cloud)
+      });
+    }
+  }
+  const providers = new Map;
+  const name = (provider, file2) => {
+    if (!providers.has(provider))
+      providers.set(provider, file2);
+  };
+  const runtime = runtimeName(project.runtime);
+  if (runtime === "yaml") {
+    for (const provider of yamlProviders(projectDir, projectPath, project))
+      name(...provider);
+  } else if (runtime === "nodejs") {
+    for (const provider of nodeProviders(root, stack.path))
+      name(...provider);
+  } else if (runtime === "python") {
+    for (const provider of pythonProviders(projectDir))
+      name(...provider);
+  } else if (runtime === "go") {
+    for (const provider of goProviders(projectDir))
+      name(...provider);
+  } else if (runtime === "dotnet") {
+    for (const provider of dotnetProviders(projectDir))
+      name(...provider);
+  }
+  const configKeys = new Set;
+  for (const [file2, config2] of [
+    [projectPath, project.config],
+    [stackPath2, isRecord(stackFile) ? stackFile.config : undefined]
+  ]) {
+    if (file2 === undefined || !isRecord(config2))
+      continue;
+    for (const key of Object.keys(config2)) {
+      configKeys.add(key);
+      const namespace = key.split(":")[0] ?? "";
+      if (key.includes(":") && namespace in PACKAGES)
+        name(namespace, file2);
+    }
+  }
+  for (const [provider, file2] of providers) {
+    const cloud = PACKAGES[provider];
+    if (cloud === "nothing")
+      continue;
+    const namedIn = repoPath(root, file2);
+    needs.push({
+      what: `the ${provider} provider`,
+      namedIn,
+      ways: cloud === undefined ? [] : cloudWays(cloud)
+    });
+    const region = cloud === undefined ? undefined : regionWays(cloud);
+    if (region !== undefined && !configKeys.has(`${provider}:region`)) {
+      needs.push({ what: `a region for the ${provider} provider`, namedIn, ways: region });
+    }
+  }
+  return needs;
+}
+function yamlProviders(projectDir, projectPath, project) {
+  const programDir = isRecord(project) && typeof project.main === "string" ? join4(projectDir, project.main) : projectDir;
+  const programs = programDir === projectDir ? [projectPath, join4(projectDir, "Main.yaml")] : [join4(programDir, "Main.yaml"), join4(programDir, "Pulumi.yaml")];
+  const found = [];
+  for (const file2 of programs.filter(isFile)) {
+    const program = file2 === projectPath ? project : read2(file2);
+    walk(program, (key, value) => {
+      if (key !== "type" || typeof value !== "string")
+        return;
+      const [first, second, third] = value.split(":");
+      const provider = first === "pulumi" && second === "providers" ? third : first;
+      if (provider !== undefined && provider !== "")
+        found.push([provider, file2]);
+    });
+  }
+  return found;
+}
+function nodeProviders(root, path) {
+  for (const directory of ancestors(path)) {
+    const file2 = join4(root, directory, "package.json");
+    if (!isFile(file2))
+      continue;
+    const manifest = readJson(file2);
+    if (!isRecord(manifest))
+      return [];
+    return [manifest.dependencies, manifest.devDependencies].flatMap((block) => isRecord(block) ? Object.keys(block).flatMap((key) => key.startsWith("@pulumi/") ? [[key.slice("@pulumi/".length), file2]] : []) : []);
+  }
+  return [];
+}
+var PYTHON_PACKAGE = /\bpulumi[-_]([a-z0-9-]+)/gi;
+function pythonProviders(projectDir) {
+  return ["requirements.txt", "pyproject.toml"].flatMap((name) => {
+    const file2 = join4(projectDir, name);
+    if (!isFile(file2))
+      return [];
+    return [...text6(file2).matchAll(PYTHON_PACKAGE)].map((match) => [
+      (match[1] ?? "").toLowerCase().replaceAll("_", "-"),
+      file2
+    ]);
+  });
+}
+var GO_PACKAGE = /github\.com\/pulumi\/pulumi-([a-z0-9-]+?)(?:-sdk)?\/(?:sdk|v\d+)/g;
+function goProviders(projectDir) {
+  const file2 = join4(projectDir, "go.mod");
+  if (!isFile(file2))
+    return [];
+  return [...text6(file2).matchAll(GO_PACKAGE)].map((match) => [match[1] ?? "", file2]);
+}
+var DOTNET_PACKAGE = /Include="Pulumi\.([A-Za-z0-9]+)"/g;
+function dotnetProviders(projectDir) {
+  let names;
+  try {
+    names = readdirSync2(projectDir).filter((name) => /\.(cs|fs|vb)proj$/.test(name));
+  } catch {
+    return [];
+  }
+  return names.sort().flatMap((name) => {
+    const file2 = join4(projectDir, name);
+    return [...text6(file2).matchAll(DOTNET_PACKAGE)].map((match) => [kebab(match[1] ?? ""), file2]);
+  });
+}
+function kebab(name) {
+  return name.replace(/(?<=[a-z0-9])(?=[A-Z])/g, "-").toLowerCase();
+}
+function runtimeName(runtime) {
+  return isRecord(runtime) ? runtime.name : runtime;
+}
+function schemeOf(url2) {
+  const colon = url2.indexOf("://");
+  return (colon === -1 ? url2 : url2.slice(0, colon)).toLowerCase();
+}
+function ancestors(path) {
+  const found = [path];
+  let current = path;
+  while (current !== ".") {
+    current = posix2.dirname(current);
+    found.push(current);
+  }
+  return found;
+}
+function walk(value, visit3) {
+  if (Array.isArray(value)) {
+    for (const item of value)
+      walk(item, visit3);
+  } else if (isRecord(value)) {
+    for (const [key, inner] of Object.entries(value)) {
+      visit3(key, inner);
+      walk(inner, visit3);
+    }
+  }
+}
+function read2(path) {
+  try {
+    return $parse(readFileSync5(path, "utf8"), { uniqueKeys: false });
+  } catch {
+    return;
+  }
+}
+function readJson(path) {
+  try {
+    return JSON.parse(readFileSync5(path, "utf8"));
+  } catch {
+    return;
+  }
+}
+function text6(path) {
+  try {
+    return readFileSync5(path, "utf8");
+  } catch {
+    return "";
+  }
+}
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+function repoPath(root, path) {
+  return relative(root, path).split(sep2).join("/");
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// src/adapters/credentials.ts
+async function credentialNeeds3(root, stack) {
+  if (isHelmOptions(stack.options) || isKubectlOptions(stack.options)) {
+    return [
+      {
+        what: "the cluster",
+        namedIn: configFileName(root) ?? "sluiceway.yaml",
+        ways: cloudWays("kubernetes")
+      }
+    ];
+  }
+  if (isOpenTofuOptions(stack.options))
+    return credentialNeeds(root, stack);
+  return credentialNeeds2(root, stack);
+}
+
+// src/adapters/helm/discover.ts
+import { readFileSync as readFileSync6, statSync as statSync2 } from "node:fs";
+import { isAbsolute, join as join5, normalize, relative as relative2, sep as sep3 } from "node:path";
+var WHAT_PATH_IS = "An entry with tool: helm names the directory its chart and values files are relative to.";
+function discoverHelm(root, config2) {
+  const stacks = [];
+  const optionProblems = [];
+  const problems = [];
+  config2.stacks.forEach((entry2, index) => {
+    if (entry2.tool !== HELM)
+      return;
+    const parsed = parseHelmOptions(entry2.options, index);
+    if (!parsed.ok) {
+      optionProblems.push(...parsed.problems);
+      return;
+    }
+    const { options } = parsed;
+    const dir = join5(root, entry2.path);
+    const shown = JSON.stringify(entry2.path);
+    if (!isDirectory2(dir)) {
+      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${WHAT_PATH_IS}`);
+      return;
+    }
+    const before = problems.length;
+    const inRepo = (file2) => {
+      const fromRoot = relative2(root, normalize(join5(dir, file2)));
+      if (fromRoot === ".." || fromRoot.startsWith(`..${sep3}`) || isAbsolute(fromRoot)) {
+        return;
+      }
+      return fromRoot === "" ? "." : fromRoot.split(sep3).join("/");
+    };
+    let chart;
+    if (LOCAL_CHART.test(options.chart)) {
+      const where2 = `stacks[${index}].options.chart: ${JSON.stringify(options.chart)}`;
+      const chartDir = inRepo(options.chart);
+      if (chartDir === undefined) {
+        problems.push(`${where2} must stay inside the repo.`);
+      } else {
+        const found = chartFile(root, chartDir);
+        if (found === "missing") {
+          problems.push(`${where2} is not a chart in ${shown}: it holds no Chart.yaml.`);
+        } else if (found === "unreadable") {
+          problems.push(`stacks[${index}].options.chart: the Chart.yaml of ${JSON.stringify(options.chart)} could not be read as YAML.`);
+        } else {
+          chart = { chartDir, builds: chartTree(root, chartDir, found) };
+        }
+      }
+    }
+    options.valuesFiles.forEach((file2, at) => {
+      const where2 = `stacks[${index}].options.valuesFiles[${at}]: ${JSON.stringify(file2)}`;
+      if (isAbsolute(file2)) {
+        problems.push(`${where2} must be relative to the directory of the stack.`);
+        return;
+      }
+      const fromRoot = inRepo(file2);
+      if (fromRoot === undefined) {
+        problems.push(`${where2} must stay inside the repo.`);
+        return;
+      }
+      if (!isFile2(join5(root, fromRoot)))
+        problems.push(`${where2} is not a file in ${shown}.`);
+    });
+    if (problems.length > before)
+      return;
+    const bag = {
+      tool: HELM,
+      ...options,
+      ...chart === undefined ? { builds: [] } : chart
+    };
+    stacks.push({
+      path: entry2.path,
+      ...entry2.name === undefined ? {} : { name: entry2.name },
+      options: { ...bag }
+    });
+  });
+  if (optionProblems.length === 0 && problems.length > 0)
+    throw new DiscoveryError(problems);
+  return { stacks, optionProblems };
+}
+function chartFile(root, chartDir) {
+  let text7;
+  try {
+    text7 = readFileSync6(join5(root, chartDir, "Chart.yaml"), "utf8");
+  } catch {
+    return "missing";
+  }
+  try {
+    const chart = $parse(text7);
+    const dependencies = typeof chart === "object" && chart !== null ? chart.dependencies : undefined;
+    if (!Array.isArray(dependencies))
+      return [];
+    return dependencies.map((one) => {
+      const { name, repository } = typeof one === "object" && one !== null ? one : {};
+      return {
+        name: typeof name === "string" ? name : "",
+        repository: typeof repository === "string" ? repository : ""
+      };
+    });
+  } catch {
+    return "unreadable";
+  }
+}
+var LOCAL_DEPENDENCY = "file://";
+function chartTree(root, top, topDependencies) {
+  const levels = new Map;
+  const builds = [];
+  const visit3 = (chartDir, dependencies, path) => {
+    const known = levels.get(chartDir);
+    if (known !== undefined)
+      return known;
+    let level = 0;
+    for (const { repository } of dependencies) {
+      if (!repository.startsWith(LOCAL_DEPENDENCY))
+        continue;
+      const target = relative2(root, normalize(join5(root, chartDir, repository.slice(LOCAL_DEPENDENCY.length))));
+      if (target === ".." || target.startsWith(`..${sep3}`) || isAbsolute(target))
+        continue;
+      const dependencyDir = target === "" ? "." : target.split(sep3).join("/");
+      if (path.includes(dependencyDir))
+        continue;
+      const found = chartFile(root, dependencyDir);
+      if (typeof found === "string")
+        continue;
+      level = Math.max(level, visit3(dependencyDir, found, [...path, dependencyDir]) + 1);
+    }
+    levels.set(chartDir, level);
+    if (dependencies.length > 0)
+      builds.push({ chart: chartDir, level });
+    return level;
+  };
+  visit3(top, topDependencies, [top]);
+  return builds.sort((a, b) => a.level - b.level || (a.chart < b.chart ? -1 : a.chart > b.chart ? 1 : 0));
+}
+function isDirectory2(path) {
+  try {
+    return statSync2(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+function isFile2(path) {
+  try {
+    return statSync2(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+// src/adapters/kubectl/discover.ts
+import { join as join7 } from "node:path";
+
+// src/adapters/kubectl/render.ts
+import { readdirSync as readdirSync3, readFileSync as readFileSync7 } from "node:fs";
+import { basename, join as join6 } from "node:path";
+var KUSTOMIZATION = new Set(["kustomization.yaml", "kustomization.yml", "Kustomization"]);
+var MANIFEST = /\.(yaml|yml|json)$/;
+function isKustomization(file2) {
+  return KUSTOMIZATION.has(file2);
+}
+function isManifestFile(file2) {
+  return MANIFEST.test(file2) && !isKustomization(file2);
+}
+function sourceOf(dir) {
+  return (filesIn(dir) ?? []).some(isKustomization) ? "kustomization" : "manifests";
+}
+function bundleManifests(dir, recursive2 = false) {
+  return manifestFiles(dir, recursive2).map((file2) => {
+    const text7 = readFileSync7(join6(dir, file2), "utf8");
+    return text7.endsWith(`
+`) ? text7 : `${text7}
+`;
+  }).join(`---
+`);
+}
+function manifestFiles(dir, recursive2 = false) {
+  return walk2(dir, recursive2).filter((file2) => isManifestFile(basename(file2)));
+}
+function nestedKustomizations(dir) {
+  return [
+    ...new Set(walk2(dir, true).filter((file2) => file2.includes("/") && isKustomization(basename(file2))).map((file2) => file2.slice(0, file2.lastIndexOf("/"))))
+  ];
+}
+function walk2(dir, recursive2, prefix = "") {
+  let entries;
+  try {
+    entries = readdirSync3(join6(dir, prefix), { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries.sort((a, b) => byCodeUnit5(a.name, b.name)).flatMap((entry2) => {
+    const path = prefix === "" ? entry2.name : `${prefix}/${entry2.name}`;
+    if (entry2.isDirectory())
+      return recursive2 ? walk2(dir, true, path) : [];
+    return entry2.isFile() ? [path] : [];
+  });
+}
+function byCodeUnit5(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function filesIn(dir) {
+  try {
+    return readdirSync3(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+  } catch {
+    return;
+  }
+}
+
+// src/adapters/kubectl/discover.ts
+var NAMES = "An entry with tool: kubectl names a directory of manifests or a kustomization.";
+function discoverKubectl(root, config2) {
+  const stacks = [];
+  const optionProblems = [];
+  const problems = [];
+  config2.stacks.forEach((entry2, index) => {
+    if (entry2.tool !== KUBECTL)
+      return;
+    const parsed = parseKubectlOptions(entry2.options, index);
+    if (!parsed.ok) {
+      optionProblems.push(...parsed.problems);
+      return;
+    }
+    const shown = JSON.stringify(entry2.path);
+    const dir = join7(root, entry2.path);
+    const files = filesIn(dir);
+    if (files === undefined) {
+      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${NAMES}`);
+      return;
+    }
+    const recursive2 = parsed.options.recursive === true;
+    if (recursive2 && files.some(isKustomization)) {
+      problems.push(`stacks[${index}]: ${shown} is a kustomization, which lists its own files. recursive is for a directory of manifests: take it out of the options.`);
+      return;
+    }
+    const nested = recursive2 ? nestedKustomizations(dir) : [];
+    if (nested.length > 0) {
+      for (const sub of nested) {
+        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry2.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
+      }
+      return;
+    }
+    if (!files.some(isKustomization) && manifestFiles(dir, recursive2).length === 0) {
+      problems.push(`stacks[${index}]: ${shown} holds no manifests (*.yaml, *.yml, *.json) and no kustomization. ${NAMES}`);
+      return;
+    }
+    const options = { tool: KUBECTL, ...parsed.options };
+    stacks.push({
+      path: entry2.path,
+      ...entry2.name === undefined ? {} : { name: entry2.name },
+      options: { ...options }
+    });
+  });
+  if (optionProblems.length === 0 && problems.length > 0)
+    throw new DiscoveryError(problems);
+  return { stacks, optionProblems };
+}
+
+// src/adapters/opentofu/discover.ts
+import { readdirSync as readdirSync4, statSync as statSync3 } from "node:fs";
+import { isAbsolute as isAbsolute2, join as join8, normalize as normalize2, relative as relative3, sep as sep4 } from "node:path";
+var MODULE_FILES = {
+  opentofu: {
+    pattern: /\.(tf|tofu|tf\.json|tofu\.json)$/,
+    shown: "*.tf, *.tofu, *.tf.json, *.tofu.json",
+    word: "OpenTofu"
+  },
+  terraform: { pattern: /\.(tf|tf\.json)$/, shown: "*.tf, *.tf.json", word: "Terraform" }
+};
+var TERRAGRUNT_FILES = ["terragrunt.hcl", "terragrunt.hcl.json"];
+var CDKTF_FILE = "cdktf.json";
+var CDKTF_STACK_NAME = /^[A-Za-z0-9_-]+$/;
+function discoverOpenTofu(root, config2) {
+  const stacks = [];
+  const optionProblems = [];
+  const problems = [];
+  const declaredBy = new Map;
+  config2.stacks.forEach((entry2, index) => {
+    if (!isFamilyTool(entry2.tool))
+      return;
+    const tool = entry2.tool;
+    const parsed = parseOpenTofuOptions(entry2.options, index, tool);
+    if (!parsed.ok) {
+      optionProblems.push(...parsed.problems);
+      return;
+    }
+    const { wrapper } = parsed.options;
+    const before = optionProblems.length;
+    if (wrapper !== undefined && parsed.options.varFiles.length > 0) {
+      optionProblems.push(wrapper === TERRAGRUNT ? `stacks[${index}].options.varFiles: a Terragrunt unit passes its var files in its own terragrunt.hcl (extra_arguments), so the entry takes none.` : `stacks[${index}].options.varFiles: a CDK for Terraform app sets its variables in code, so the entry takes none.`);
+    }
+    if (wrapper === CDKTF && entry2.name === undefined) {
+      optionProblems.push(`stacks[${index}].name: an entry with wrapper: cdktf names the CDK for Terraform stack it deploys, as the app calls it.`);
+    }
+    if (wrapper === CDKTF && entry2.name !== undefined && !CDKTF_STACK_NAME.test(entry2.name)) {
+      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry2.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
+    }
+    const kind = `tool: ${tool}${wrapper === undefined ? "" : ` and wrapper: ${wrapper}`}`;
+    const earlier = declaredBy.get(entry2.path);
+    if (earlier === undefined) {
+      declaredBy.set(entry2.path, { index, kind });
+    } else if (earlier.kind !== kind) {
+      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry2.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
+    }
+    if (optionProblems.length > before)
+      return;
+    const dir = join8(root, entry2.path);
+    const shown = JSON.stringify(entry2.path);
+    const files = filesIn2(dir);
+    const names = wrapper === TERRAGRUNT ? "the directory of one Terragrunt unit" : wrapper === CDKTF ? "the directory of a CDK for Terraform app" : "the directory of a root module";
+    const about = wrapper === undefined ? `An entry with tool: ${tool}` : `An entry with wrapper: ${wrapper}`;
+    if (files === undefined) {
+      problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${about} names ${names}.`);
+      return;
+    }
+    if (wrapper === TERRAGRUNT && !files.some((file2) => TERRAGRUNT_FILES.includes(file2))) {
+      problems.push(`stacks[${index}]: ${shown} holds no terragrunt.hcl or terragrunt.hcl.json. ${about} names ${names}.`);
+      return;
+    }
+    if (wrapper === CDKTF && !files.includes(CDKTF_FILE)) {
+      problems.push(`stacks[${index}]: ${shown} holds no ${CDKTF_FILE}. ${about} names ${names}.`);
+      return;
+    }
+    const module = MODULE_FILES[tool];
+    if (wrapper === undefined && !files.some((file2) => module.pattern.test(file2))) {
+      problems.push(`stacks[${index}]: ${shown} holds no ${module.word} files (${module.shown}). ${about} names ${names}.`);
+      return;
+    }
+    const varProblems = problems.length;
+    parsed.options.varFiles.forEach((file2, at) => {
+      const where2 = `stacks[${index}].options.varFiles[${at}]: ${JSON.stringify(file2)}`;
+      if (isAbsolute2(file2)) {
+        problems.push(`${where2} must be relative to the directory of the stack.`);
+        return;
+      }
+      const fromRoot = relative3(root, normalize2(join8(dir, file2)));
+      if (fromRoot === ".." || fromRoot.startsWith(`..${sep4}`) || isAbsolute2(fromRoot)) {
+        problems.push(`${where2} must stay inside the repo.`);
+        return;
+      }
+      if (!isFile3(join8(root, fromRoot)))
+        problems.push(`${where2} is not a file in ${shown}.`);
+    });
+    if (problems.length > varProblems)
+      return;
+    const options = { tool, ...parsed.options };
+    stacks.push({
+      path: entry2.path,
+      ...entry2.name === undefined ? {} : { name: entry2.name },
+      options: { ...options }
+    });
+  });
+  if (optionProblems.length === 0 && problems.length > 0)
+    throw new DiscoveryError(problems);
+  return { stacks, optionProblems };
+}
+function filesIn2(dir) {
+  try {
+    return readdirSync4(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+  } catch {
+    return;
+  }
+}
+function isFile3(path) {
+  try {
+    return statSync3(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+// src/adapters/opentofu/root-modules.ts
+import { readdirSync as readdirSync5, readFileSync as readFileSync8 } from "node:fs";
+import { join as join9, posix as posix3 } from "node:path";
+var ROOT_MODULES = "rootModules";
+var MODULE_FILE2 = /\.(tf|tofu|tf\.json|tofu\.json)$/;
+var TOFU_FILE = /\.tofu(\.json)?$/;
+var LOCK_FILE2 = ".terraform.lock.hcl";
+var TERRAGRUNT_FILE = /^terragrunt(\.stack)?\.hcl(\.json)?$/;
+var AUTO_VAR_FILE2 = /^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/;
+var VAR_FILE = /\.tfvars(\.json)?$/;
+var BACKEND_FILE = /\.tfbackend$/;
+var READS_WORKSPACE = /\b(terraform|tofu)\.workspace\b/;
+var SKIPPED = new Set(["node_modules", "cdktf.out"]);
+var REGISTRIES = {
+  "registry.opentofu.org": OPENTOFU,
+  "registry.terraform.io": TERRAFORM
+};
+var TOOL_WORDS = { opentofu: "OpenTofu", terraform: "Terraform" };
+function findRootModules(root, config2) {
+  return judge(root, config2).flatMap(({ path, tool }) => tool === undefined ? [] : [{ path, options: { tool, varFiles: [] } }]);
+}
+function explainRootModules(root, config2) {
+  return judge(root, config2).map(({ path, tool, declared, because }) => ({
+    path,
+    outcome: tool !== undefined ? "found" : declared ? "declared" : "left-out",
+    ...tool === undefined ? {} : { stackId: path },
+    because
+  }));
+}
+function judge(root, config2) {
+  const repo = readRepo(root);
+  const declared = new Map;
+  config2.stacks.forEach((entry2, index) => {
+    if (entry2.tool !== undefined && !declared.has(entry2.path))
+      declared.set(entry2.path, index);
+  });
+  const namedBy = new Map;
+  for (const directory of repo.directories) {
+    for (const source of directory.sources) {
+      const target = localSource2(directory.path, source);
+      if (target !== undefined && target !== directory.path && !namedBy.has(target)) {
+        namedBy.set(target, directory.path);
+      }
+    }
+  }
+  const off = config2.discovery[ROOT_MODULES] === false;
+  return repo.directories.map((directory) => {
+    const { path } = directory;
+    const left = (because) => ({ path, because });
+    const index = declared.get(path);
+    if (index !== undefined) {
+      return { path, declared: true, because: `declared by stacks[${index}], which it keeps` };
+    }
+    if (off)
+      return left(`discovery.${ROOT_MODULES} is false in the config file`);
+    if (repo.terragrunt !== undefined) {
+      return left(`the repo uses Terragrunt (${repo.terragrunt}): its units are declared with wrapper: terragrunt, and the modules they run are not stacks`);
+    }
+    const user = namedBy.get(path);
+    if (user !== undefined)
+      return left(`${user} uses it as a module source`);
+    if (path.split("/").includes("modules"))
+      return left("it sits under a modules directory");
+    const { state } = directory;
+    if (state === undefined) {
+      return left("no backend or cloud block: only a root module chooses where its state lives, and state left on the runner is lost");
+    }
+    if (directory.readsWorkspace !== undefined) {
+      return left(`${directory.readsWorkspace} reads the workspace, so the root runs in workspaces its files do not name: declare one stack per workspace`);
+    }
+    if (state.tags) {
+      return left(`the cloud block in ${state.file} picks its workspaces by tags: declare one stack per workspace`);
+    }
+    const chosen = [
+      ...directory.chosenFiles,
+      ...[...repo.varDirectories].filter(([under]) => posix3.dirname(under) === path).flatMap(([under, files]) => files.map((file2) => posix3.relative(path, `${under}/${file2}`)))
+    ].sort(byCodeUnit6);
+    if (chosen.length > 0) {
+      return left(`${listed2(chosen)} ${chosen.length === 1 ? "is a file" : "are files"} the tool loads only when told to: which one a stack takes is the repo's to say`);
+    }
+    const tools = [...new Set(directory.lockTools)];
+    const tofuFiles = directory.files.some((file2) => TOFU_FILE.test(file2));
+    if (tofuFiles && !tools.includes(OPENTOFU))
+      tools.push(OPENTOFU);
+    const [tool, ...others] = tools.sort();
+    if (tool === undefined || others.length > 0) {
+      return left(tool === undefined ? directory.hasLockFile ? "its lock file names no provider of the OpenTofu or the Terraform registry, and it has no .tofu files, so its files do not say which tool runs it" : "no lock file and no .tofu files, so its files do not say whether OpenTofu or Terraform runs it" : "its files point at both OpenTofu and Terraform, so they do not say which tool runs it");
+    }
+    const where2 = state.label === undefined ? state.kind : `${state.kind} "${state.label}"`;
+    const which2 = tofuFiles && directory.lockTools.length === 0 ? ".tofu files, which only OpenTofu reads" : `a lock file of ${TOOL_WORDS[tool]} providers`;
+    return { path, tool, because: `a ${where2} block in ${state.file}, and ${which2}` };
+  });
+}
+function readRepo(root) {
+  const repo = { directories: [], varDirectories: new Map };
+  const walk3 = (relative4) => {
+    let entries;
+    try {
+      entries = readdirSync5(join9(root, relative4), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const files = entries.filter((entry2) => entry2.isFile()).map((entry2) => entry2.name).sort(byCodeUnit6);
+    const path = relative4 || ".";
+    const terragrunt = files.find((file2) => TERRAGRUNT_FILE.test(file2));
+    if (terragrunt !== undefined && repo.terragrunt === undefined) {
+      repo.terragrunt = relative4 === "" ? terragrunt : `${relative4}/${terragrunt}`;
+    }
+    const code2 = files.filter((file2) => MODULE_FILE2.test(file2));
+    const chosenFiles = files.filter((file2) => VAR_FILE.test(file2) && !AUTO_VAR_FILE2.test(file2) || BACKEND_FILE.test(file2));
+    if (code2.length > 0) {
+      repo.directories.push(readDirectory2(root, path, files, code2, chosenFiles));
+    } else if (chosenFiles.length > 0) {
+      repo.varDirectories.set(path, chosenFiles);
+    }
+    for (const entry2 of entries) {
+      if (!entry2.isDirectory() || entry2.name.startsWith(".") || SKIPPED.has(entry2.name))
+        continue;
+      walk3(relative4 === "" ? entry2.name : `${relative4}/${entry2.name}`);
+    }
+  };
+  walk3("");
+  repo.directories.sort((a, b) => byCodeUnit6(a.path, b.path));
+  return repo;
+}
+function readDirectory2(root, path, files, code2, chosenFiles) {
+  const directory = {
+    path,
+    files: code2,
+    sources: [],
+    lockTools: [],
+    hasLockFile: files.includes(LOCK_FILE2),
+    chosenFiles
+  };
+  for (const file2 of code2) {
+    const text7 = read3(join9(root, path, file2));
+    const parsed = file2.endsWith(".json") ? readJson2(text7) : readNative(text7);
+    if (parsed.state !== undefined)
+      directory.state ??= { ...parsed.state, file: file2 };
+    if (parsed.readsWorkspace)
+      directory.readsWorkspace ??= file2;
+    directory.sources.push(...parsed.sources);
+  }
+  if (directory.hasLockFile) {
+    const blocks = readHcl(read3(join9(root, path, LOCK_FILE2))).blocks;
+    for (const block of blocks.filter((one) => one.type === "provider")) {
+      const tool = REGISTRIES[block.labels[0]?.split("/")[0] ?? ""];
+      if (tool !== undefined)
+        directory.lockTools.push(tool);
+    }
+  }
+  return directory;
+}
+function readNative(text7) {
+  const { blocks, code: code2 } = readHcl(text7);
+  let state;
+  for (const block of blocks.filter((one) => one.type === "terraform")) {
+    for (const inner of block.blocks) {
+      if (state !== undefined)
+        break;
+      if (inner.type === "backend") {
+        state = { kind: "backend", ...labelOf(inner), tags: false };
+      } else if (inner.type === "cloud") {
+        const tags = inner.blocks.some((one) => one.type === "workspaces" && one.attributes.includes("tags"));
+        state = { kind: "cloud", tags };
+      }
+    }
+  }
+  const sources = blocks.filter((block) => block.type === "module").flatMap((block) => block.strings.source === undefined ? [] : [block.strings.source]);
+  return {
+    ...state === undefined ? {} : { state },
+    readsWorkspace: READS_WORKSPACE.test(code2),
+    sources
+  };
+}
+function labelOf(block) {
+  const [label] = block.labels;
+  return label === undefined ? {} : { label };
+}
+function readJson2(text7) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text7);
+  } catch {
+    return { readsWorkspace: false, sources: [] };
+  }
+  let state;
+  for (const terraform of objects(field(parsed, "terraform"))) {
+    if (state !== undefined)
+      break;
+    const backend = objects(field(terraform, "backend"))[0];
+    const cloud = objects(field(terraform, "cloud"))[0];
+    if (backend !== undefined) {
+      const [label] = Object.keys(backend);
+      state = { kind: "backend", ...label === undefined ? {} : { label }, tags: false };
+    } else if (cloud !== undefined) {
+      const tags = objects(field(cloud, "workspaces")).some((one) => ("tags" in one));
+      state = { kind: "cloud", tags };
+    }
+  }
+  const sources = objects(field(parsed, "module")).flatMap((modules) => Object.values(modules).flatMap((module) => objects(module).flatMap((one) => typeof one.source === "string" ? [one.source] : [])));
+  return {
+    ...state === undefined ? {} : { state },
+    readsWorkspace: READS_WORKSPACE.test(text7),
+    sources
+  };
+}
+function field(value, name) {
+  return isObject2(value) ? value[name] : undefined;
+}
+function objects(value) {
+  if (Array.isArray(value))
+    return value.filter(isObject2);
+  return isObject2(value) ? [value] : [];
+}
+function isObject2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function localSource2(from, source) {
+  if (!source.startsWith("./") && !source.startsWith("../"))
+    return;
+  const joined = posix3.normalize(posix3.join(from, source));
+  const target = joined.replace(/\/+$/, "") || ".";
+  if (target === ".." || target.startsWith("../"))
+    return;
+  return target;
+}
+function listed2(files) {
+  const shown = files.slice(0, 3).join(", ");
+  return files.length > 3 ? `${shown} and ${files.length - 3} more` : shown;
+}
+function read3(file2) {
+  try {
+    return readFileSync8(file2, "utf8");
+  } catch {
+    return "";
+  }
+}
+function byCodeUnit6(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/pulumi/discover.ts
+import { readdir as readdir2, readFile } from "node:fs/promises";
+import { isAbsolute as isAbsolute3, join as join10, relative as relative4, sep as sep5 } from "node:path";
+var PROJECT_FILE = "Pulumi";
+var EXTENSIONS2 = [".json", ".yaml", ".yml"];
+var SKIPPED2 = new Set([".git", "node_modules"]);
+async function discover(root, config2) {
+  const phaseKeys = config2 === undefined ? [] : phaseKeysOf(config2);
+  const stacks = [];
+  const problems = [];
+  const walk3 = async (dir) => {
+    const entries = await readdir2(dir, { withFileTypes: true });
+    const extension = EXTENSIONS2.find((ext) => fileNames(entries).includes(PROJECT_FILE + ext));
+    if (extension !== undefined) {
+      const projectFile = join10(dir, PROJECT_FILE + extension);
+      try {
+        const { stackDir, project } = await readProjectFile(root, projectFile);
+        const files = stackDir === dir ? fileNames(entries) : await fileNamesIn(stackDir);
+        const path = slashed(relative4(root, dir)) || ".";
+        const read4 = keysOf(project, phaseKeys);
+        for (const name of stackNames(files, extension)) {
+          stacks.push({
+            path,
+            name,
+            options: {},
+            ...read4 === undefined ? {} : { phaseKeys: read4 }
+          });
+        }
+      } catch (error63) {
+        if (!(error63 instanceof ProjectFileProblem))
+          throw error63;
+        problems.push(`${slashed(relative4(root, projectFile))}: ${error63.message}`);
+      }
+    }
+    for (const entry2 of entries) {
+      if (entry2.isDirectory() && !SKIPPED2.has(entry2.name))
+        await walk3(join10(dir, entry2.name));
+    }
+  };
+  await walk3(root);
+  if (problems.length > 0)
+    throw new DiscoveryError(problems.sort(compare));
+  return stacks.sort((a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""));
+}
+
+class ProjectFileProblem extends Error {
+}
+async function projectName(root, path) {
+  const dir = join10(root, path);
+  let entries;
+  try {
+    entries = await readdir2(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  const extension = EXTENSIONS2.find((ext) => fileNames(entries).includes(PROJECT_FILE + ext));
+  if (extension === undefined)
+    return;
+  const document = $parseDocument(await readFile(join10(dir, PROJECT_FILE + extension), "utf8"), {
+    uniqueKeys: false
+  });
+  if (document.errors.length > 0)
+    return;
+  const project = document.toJS();
+  if (typeof project !== "object" || project === null || !("name" in project))
+    return;
+  return typeof project.name === "string" ? project.name : undefined;
+}
+function keysOf(project, keys) {
+  if (keys.length === 0 || !isMapping2(project))
+    return;
+  const config2 = isMapping2(project.config) ? project.config : {};
+  const read4 = {};
+  for (const key of keys) {
+    const text7 = configText(config2[key]) ?? project[key];
+    if (typeof text7 === "string")
+      read4[key] = text7;
+  }
+  return Object.keys(read4).length === 0 ? undefined : read4;
+}
+function configText(entry2) {
+  if (typeof entry2 === "string")
+    return entry2;
+  if (!isMapping2(entry2) || entry2.secret === true)
+    return;
+  const text7 = entry2.value ?? entry2.default;
+  return typeof text7 === "string" ? text7 : undefined;
+}
+function isMapping2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+async function readProjectFile(root, projectFile) {
+  const dir = join10(projectFile, "..");
+  const lineCounter2 = new $LineCounter;
+  const document = $parseDocument(await readFile(projectFile, "utf8"), {
+    lineCounter: lineCounter2,
+    prettyErrors: false,
+    uniqueKeys: false
+  });
+  const broken = document.errors[0];
+  if (broken !== undefined) {
+    const { line, col } = lineCounter2.linePos(broken.pos[0]);
+    throw new ProjectFileProblem(`line ${line}, column ${col}: not valid YAML.`);
+  }
+  const project = document.toJS();
+  if (typeof project !== "object" || project === null || !("stackConfigDir" in project))
+    return { stackDir: dir, project };
+  const named = project.stackConfigDir;
+  if (typeof named !== "string") {
+    throw new ProjectFileProblem("stackConfigDir must be text, the directory that holds the stack files.");
+  }
+  const stackDir = join10(dir, named);
+  const fromRoot = relative4(root, stackDir);
+  if (fromRoot === ".." || fromRoot.startsWith(`..${sep5}`) || isAbsolute3(fromRoot)) {
+    throw new ProjectFileProblem(`stackConfigDir points outside the repo (${JSON.stringify(named)}). Sluiceway only reads files inside the repo.`);
+  }
+  return { stackDir, project };
+}
+function stackNames(files, extension) {
+  const prefix = `${PROJECT_FILE}.`;
+  return files.filter((file2) => file2.startsWith(prefix) && file2.endsWith(extension)).map((file2) => file2.slice(prefix.length, -extension.length)).filter((name) => name !== "");
+}
+function fileNames(entries) {
+  return entries.filter((entry2) => !entry2.isDirectory()).map((entry2) => entry2.name);
+}
+async function fileNamesIn(dir) {
+  try {
+    return fileNames(await readdir2(dir, { withFileTypes: true }));
+  } catch (error63) {
+    const code2 = error63.code;
+    if (code2 === "ENOENT" || code2 === "ENOTDIR")
+      return [];
+    throw error63;
+  }
+}
+function slashed(path) {
+  return path.split(sep5).join("/");
+}
+function compare(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/discover-all.ts
+var TOOLS = [OPENTOFU, TERRAFORM, HELM, KUBECTL];
+var DISCOVERY_SWITCHES = [ROOT_MODULES];
+async function discoverAll(root, config2) {
+  const toolProblems = config2.stacks.flatMap((entry2, index) => {
+    if (entry2.tool === undefined)
+      return [];
+    if (!TOOLS.includes(entry2.tool)) {
+      return [
+        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry2.tool)}. Known tools: ${TOOLS.join(", ")}.`
+      ];
+    }
+    return [
+      ...entry2.dependsOn === DEPENDS_ON_AUTO ? [
+        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry2.tool} stack has none. Name the stack ids instead.`
+      ] : [],
+      ...typeof entry2.phase === "object" ? [
+        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry2.tool} stack has none. Name the phase instead.`
+      ] : [],
+      ...entry2.createInBackend !== undefined ? [
+        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry2.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
+      ] : []
+    ];
+  });
+  const switchProblems = Object.keys(config2.discovery).filter((name) => !DISCOVERY_SWITCHES.includes(name)).map((name) => `discovery.${name}: unknown key. Known keys: ${DISCOVERY_SWITCHES.join(", ")}.`);
+  const tofu = tryDiscover(() => discoverOpenTofu(root, config2));
+  const charts = tryDiscover(() => discoverHelm(root, config2));
+  const manifests = tryDiscover(() => discoverKubectl(root, config2));
+  const problems = [
+    ...switchProblems,
+    ...toolProblems,
+    ...tofu.optionProblems,
+    ...charts.optionProblems,
+    ...manifests.optionProblems
+  ];
+  if (problems.length > 0)
+    throw new ConfigError(problems.sort(byEntry));
+  const errors4 = [tofu.error, charts.error, manifests.error].filter((error63) => error63 !== undefined);
+  const other = errors4.find((error63) => !(error63 instanceof DiscoveryError));
+  if (other !== undefined)
+    throw other;
+  if (errors4.length > 0) {
+    throw new DiscoveryError(errors4.flatMap((error63) => error63.problems).sort(byEntry));
+  }
+  const declared = [
+    ...tofu.stacks,
+    ...findRootModules(root, config2),
+    ...charts.stacks,
+    ...manifests.stacks
+  ];
+  const discovered = await discover(root, config2);
+  if (declared.length === 0)
+    return withIds(config2, discovered);
+  return withIds(config2, [...discovered, ...declared].sort((a, b) => compare2(a.path, b.path) || compare2(a.name ?? "", b.name ?? "")));
+}
+function tryDiscover(discover2) {
+  try {
+    return discover2();
+  } catch (error63) {
+    return { stacks: [], optionProblems: [], error: error63 };
+  }
+}
+function byEntry(a, b) {
+  const index = (text7) => Number(/^stacks\[(\d+)\]/.exec(text7)?.[1] ?? 0);
+  return index(a) - index(b);
+}
+function compare2(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/helm/file-references.ts
+import { join as join11, normalize as normalize3 } from "node:path";
+async function readsFiles(_root, stack) {
+  const options = stack.options;
+  const namedIn = "sluiceway.yaml";
+  const chart = options.chartDir === undefined || options.chartDir === "." ? [] : [{ path: options.chartDir, kind: "directory", namedIn }];
+  const values = options.valuesFiles.map((file2) => ({
+    path: normalize3(join11(stack.path, file2)).split("\\").join("/"),
+    kind: "file",
+    namedIn
+  }));
+  return [...chart, ...values];
+}
+
+// src/adapters/pulumi/file-references.ts
+import { readFileSync as readFileSync9, statSync as statSync4 } from "node:fs";
+import { isAbsolute as isAbsolute4, join as join12, normalize as normalize4, relative as relative5, sep as sep6 } from "node:path";
+var EXTENSIONS3 = [".json", ".yaml", ".yml"];
+var PROGRAM_FUNCTIONS = {
+  "fn::readFile": "file",
+  "fn::fileAsset": "file",
+  "fn::fileArchive": "either"
+};
+async function readsFiles2(root, stack) {
+  const found = new Map;
+  const projectDir = join12(root, stack.path);
+  const extension = EXTENSIONS3.find((ext) => isFile4(join12(projectDir, `Pulumi${ext}`)));
+  if (extension === undefined)
+    return [];
+  const projectPath = join12(projectDir, `Pulumi${extension}`);
+  const project = read4(projectPath);
+  if (!isRecord2(project))
+    return [];
+  const keep = (path, from, namedIn, want) => {
+    if (isAbsolute4(path) || path.includes("${"))
+      return;
+    const full = normalize4(join12(from, path));
+    const fromRoot = relative5(root, full);
+    if (fromRoot === "" || fromRoot === ".." || fromRoot.startsWith(`..${sep6}`) || isAbsolute4(fromRoot)) {
+      return;
+    }
+    const kind = kindOf(full);
+    if (kind === undefined)
+      return;
+    if (want === "file" && kind !== "file")
+      return;
+    if (want === "directory" && kind !== "directory")
+      return;
+    const slashed2 = fromRoot.split(sep6).join("/");
+    found.set(`${slashed2}
+${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
+  };
+  if (runtimeName2(project.runtime) === "yaml") {
+    const programDir = typeof project.main === "string" ? join12(projectDir, project.main) : projectDir;
+    const programs = programDir === projectDir ? [projectPath, join12(projectDir, "Main.yaml")] : [join12(programDir, "Main.yaml"), join12(programDir, "Pulumi.yaml")];
+    for (const file2 of programs.filter(isFile4)) {
+      const program = file2 === projectPath ? project : read4(file2);
+      walk3(program, (key, value) => {
+        const want = PROGRAM_FUNCTIONS[key];
+        if (want === undefined || typeof value !== "string")
+          return;
+        keep(value.replaceAll("${pulumi.cwd}", "."), programDir, file2, want);
+      });
+    }
+  }
+  const pathLike = (value) => value.includes("/") || value.startsWith(".");
+  if (isRecord2(project.config)) {
+    for (const declared of Object.values(project.config)) {
+      if (typeof declared === "string" && pathLike(declared)) {
+        keep(declared, projectDir, projectPath, "any");
+      }
+      if (!isRecord2(declared) || declared.secret === true)
+        continue;
+      for (const value of [declared.default, declared.value]) {
+        if (typeof value === "string" && pathLike(value))
+          keep(value, projectDir, projectPath, "any");
+      }
+    }
+  }
+  if (stack.name !== undefined) {
+    const stackDir = typeof project.stackConfigDir === "string" ? join12(projectDir, project.stackConfigDir) : projectDir;
+    const stackPath2 = join12(stackDir, `Pulumi.${stack.name}${extension}`);
+    const stackFile = read4(stackPath2);
+    if (isRecord2(stackFile) && isRecord2(stackFile.config)) {
+      plainStrings(stackFile.config, (value) => {
+        if (pathLike(value))
+          keep(value, projectDir, stackPath2, "any");
+      });
+    }
+  }
+  return [...found.values()].sort((a, b) => compare3(a.path, b.path));
+}
+function runtimeName2(runtime) {
+  return isRecord2(runtime) ? runtime.name : runtime;
+}
+function walk3(value, visit3) {
+  if (Array.isArray(value)) {
+    for (const item of value)
+      walk3(item, visit3);
+  } else if (isRecord2(value)) {
+    for (const [key, inner] of Object.entries(value)) {
+      visit3(key, inner);
+      walk3(inner, visit3);
+    }
+  }
+}
+function plainStrings(value, visit3) {
+  if (typeof value === "string")
+    visit3(value);
+  else if (Array.isArray(value))
+    for (const item of value)
+      plainStrings(item, visit3);
+  else if (isRecord2(value) && !("secure" in value)) {
+    for (const inner of Object.values(value))
+      plainStrings(inner, visit3);
+  }
+}
+function read4(path) {
+  try {
+    return $parse(readFileSync9(path, "utf8"), { uniqueKeys: false });
+  } catch {
+    return;
+  }
+}
+function kindOf(path) {
+  try {
+    const stat2 = statSync4(path);
+    return stat2.isDirectory() ? "directory" : stat2.isFile() ? "file" : undefined;
+  } catch {
+    return;
+  }
+}
+function isFile4(path) {
+  return kindOf(path) === "file";
+}
+function repoPath2(root, path) {
+  return relative5(root, path).split(sep6).join("/");
+}
+function isRecord2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function compare3(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/file-references.ts
+async function readsFiles3(root, stack) {
+  if (isHelmOptions(stack.options))
+    return readsFiles(root, stack);
+  if (isOpenTofuOptions(stack.options) || isKubectlOptions(stack.options))
+    return [];
+  return readsFiles2(root, stack);
+}
+
+// src/adapters/helm/apply.ts
+import { join as join13 } from "node:path";
+
+// src/adapters/tool-run.ts
+async function runTool(runner, spec) {
+  const { timeoutMinutes, exitCodes = {}, ...command } = spec;
+  const result2 = await runner({ ...command, timeoutMs: timeoutMinutes * 60000 });
+  if (result2.status === "not-started") {
+    return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
+  }
+  const { stdout, stderr } = result2;
+  if (result2.status === "timed-out") {
+    return { ok: false, reason: { kind: "timed-out", minutes: timeoutMinutes }, stdout, stderr };
+  }
+  const { exitCode } = result2;
+  if (exitCode !== null && (exitCodes.success ?? [0]).includes(exitCode)) {
+    return {
+      ok: true,
+      exitCode,
+      stdout,
+      stderr,
+      ...result2.outputCutAt === undefined ? {} : { outputCutAt: result2.outputCutAt }
+    };
+  }
+  const own2 = exitCode === null ? undefined : exitCodes.reasons?.[exitCode];
+  return { ok: false, reason: own2 ?? { kind: "tool-error", exitCode }, stdout, stderr };
+}
+async function runDeploy(runner, command) {
+  const result2 = await runner(command);
+  if (result2.status === "not-started") {
+    return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
+  }
+  const { stdout, stderr } = result2;
+  if (result2.status === "exited" && result2.exitCode === 0)
+    return { ok: true, stdout, stderr };
+  const exitCode = result2.status === "exited" ? result2.exitCode : null;
+  return { ok: false, reason: { kind: "tool-error", exitCode }, stdout, stderr };
+}
+var ANSI_ESCAPES = new RegExp([
+  "\\u001b\\[[0-?]*[ -/]*[@-~]",
+  "\\u001b\\][^\\u0007\\u001b]*(?:\\u0007|\\u001b\\\\)",
+  "\\u001b[@-Z\\\\^_]"
+].join("|"), "g");
+function stripAnsi(text7) {
+  return text7.replace(ANSI_ESCAPES, "");
+}
+
+// src/adapters/helm/commands.ts
+var HELM2 = "helm";
+function release(options) {
+  return [
+    options.release,
+    options.chart,
+    `--namespace=${options.namespace}`,
+    ...options.version === undefined ? [] : [`--version=${options.version}`]
+  ];
+}
+function values(options) {
+  return options.valuesFiles.map((file2) => `--values=${file2}`);
+}
+function diffCommand(options) {
+  return [
+    HELM2,
+    "diff",
+    "upgrade",
+    ...release(options),
+    "--install",
+    "--reset-values",
+    "--dry-run=server",
+    "--output=structured",
+    "--no-color",
+    ...values(options)
+  ];
+}
+function renderCommand(options) {
+  return [HELM2, "template", ...release(options), "--dry-run=server", ...values(options)];
+}
+function threeWayDiffCommand(options) {
+  return [
+    HELM2,
+    "diff",
+    "upgrade",
+    ...release(options),
+    "--install",
+    "--reset-values",
+    "--dry-run=server",
+    "--three-way-merge",
+    "--no-hooks",
+    "--output=structured",
+    "--no-color",
+    ...values(options)
+  ];
+}
+function deployCommand(options, flags) {
+  return [
+    HELM2,
+    "upgrade",
+    ...release(options),
+    "--install",
+    "--reset-values",
+    flags.major >= 4 ? "--rollback-on-failure" : "--atomic",
+    ...flags.forceConflicts ? ["--force-conflicts"] : [],
+    ...options.createNamespace ? ["--create-namespace"] : [],
+    "--hide-notes",
+    ...values(options)
+  ];
+}
+function metadataCommand(options) {
+  return [
+    HELM2,
+    "get",
+    "metadata",
+    options.release,
+    `--namespace=${options.namespace}`,
+    "--output=json"
+  ];
+}
+function toolDiffCommand(options) {
+  return [
+    HELM2,
+    "diff",
+    "upgrade",
+    ...release(options),
+    "--install",
+    "--reset-values",
+    "--dry-run=server",
+    "--output=diff",
+    "--no-color",
+    ...values(options)
+  ];
+}
+function dependencyCommand() {
+  return [HELM2, "dependency", "build", "."];
+}
+function versionCommand() {
+  return [HELM2, "version", "--template={{.Version}}"];
+}
+function pluginVersionCommand() {
+  return [HELM2, "diff", "version"];
+}
+
+// src/adapters/environment.ts
+function toolEnvironment(env) {
+  const kept = {};
+  for (const [name, value] of Object.entries(env)) {
+    if (value !== undefined && !name.startsWith("INPUT_"))
+      kept[name] = value;
+  }
+  return kept;
+}
+
+// src/adapters/helm/environment.ts
+function helmEnvironment(env) {
+  return toolEnvironment(env);
+}
+function optionsOf(stack) {
+  return stack.options;
+}
+
+// src/adapters/helm/rendered.ts
+import { createHash } from "node:crypto";
+
+class RenderedManifests {
+  stackId;
+  digest;
+  constructor(stackId2, manifests) {
+    this.stackId = stackId2;
+    this.digest = digestOf(manifests);
+  }
+  matches(manifests) {
+    return digestOf(manifests) === this.digest;
+  }
+  async dispose() {}
+  toJSON() {
+    return { stackId: this.stackId };
+  }
+}
+function digestOf(manifests) {
+  return createHash("sha256").update(manifests).digest("hex");
+}
+
+// src/adapters/adapter.ts
+class ToolVersionError extends Error {
+  toolLog;
+  constructor(message, toolLog = "") {
+    super(message);
+    this.name = "ToolVersionError";
+    this.toolLog = toolLog;
+  }
+}
+
+// src/adapters/helm/version.ts
+var MINIMUM_VERSION = [3, 18, 0];
+var MINIMUM_DIFF_VERSION = [3, 15, 11];
+var NEEDS = `Sluiceway needs helm v${MINIMUM_VERSION.join(".")} or newer`;
+var NEEDS_DIFF = `Sluiceway needs helm-diff v${MINIMUM_DIFF_VERSION.join(".")} or newer`;
+var TIME_LIMIT_MS = 60000;
+var VERSION7 = /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/;
+async function checkVersion(context3, _stacks) {
+  const run = (argv) => context3.run({
+    argv,
+    cwd: context3.root,
+    env: helmEnvironment(context3.env),
+    timeoutMs: TIME_LIMIT_MS
+  });
+  const helm = await run(versionCommand());
+  if (helm.status === "not-started") {
+    throw new ToolVersionError(`Could not start helm. ${NEEDS} on PATH and does not install it. Add a workflow step that installs helm before the step that runs Sluiceway.`);
+  }
+  const found = helm.status === "exited" && helm.exitCode === 0 ? readVersion(helm.stdout) : undefined;
+  if (found === undefined) {
+    throw new ToolVersionError(`"${versionCommand().join(" ")}" did not print a version Sluiceway can read. ${NEEDS}. The job log holds what the tool printed.`, stripAnsi(helm.stdout + helm.stderr));
+  }
+  if (older(found.numbers, MINIMUM_VERSION)) {
+    throw new ToolVersionError(`Found helm ${found.text}. ${NEEDS}. Change the workflow step that installs helm so it installs a newer version.`);
+  }
+  const plugin = await run(pluginVersionCommand());
+  const diff = plugin.status === "exited" && plugin.exitCode === 0 ? readVersion(plugin.stdout) : undefined;
+  if (diff === undefined) {
+    throw new ToolVersionError(`The helm diff plugin did not say which version it is. ${NEEDS_DIFF} and does not install it. Add a workflow step that runs helm plugin install https://github.com/databus23/helm-diff before the step that runs Sluiceway.`, plugin.status === "not-started" ? "" : stripAnsi(plugin.stdout + plugin.stderr));
+  }
+  if (older(diff.numbers, MINIMUM_DIFF_VERSION)) {
+    throw new ToolVersionError(`Found helm-diff ${diff.text}. ${NEEDS_DIFF}. Change the workflow step that installs the plugin so it installs a newer version.`);
+  }
+}
+function readVersion(stdout) {
+  const trimmed = stdout.trim();
+  const found = VERSION7.exec(trimmed);
+  if (found === null)
+    return;
+  const text7 = trimmed.startsWith("v") ? trimmed : `v${trimmed}`;
+  return { text: text7, numbers: [Number(found[1]), Number(found[2]), Number(found[3])] };
+}
+function older(numbers, floor) {
+  const difference = floor.map((minimum, index) => (numbers[index] ?? 0) - minimum).find((one) => one !== 0);
+  return difference !== undefined && difference < 0;
+}
+
+// src/adapters/helm/apply.ts
+async function apply(stack, context3, plan, options) {
+  if (!(plan instanceof RenderedManifests) || plan.stackId !== stackId(stack)) {
+    throw new Error("A Helm stack deploys only what its fresh preview rendered.");
+  }
+  const helm = optionsOf(stack);
+  const run = (argv) => runDeploy(context3.run, {
+    argv,
+    cwd: join13(context3.root, stack.path),
+    env: helmEnvironment(context3.env)
+  });
+  const failed = (result2, toolLog2) => ({
+    ok: false,
+    reason: result2.ok ? { kind: "tool-error", exitCode: 0 } : result2.reason,
+    toolLog: toolLog2
+  });
+  const rendered = await run(renderCommand(helm));
+  let toolLog = stripAnsi(rendered.stderr);
+  if (!rendered.ok)
+    return failed(rendered, toolLog);
+  if (!plan.matches(rendered.stdout)) {
+    return { ok: false, reason: { kind: "moved" }, toolLog };
+  }
+  const version2 = await run(versionCommand());
+  toolLog += stripAnsi(version2.stderr);
+  const major = version2.ok ? readVersion(version2.stdout)?.numbers[0] : undefined;
+  if (major === undefined) {
+    return failed(version2, toolLog + (version2.ok ? stripAnsi(version2.stdout) : ""));
+  }
+  let forceConflicts = false;
+  if (options?.repairDrift === true && major >= 4) {
+    const metadata = await run(metadataCommand(helm));
+    toolLog += stripAnsi(metadata.stderr);
+    if (!metadata.ok)
+      return failed(metadata, toolLog);
+    forceConflicts = appliedServerSide(metadata.stdout);
+  }
+  const deployed = await run(deployCommand(helm, { major, forceConflicts }));
+  toolLog += stripAnsi(deployed.stdout + deployed.stderr);
+  return deployed.ok ? { ok: true, toolLog } : failed(deployed, toolLog);
+}
+var metadataSchema = exports_external.object({ applyMethod: exports_external.string().optional() });
+function appliedServerSide(stdout) {
+  try {
+    return metadataSchema.safeParse(JSON.parse(stdout)).data?.applyMethod === "ssa";
+  } catch {
+    return false;
+  }
+}
+
+// src/adapters/helm/drift.ts
+import { join as join14 } from "node:path";
+
+// src/core/value-fingerprint.ts
+import { createHash as createHash2 } from "node:crypto";
+var SECRET_MARK = Symbol("sluiceway:secret");
+function byCodeUnit7(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function canonicalJson(value) {
+  if (Array.isArray(value))
+    return `[${value.map(canonicalJson).join(",")}]`;
+  if (typeof value === "object" && value !== null) {
+    const members2 = Object.keys(value).sort(byCodeUnit7).flatMap((key) => {
+      const member = value[key];
+      return member === undefined ? [] : [`${JSON.stringify(key)}:${canonicalJson(member)}`];
+    });
+    return `{${members2.join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+function isAbsent(value) {
+  return value === undefined || value === null;
+}
+function hiddenDocument(values2) {
+  const entries = values2.flatMap((value) => {
+    if ("secret" in value)
+      return [{ path: value.path, text: canonicalJson({ path: value.path, secret: true }) }];
+    const old = isAbsent(value.old) ? {} : { old: value.old };
+    const next = isAbsent(value.new) ? {} : { new: value.new };
+    if (isAbsent(value.old) && isAbsent(value.new))
+      return [];
+    return [{ path: value.path, text: canonicalJson({ path: value.path, ...old, ...next }) }];
+  });
+  entries.sort((a, b) => byCodeUnit7(a.path, b.path) || byCodeUnit7(a.text, b.text));
+  return `[${entries.map((entry2) => entry2.text).join(",")}]`;
+}
+function first16(text7) {
+  return createHash2("sha256").update(text7, "utf8").digest("hex").slice(0, 16);
+}
+function changeFingerprint(values2) {
+  const document = hiddenDocument(values2);
+  return document === "[]" ? undefined : first16(document);
+}
+function segment(key, top) {
+  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
+    return top ? key : `.${key}`;
+  return `["${key.replaceAll('"', "\\\"")}"]`;
+}
+function isContainer(node2) {
+  return typeof node2 === "object" && node2 !== null;
+}
+function keysOf2(node2) {
+  if (Array.isArray(node2))
+    return node2.map((_, index) => index);
+  if (isContainer(node2))
+    return Object.keys(node2);
+  return [];
+}
+function childOf(node2, key) {
+  if (typeof key === "number")
+    return Array.isArray(node2) ? node2[key] : undefined;
+  return isContainer(node2) && !Array.isArray(node2) ? node2[key] : undefined;
+}
+function differingLeaves(before, after, options = {}) {
+  const found = [];
+  const secret = (node2) => node2 === SECRET_MARK || (options.isSecret?.(node2) ?? false);
+  const walk4 = (old, next, path) => {
+    if (secret(old) || secret(next)) {
+      found.push({ path, secret: true });
+      return;
+    }
+    const oldIn = isContainer(old);
+    const nextIn = isContainer(next);
+    if (oldIn || nextIn) {
+      if (!oldIn && !isAbsent(old))
+        found.push({ path, old });
+      if (!nextIn && !isAbsent(next))
+        found.push({ path, new: next });
+      const keys = new Map;
+      for (const key of [
+        ...keysOf2(oldIn ? old : undefined),
+        ...keysOf2(nextIn ? next : undefined)
+      ]) {
+        keys.set(typeof key === "number" ? `[${key}]` : segment(key, path === ""), key);
+      }
+      for (const [written, key] of keys) {
+        walk4(childOf(oldIn ? old : undefined, key), childOf(nextIn ? next : undefined, key), path + written);
+      }
+      return;
+    }
+    if (isAbsent(old) && isAbsent(next))
+      return;
+    if (old === next)
+      return;
+    found.push({
+      path,
+      ...isAbsent(old) ? {} : { old },
+      ...isAbsent(next) ? {} : { new: next }
+    });
+  };
+  walk4(before, after, options.prefix ?? "");
+  return found;
+}
+function valueFingerprint(diff) {
+  const list = (changes2) => (changes2 ?? []).flatMap((change) => change.fingerprint === undefined ? [] : [{ address: change.address, fingerprint: change.fingerprint }]).sort((a, b) => byCodeUnit7(a.address, b.address) || byCodeUnit7(a.fingerprint, b.fingerprint)).map((entry2) => canonicalJson(entry2));
+  const changes = list(diff.changes);
+  const drift = list(diff.drift);
+  if (changes.length === 0 && drift.length === 0)
+    return;
+  const driftText = drift.length === 0 ? "" : `"drift":[${drift.join(",")}],`;
+  return first16(`{"changes":[${changes.join(",")}],${driftText}"stackId":${JSON.stringify(diff.stackId)}}`);
+}
+function differsEveryRun(approved, fresh, sameCommit) {
+  return sameCommit && approved.hash === fresh.hash && approved.fingerprint !== undefined && fresh.fingerprint !== undefined && approved.fingerprint !== fresh.fingerprint;
+}
+
+// src/adapters/opentofu/paths.ts
+function changedPaths(sides, showValues) {
+  const paths2 = [];
+  const values2 = [];
+  const changed = (path, value) => {
+    if (path === "")
+      return;
+    paths2.push(path);
+    if (value === undefined || !isListedPath(showValues, path))
+      return;
+    const old = shown(value.old);
+    const next = shown(value.new);
+    if (old === "refused" || next === "refused")
+      return;
+    if (old === undefined && next === undefined)
+      return;
+    values2.push({
+      path,
+      ...old === undefined ? {} : { old },
+      ...next === undefined ? {} : { new: next }
+    });
+  };
+  const walk4 = (before, after, unknown2, beforeSensitive, afterSensitive, path) => {
+    if (beforeSensitive === true || afterSensitive === true) {
+      if (!equal(before, after) || holdsUnknown(unknown2))
+        changed(path);
+      return;
+    }
+    if (unknown2 === true) {
+      changed(path);
+      return;
+    }
+    if (isObject3(before) && isObject3(after)) {
+      const keys = new Set([
+        ...Object.keys(before),
+        ...Object.keys(after),
+        ...isObject3(unknown2) ? Object.keys(unknown2) : []
+      ]);
+      for (const key of keys) {
+        walk4(before[key], after[key], child(unknown2, key), child(beforeSensitive, key), child(afterSensitive, key), path + segment2(key, path === ""));
+      }
+      return;
+    }
+    if (Array.isArray(before) && Array.isArray(after)) {
+      const length = Math.max(before.length, after.length, arrayLength(unknown2));
+      for (let index = 0;index < length; index++) {
+        walk4(before[index], after[index], child(unknown2, index), child(beforeSensitive, index), child(afterSensitive, index), `${path}[${index}]`);
+      }
+      return;
+    }
+    if (holdsUnknown(unknown2) || !equal(before, after)) {
+      changed(path, holdsUnknown(unknown2) ? undefined : { old: before, new: after });
+    }
+  };
+  walk4(sides.before, sides.after, sides.afterUnknown, sides.beforeSensitive, sides.afterSensitive, "");
+  return { paths: paths2, values: values2 };
+}
+function maskSensitive(value, sensitive) {
+  if (sensitive === true)
+    return SECRET_MARK;
+  if (Array.isArray(value)) {
+    return value.map((item, index) => maskSensitive(item, child(sensitive, index)));
+  }
+  if (isObject3(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskSensitive(item, child(sensitive, key))]));
+  }
+  return value;
+}
+function hiddenFingerprint(sides, shown) {
+  const leaves = differingLeaves(maskSensitive(sides.before, sides.beforeSensitive), maskSensitive(sides.after, sides.afterSensitive));
+  return changeFingerprint(leaves.filter((leaf) => !shown.includes(leaf.path)));
+}
+function replacePath(steps, beforeSensitive, afterSensitive) {
+  let path = "";
+  let before = beforeSensitive;
+  let after = afterSensitive;
+  for (const step of steps) {
+    path += typeof step === "number" ? `[${step}]` : segment2(step, path === "");
+    before = child(before, step);
+    after = child(after, step);
+    if (before === true || after === true)
+      break;
+  }
+  return path;
+}
+function segment2(key, top) {
+  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
+    return top ? key : `.${key}`;
+  return `["${key.replaceAll('"', "\\\"")}"]`;
+}
+function child(node2, key) {
+  if (typeof key === "number")
+    return Array.isArray(node2) ? node2[key] : undefined;
+  return isObject3(node2) ? node2[key] : undefined;
+}
+function arrayLength(node2) {
+  return Array.isArray(node2) ? node2.length : 0;
+}
+function holdsUnknown(node2) {
+  if (node2 === true)
+    return true;
+  if (Array.isArray(node2))
+    return node2.some(holdsUnknown);
+  if (isObject3(node2))
+    return Object.values(node2).some(holdsUnknown);
+  return false;
+}
+function isObject3(node2) {
+  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
+}
+function equal(a, b) {
+  if (a === undefined || a === null)
+    return b === undefined || b === null;
+  if (Array.isArray(a)) {
+    return Array.isArray(b) && a.length === b.length && a.every((item, index) => equal(item, b[index]));
+  }
+  if (isObject3(a)) {
+    if (!isObject3(b))
+      return false;
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...keys].every((key) => equal(a[key], b[key]));
+  }
+  return a === b;
+}
+function shown(value) {
+  if (value === undefined || value === null)
+    return;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  if (typeof value !== "string")
+    return "refused";
+  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
+    return "refused";
+  return shortValue(value);
+}
+
+// src/adapters/helm/fold.ts
+var OPS = {
+  ADD: "create",
+  MODIFY: "update",
+  REMOVE: "delete"
+};
+function foldEntries(entries, namespace, showValues, fingerprint = false) {
+  const changes = [];
+  const unknown2 = [];
+  const unreadable = [];
+  const firstAt = new Map;
+  entries.forEach((entry2, index) => {
+    const at = `The tool's output, at [${index}]`;
+    const op = Object.hasOwn(OPS, entry2.changeType) ? OPS[entry2.changeType] : undefined;
+    if (op === undefined) {
+      unknown2.push(`${at}.changeType: expected ADD, MODIFY or REMOVE.`);
+      return;
+    }
+    if (entry2.changesSuppressed === true) {
+      unreadable.push(`${at}.changesSuppressed: expected every change to be shown.`);
+      return;
+    }
+    const type = typeOf(entry2);
+    const where2 = entry2.namespace ?? "";
+    const address = addressOf(entry2);
+    const earlier = firstAt.get(address);
+    if (earlier !== undefined) {
+      unreadable.push(`${at}: expected an object that no earlier entry has, and [${earlier}] has it.`);
+      return;
+    }
+    firstAt.set(address, index);
+    const found = op === "update" ? keys(entry2, showValues, fingerprint) : { changedKeys: [] };
+    if (found === undefined) {
+      unreadable.push(`${at}.changes: expected the paths that change on a MODIFY.`);
+      return;
+    }
+    changes.push({
+      address,
+      type,
+      name: where2 === "" || where2 === namespace ? entry2.name : `${where2}/${entry2.name}`,
+      op,
+      replaceKeys: [],
+      ...found
+    });
+  });
+  if (unreadable.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: unreadable };
+  if (unknown2.length > 0)
+    return { ok: false, reason: "unknown-step", detail: unknown2 };
+  changes.sort((a, b) => byCodeUnit8(a.address, b.address));
+  return { ok: true, changes };
+}
+function addressOf(entry2) {
+  return `${typeOf(entry2)}/${entry2.namespace ?? ""}/${entry2.name}`;
+}
+function typeOf(entry2) {
+  const slash = entry2.apiVersion.lastIndexOf("/");
+  return slash < 0 ? entry2.kind : `${entry2.kind}.${entry2.apiVersion.slice(0, slash)}`;
+}
+function keys(entry2, showValues, fingerprint) {
+  const found = entry2.changes ?? [];
+  if (found.length === 0)
+    return;
+  const secret = entry2.kind === "Secret" && !entry2.apiVersion.includes("/");
+  const values2 = [];
+  const paths2 = found.map((change) => {
+    const path = propertyPath(change);
+    if (!secret && isListedPath(showValues, path)) {
+      const value = shownValue(path, change);
+      if (value !== undefined)
+        values2.push(value);
+    }
+    return path;
+  });
+  const changedKeys = [...new Set(paths2.filter((path) => path !== ""))].sort(byCodeUnit8);
+  const shown2 = values2.filter((value, index) => values2.findIndex((one) => one.path === value.path) === index).sort((a, b) => byCodeUnit8(a.path, b.path));
+  const shownPaths = new Set(shown2.map((value) => value.path));
+  const hidden = found.flatMap((change) => {
+    const path = propertyPath(change);
+    if (path === "" || shownPaths.has(path))
+      return [];
+    if (secret)
+      return [{ path, secret: true }];
+    return [{ path, old: change.oldValue, new: change.newValue }];
+  });
+  const hiddenFingerprint2 = fingerprint ? changeFingerprint(hidden) : undefined;
+  return {
+    changedKeys,
+    ...shown2.length === 0 ? {} : { values: shown2 },
+    ...hiddenFingerprint2 === undefined ? {} : { fingerprint: hiddenFingerprint2 }
+  };
+}
+function propertyPath(change) {
+  let path = "";
+  for (const part of (change.path ?? "").split(".")) {
+    if (part === "")
+      continue;
+    const [, name = "", indexes = ""] = /^(.*?)((?:\[\d+\])*)$/.exec(part) ?? [];
+    if (name !== "")
+      path += segment2(name, path === "");
+    path += indexes;
+  }
+  const { field: field2 } = change;
+  return path + (/^\d+$/.test(field2) ? `[${field2}]` : segment2(field2, path === ""));
+}
+function shownValue(path, change) {
+  const old = shown2(change.oldValue);
+  const next = shown2(change.newValue);
+  if (old === "refused" || next === "refused")
+    return;
+  if (old === undefined && next === undefined)
+    return;
+  return {
+    path,
+    ...old === undefined ? {} : { old },
+    ...next === undefined ? {} : { new: next }
+  };
+}
+function shown2(value) {
+  if (value === undefined || value === null)
+    return;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  if (typeof value !== "string")
+    return "refused";
+  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
+    return "refused";
+  return shortValue(value);
+}
+function byCodeUnit8(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/opentofu/schema.ts
+var formatVersion = exports_external.string().regex(/^1\.\d+$/);
+var change = exports_external.object({
+  actions: exports_external.array(exports_external.string()),
+  before: exports_external.unknown().optional(),
+  after: exports_external.unknown().optional(),
+  after_unknown: exports_external.unknown().optional(),
+  before_sensitive: exports_external.unknown().optional(),
+  after_sensitive: exports_external.unknown().optional(),
+  replace_paths: exports_external.array(exports_external.array(exports_external.union([exports_external.string(), exports_external.number()]))).optional(),
+  importing: exports_external.unknown().optional().transform((importing) => importing != null)
+});
+var resourceChange = exports_external.object({
+  address: exports_external.string().min(1),
+  previous_address: exports_external.string().min(1).optional(),
+  module_address: exports_external.string().min(1).optional(),
+  mode: exports_external.string(),
+  type: exports_external.string().min(1),
+  name: exports_external.string().min(1),
+  deposed: exports_external.string().min(1).optional(),
+  change
+});
+var planDocument = exports_external.object({
+  format_version: formatVersion,
+  errored: exports_external.literal(false).optional(),
+  complete: exports_external.literal(true).optional(),
+  resource_changes: exports_external.array(resourceChange).default([])
+});
+function parsePlan(stdout) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
+  }
+  const parsed = planDocument.safeParse(json2);
+  if (!parsed.success)
+    return { ok: false, problems: parsed.error.issues.map(problem) };
+  return { ok: true, changes: parsed.data.resource_changes };
+}
+var EXPECTED2 = {
+  string: "text",
+  array: "a list",
+  object: "an object",
+  boolean: "true or false"
+};
+function problem(issue3) {
+  const at = place(issue3.path);
+  if (at === "format_version") {
+    return `The tool's output, at format_version: expected a plan format version 1.x, which Sluiceway reads.`;
+  }
+  if (at === "errored")
+    return "The tool's output, at errored: expected a plan that did not fail.";
+  if (at === "complete") {
+    return "The tool's output, at complete: expected a plan that holds every change, not one with changes left for later.";
+  }
+  const expected = issue3.code === "invalid_type" ? EXPECTED2[issue3.expected] : undefined;
+  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
+}
+function place(path) {
+  if (path.length === 0)
+    return "the top";
+  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
+}
+
+// src/adapters/helm/schema.ts
+var change2 = exports_external.object({
+  path: exports_external.string().optional(),
+  field: exports_external.string(),
+  oldValue: exports_external.unknown().optional(),
+  newValue: exports_external.unknown().optional()
+});
+var entry2 = exports_external.object({
+  apiVersion: exports_external.string().min(1),
+  kind: exports_external.string().min(1),
+  namespace: exports_external.string().optional(),
+  name: exports_external.string().min(1),
+  changeType: exports_external.string(),
+  changes: exports_external.array(change2).optional(),
+  changesSuppressed: exports_external.boolean().optional()
+});
+function parseEntries(stdout) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
+  }
+  const parsed = exports_external.array(entry2).safeParse(json2);
+  if (!parsed.success)
+    return { ok: false, problems: parsed.error.issues.map(problem2) };
+  return { ok: true, entries: parsed.data };
+}
+var EXPECTED3 = {
+  string: "text",
+  array: "a list",
+  object: "an object",
+  boolean: "true or false"
+};
+function problem2(issue3) {
+  const at = place(issue3.path);
+  const expected = issue3.code === "invalid_type" ? EXPECTED3[issue3.expected] : issue3.code === "too_small" ? "text" : undefined;
+  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
+}
+
+// src/adapters/helm/drift.ts
+async function detectDrift(stack, options) {
+  const helm = optionsOf(stack);
+  const run = (argv) => runTool(options.run, {
+    argv,
+    cwd: join14(options.root, stack.path),
+    env: helmEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes
+  });
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  const outputs = [];
+  let words = "";
+  for (const argv of [diffCommand(helm), threeWayDiffCommand(helm)]) {
+    const result2 = await run(argv);
+    words += stripAnsi(result2.stderr);
+    if (!result2.ok)
+      return failed(result2.reason, words);
+    outputs.push(result2.stdout);
+  }
+  const [plain, threeWay] = outputs.map(parseEntries);
+  for (const parsed of [plain, threeWay]) {
+    if (parsed !== undefined && !parsed.ok) {
+      return failed({ kind: "unreadable-output" }, words, parsed.problems);
+    }
+  }
+  if (!plain?.ok || !threeWay?.ok)
+    return failed({ kind: "unreadable-output" }, words);
+  const found = driftOf(plain.entries, threeWay.entries, helm.namespace);
+  if (!found.ok)
+    return failed({ kind: found.reason }, words, found.detail);
+  return { ok: true, drift: found.changes, toolLog: words };
+}
+function driftOf(plain, threeWay, namespace) {
+  const code2 = foldEntries(plain, namespace, []);
+  if (!code2.ok)
+    return code2;
+  const live = foldEntries(threeWay, namespace, []);
+  if (!live.ok)
+    return live;
+  const byAddress = new Map(code2.changes.map((change3) => [change3.address, change3]));
+  const at = new Map(threeWay.map((entry3, index) => [addressOf(entry3), index]));
+  const drift = [];
+  const unreadable = [];
+  for (const change3 of live.changes) {
+    const known = byAddress.get(change3.address);
+    if (change3.op === "delete") {
+      if (known?.op !== "delete") {
+        unreadable.push(`The tool's output of the three-way diff, at [${at.get(change3.address)}].changeType: expected a removal the plain diff has too.`);
+      }
+    } else if (change3.op === "create") {
+      if (known?.op !== "create")
+        drift.push({ ...change3, op: "delete", changedKeys: [] });
+    } else {
+      const code3 = new Set(known?.changedKeys ?? []);
+      const changedKeys = change3.changedKeys.filter((path) => !code3.has(path));
+      if (changedKeys.length > 0)
+        drift.push({ ...change3, changedKeys });
+    }
+  }
+  if (unreadable.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: unreadable };
+  return { ok: true, changes: drift };
+}
+
+// src/adapters/helm/prepare.ts
+import { join as join15 } from "node:path";
+function prepare(stacks) {
+  const byChart = new Map;
+  for (const stack of stacks) {
+    for (const { chart, level } of optionsOf(stack).builds) {
+      const found = byChart.get(chart) ?? { level, stacks: [] };
+      found.stacks.push(stack);
+      byChart.set(chart, found);
+    }
+  }
+  return [...byChart].sort(([a, one], [b, other]) => one.level - other.level || (a < b ? -1 : a > b ? 1 : 0)).map(([chartDir, { stacks: grouped }]) => ({
+    title: chartDir,
+    stacks: grouped,
+    run: async (context3) => {
+      const result2 = await runTool(context3.run, {
+        argv: dependencyCommand(),
+        cwd: join15(context3.root, chartDir),
+        env: helmEnvironment(context3.env),
+        timeoutMinutes: context3.timeoutMinutes
+      });
+      const toolLog = stripAnsi(result2.stdout + result2.stderr);
+      return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+    }
+  }));
+}
+
+// src/adapters/helm/preview.ts
+import { join as join16 } from "node:path";
+async function preview(stack, options) {
+  const helm = optionsOf(stack);
+  const run = (argv) => runTool(options.run, {
+    argv,
+    cwd: join16(options.root, stack.path),
+    env: helmEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes
+  });
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  const diffed = await run(diffCommand(helm));
+  const words = stripAnsi(diffed.stderr);
+  if (!diffed.ok)
+    return failed(diffed.reason, words);
+  const parsed = parseEntries(diffed.stdout);
+  if (!parsed.ok)
+    return failed({ kind: "unreadable-output" }, words, parsed.problems);
+  const folded = foldEntries(parsed.entries, helm.namespace, options.showValues ?? [], options.valueFingerprint === true);
+  if (!folded.ok)
+    return failed({ kind: folded.reason }, words, folded.detail);
+  const diff = { stackId: stackId(stack), changes: folded.changes };
+  if (!options.savePlan && !options.keepDocument)
+    return { ok: true, diff, toolLog: words };
+  const rendered = await run(renderCommand(helm));
+  const log = words + stripAnsi(rendered.stderr);
+  if (!rendered.ok)
+    return failed(rendered.reason, log);
+  return {
+    ok: true,
+    diff,
+    ...options.savePlan ? { plan: new RenderedManifests(stackId(stack), rendered.stdout) } : {},
+    ...options.keepDocument ? { document: { text: rendered.stdout, format: "yaml" } } : {},
+    toolLog: log
+  };
+}
+
+// src/adapters/helm/tool-diff.ts
+import { join as join17 } from "node:path";
+async function toolDiff(stack, options) {
+  const result2 = await runTool(options.run, {
+    argv: toolDiffCommand(optionsOf(stack)),
+    cwd: join17(options.root, stack.path),
+    env: helmEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes
+  });
+  if (!result2.ok) {
+    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  }
+  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+}
+
+// src/adapters/helm/index.ts
+var helm = {
+  async discover(root, config2) {
+    const { stacks, optionProblems } = discoverHelm(root, config2);
+    if (optionProblems.length > 0)
+      throw new ConfigError(optionProblems);
+    return stacks;
+  },
+  checkVersion,
+  prepare,
+  preview,
+  toolDiff,
+  detectDrift,
+  apply
+};
+
+// src/adapters/kubectl/apply.ts
+import { join as join19 } from "node:path";
+
+// src/adapters/kubectl/commands.ts
+var KUBECTL_COMMAND = "kubectl";
+function target(options) {
+  return [
+    ...options.context === undefined ? [] : [`--context=${options.context}`],
+    ...options.namespace === undefined ? [] : [`--namespace=${options.namespace}`]
+  ];
+}
+function kustomizeCommand() {
+  return [KUBECTL_COMMAND, "kustomize", "."];
+}
+function applier(options) {
+  return [
+    ...options.forceConflicts === true ? ["--force-conflicts"] : [],
+    ...options.fieldManager === undefined ? [] : [`--field-manager=${options.fieldManager}`]
+  ];
+}
+var DIFF_EXIT_CODES = { success: [0, 1] };
+function diffCommand2(file2, options, extra = {}) {
+  return [
+    KUBECTL_COMMAND,
+    "diff",
+    "--server-side",
+    ...target(options),
+    ...applier(options),
+    ...extra.managedFields === true ? ["--show-managed-fields"] : [],
+    "-f",
+    file2
+  ];
+}
+function applyCommand(file2, options) {
+  return [
+    KUBECTL_COMMAND,
+    "apply",
+    "--server-side",
+    ...target(options),
+    ...applier(options),
+    "-f",
+    file2
+  ];
+}
+function inventoryCommand(name, options) {
+  return [
+    KUBECTL_COMMAND,
+    "get",
+    "configmap",
+    name,
+    ...target(options),
+    "--ignore-not-found",
+    "--output=json"
+  ];
+}
+function liveCommand(file2, options) {
+  return [
+    KUBECTL_COMMAND,
+    "get",
+    ...target(options),
+    "--ignore-not-found",
+    "--show-managed-fields",
+    "--output=json",
+    "-f",
+    file2
+  ];
+}
+function deleteCommand(file2, options) {
+  return [KUBECTL_COMMAND, "delete", ...target(options), "--ignore-not-found", "-f", file2];
+}
+function versionCommand2() {
+  return [KUBECTL_COMMAND, "version", "--client", "--output=json"];
+}
+var PREVIEW_DIFF = "diff -N -U1000000";
+
+// src/adapters/kubectl/environment.ts
+function kubectlEnvironment(env, extra = {}) {
+  return { ...toolEnvironment(env), ...extra };
+}
+function optionsOf2(stack) {
+  return stack.options;
+}
+
+// src/adapters/kubectl/rendered-set.ts
+import { createHash as createHash4 } from "node:crypto";
+import { mkdtemp, readFile as readFile2, rm as rm2, writeFile as writeFile3 } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join as join18 } from "node:path";
+
+// src/adapters/kubectl/inventory.ts
+import { createHash as createHash3 } from "node:crypto";
+function inventoryName(stackId2, repository = "") {
+  const digest = createHash3("sha256").update(`${repository}
+${stackId2}`, "utf8").digest("hex");
+  return `sluiceway-${digest.slice(0, 16)}`;
+}
+function objectsOf(text7) {
+  const objects2 = [];
+  for (const document of $parseAllDocuments(text7)) {
+    if ("errors" in document && document.errors.length > 0)
+      continue;
+    const node2 = document.toJS();
+    const items2 = isObject4(node2) && node2.kind === "List" && Array.isArray(node2.items);
+    for (const item of items2 ? node2.items : [node2]) {
+      const object2 = listed3(item);
+      if (object2 !== undefined && !objects2.some((known) => sameObject(known, object2))) {
+        objects2.push(object2);
+      }
+    }
+  }
+  return objects2;
+}
+function listed3(node2) {
+  if (!isObject4(node2) || !isObject4(node2.metadata))
+    return;
+  const { apiVersion, kind } = node2;
+  const { name, namespace } = node2.metadata;
+  if (typeof apiVersion !== "string" || typeof kind !== "string")
+    return;
+  if (typeof name !== "string" || name === "")
+    return;
+  return {
+    apiVersion,
+    kind,
+    ...typeof namespace === "string" && namespace !== "" ? { namespace } : {},
+    name
+  };
+}
+function inventoryManifest(name, stackId2, objects2) {
+  const lines = [...new Set(objects2.map((object2) => JSON.stringify(listedLine(object2))))].sort(byCodeUnit9);
+  return [
+    "apiVersion: v1",
+    "kind: ConfigMap",
+    "metadata:",
+    `  name: ${name}`,
+    "  labels:",
+    "    app.kubernetes.io/managed-by: sluiceway",
+    "  annotations:",
+    `    sluiceway.dev/stack: ${JSON.stringify(stackId2)}`,
+    "data:",
+    ...lines.length === 0 ? ['  objects: ""'] : ["  objects: |", ...lines.map((l) => `    ${l}`)],
+    ""
+  ].join(`
+`);
+}
+function readInventory(stdout) {
+  if (stdout.trim() === "")
+    return { ok: true, objects: [] };
+  const at = "The stack's inventory";
+  let printed;
+  try {
+    printed = JSON.parse(stdout);
+  } catch {
+    return { ok: false, problems: [`${at}: expected the ConfigMap as JSON.`] };
+  }
+  const data = isObject4(printed) && isObject4(printed.data) ? printed.data : undefined;
+  const text7 = typeof data?.objects === "string" ? data.objects : undefined;
+  if (text7 === undefined)
+    return { ok: false, problems: [`${at}: expected a list of objects.`] };
+  const objects2 = [];
+  for (const [index, line] of text7.split(`
+`).entries()) {
+    if (line.trim() === "")
+      continue;
+    let object2;
+    try {
+      object2 = listedLine(JSON.parse(line));
+    } catch {
+      object2 = undefined;
+    }
+    if (object2 === undefined) {
+      return {
+        ok: false,
+        problems: [`${at}, at line ${index + 1}: expected an object Sluiceway listed.`]
+      };
+    }
+    objects2.push(object2);
+  }
+  return { ok: true, objects: objects2 };
+}
+function listedLine(node2) {
+  if (!isObject4(node2))
+    return;
+  const { apiVersion, kind, namespace, name } = node2;
+  if (typeof apiVersion !== "string" || typeof kind !== "string")
+    return;
+  if (typeof name !== "string" || name === "")
+    return;
+  if (namespace !== undefined && typeof namespace !== "string")
+    return;
+  return listed3({ apiVersion, kind, metadata: { name, namespace } });
+}
+function sameObject(a, b) {
+  return groupOf(a.apiVersion) === groupOf(b.apiVersion) && a.kind === b.kind && a.namespace === b.namespace && a.name === b.name;
+}
+function lists(listing, object2) {
+  return groupOf(listing.apiVersion) === groupOf(object2.apiVersion) && listing.kind === object2.kind && listing.name === object2.name && (listing.namespace === undefined || listing.namespace === object2.namespace);
+}
+function pruneCandidates(inventory, set2) {
+  return inventory.filter((object2) => !set2.some((kept) => sameObject(kept, object2)));
+}
+function stubs(objects2) {
+  return objects2.map((object2) => [
+    `apiVersion: ${JSON.stringify(object2.apiVersion)}`,
+    `kind: ${JSON.stringify(object2.kind)}`,
+    "metadata:",
+    `  name: ${JSON.stringify(object2.name)}`,
+    ...object2.namespace === undefined ? [] : [`  namespace: ${JSON.stringify(object2.namespace)}`],
+    ""
+  ].join(`
+`)).join(`---
+`);
+}
+function readLive(stdout) {
+  if (stdout.trim() === "")
+    return { ok: true, objects: [] };
+  let printed;
+  try {
+    printed = JSON.parse(stdout);
+  } catch {
+    printed = undefined;
+  }
+  if (!isObject4(printed)) {
+    return {
+      ok: false,
+      problems: ["The live objects: expected one object or a List, as JSON."]
+    };
+  }
+  if (printed.kind !== "List")
+    return { ok: true, objects: [printed] };
+  const items2 = Array.isArray(printed.items) ? printed.items : [];
+  return { ok: true, objects: items2.filter(isObject4) };
+}
+function appliedBy(object2, manager) {
+  const metadata = isObject4(object2.metadata) ? object2.metadata : {};
+  const entries = Array.isArray(metadata.managedFields) ? metadata.managedFields : [];
+  return entries.some((entry3) => isObject4(entry3) && entry3.manager === manager && entry3.operation === "Apply");
+}
+function groupOf(apiVersion) {
+  const slash = apiVersion.indexOf("/");
+  return slash < 0 ? "" : apiVersion.slice(0, slash);
+}
+function isObject4(node2) {
+  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
+}
+function byCodeUnit9(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function withInventory(text7, name, stackId2, pruned) {
+  const manifests = text7 === "" || text7.endsWith(`
+`) ? text7 : `${text7}
+`;
+  return `${manifests}---
+${inventoryManifest(name, stackId2, [...objectsOf(text7), ...pruned])}`;
+}
+
+// src/adapters/kubectl/ownership.ts
+function ownedPaths(object2, fields) {
+  const paths2 = [];
+  const walk4 = (node2, set2, path) => {
+    if (!isObject5(set2))
+      return;
+    for (const [key, below] of Object.entries(set2)) {
+      if (key === ".") {
+        if (path !== "")
+          paths2.push(path);
+        continue;
+      }
+      const step = stepOf(node2, key, path);
+      if (step === undefined)
+        continue;
+      if (isObject5(below) && Object.keys(below).length === 0)
+        paths2.push(step.path);
+      else
+        walk4(step.node, below, step.path);
+    }
+  };
+  walk4(object2, fields, "");
+  return paths2;
+}
+function stepOf(node2, key, path) {
+  const colon = key.indexOf(":");
+  const kind = key.slice(0, colon);
+  const rest = key.slice(colon + 1);
+  if (kind === "f") {
+    return {
+      node: isObject5(node2) ? node2[rest] : undefined,
+      path: path + segment2(rest, path === "")
+    };
+  }
+  if (!Array.isArray(node2))
+    return;
+  let index = -1;
+  if (kind === "i")
+    index = Number(rest);
+  else {
+    let wanted;
+    try {
+      wanted = JSON.parse(rest);
+    } catch {
+      return;
+    }
+    if (kind === "k" && isObject5(wanted)) {
+      index = node2.findIndex((item) => isObject5(item) && Object.entries(wanted).every(([name, value]) => same(item[name], value)));
+    } else if (kind === "v") {
+      index = node2.findIndex((item) => same(item, wanted));
+    }
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= node2.length)
+    return;
+  return { node: node2[index], path: `${path}[${index}]` };
+}
+function heldByOthers(object2, paths2, manager) {
+  const metadata = isObject5(object2.metadata) ? object2.metadata : {};
+  const entries = (Array.isArray(metadata.managedFields) ? metadata.managedFields : []).filter(isObject5);
+  const ours = [];
+  const others = [];
+  for (const entry3 of entries) {
+    const held = ownedPaths(object2, entry3.fieldsV1);
+    if (entry3.manager === manager && entry3.operation === "Apply")
+      ours.push(...held);
+    else
+      others.push(...held);
+  }
+  return paths2.filter((path) => !ours.some((held) => within(path, held)) && others.some((held) => within(path, held) || within(held, path)));
+}
+function within(path, held) {
+  if (path === held)
+    return true;
+  if (!path.startsWith(held))
+    return false;
+  const next = path[held.length];
+  return next === "." || next === "[";
+}
+function same(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+function isObject5(node2) {
+  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
+}
+
+// src/adapters/kubectl/fold.ts
+var SERVER_FIELDS = [
+  "generation",
+  "resourceVersion",
+  "uid",
+  "creationTimestamp",
+  "managedFields",
+  "selfLink"
+];
+function foldObjects2(pairs, showValues, inventory, fingerprint = false) {
+  const changes = [];
+  const problems = [];
+  const firstAt = new Map;
+  pairs.forEach((pair, index) => {
+    const at = `The tool's output, at object ${index + 1}`;
+    const live = yamlObject(pair.live);
+    const merged = yamlObject(pair.merged);
+    if (live === "unreadable" || merged === "unreadable") {
+      problems.push(`${at}: expected one YAML object on each side.`);
+      return;
+    }
+    const identity2 = identityOf(merged ?? live);
+    if (identity2 === undefined) {
+      problems.push(`${at}: expected an object with apiVersion, kind and metadata.name.`);
+      return;
+    }
+    if (isInventory(identity2, inventory))
+      return;
+    const earlier = firstAt.get(identity2.address);
+    if (earlier !== undefined) {
+      problems.push(`${at}: expected an object that no earlier object is, and object ${earlier} is.`);
+      return;
+    }
+    firstAt.set(identity2.address, index + 1);
+    const op = live === undefined ? "create" : merged === undefined ? "delete" : "update";
+    const base = { address: identity2.address, type: identity2.type, name: identity2.name, op };
+    const sensitive = identity2.secret ? { data: true, stringData: true } : undefined;
+    if (live === undefined || merged === undefined) {
+      const created = fingerprint && merged !== undefined ? hiddenFingerprint({
+        before: undefined,
+        after: withoutServerFields(merged),
+        beforeSensitive: undefined,
+        afterSensitive: sensitive
+      }, []) : undefined;
+      changes.push({
+        ...base,
+        changedKeys: [],
+        replaceKeys: [],
+        ...created === undefined ? {} : { fingerprint: created }
+      });
+      return;
+    }
+    const { paths: paths2, values: values2 } = changedPaths({
+      before: withoutServerFields(live),
+      after: withoutServerFields(merged),
+      afterUnknown: undefined,
+      beforeSensitive: sensitive,
+      afterSensitive: sensitive
+    }, showValues);
+    const changedKeys = [...new Set(paths2)].sort(byCodeUnit10);
+    if (changedKeys.length === 0)
+      return;
+    const shown3 = values2.sort((a, b) => byCodeUnit10(a.path, b.path));
+    const hidden = fingerprint ? hiddenFingerprint({
+      before: withoutServerFields(live),
+      after: withoutServerFields(merged),
+      beforeSensitive: sensitive,
+      afterSensitive: sensitive
+    }, shown3.map((value) => value.path)) : undefined;
+    changes.push({
+      ...base,
+      changedKeys,
+      replaceKeys: [],
+      ...shown3.length === 0 ? {} : { values: shown3 },
+      ...hidden === undefined ? {} : { fingerprint: hidden }
+    });
+  });
+  if (problems.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: problems };
+  changes.sort((a, b) => byCodeUnit10(a.address, b.address));
+  return { ok: true, changes };
+}
+function yamlObject(text7) {
+  if (text7.trim() === "")
+    return;
+  try {
+    const parsed = $parse(text7);
+    if (parsed === null)
+      return;
+    return isObject6(parsed) ? parsed : "unreadable";
+  } catch {
+    return "unreadable";
+  }
+}
+function identityOf(object2) {
+  if (object2 === undefined)
+    return;
+  const { apiVersion, kind, metadata } = object2;
+  if (typeof apiVersion !== "string" || typeof kind !== "string" || kind === "")
+    return;
+  if (!isObject6(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
+    return;
+  }
+  const slash = apiVersion.indexOf("/");
+  const group = slash < 0 ? "" : apiVersion.slice(0, slash);
+  const namespace = typeof metadata.namespace === "string" ? metadata.namespace : "";
+  const name = namespace === "" ? metadata.name : `${namespace}/${metadata.name}`;
+  const qualified = group === "" ? kind : `${kind}.${group}`;
+  return {
+    address: `${qualified}/${name}`,
+    type: kind,
+    name,
+    secret: group === "" && kind === "Secret",
+    listed: {
+      apiVersion,
+      kind,
+      ...namespace === "" ? {} : { namespace },
+      name: metadata.name
+    }
+  };
+}
+function isInventory(identity2, inventory) {
+  return inventory !== undefined && identity2.type === "ConfigMap" && groupOf(identity2.listed.apiVersion) === "" && identity2.listed.name === inventory;
+}
+function foldDrift(pairs, context3) {
+  const drift = [];
+  const problems = [];
+  pairs.forEach((pair, index) => {
+    const live = yamlObject(pair.live);
+    const merged = yamlObject(pair.merged);
+    if (live === "unreadable" || merged === "unreadable")
+      return;
+    const identity2 = identityOf(merged ?? live);
+    if (identity2 === undefined || isInventory(identity2, context3.inventory))
+      return;
+    const base = { address: identity2.address, type: identity2.type, name: identity2.name };
+    if (live === undefined && merged !== undefined) {
+      if (context3.listed.some((listing) => lists(listing, identity2.listed))) {
+        drift.push({ ...base, op: "delete", changedKeys: [], replaceKeys: [] });
+      }
+      return;
+    }
+    if (live === undefined || merged === undefined)
+      return;
+    const folded = foldObjects2([pair], []);
+    if (!folded.ok) {
+      problems.push(...folded.detail.map((line) => line.replace("object 1", `object ${index + 1}`)));
+      return;
+    }
+    const changedKeys = heldByOthers(live, folded.changes[0]?.changedKeys ?? [], context3.manager);
+    if (changedKeys.length > 0)
+      drift.push({ ...base, op: "update", changedKeys, replaceKeys: [] });
+  });
+  if (problems.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: problems };
+  drift.sort((a, b) => byCodeUnit10(a.address, b.address));
+  return { ok: true, changes: drift };
+}
+function withoutServerFields(object2) {
+  const { status: _status, metadata, ...rest } = object2;
+  if (!isObject6(metadata))
+    return rest;
+  const kept = Object.fromEntries(Object.entries(metadata).filter(([key]) => !SERVER_FIELDS.includes(key)));
+  return { ...rest, metadata: kept };
+}
+function isObject6(node2) {
+  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
+}
+function byCodeUnit10(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/kubectl/rendered-set.ts
+class RenderedSet {
+  path;
+  stackId;
+  dir;
+  digest = "";
+  pruning = false;
+  constructor(dir, stackId2) {
+    this.dir = dir;
+    this.path = join18(dir, "manifests.yaml");
+    this.stackId = stackId2;
+  }
+  static async create(stackId2, text7, prune) {
+    const set2 = await RenderedSet.open(stackId2);
+    await set2.write(text7, prune);
+    return set2;
+  }
+  static async open(stackId2) {
+    return new RenderedSet(await mkdtemp(join18(tmpdir(), "sluiceway-set-")), stackId2);
+  }
+  get prunePath() {
+    return this.pruning ? this.scratchPath : undefined;
+  }
+  get scratchPath() {
+    return join18(this.dir, "prune.yaml");
+  }
+  async write(text7, prune) {
+    await writeFile3(this.path, text7, { mode: 384 });
+    if (prune === undefined)
+      await rm2(this.scratchPath, { force: true });
+    else
+      await writeFile3(this.scratchPath, prune, { mode: 384 });
+    this.pruning = prune !== undefined;
+    this.digest = sha256(text7) + sha256(prune ?? "");
+  }
+  async intact() {
+    try {
+      const text7 = await readFile2(this.path, "utf8");
+      const prune = this.pruning ? await readFile2(this.scratchPath, "utf8") : "";
+      return sha256(text7) + sha256(prune) === this.digest;
+    } catch {
+      return false;
+    }
+  }
+  async dispose() {
+    await rm2(this.dir, { recursive: true, force: true });
+  }
+}
+function sha256(text7) {
+  return createHash4("sha256").update(text7, "utf8").digest("hex");
+}
+async function renderSet(stack, context3) {
+  const dir = join18(context3.root, stack.path);
+  const options = optionsOf2(stack);
+  let text7;
+  let toolLog = "";
+  if (sourceOf(dir) === "manifests") {
+    text7 = bundleManifests(dir, options.recursive === true);
+  } else {
+    const result2 = await runTool(context3.run, {
+      argv: kustomizeCommand(),
+      cwd: dir,
+      env: kubectlEnvironment(context3.env),
+      timeoutMinutes: context3.timeoutMinutes
+    });
+    toolLog = stripAnsi(result2.stderr);
+    if (!result2.ok)
+      return { ok: false, reason: result2.reason, detail: [], toolLog };
+    text7 = result2.stdout;
+  }
+  if (options.prune !== true) {
+    return { ok: true, set: await RenderedSet.create(stackId(stack), text7), toolLog };
+  }
+  const set2 = await RenderedSet.open(stackId(stack));
+  const pruned = await prune(stack, context3, set2, text7);
+  if (!pruned.ok) {
+    await set2.dispose();
+    return { ...pruned, toolLog: toolLog + pruned.toolLog };
+  }
+  return { ok: true, set: set2, toolLog: toolLog + pruned.toolLog, pruning: pruned.pruning };
+}
+async function prune(stack, context3, set2, text7) {
+  const options = optionsOf2(stack);
+  const id = stackId(stack);
+  const name = inventoryName(id, context3.env.GITHUB_REPOSITORY);
+  const run = (argv) => runTool(context3.run, {
+    argv,
+    cwd: join18(context3.root, stack.path),
+    env: kubectlEnvironment(context3.env),
+    timeoutMinutes: context3.timeoutMinutes
+  });
+  const inventory = await run(inventoryCommand(name, options));
+  let toolLog = stripAnsi(inventory.stderr);
+  if (!inventory.ok)
+    return { ok: false, reason: inventory.reason, detail: [], toolLog };
+  const read5 = readInventory(inventory.stdout);
+  if (!read5.ok) {
+    return { ok: false, reason: { kind: "unreadable-output" }, detail: read5.problems, toolLog };
+  }
+  const candidates = pruneCandidates(read5.objects, objectsOf(text7));
+  const kept = [];
+  if (candidates.length > 0) {
+    await writeFile3(set2.scratchPath, stubs(candidates), { mode: 384 });
+    const live = await run(liveCommand(set2.scratchPath, options));
+    toolLog += stripAnsi(live.stderr);
+    if (!live.ok)
+      return { ok: false, reason: live.reason, detail: [], toolLog };
+    const found = readLive(live.stdout);
+    if (!found.ok) {
+      return { ok: false, reason: { kind: "unreadable-output" }, detail: found.problems, toolLog };
+    }
+    const manager = options.fieldManager ?? "kubectl";
+    for (const object2 of found.objects) {
+      const identity2 = identityOf(object2);
+      const listed4 = identity2 === undefined ? undefined : candidates.find((candidate) => lists(candidate, identity2.listed));
+      if (listed4 !== undefined && appliedBy(object2, manager))
+        kept.push({ listed: listed4, live: object2 });
+    }
+  }
+  const deletes = [];
+  const resolved = [];
+  for (const { live } of kept) {
+    const identity2 = identityOf(live);
+    if (identity2 === undefined)
+      continue;
+    deletes.push({
+      address: identity2.address,
+      type: identity2.type,
+      name: identity2.name,
+      op: "delete",
+      changedKeys: [],
+      replaceKeys: []
+    });
+    resolved.push(identity2.listed);
+  }
+  await set2.write(withInventory(text7, name, id, kept.map(({ listed: listed4 }) => listed4)), resolved.length === 0 ? undefined : stubs(resolved));
+  return { ok: true, pruning: { inventory: name, listed: read5.objects, deletes }, toolLog };
+}
+
+// src/adapters/kubectl/apply.ts
+async function apply2(stack, context3, plan) {
+  if (!(plan instanceof RenderedSet) || plan.stackId !== stackId(stack)) {
+    throw new Error("A Kubernetes manifests stack deploys only the rendered set its fresh preview kept.");
+  }
+  if (!await plan.intact()) {
+    throw new Error(`The rendered set of ${stackId(stack)} changed after its preview. Nothing was deployed.`);
+  }
+  const result2 = await runDeploy(context3.run, {
+    argv: applyCommand(plan.path, optionsOf2(stack)),
+    cwd: join19(context3.root, stack.path),
+    env: kubectlEnvironment(context3.env)
+  });
+  const toolLog = stripAnsi(result2.stdout + result2.stderr);
+  if (!result2.ok)
+    return { ok: false, reason: result2.reason, toolLog };
+  if (plan.prunePath === undefined)
+    return { ok: true, toolLog };
+  const deleted = await runDeploy(context3.run, {
+    argv: deleteCommand(plan.prunePath, optionsOf2(stack)),
+    cwd: join19(context3.root, stack.path),
+    env: kubectlEnvironment(context3.env)
+  });
+  const log = toolLog + stripAnsi(deleted.stdout + deleted.stderr);
+  return deleted.ok ? { ok: true, toolLog: log } : { ok: false, reason: deleted.reason, toolLog: log };
+}
+
+// src/adapters/kubectl/drift.ts
+import { join as join20 } from "node:path";
+
+// src/adapters/kubectl/unified.ts
+var HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
+function readDiff(stdout) {
+  const lines = stdout.split(`
+`);
+  if (lines.at(-1) === "")
+    lines.pop();
+  const pairs = [];
+  const problem3 = (at, expected) => ({
+    ok: false,
+    problems: [`The tool's output, at line ${at + 1}: expected ${expected}.`]
+  });
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index] ?? "";
+    if (line.startsWith("diff ")) {
+      index++;
+      continue;
+    }
+    if (!line.startsWith("--- "))
+      return problem3(index, "the start of a file");
+    if (!(lines[index + 1] ?? "").startsWith("+++ "))
+      return problem3(index + 1, "a +++ line");
+    const header = HUNK.exec(lines[index + 2] ?? "");
+    if (header === null)
+      return problem3(index + 2, "a hunk");
+    const liveStart = Number(header[1]);
+    const liveCount = header[2] === undefined ? 1 : Number(header[2]);
+    const mergedStart = Number(header[3]);
+    const mergedCount = header[4] === undefined ? 1 : Number(header[4]);
+    if (liveStart !== (liveCount === 0 ? 0 : 1) || mergedStart !== (mergedCount === 0 ? 0 : 1)) {
+      return problem3(index + 2, "a hunk that holds the whole object");
+    }
+    index += 3;
+    const live = [];
+    const merged = [];
+    let liveLeft = liveCount;
+    let mergedLeft = mergedCount;
+    while (liveLeft > 0 || mergedLeft > 0) {
+      if (index >= lines.length)
+        return problem3(index, "more lines of the hunk");
+      const hunkLine = lines[index] ?? "";
+      const text7 = hunkLine.slice(1);
+      if (hunkLine.startsWith(" ") && liveLeft > 0 && mergedLeft > 0) {
+        live.push(text7);
+        merged.push(text7);
+        liveLeft--;
+        mergedLeft--;
+      } else if (hunkLine.startsWith("-") && liveLeft > 0) {
+        live.push(text7);
+        liveLeft--;
+      } else if (hunkLine.startsWith("+") && mergedLeft > 0) {
+        merged.push(text7);
+        mergedLeft--;
+      } else if (!hunkLine.startsWith("\\")) {
+        return problem3(index, "a line of the hunk");
+      }
+      index++;
+    }
+    while ((lines[index] ?? "").startsWith("\\"))
+      index++;
+    if (HUNK.test(lines[index] ?? ""))
+      return problem3(index, "one hunk per object");
+    pairs.push({ live: joined(live), merged: joined(merged) });
+  }
+  return { ok: true, pairs };
+}
+function joined(lines) {
+  return lines.length === 0 ? "" : `${lines.join(`
+`)}
+`;
+}
+
+// src/adapters/kubectl/drift.ts
+async function detectDrift2(stack, options) {
+  const stackOptions = optionsOf2(stack);
+  if (stackOptions.prune !== true && stackOptions.forceConflicts !== true)
+    return;
+  const rendered = await renderSet(stack, options);
+  if (!rendered.ok)
+    return rendered;
+  try {
+    const result2 = await runTool(options.run, {
+      argv: diffCommand2(rendered.set.path, stackOptions, { managedFields: true }),
+      cwd: join20(options.root, stack.path),
+      env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
+      timeoutMinutes: options.timeoutMinutes,
+      exitCodes: DIFF_EXIT_CODES
+    });
+    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
+    if (!result2.ok)
+      return { ok: false, reason: result2.reason, detail: [], toolLog };
+    const read5 = readDiff(result2.stdout);
+    if (!read5.ok) {
+      return { ok: false, reason: { kind: "unreadable-output" }, detail: read5.problems, toolLog };
+    }
+    const folded = foldDrift(read5.pairs, {
+      ...rendered.pruning === undefined ? {} : { inventory: rendered.pruning.inventory },
+      listed: rendered.pruning?.listed ?? [],
+      manager: stackOptions.fieldManager ?? "kubectl"
+    });
+    if (!folded.ok) {
+      return { ok: false, reason: { kind: folded.reason }, detail: folded.detail, toolLog };
+    }
+    return { ok: true, drift: folded.changes, toolLog };
+  } finally {
+    await rendered.set.dispose();
+  }
+}
+
+// src/adapters/kubectl/preview.ts
+import { readFile as readFile3 } from "node:fs/promises";
+import { join as join21 } from "node:path";
+async function preview2(stack, options) {
+  const rendered = await renderSet(stack, options);
+  if (!rendered.ok) {
+    return {
+      ok: false,
+      reason: rendered.reason,
+      detail: rendered.detail,
+      toolLog: rendered.toolLog
+    };
+  }
+  let kept = false;
+  try {
+    const result2 = await diff(stack, options, rendered);
+    if (result2.ok && options.savePlan) {
+      kept = true;
+      return { ...result2, plan: rendered.set };
+    }
+    return result2;
+  } finally {
+    if (!kept)
+      await rendered.set.dispose();
+  }
+}
+async function diff(stack, options, { set: set2, toolLog: renderLog, pruning }) {
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  const result2 = await runTool(options.run, {
+    argv: diffCommand2(set2.path, optionsOf2(stack)),
+    cwd: join21(options.root, stack.path),
+    env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
+    timeoutMinutes: options.timeoutMinutes,
+    exitCodes: DIFF_EXIT_CODES
+  });
+  const log = renderLog + stripAnsi(result2.stderr);
+  if (!result2.ok)
+    return failed(result2.reason, log);
+  const read5 = readDiff(result2.stdout);
+  if (!read5.ok)
+    return failed({ kind: "unreadable-output" }, log, read5.problems);
+  if (result2.exitCode === 1 && read5.pairs.length === 0) {
+    return failed({ kind: "unreadable-output" }, log, [
+      "The tool's output: expected the objects that differ, as the exit code says there are."
+    ]);
+  }
+  const folded = foldObjects2(read5.pairs, options.showValues ?? [], pruning?.inventory, options.valueFingerprint === true);
+  if (!folded.ok)
+    return failed({ kind: folded.reason }, log, folded.detail);
+  const changes = [...folded.changes, ...pruning?.deletes ?? []].sort((a, b) => a.address < b.address ? -1 : a.address > b.address ? 1 : 0);
+  const document = options.keepDocument ? { document: { text: await readFile3(set2.path, "utf8"), format: "yaml" } } : {};
+  return { ok: true, diff: { stackId: stackId(stack), changes }, toolLog: log, ...document };
+}
+
+// src/adapters/kubectl/tool-diff.ts
+import { join as join22 } from "node:path";
+async function toolDiff2(stack, options) {
+  const rendered = await renderSet(stack, options);
+  if (!rendered.ok)
+    return { ok: false, reason: rendered.reason, toolLog: rendered.toolLog };
+  try {
+    const result2 = await runTool(options.run, {
+      argv: diffCommand2(rendered.set.path, optionsOf2(stack)),
+      cwd: join22(options.root, stack.path),
+      env: kubectlEnvironment(options.env),
+      timeoutMinutes: options.timeoutMinutes,
+      exitCodes: DIFF_EXIT_CODES
+    });
+    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
+    if (!result2.ok)
+      return { ok: false, reason: result2.reason, toolLog };
+    return { ok: true, text: stripAnsi(result2.stdout), toolLog };
+  } finally {
+    await rendered.set.dispose();
+  }
+}
+
+// src/adapters/kubectl/version.ts
+var MINIMUM_VERSION2 = [1, 34, 0];
+var NEEDS2 = `Sluiceway needs kubectl v${MINIMUM_VERSION2.join(".")} or newer`;
+var TIME_LIMIT_MS2 = 60000;
+async function checkVersion2(context3, _stacks) {
+  const result2 = await context3.run({
+    argv: versionCommand2(),
+    cwd: context3.root,
+    env: kubectlEnvironment(context3.env),
+    timeoutMs: TIME_LIMIT_MS2
+  });
+  if (result2.status === "not-started") {
+    throw new ToolVersionError(`Could not start kubectl. ${NEEDS2} on PATH and does not install it. Add a workflow step that installs kubectl before the step that runs Sluiceway.`);
+  }
+  const version2 = result2.status === "exited" && result2.exitCode === 0 ? readVersion2(result2.stdout) : undefined;
+  const found = version2 === undefined ? null : /^v(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
+  if (found === null || version2 === undefined) {
+    throw new ToolVersionError(`"${versionCommand2().join(" ")}" did not print a version Sluiceway can read. ${NEEDS2}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+  }
+  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
+  const older2 = MINIMUM_VERSION2.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
+  if (older2 !== undefined && older2 < 0) {
+    throw new ToolVersionError(`Found kubectl ${version2}. ${NEEDS2}. Change the workflow step that installs kubectl so it installs a newer version.`);
+  }
+}
+function readVersion2(stdout) {
+  try {
+    const parsed = JSON.parse(stdout);
+    if (typeof parsed !== "object" || parsed === null)
+      return;
+    const client = parsed.clientVersion;
+    return typeof client?.gitVersion === "string" ? client.gitVersion : undefined;
+  } catch {
+    return;
+  }
+}
+
+// src/adapters/kubectl/index.ts
+var kubectl = {
+  async discover(root, config2) {
+    const { stacks, optionProblems } = discoverKubectl(root, config2);
+    if (optionProblems.length > 0)
+      throw new ConfigError(optionProblems);
+    return stacks;
+  },
+  checkVersion: checkVersion2,
+  preview: preview2,
+  toolDiff: toolDiff2,
+  detectDrift: detectDrift2,
+  apply: apply2
+};
+
+// src/adapters/opentofu/commands.ts
+import { join as join23 } from "node:path";
+
+// src/adapters/opentofu/environment.ts
+function tofuEnvironment(env, stack) {
+  const workspace = stack === undefined ? undefined : optionsOf3(stack).workspace;
+  return {
+    ...toolEnvironment(env),
+    TF_IN_AUTOMATION: "true",
+    ...workspace === undefined ? {} : { TF_WORKSPACE: workspace }
+  };
+}
+function optionsOf3(stack) {
+  return stack.options;
+}
+
+// src/adapters/opentofu/commands.ts
+var TOFU = "tofu";
+function binaryOf(tool) {
+  return tool === TERRAFORM ? "terraform" : TOFU;
+}
+var TERRAGRUNT_RUN = ["run", "--tf-forward-stdout", "--no-color", "--no-auto-init"];
+function command(stack, args) {
+  const { tool, wrapper } = optionsOf3(stack);
+  const binary = binaryOf(tool);
+  if (wrapper !== TERRAGRUNT)
+    return [binary, ...args];
+  return [TERRAGRUNT, ...TERRAGRUNT_RUN, "--tf-path", binary, "--", ...args];
+}
+var CDKTF_OUT = "cdktf.out";
+function workingDirectory(root, stack) {
+  if (optionsOf3(stack).wrapper === "cdktf") {
+    return join23(root, stack.path, CDKTF_OUT, "stacks", stack.name ?? "");
+  }
+  return join23(root, stack.path);
+}
+function initArgs() {
+  return ["init", "-input=false", "-no-color"];
+}
+function planArgs(planFile, varFiles) {
+  return [
+    "plan",
+    "-input=false",
+    "-no-color",
+    "-refresh=false",
+    "-json",
+    `-out=${planFile}`,
+    ...varFiles.map((file2) => `-var-file=${file2}`)
+  ];
+}
+function showArgs(planFile) {
+  return ["show", "-json", "-no-color", planFile];
+}
+function applyArgs(planFile) {
+  return ["apply", "-input=false", "-no-color", "-json", planFile];
+}
+function toolDiffArgs(varFiles) {
+  return [
+    "plan",
+    "-input=false",
+    "-no-color",
+    "-refresh=false",
+    ...varFiles.map((file2) => `-var-file=${file2}`)
+  ];
+}
+function versionCommand3(binary = TOFU) {
+  return [binary, "version", "-json"];
+}
+function terragruntVersionCommand() {
+  return [TERRAGRUNT, "--version"];
+}
+function cdktfVersionCommand() {
+  return ["cdktf", "--version"];
+}
+function synthCommand() {
+  return ["cdktf", "synth", "--output", CDKTF_OUT];
+}
+
+// src/adapters/opentofu/plan-file.ts
+import { mkdtemp as mkdtemp2, rm as rm3 } from "node:fs/promises";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join24 } from "node:path";
+
+// src/adapters/opentofu/cost.ts
+import { writeFile as writeFile4 } from "node:fs/promises";
+var INFRACOST = "infracost";
+var PLAN_JSON = "plan.json";
+function costArgs() {
+  return [INFRACOST, "diff", "--path", PLAN_JSON, "--format", "json", "--no-color"];
+}
+function infracostEnvironment(env) {
+  return {
+    ...toolEnvironment(env),
+    INFRACOST_SKIP_UPDATE_CHECK: "true",
+    INFRACOST_ENABLE_CLOUD: "false"
+  };
+}
+var output2 = exports_external.object({
+  currency: exports_external.string(),
+  diffTotalMonthlyCost: exports_external.string(),
+  projects: exports_external.array(exports_external.object({
+    metadata: exports_external.object({
+      type: exports_external.string(),
+      errors: exports_external.array(exports_external.object({ message: exports_external.string() })).optional()
+    })
+  }))
+});
+function readCostOutput(stdout) {
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return unreadable();
+  }
+  const read5 = output2.safeParse(parsed);
+  const monthly = read5.success ? Number(read5.data.diffTotalMonthlyCost) : Number.NaN;
+  if (!read5.success || !Number.isFinite(monthly))
+    return unreadable();
+  const reported = read5.data.projects.reduce((sum, project) => sum + (project.metadata.errors?.length ?? 0), 0);
+  const failed = read5.data.projects.some((project) => project.metadata.type === "error");
+  if (reported > 0 || failed || read5.data.projects.length === 0) {
+    const errors4 = Math.max(reported, 1);
+    return {
+      ok: false,
+      reason: { kind: "reported-error" },
+      detail: [
+        `The Infracost CLI's output reports ${errors4 === 1 ? "1 error" : `${errors4} errors`} for the plan. Its words are in the log below.`
+      ]
+    };
+  }
+  return { ok: true, estimate: { monthly, currency: read5.data.currency } };
+}
+function unreadable() {
+  return {
+    ok: false,
+    reason: { kind: "unreadable-output" },
+    detail: [
+      "Expected the JSON of infracost diff --format json with currency, diffTotalMonthlyCost and projects, and the output does not fit."
+    ]
+  };
+}
+async function estimateCost(planJson, plan, options) {
+  await writeFile4(plan.jsonPath, planJson);
+  const result2 = await options.run({
+    argv: costArgs(),
+    cwd: plan.dir,
+    env: infracostEnvironment(options.env),
+    timeoutMs: options.timeoutMinutes * 60000
+  });
+  if (result2.status === "not-started") {
+    return {
+      ok: false,
+      reason: { kind: "not-started" },
+      detail: [
+        "The Infracost CLI could not be started. Add a workflow step that installs it before the step that runs Sluiceway, or turn cost.enabled off."
+      ],
+      toolLog: ""
+    };
+  }
+  const toolLog = stripAnsi(result2.stderr);
+  if (result2.status === "timed-out") {
+    return {
+      ok: false,
+      reason: { kind: "timed-out", minutes: options.timeoutMinutes },
+      detail: [],
+      toolLog
+    };
+  }
+  if (result2.exitCode !== 0) {
+    const reason = { kind: "exited", exitCode: result2.exitCode };
+    return { ok: false, reason, detail: [], toolLog };
+  }
+  return { ...readCostOutput(result2.stdout), toolLog };
+}
+
+// src/adapters/opentofu/plan-file.ts
+class PlanFile {
+  path;
+  stackId;
+  dir;
+  jsonPath;
+  constructor(dir, stackId2) {
+    this.dir = dir;
+    this.path = join24(dir, "tfplan");
+    this.jsonPath = join24(dir, PLAN_JSON);
+    this.stackId = stackId2;
+  }
+  static async create(stackId2) {
+    return new PlanFile(await mkdtemp2(join24(tmpdir2(), "sluiceway-plan-")), stackId2);
+  }
+  async dispose() {
+    await rm3(this.dir, { recursive: true, force: true });
+  }
+}
+
+// src/adapters/opentofu/tool-log.ts
+var LEFT_OUT = new Set(["outputs", "planned_change", "resource_drift", "version"]);
+function jsonLogWords(stdout) {
+  const words = [];
+  for (const line of stdout.split(/\r?\n/)) {
+    if (line.trim() === "")
+      continue;
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      words.push(line);
+      continue;
+    }
+    if (typeof message !== "object" || message === null)
+      continue;
+    const { type, diagnostic } = message;
+    if (typeof type === "string" && LEFT_OUT.has(type))
+      continue;
+    if (type === "diagnostic" && typeof diagnostic === "object" && diagnostic !== null) {
+      words.push(...diagnosticWords(diagnostic));
+      continue;
+    }
+    const text7 = message["@message"];
+    if (typeof text7 === "string")
+      words.push(text7);
+  }
+  return stripAnsi(words.map((line) => `${line}
+`).join(""));
+}
+function diagnosticWords(diagnostic) {
+  const severity = diagnostic.severity === "warning" ? "Warning" : "Error";
+  const where2 = [
+    typeof diagnostic.range?.filename === "string" ? diagnostic.range.filename : undefined,
+    typeof diagnostic.range?.start?.line === "number" ? `line ${diagnostic.range.start.line}` : undefined
+  ].filter((part) => part !== undefined);
+  return [
+    `${severity}: ${typeof diagnostic.summary === "string" ? diagnostic.summary : ""}`,
+    ...where2.length > 0 ? [`  on ${where2.join(", ")}`] : [],
+    ...typeof diagnostic.address === "string" ? [`  at ${diagnostic.address}`] : [],
+    ...typeof diagnostic.detail === "string" && diagnostic.detail !== "" ? diagnostic.detail.split(`
+`).map((line) => `  ${line}`) : []
+  ];
+}
+
+// src/adapters/opentofu/apply.ts
+async function apply3(stack, context3, plan) {
+  if (!(plan instanceof PlanFile) || plan.stackId !== stackId(stack)) {
+    throw new Error("An OpenTofu stack deploys only the plan its fresh preview saved.");
+  }
+  const result2 = await runDeploy(context3.run, {
+    argv: command(stack, applyArgs(plan.path)),
+    cwd: workingDirectory(context3.root, stack),
+    env: tofuEnvironment(context3.env, stack)
+  });
+  const toolLog = stripAnsi(result2.stderr) + jsonLogWords(result2.stdout);
+  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+}
+
+// src/adapters/opentofu/prepare.ts
+import { join as join25 } from "node:path";
+function prepare2(stacks) {
+  const byPath = Map.groupBy(stacks, (stack) => stack.path);
+  return [...byPath].sort(([a], [b]) => byCodeUnit11(a, b)).map(([path, grouped]) => ({
+    title: path,
+    stacks: grouped,
+    run: async (context3) => {
+      const [first] = grouped;
+      if (first === undefined || optionsOf3(first).wrapper !== CDKTF) {
+        return step(context3, first ? command(first, initArgs()) : [], join25(context3.root, path));
+      }
+      const synth = await step(context3, synthCommand(), join25(context3.root, path));
+      if (!synth.ok)
+        return synth;
+      let toolLog = synth.toolLog;
+      const named = [...grouped].sort((a, b) => byCodeUnit11(a.name ?? "", b.name ?? ""));
+      for (const stack of named) {
+        const init = await step(context3, command(stack, initArgs()), workingDirectory(context3.root, stack));
+        toolLog += init.toolLog;
+        if (!init.ok)
+          return { ...init, toolLog };
+      }
+      return { ok: true, toolLog };
+    }
+  }));
+}
+async function step(context3, argv, cwd) {
+  const result2 = await runTool(context3.run, {
+    argv,
+    cwd,
+    env: tofuEnvironment(context3.env),
+    timeoutMinutes: context3.timeoutMinutes
+  });
+  const toolLog = stripAnsi(result2.stdout + result2.stderr);
+  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+}
+function byCodeUnit11(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/opentofu/fold.ts
+var ACTIONS = {
+  "no-op": "drop",
+  read: "drop",
+  create: { op: "create" },
+  update: { op: "update" },
+  "delete,create": { op: "replace" },
+  "create,delete": { op: "replace" },
+  delete: { op: "delete" },
+  forget: { op: "none", tracking: "forget" },
+  "forget,create": { op: "create", tracking: "forget" }
+};
+function foldChanges(found, showValues, fingerprint = false) {
+  const changes = [];
+  const unknown2 = [];
+  const unreadable2 = [];
+  const firstAt = new Map;
+  found.forEach((resource, index) => {
+    const at = `The tool's output, at resource_changes[${index}]`;
+    const key = resource.change.actions.join(",");
+    const known = Object.hasOwn(ACTIONS, key) ? ACTIONS[key] : undefined;
+    if (known === undefined) {
+      unknown2.push(`${at}.change.actions: expected actions that Sluiceway knows.`);
+      return;
+    }
+    const moved = resource.previous_address !== undefined;
+    const imported = resource.change.importing;
+    if (moved && imported) {
+      unreadable2.push(`${at}: expected a move or an import, not both.`);
+      return;
+    }
+    if (resource.mode === "data") {
+      if (known !== "drop")
+        unknown2.push(`${at}.change.actions: expected a read of a data source.`);
+      return;
+    }
+    const flagged = moved ? "move" : imported ? "import" : undefined;
+    if (flagged !== undefined && known !== "drop" && known.tracking !== undefined) {
+      unreadable2.push(`${at}: expected one tracking change, found two.`);
+      return;
+    }
+    const folded = withTracking(known, flagged);
+    if (folded === undefined)
+      return;
+    const address = resource.deposed === undefined ? resource.address : `${resource.address} deposed ${resource.deposed}`;
+    const earlier = firstAt.get(address);
+    if (earlier !== undefined) {
+      unreadable2.push(`${at}.address: expected an address that no earlier change has, and resource_changes[${earlier}] has it.`);
+      return;
+    }
+    firstAt.set(address, index);
+    changes.push({
+      address,
+      type: resource.type,
+      name: displayName(resource),
+      ...folded,
+      ...moved && resource.previous_address !== undefined ? { previousAddress: resource.previous_address } : {},
+      ...keys2(resource, folded.op, showValues, fingerprint)
+    });
+  });
+  if (unreadable2.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: unreadable2 };
+  if (unknown2.length > 0)
+    return { ok: false, reason: "unknown-step", detail: unknown2 };
+  changes.sort((a, b) => byCodeUnit12(a.address, b.address));
+  return { ok: true, changes };
+}
+function withTracking(known, tracking) {
+  if (known === "drop")
+    return tracking === undefined ? undefined : { op: "none", tracking };
+  if (tracking === undefined)
+    return known;
+  return { ...known, tracking };
+}
+function displayName(resource) {
+  const module = resource.module_address === undefined ? "" : `${resource.module_address}.`;
+  const prefix = `${module}${resource.type}.`;
+  const rest = resource.address.startsWith(prefix) ? resource.address.slice(prefix.length) : resource.name;
+  const name = `${module}${rest}`;
+  return resource.deposed === undefined ? name : `${name} (deposed ${resource.deposed})`;
+}
+function keys2(resource, op, showValues, fingerprint) {
+  const { change: change3 } = resource;
+  const sides = {
+    before: change3.before,
+    after: change3.after,
+    beforeSensitive: change3.before_sensitive,
+    afterSensitive: change3.after_sensitive
+  };
+  if (op === "create" && fingerprint) {
+    const created = hiddenFingerprint({ ...sides, before: undefined }, []);
+    return {
+      changedKeys: [],
+      replaceKeys: [],
+      ...created === undefined ? {} : { fingerprint: created }
+    };
+  }
+  if (op !== "update" && op !== "replace")
+    return { changedKeys: [], replaceKeys: [] };
+  const { paths: paths2, values: values2 } = changedPaths({
+    before: change3.before,
+    after: change3.after,
+    afterUnknown: change3.after_unknown,
+    beforeSensitive: change3.before_sensitive,
+    afterSensitive: change3.after_sensitive
+  }, showValues);
+  const replaceKeys = op === "replace" ? sortedSet((change3.replace_paths ?? []).map((steps) => replacePath(steps, change3.before_sensitive, change3.after_sensitive))) : [];
+  const changedKeys = sortedSet([...paths2, ...replaceKeys]);
+  const shown3 = values2.filter((value) => changedKeys.includes(value.path)).sort((a, b) => byCodeUnit12(a.path, b.path));
+  const hidden = fingerprint ? hiddenFingerprint(sides, shown3.map((value) => value.path)) : undefined;
+  return {
+    changedKeys,
+    replaceKeys,
+    ...shown3.length === 0 ? {} : { values: shown3 },
+    ...hidden === undefined ? {} : { fingerprint: hidden }
+  };
+}
+function sortedSet(names) {
+  return [...new Set(names.filter((name) => name !== ""))].sort(byCodeUnit12);
+}
+function byCodeUnit12(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/opentofu/state-lock.ts
+var STATE_LOCK_SUMMARY = "Error acquiring the state lock";
+function stateLockHeld(planStdout) {
+  for (const line of planStdout.split(/\r?\n/)) {
+    if (!line.includes(STATE_LOCK_SUMMARY))
+      continue;
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (typeof message !== "object" || message === null)
+      continue;
+    const { type, diagnostic } = message;
+    if (type === "diagnostic" && diagnostic?.severity === "error" && diagnostic.summary === STATE_LOCK_SUMMARY) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// src/adapters/opentofu/preview.ts
+async function preview3(stack, options) {
+  const plan = await PlanFile.create(stackId(stack));
+  let kept = false;
+  try {
+    const result2 = await planAndShow(stack, options, plan);
+    if (result2.ok && options.savePlan) {
+      kept = true;
+      return { ...result2, plan };
+    }
+    return result2;
+  } finally {
+    if (!kept)
+      await plan.dispose();
+  }
+}
+async function planAndShow(stack, options, plan) {
+  const run = (argv) => runTool(options.run, {
+    argv: command(stack, argv),
+    cwd: workingDirectory(options.root, stack),
+    env: tofuEnvironment(options.env, stack),
+    timeoutMinutes: options.timeoutMinutes
+  });
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  const planned = await run(planArgs(plan.path, optionsOf3(stack).varFiles));
+  const planWords = stripAnsi(planned.stderr) + jsonLogWords(planned.stdout);
+  if (!planned.ok) {
+    const busy = planned.reason.kind === "tool-error" && stateLockHeld(planned.stdout);
+    return failed(busy ? { kind: "stack-busy" } : planned.reason, planWords);
+  }
+  const shown3 = await run(showArgs(plan.path));
+  const log = planWords + stripAnsi(shown3.stderr);
+  if (!shown3.ok)
+    return failed(shown3.reason, log);
+  const parsed = parsePlan(shown3.stdout);
+  if (!parsed.ok)
+    return failed({ kind: "unreadable-output" }, log, parsed.problems);
+  const folded = foldChanges(parsed.changes, options.showValues ?? [], options.valueFingerprint === true);
+  if (!folded.ok)
+    return failed({ kind: folded.reason }, log, folded.detail);
+  const estimated = options.cost === true && folded.changes.length > 0 ? await estimateCost(shown3.stdout, plan, options) : undefined;
+  const { toolLog: costLog = "", ...cost } = estimated ?? {};
+  return {
+    ok: true,
+    diff: { stackId: stackId(stack), changes: folded.changes },
+    toolLog: log + costLog,
+    ...estimated === undefined ? {} : { cost },
+    ...options.keepDocument ? { document: { text: shown3.stdout, format: "json" } } : {}
+  };
+}
+
+// src/adapters/opentofu/tool-diff.ts
+async function toolDiff3(stack, options) {
+  const result2 = await runTool(options.run, {
+    argv: command(stack, toolDiffArgs(optionsOf3(stack).varFiles)),
+    cwd: workingDirectory(options.root, stack),
+    env: tofuEnvironment(options.env, stack),
+    timeoutMinutes: options.timeoutMinutes
+  });
+  if (!result2.ok) {
+    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  }
+  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+}
+
+// src/adapters/opentofu/version.ts
+var MINIMUM_VERSION3 = [1, 11, 0];
+var MINIMUM_TERRAFORM_VERSION = [1, 14, 0];
+var MINIMUM_TERRAGRUNT_VERSION = [1, 0, 0];
+var MINIMUM_CDKTF_VERSION = [0, 21, 0];
+var TIME_LIMIT_MS3 = 60000;
+async function checkVersion3(context3, stacks) {
+  const binaries = new Set(stacks.map((stack) => binaryOf(optionsOf3(stack).tool)));
+  const wrappers = new Set(stacks.map((stack) => optionsOf3(stack).wrapper));
+  const checks3 = [];
+  if (binaries.has("tofu") || stacks.length === 0) {
+    checks3.push({
+      name: "tofu",
+      argv: versionCommand3("tofu"),
+      floor: MINIMUM_VERSION3,
+      read: readJsonVersion
+    });
+  }
+  if (binaries.has("terraform")) {
+    checks3.push({
+      name: "terraform",
+      argv: versionCommand3("terraform"),
+      floor: MINIMUM_TERRAFORM_VERSION,
+      read: readJsonVersion
+    });
+  }
+  if (wrappers.has(TERRAGRUNT)) {
+    checks3.push({
+      name: TERRAGRUNT,
+      argv: terragruntVersionCommand(),
+      floor: MINIMUM_TERRAGRUNT_VERSION,
+      read: (stdout) => /^terragrunt version v(\S+)\s*$/.exec(stdout.trim())?.[1]
+    });
+  }
+  if (wrappers.has(CDKTF)) {
+    checks3.push({
+      name: CDKTF,
+      argv: cdktfVersionCommand(),
+      floor: MINIMUM_CDKTF_VERSION,
+      read: (stdout) => stdout.trim() || undefined
+    });
+  }
+  for (const check2 of checks3)
+    await checkOne(context3, check2);
+}
+async function checkOne(context3, check2) {
+  const { name, floor } = check2;
+  const needs = `Sluiceway needs ${name} v${floor.join(".")} or newer`;
+  const result2 = await context3.run({
+    argv: check2.argv,
+    cwd: context3.root,
+    env: tofuEnvironment(context3.env),
+    timeoutMs: TIME_LIMIT_MS3
+  });
+  if (result2.status === "not-started") {
+    throw new ToolVersionError(`Could not start ${name}. ${needs} on PATH and does not install it. Add a workflow step that installs ${name} before the step that runs Sluiceway.`);
+  }
+  const version2 = result2.status === "exited" && result2.exitCode === 0 ? check2.read(result2.stdout) : undefined;
+  const found = version2 === undefined ? null : /^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
+  if (found === null || version2 === undefined) {
+    throw new ToolVersionError(`"${check2.argv.join(" ")}" did not print a version Sluiceway can read. ${needs}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+  }
+  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
+  const older2 = floor.map((least, index) => (numbers[index] ?? 0) - least).find((difference) => difference !== 0);
+  if (older2 !== undefined && older2 < 0) {
+    throw new ToolVersionError(`Found ${name} v${version2}. ${needs}. Change the workflow step that installs ${name} so it installs a newer version.`);
+  }
+}
+function readJsonVersion(stdout) {
+  try {
+    const parsed = JSON.parse(stdout);
+    if (typeof parsed !== "object" || parsed === null)
+      return;
+    const version2 = parsed.terraform_version;
+    return typeof version2 === "string" ? version2 : undefined;
+  } catch {
+    return;
+  }
+}
+
+// src/adapters/opentofu/index.ts
+var opentofu = {
+  async discover(root, config2) {
+    const { stacks, optionProblems } = discoverOpenTofu(root, config2);
+    if (optionProblems.length > 0)
+      throw new ConfigError(optionProblems);
+    return stacks;
+  },
+  checkVersion: checkVersion3,
+  prepare: prepare2,
+  preview: preview3,
+  toolDiff: toolDiff3,
+  apply: apply3
+};
+
+// src/adapters/pulumi/apply.ts
+import { join as join26 } from "node:path";
+
+// src/adapters/pulumi/environment.ts
+function pulumiEnvironment(env) {
+  return { ...toolEnvironment(env), PULUMI_SKIP_UPDATE_CHECK: "true" };
+}
+
+// src/adapters/pulumi/apply.ts
+function upCommand(name, repairDrift) {
+  return [
+    "pulumi",
+    "up",
+    "--yes",
+    "--skip-preview",
+    ...repairDrift ? ["--refresh"] : [],
+    "--suppress-outputs",
+    "--non-interactive",
+    "--color",
+    "never",
+    "--stack",
+    name
+  ];
+}
+async function apply4(stack, context3, _plan, options = {}) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const result2 = await runDeploy(context3.run, {
+    argv: upCommand(stack.name, options.repairDrift === true),
+    cwd: join26(context3.root, stack.path),
+    env: pulumiEnvironment(context3.env)
+  });
+  const toolLog = stripAnsi(result2.stdout + result2.stderr);
+  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+}
+
+// src/adapters/pulumi/backend.ts
+import { join as join27 } from "node:path";
+var LIST = ["pulumi", "stack", "ls", "--json", "--non-interactive", "--color", "never"];
+var BACKEND_TIMEOUT_MINUTES = 10;
+var listed4 = exports_external.array(exports_external.object({ name: exports_external.string() }));
+async function findInBackend(stacks, context3) {
+  const answers = [];
+  const logs = [];
+  for (const [path, inPath] of Map.groupBy(stacks, (stack) => stack.path)) {
+    const listed5 = await listStacks(context3, path, BACKEND_TIMEOUT_MINUTES);
+    if (listed5.toolLog !== "")
+      logs.push(listed5.toolLog);
+    if (!listed5.ok) {
+      answers.push(...inPath.map((stack) => ({ stack, found: "unknown", reason: listed5.reason })));
+      continue;
+    }
+    answers.push(...inPath.map((stack) => ({ stack, found: listed5.names.has(stack.name) })));
+  }
+  return { answers, toolLog: logs.join("") };
+}
+async function listStacks(context3, path, timeoutMinutes, exitCodes) {
+  const result2 = await runTool(context3.run, {
+    argv: LIST,
+    cwd: join27(context3.root, path),
+    env: pulumiEnvironment(context3.env),
+    timeoutMinutes,
+    exitCodes
+  });
+  const toolLog = stripAnsi(result2.stderr);
+  if (!result2.ok)
+    return { ok: false, reason: result2.reason, toolLog };
+  const parsed = parseList(result2.stdout);
+  if (parsed === undefined)
+    return { ok: false, reason: { kind: "unreadable-output" }, toolLog };
+  return { ok: true, names: new Set(parsed.map(({ name }) => name.split("/").at(-1))), toolLog };
+}
+function parseList(stdout) {
+  try {
+    const parsed = listed4.safeParse(JSON.parse(stdout));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return;
+  }
+}
+
+// src/adapters/pulumi/drift.ts
+import { join as join28 } from "node:path";
+
+// src/adapters/pulumi/exit-codes.ts
+var STACK_NOT_FOUND_EXIT_CODE = 6;
+var PULUMI_EXIT_CODES = {
+  reasons: {
+    2: { kind: "configuration-error" },
+    3: { kind: "authentication-error" },
+    4: { kind: "resource-error" },
+    [STACK_NOT_FOUND_EXIT_CODE]: { kind: "stack-not-found" },
+    9: { kind: "tool-timed-out" }
+  }
+};
+var HISTORY_EXIT_CODES = {
+  reasons: { [STACK_NOT_FOUND_EXIT_CODE]: { kind: "stack-not-found" } }
+};
+
+// src/adapters/pulumi/fold.ts
+var STEP_OPS = {
+  same: "drop",
+  read: "drop",
+  refresh: "drop",
+  create: { op: "create" },
+  update: { op: "update" },
+  replace: { op: "replace" },
+  delete: { op: "delete" },
+  import: { op: "none", tracking: "import" }
+};
+var FORGET = { op: "none", tracking: "forget" };
+function foldSteps(steps) {
+  const changes = [];
+  const unknown2 = [];
+  const unreadable2 = [];
+  const firstAt = new Map;
+  let rootCreate;
+  steps.forEach((step2, index) => {
+    const at = `The tool's output, at steps[${index}]`;
+    const known = Object.hasOwn(STEP_OPS, step2.op) ? STEP_OPS[step2.op] : undefined;
+    if (known === undefined) {
+      unknown2.push(`${at}.op: expected a step op that Sluiceway knows.`);
+      return;
+    }
+    if (known === "drop")
+      return;
+    if (isRootStack(step2.urn) && step2.op === "update")
+      return;
+    const resource = typeAndName(step2.urn);
+    if (resource === undefined) {
+      unreadable2.push(`${at}.urn: expected the URN of a resource.`);
+      return;
+    }
+    const earlier = firstAt.get(step2.urn);
+    if (earlier !== undefined) {
+      unreadable2.push(`${at}.urn: expected an address that no earlier step has, and steps[${earlier}] has it.`);
+      return;
+    }
+    firstAt.set(step2.urn, index);
+    const folded = step2.op === "delete" && step2.oldState?.retainOnDelete === true ? FORGET : known;
+    const change3 = { address: step2.urn, ...resource, ...folded, ...keys3(step2, folded.op) };
+    if (isRootStack(step2.urn) && step2.op === "create")
+      rootCreate = change3;
+    else
+      changes.push(change3);
+  });
+  if (unreadable2.length > 0)
+    return { ok: false, reason: "unreadable-output", detail: unreadable2 };
+  if (unknown2.length > 0)
+    return { ok: false, reason: "unknown-step", detail: unknown2 };
+  if (rootCreate !== undefined && changes.length === 0)
+    changes.push(rootCreate);
+  changes.sort((a, b) => byCodeUnit13(a.address, b.address));
+  return { ok: true, changes };
+}
+var ROOT_STACK_TYPE = "pulumi:pulumi:Stack";
+function isRootStack(urn) {
+  return urn.startsWith("urn:pulumi:") && urn.split("::")[2] === ROOT_STACK_TYPE;
+}
+function typeAndName(urn) {
+  if (!urn.startsWith("urn:pulumi:"))
+    return;
+  const [, , qualifiedType, ...rest] = urn.split("::");
+  const type = qualifiedType?.split("$").at(-1);
+  const name = rest.join("::");
+  return type === undefined || type === "" || name === "" ? undefined : { type, name };
+}
+function keys3(step2, op) {
+  const fingerprint = step2.fingerprint !== undefined && (op === "create" || op === "update" || op === "replace") ? { fingerprint: step2.fingerprint } : {};
+  if (op !== "update" && op !== "replace")
+    return { changedKeys: [], replaceKeys: [], ...fingerprint };
+  const paths2 = step2.detailedDiff ?? [];
+  const changed = paths2.length > 0 ? paths2 : step2.diffReasons ?? [];
+  const replaceKeys = op === "replace" ? sortedSet2(step2.replaceReasons ?? []) : [];
+  const changedKeys = sortedSet2([...changed, ...replaceKeys]);
+  const values2 = (step2.values ?? []).filter((value) => changedKeys.includes(value.path));
+  return { changedKeys, replaceKeys, ...values2.length === 0 ? {} : { values: values2 }, ...fingerprint };
+}
+function sortedSet2(names) {
+  return [...new Set(names)].sort(byCodeUnit13);
+}
+function byCodeUnit13(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/pulumi/drift.ts
+function driftCommand(name) {
+  return [
+    "pulumi",
+    "refresh",
+    "--preview-only",
+    "--json",
+    "--non-interactive",
+    "--color",
+    "never",
+    "--stack",
+    name
+  ];
+}
+var STREAM_EVENTS = { PULUMI_ENABLE_STREAMING_JSON_PREVIEW: "true" };
+var state = exports_external.object({ outputs: exports_external.unknown().optional() }).nullish();
+var outputsEvent = exports_external.object({
+  resOutputsEvent: exports_external.object({
+    metadata: exports_external.object({
+      op: exports_external.string(),
+      urn: exports_external.string(),
+      old: state,
+      new: state,
+      diffs: exports_external.array(exports_external.string()).nullish(),
+      detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish().transform((paths2) => paths2 == null ? undefined : Object.keys(paths2))
+    })
+  })
+});
+var summaryEvent = exports_external.object({
+  summaryEvent: exports_external.object({ resourceChanges: exports_external.record(exports_external.string(), exports_external.number()).nullish() })
+});
+var diagnosticEvent = exports_external.object({ diagnosticEvent: exports_external.object({ message: exports_external.string() }) });
+var DRIFT_OPS = {
+  same: "drop",
+  refresh: "drop",
+  update: "update",
+  delete: "delete"
+};
+var isSecret = (node2) => node2 === "[secret]";
+function fingerprintOf(hidden) {
+  const fingerprint = changeFingerprint(hidden);
+  return fingerprint === undefined ? {} : { fingerprint };
+}
+async function detectDrift3(stack, options) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const result2 = await runTool(options.run, {
+    argv: driftCommand(stack.name),
+    cwd: join28(options.root, stack.path),
+    env: { ...pulumiEnvironment(options.env), ...STREAM_EVENTS },
+    timeoutMinutes: options.timeoutMinutes,
+    exitCodes: PULUMI_EXIT_CODES
+  });
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  if (!result2.ok && result2.reason.kind === "timed-out") {
+    return failed(result2.reason, stripAnsi(result2.stderr));
+  }
+  const read5 = readEvents(result2.stdout, options.valueFingerprint === true);
+  const words = stripAnsi([result2.stderr, ...typeof read5 === "string" ? [] : read5.diagnostics].join(""));
+  if (!result2.ok)
+    return failed(result2.reason, words);
+  if (typeof read5 === "string")
+    return failed({ kind: "unreadable-output" }, words, [read5]);
+  if (read5.unknown.length > 0)
+    return failed({ kind: "unknown-step" }, words, read5.unknown);
+  if (read5.summary === undefined) {
+    return failed({ kind: "unreadable-output" }, words, [
+      "The tool's output: expected a summary event at the end."
+    ]);
+  }
+  const counted = Object.entries(read5.summary).filter(([op]) => op !== "same").reduce((sum, [, count]) => sum + count, 0);
+  if (counted > read5.drift.length) {
+    return failed({ kind: "unreadable-output" }, words, [
+      `The tool's output: expected an event for every change the summary counts, and ${counted - read5.drift.length} is missing.`
+    ]);
+  }
+  read5.drift.sort((a, b) => a.address < b.address ? -1 : a.address > b.address ? 1 : 0);
+  return { ok: true, drift: read5.drift, toolLog: words };
+}
+function readEvents(stdout, fingerprint) {
+  const events = { drift: [], unknown: [], diagnostics: [], summary: undefined };
+  const seen = new Set;
+  let count = 0;
+  const lines = stdout.split(`
+`);
+  for (const [index, line] of lines.entries()) {
+    if (line.trim() === "")
+      continue;
+    let json2;
+    try {
+      json2 = JSON.parse(line);
+    } catch {
+      return `The tool's output, at line ${index + 1}: expected one JSON document per line.`;
+    }
+    const diagnostic = diagnosticEvent.safeParse(json2);
+    if (diagnostic.success)
+      events.diagnostics.push(diagnostic.data.diagnosticEvent.message);
+    const summary2 = summaryEvent.safeParse(json2);
+    if (summary2.success)
+      events.summary = summary2.data.summaryEvent.resourceChanges ?? {};
+    const outputs = outputsEvent.safeParse(json2);
+    if (!outputs.success)
+      continue;
+    count++;
+    const { op, urn, diffs, detailedDiff, old, new: next } = outputs.data.resOutputsEvent.metadata;
+    const at = `The tool's output, at event ${count}`;
+    const known = Object.hasOwn(DRIFT_OPS, op) ? DRIFT_OPS[op] : undefined;
+    if (known === undefined) {
+      events.unknown.push(`${at}: expected a drift op that Sluiceway knows.`);
+      continue;
+    }
+    if (known === "drop")
+      continue;
+    const resource = typeAndName(urn);
+    if (resource === undefined || seen.has(urn)) {
+      return `${at}: expected the URN of a resource that no earlier event has.`;
+    }
+    seen.add(urn);
+    const paths2 = detailedDiff !== undefined && detailedDiff.length > 0 ? detailedDiff : diffs;
+    events.drift.push({
+      address: urn,
+      ...resource,
+      op: known,
+      changedKeys: known === "update" ? [...new Set(paths2 ?? [])].sort() : [],
+      replaceKeys: [],
+      ...fingerprint && known === "update" ? fingerprintOf(differingLeaves(old?.outputs, next?.outputs, { isSecret })) : {}
+    });
+  }
+  return events;
+}
+
+// src/adapters/pulumi/history.ts
+import { join as join29 } from "node:path";
+function historyCommand(name, limit) {
+  return [
+    "pulumi",
+    "stack",
+    "history",
+    "--json",
+    "--page-size",
+    String(limit),
+    "--non-interactive",
+    "--color",
+    "never",
+    "--stack",
+    name
+  ];
+}
+var entry3 = exports_external.object({
+  kind: exports_external.string(),
+  result: exports_external.string(),
+  endTime: exports_external.string(),
+  resourceChanges: exports_external.record(exports_external.string(), exports_external.number()).nullish(),
+  environment: exports_external.object({
+    "git.head": exports_external.string().optional(),
+    "git.dirty": exports_external.string().optional(),
+    "ci.system": exports_external.string().optional(),
+    "ci.build.id": exports_external.string().optional()
+  }).nullish()
+});
+var KINDS = { update: "deploy", destroy: "destroy" };
+var COMMIT = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+var RUN_ID = /^[1-9]\d*$/;
+async function deployHistory(stack, options) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const result2 = await runTool(options.run, {
+    argv: historyCommand(stack.name, options.limit),
+    cwd: join29(options.root, stack.path),
+    env: pulumiEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes,
+    exitCodes: HISTORY_EXIT_CODES
+  });
+  const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
+  const words = stripAnsi(result2.stderr);
+  if (!result2.ok)
+    return failed(result2.reason, words);
+  const read5 = readHistory(result2.stdout);
+  if (typeof read5 === "string")
+    return failed({ kind: "unreadable-output" }, words, [read5]);
+  return { ok: true, deploys: read5, toolLog: words };
+}
+function readHistory(stdout) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return "The tool's output: expected one JSON document.";
+  }
+  if (!Array.isArray(json2))
+    return "The tool's output: expected a list of updates.";
+  const deploys = [];
+  for (const [index, raw] of json2.entries()) {
+    const parsed = entry3.safeParse(raw);
+    const at = `The tool's output, at update ${index + 1}`;
+    if (!parsed.success)
+      return `${at}: expected a kind, a result and an end time.`;
+    const { kind, result: result2, endTime, resourceChanges, environment } = parsed.data;
+    const endedAt = new Date(endTime);
+    if (Number.isNaN(endedAt.getTime()))
+      return `${at}: expected an end time.`;
+    const deployKind = Object.hasOwn(KINDS, kind) ? KINDS[kind] : undefined;
+    const changed = Object.entries(resourceChanges ?? {}).some(([op, count]) => op !== "same" && count > 0);
+    if (deployKind === undefined || result2 !== "succeeded" || !changed)
+      continue;
+    const sha = environment?.["git.head"] ?? "";
+    const runId = environment?.["ci.build.id"] ?? "";
+    deploys.push({
+      kind: deployKind,
+      endedAt,
+      ...COMMIT.test(sha) ? { commit: { sha, dirty: environment?.["git.dirty"] === "true" } } : {},
+      ...environment?.["ci.system"] === "GitHub Actions" && RUN_ID.test(runId) ? { runId } : {}
+    });
+  }
+  return deploys.sort((a, b) => b.endedAt.getTime() - a.endedAt.getTime());
+}
+
+// src/adapters/pulumi/prepare.ts
+import { join as join30 } from "node:path";
+function prepare3(stacks, options) {
+  const asked = new Set((options?.createInBackend ?? []).map(stackId));
+  return stacks.filter((stack) => asked.has(stackId(stack))).sort((a, b) => byCodeUnit14(stackId(a), stackId(b))).map((stack) => ({
+    title: `the stack ${stackId(stack)} in the backend`,
+    stacks: [stack],
+    run: (context3) => createIfMissing(stack, context3)
+  }));
+}
+function initCommand(name) {
+  return ["pulumi", "stack", "init", name, "--non-interactive", "--color", "never"];
+}
+async function createIfMissing(stack, context3) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const id = stackId(stack);
+  const listed5 = await listStacks(context3, stack.path, context3.timeoutMinutes, PULUMI_EXIT_CODES);
+  if (!listed5.ok)
+    return { ok: false, reason: listed5.reason, toolLog: listed5.toolLog };
+  if (listed5.names.has(stack.name)) {
+    return {
+      ok: true,
+      toolLog: listed5.toolLog,
+      detail: [`The backend already holds ${id}. Nothing was created.`]
+    };
+  }
+  const init = await runTool(context3.run, {
+    argv: initCommand(stack.name),
+    cwd: join30(context3.root, stack.path),
+    env: pulumiEnvironment(context3.env),
+    timeoutMinutes: context3.timeoutMinutes,
+    exitCodes: PULUMI_EXIT_CODES
+  });
+  const toolLog = listed5.toolLog + stripAnsi(init.stdout + init.stderr);
+  if (!init.ok)
+    return { ok: false, reason: init.reason, toolLog };
+  return {
+    ok: true,
+    toolLog,
+    detail: [
+      `The backend did not hold ${id}, so the stack was created. Its preview shows every resource as a create.`
+    ]
+  };
+}
+function byCodeUnit14(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/pulumi/preview.ts
+import { join as join31 } from "node:path";
+
+// src/adapters/pulumi/values.ts
+var SECRET = "[secret]";
+var UNKNOWN = "04da6b54-80e4-46f7-96ec-b56ff0331ba9";
+function listedValues(list, sources) {
+  const shown3 = [];
+  for (const { path, inputDiff } of sources.paths) {
+    if (!isListedPath(list, path))
+      continue;
+    const old = side(valueAt2(inputDiff ? sources.oldInputs : sources.oldOutputs, path));
+    const next = side(valueAt2(sources.newInputs, path));
+    if (old === "refused" || next === "refused")
+      continue;
+    if (old === undefined && next === undefined)
+      continue;
+    shown3.push({
+      path,
+      ...old === undefined ? {} : { old },
+      ...next === undefined ? {} : { new: next }
+    });
+  }
+  return shown3.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+}
+var isSecret2 = (node2) => node2 === SECRET;
+function hiddenFingerprint2(op, sources, shown3) {
+  if (op === "create") {
+    return changeFingerprint(differingLeaves(undefined, sources.newInputs, { isSecret: isSecret2 }));
+  }
+  if (op !== "update" && op !== "replace")
+    return;
+  const shownPaths = new Set(shown3.map((value) => value.path));
+  const hidden = [];
+  const seen = new Set;
+  const at = (path, oldSide) => {
+    if (seen.has(path) || shownPaths.has(path))
+      return;
+    seen.add(path);
+    const old = valueAt2(oldSide, path);
+    const next = valueAt2(sources.newInputs, path);
+    if (old.kind === "secret" || next.kind === "secret") {
+      hidden.push({ path, secret: true });
+      return;
+    }
+    if (old.kind === "ambiguous" || next.kind === "ambiguous")
+      return;
+    hidden.push(...differingLeaves(old.kind === "found" ? old.value : undefined, next.kind === "found" ? next.value : undefined, { prefix: path, isSecret: isSecret2 }));
+  };
+  for (const { path, inputDiff } of sources.paths) {
+    at(path, inputDiff ? sources.oldInputs : sources.oldOutputs);
+  }
+  const reasons = sources.paths.length > 0 ? [] : sources.diffReasons;
+  for (const name of [...reasons, ...sources.replaceReasons])
+    at(name, sources.oldInputs);
+  return changeFingerprint(hidden);
+}
+function side(found) {
+  if (found.kind === "secret" || found.kind === "ambiguous")
+    return "refused";
+  if (found.kind === "absent" || found.value === null)
+    return;
+  const { value } = found;
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  if (typeof value !== "string")
+    return "refused";
+  if (value === SECRET || value === UNKNOWN)
+    return "refused";
+  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value))
+    return "refused";
+  return shortValue(value);
+}
+function valueAt2(root, path) {
+  const found = [];
+  const walk4 = (node2, prefix) => {
+    if (node2 === SECRET) {
+      found.push({ kind: "secret" });
+      return;
+    }
+    for (const [segment3, child2] of children(node2, prefix === "")) {
+      const at = prefix + segment3;
+      if (at === path)
+        found.push({ kind: "found", value: child2 });
+      else if (path.startsWith(at) && (path[at.length] === "." || path[at.length] === "["))
+        walk4(child2, at);
+    }
+  };
+  walk4(root, "");
+  if (found.some((one) => one.kind === "secret"))
+    return { kind: "secret" };
+  const [only] = found;
+  if (found.length > 1)
+    return { kind: "ambiguous" };
+  return only ?? { kind: "absent" };
+}
+function children(node2, top) {
+  if (Array.isArray(node2))
+    return node2.map((child2, index) => [`[${index}]`, child2]);
+  if (typeof node2 !== "object" || node2 === null)
+    return [];
+  return Object.entries(node2).map(([key, child2]) => [segmentOf(key, top), child2]);
+}
+function segmentOf(key, top) {
+  if (/^[\p{L}_][\p{L}\p{Nd}_]*$/u.test(key))
+    return top ? key : `.${key}`;
+  return `["${key.replaceAll('"', "\\\"")}"]`;
+}
+
+// src/adapters/pulumi/schema.ts
+var oldState = exports_external.object({ retainOnDelete: exports_external.boolean().nullish() });
+var stepFields = {
+  op: exports_external.string(),
+  urn: exports_external.string(),
+  diffReasons: exports_external.array(exports_external.string()).nullish(),
+  replaceReasons: exports_external.array(exports_external.string()).nullish()
+};
+var STACK_REFERENCE_TYPE = "pulumi:pulumi:StackReference";
+var referenceState = exports_external.object({ inputs: exports_external.object({ name: exports_external.unknown() }).partial().nullish() }).nullish();
+function stackReferenceOf(urn, state2) {
+  const name = state2?.inputs?.name;
+  const type = urn.split("::")[2]?.split("$").at(-1);
+  return type === STACK_REFERENCE_TYPE && typeof name === "string" && name !== "" ? name : undefined;
+}
+var step2 = exports_external.object({
+  ...stepFields,
+  oldState: oldState.nullish(),
+  newState: referenceState,
+  detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish().transform((paths2) => paths2 == null ? undefined : Object.keys(paths2))
+}).transform(({ newState, ...rest }) => {
+  const stackReference = stackReferenceOf(rest.urn, newState);
+  return stackReference === undefined ? rest : { ...rest, stackReference };
+});
+function stepWithValues(list, fingerprint) {
+  const state2 = exports_external.object({ inputs: exports_external.unknown().optional(), outputs: exports_external.unknown().optional() }).nullish();
+  return exports_external.object({
+    ...stepFields,
+    oldState: exports_external.object({
+      retainOnDelete: exports_external.boolean().nullish(),
+      inputs: exports_external.unknown().optional(),
+      outputs: exports_external.unknown().optional()
+    }).nullish(),
+    newState: state2,
+    detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish()
+  }).transform(({ oldState: old, newState, detailedDiff, ...rest }) => {
+    const stackReference = stackReferenceOf(rest.urn, referenceState.safeParse(newState).data ?? undefined);
+    const paths2 = Object.entries(detailedDiff ?? {}).map(([path, entry4]) => ({
+      path,
+      inputDiff: typeof entry4 === "object" && entry4 !== null && "inputDiff" in entry4 ? entry4.inputDiff === true : false
+    }));
+    const sources = {
+      paths: paths2,
+      oldInputs: old?.inputs,
+      oldOutputs: old?.outputs,
+      newInputs: newState?.inputs
+    };
+    const values2 = listedValues(list, sources);
+    const hidden = fingerprint ? hiddenFingerprint2(rest.op, {
+      ...sources,
+      diffReasons: rest.diffReasons ?? [],
+      replaceReasons: rest.replaceReasons ?? []
+    }, values2) : undefined;
+    return {
+      ...rest,
+      oldState: old == null ? old : { retainOnDelete: old.retainOnDelete },
+      detailedDiff: detailedDiff == null ? undefined : Object.keys(detailedDiff),
+      ...values2.length === 0 ? {} : { values: values2 },
+      ...hidden === undefined ? {} : { fingerprint: hidden },
+      ...stackReference === undefined ? {} : { stackReference }
+    };
+  });
+}
+var diagnostics = exports_external.array(exports_external.object({ message: exports_external.string() })).nullish();
+function previewDocument(showValues, fingerprint) {
+  const steps = showValues.length === 0 && !fingerprint ? step2 : stepWithValues(showValues, fingerprint);
+  return exports_external.object({ steps: exports_external.array(steps), diagnostics });
+}
+var failedDocument = exports_external.object({ diagnostics });
+function parsePreview(stdout, showValues = [], fingerprint = false) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
+  }
+  const parsed = previewDocument(showValues, fingerprint).safeParse(json2);
+  if (!parsed.success)
+    return { ok: false, problems: parsed.error.issues.map(problem3) };
+  return {
+    ok: true,
+    steps: parsed.data.steps,
+    diagnostics: messages(parsed.data.diagnostics)
+  };
+}
+function parseDiagnostics(stdout) {
+  try {
+    const parsed = failedDocument.safeParse(JSON.parse(stdout));
+    return parsed.success ? messages(parsed.data.diagnostics) : [];
+  } catch {
+    return [];
+  }
+}
+function messages(found) {
+  return (found ?? []).map((diagnostic) => diagnostic.message);
+}
+var EXPECTED4 = {
+  string: "text",
+  array: "a list",
+  object: "an object",
+  record: "an object",
+  boolean: "true or false"
+};
+function problem3(issue3) {
+  const expected = issue3.code === "invalid_type" ? EXPECTED4[issue3.expected] : undefined;
+  return `The tool's output, at ${place2(issue3.path)}: expected ${expected ?? "something else"}.`;
+}
+function place2(path) {
+  if (path.length === 0)
+    return "the top";
+  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
+}
+
+// src/adapters/pulumi/preview.ts
+function previewCommand(name) {
+  return ["pulumi", "preview", "--json", "--non-interactive", "--color", "never", "--stack", name];
+}
+async function previewWithReferences(stack, options) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const result2 = await runTool(options.run, {
+    argv: previewCommand(stack.name),
+    cwd: join31(options.root, stack.path),
+    env: pulumiEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes,
+    exitCodes: PULUMI_EXIT_CODES
+  });
+  const failed = (reason, toolLog, detail = []) => ({
+    result: { ok: false, reason, detail, toolLog },
+    references: []
+  });
+  if (!result2.ok) {
+    const finished = result2.reason.kind !== "timed-out";
+    return failed(result2.reason, toolLog(result2.stderr, finished ? parseDiagnostics(result2.stdout) : []));
+  }
+  if (result2.outputCutAt !== undefined) {
+    return failed({ kind: "output-too-large", megabytes: Math.floor(result2.outputCutAt / 1024 / 1024) }, toolLog(result2.stderr));
+  }
+  const parsed = parsePreview(result2.stdout, options.showValues, options.valueFingerprint === true);
+  if (!parsed.ok) {
+    return failed({ kind: "unreadable-output" }, toolLog(result2.stderr), parsed.problems);
+  }
+  const log = toolLog(result2.stderr, parsed.diagnostics);
+  const folded = foldSteps(parsed.steps);
+  if (!folded.ok)
+    return failed({ kind: folded.reason }, log, folded.detail);
+  return {
+    result: {
+      ok: true,
+      diff: { stackId: stackId(stack), changes: folded.changes },
+      toolLog: log,
+      ...options.keepDocument ? { document: { text: result2.stdout, format: "json" } } : {}
+    },
+    references: parsed.steps.flatMap((step3) => step3.stackReference ?? [])
+  };
+}
+function toolLog(stderr, diagnostics2 = []) {
+  return stripAnsi([stderr, ...diagnostics2].join(""));
+}
+
+// src/adapters/pulumi/references.ts
+async function readDependencies(stack, names, root, candidates) {
+  const self = stackId(stack);
+  const projects = new Map;
+  const projectOf = async (path) => {
+    if (!projects.has(path))
+      projects.set(path, await projectName(root, path));
+    return projects.get(path);
+  };
+  const own2 = await projectOf(stack.path);
+  const known = await Promise.all(candidates.map(async (one) => ({
+    id: stackId(one),
+    name: one.name,
+    project: await projectOf(one.path)
+  })));
+  const matching = (project, name) => project === undefined || name === undefined ? [] : known.filter((one) => one.project === project && one.name === name);
+  const found = new Set;
+  let elsewhere = 0;
+  for (const reference of names) {
+    const parts = reference.split("/");
+    const fits = parts.length === 3 ? matching(parts[1], parts[2]) : parts.length === 1 ? matching(own2, parts[0]) : parts.length === 2 ? orElse(matching(parts[0], parts[1]), () => matching(own2, parts[1])) : [];
+    const [one] = fits;
+    if (fits.length !== 1 || one === undefined)
+      elsewhere++;
+    else if (one.id !== self)
+      found.add(one.id);
+  }
+  return { stackIds: [...found].sort(byCodeUnit15), elsewhere };
+}
+function orElse(first, second) {
+  return first.length > 0 ? first : second();
+}
+function byCodeUnit15(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// src/adapters/pulumi/tool-diff.ts
+import { join as join32 } from "node:path";
+function toolDiffCommand2(name) {
+  return [
+    "pulumi",
+    "preview",
+    "--diff",
+    "--suppress-outputs",
+    "--non-interactive",
+    "--color",
+    "never",
+    "--stack",
+    name
+  ];
+}
+async function toolDiff4(stack, options) {
+  if (stack.name === undefined)
+    throw new Error("A Pulumi stack always has a name.");
+  const result2 = await runTool(options.run, {
+    argv: toolDiffCommand2(stack.name),
+    cwd: join32(options.root, stack.path),
+    env: pulumiEnvironment(options.env),
+    timeoutMinutes: options.timeoutMinutes,
+    exitCodes: PULUMI_EXIT_CODES
+  });
+  if (!result2.ok) {
+    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  }
+  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+}
+
+// src/adapters/pulumi/version.ts
+var MINIMUM_VERSION4 = [3, 229, 0];
+var NEEDS3 = `Sluiceway needs pulumi v${MINIMUM_VERSION4.join(".")} or newer`;
+var TIME_LIMIT_MS4 = 60000;
+async function checkVersion4(context3) {
+  const result2 = await context3.run({
+    argv: ["pulumi", "version"],
+    cwd: context3.root,
+    env: pulumiEnvironment(context3.env),
+    timeoutMs: TIME_LIMIT_MS4
+  });
+  if (result2.status === "not-started") {
+    throw new ToolVersionError(`Could not start pulumi. ${NEEDS3} on PATH and does not install it. Add a workflow step that installs pulumi before the step that runs Sluiceway.`);
+  }
+  const found = result2.status === "exited" && result2.exitCode === 0 ? /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?\s*$/.exec(result2.stdout) : null;
+  if (found === null) {
+    throw new ToolVersionError(`"pulumi version" did not print a version Sluiceway can read. ${NEEDS3}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+  }
+  const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
+  const older2 = MINIMUM_VERSION4.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
+  if (older2 !== undefined && older2 < 0) {
+    throw new ToolVersionError(`Found pulumi ${result2.stdout.trim()}. ${NEEDS3}. Change the workflow step that installs pulumi so it installs a newer version.`);
+  }
+}
+
+// src/adapters/pulumi/index.ts
+var preview4 = async (stack, options) => {
+  const { result: result2, references } = await previewWithReferences(stack, options);
+  if (!result2.ok || options.dependencies === undefined)
+    return result2;
+  const dependencies = await readDependencies(stack, references, options.root, options.dependencies);
+  return { ...result2, dependencies };
+};
+var pulumi = {
+  discover,
+  checkVersion: checkVersion4,
+  prepare: prepare3,
+  preview: preview4,
+  toolDiff: toolDiff4,
+  detectDrift: detectDrift3,
+  deployHistory,
+  apply: apply4,
+  readsFiles: readsFiles2,
+  findInBackend
+};
+
+// src/adapters/tools.ts
+function adapterOf(stack) {
+  if (isOpenTofuOptions(stack.options))
+    return opentofu;
+  if (isHelmOptions(stack.options))
+    return helm;
+  if (isKubectlOptions(stack.options))
+    return kubectl;
+  return pulumi;
+}
+var tools = {
+  discover: discoverAll,
+  explainDiscovery: async (root, config2) => explainRootModules(root, config2),
+  readsFiles: readsFiles3,
+  credentialNeeds: credentialNeeds3,
+  async checkVersion(context3, stacks) {
+    const tofu = stacks.filter((stack) => isOpenTofuOptions(stack.options));
+    const charts = stacks.filter((stack) => isHelmOptions(stack.options));
+    const manifests = stacks.filter((stack) => isKubectlOptions(stack.options));
+    if (tofu.length + charts.length + manifests.length < stacks.length) {
+      await pulumi.checkVersion(context3, []);
+    }
+    if (tofu.length > 0)
+      await opentofu.checkVersion(context3, tofu);
+    if (charts.length > 0)
+      await helm.checkVersion(context3, charts);
+    if (manifests.length > 0)
+      await kubectl.checkVersion(context3, manifests);
+  },
+  prepare(stacks, options) {
+    const isPulumi = (stack) => adapterOf(stack) === pulumi;
+    return [
+      ...pulumi.prepare?.(stacks.filter(isPulumi), {
+        createInBackend: (options?.createInBackend ?? []).filter(isPulumi)
+      }) ?? [],
+      ...opentofu.prepare?.(stacks.filter((stack) => isOpenTofuOptions(stack.options))) ?? [],
+      ...helm.prepare?.(stacks.filter((stack) => isHelmOptions(stack.options))) ?? []
+    ];
+  },
+  preview: (stack, options) => adapterOf(stack).preview(stack, options),
+  toolDiff: (stack, options) => adapterOf(stack).toolDiff(stack, options),
+  detectDrift: async (stack, options) => adapterOf(stack).detectDrift?.(stack, options),
+  deployHistory: async (stack, options) => adapterOf(stack).deployHistory?.(stack, options),
+  apply: (stack, context3, plan, options) => adapterOf(stack).apply(stack, context3, plan, options),
+  async findInBackend(stacks, context3) {
+    const answers = [];
+    const logs = [];
+    for (const [adapter, own2] of Map.groupBy(stacks, adapterOf)) {
+      const result2 = await adapter.findInBackend?.(own2, context3);
+      if (result2 === undefined)
+        continue;
+      answers.push(...result2.answers);
+      logs.push(result2.toolLog);
+    }
+    return { answers, toolLog: logs.join("") };
+  }
+};
 
 // src/github/env-file.ts
 import { readFileSync as readFileSync10 } from "node:fs";
@@ -59589,821 +60469,6 @@ function pullRequestOf2(payload) {
     baseRef: text7(base.ref),
     fromFork: typeof headRepo !== "string" || headRepo === "" || typeof baseRepo !== "string" || headRepo !== baseRepo
   };
-}
-
-// src/github/job.ts
-function readJob(env) {
-  const need = (name) => {
-    const value = env[name];
-    if (!value) {
-      throw new Error(`${name} is not set. Sluiceway runs as a step of a GitHub Actions job.`);
-    }
-    return value;
-  };
-  const root = need("GITHUB_WORKSPACE");
-  const repository = need("GITHUB_REPOSITORY");
-  const [owner, repo, ...rest] = repository.split("/");
-  if (!owner || !repo || rest.length > 0) {
-    throw new Error(`GITHUB_REPOSITORY is ${JSON.stringify(repository)}, which is not an owner and a repo.`);
-  }
-  const workflowRef = need("GITHUB_WORKFLOW_REF");
-  const workflow = /^[^/]+\/[^/]+\/\.github\/workflows\/([^/]+?\.ya?ml)@/.exec(workflowRef)?.[1];
-  if (!workflow) {
-    throw new Error(`GITHUB_WORKFLOW_REF is ${JSON.stringify(workflowRef)}, which names no workflow file.`);
-  }
-  const server = (env.GITHUB_SERVER_URL || "https://github.com").replace(/\/+$/, "");
-  return {
-    root,
-    owner,
-    repo,
-    repoUrl: `${server}/${owner}/${repo}`,
-    runId: need("GITHUB_RUN_ID"),
-    runAttempt: need("GITHUB_RUN_ATTEMPT"),
-    sha: need("GITHUB_SHA"),
-    event: need("GITHUB_EVENT_NAME"),
-    workflow
-  };
-}
-
-// src/github/job-log.ts
-import { randomUUID as randomUUID2 } from "node:crypto";
-import { writeFile as writeFile4 } from "node:fs/promises";
-function actionsLog() {
-  return {
-    info: (line) => info(line),
-    group(title, lines, verbatim = []) {
-      startGroup(title);
-      for (const line of lines)
-        info(line);
-      if (verbatim.length > 0) {
-        const token = randomUUID2();
-        info(`::stop-commands::${token}`);
-        for (const line of verbatim)
-          info(line);
-        info(`::${token}::`);
-      }
-      endGroup();
-    },
-    warning: (message, title) => warning(message, { title }),
-    async writeSummary(text8) {
-      const file2 = process.env.GITHUB_STEP_SUMMARY;
-      if (!file2) {
-        throw new Error("The runner gave this step no summary file (GITHUB_STEP_SUMMARY is not set).");
-      }
-      await writeFile4(file2, text8, "utf8");
-    }
-  };
-}
-
-// src/github/octokit-attribution.ts
-var WALK = `query ($owner: String!, $repo: String!, $head: GitObjectID!, $first: Int!, $after: String) {
-  repository(owner: $owner, name: $repo) {
-    defaultBranchRef {
-      name
-    }
-    object(oid: $head) {
-      ... on Commit {
-        history(first: $first, after: $after) {
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-          nodes {
-            oid
-            messageHeadline
-            author {
-              user {
-                login
-              }
-            }
-            parents(first: 10) {
-              nodes {
-                oid
-              }
-            }
-            associatedPullRequests(first: 5) {
-              nodes {
-                number
-                title
-                merged
-                baseRefName
-                author {
-                  __typename
-                  login
-                }
-                changedFiles
-                files(first: 100) {
-                  nodes {
-                    path
-                    changeType
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}`;
-var PAGE = 100;
-var FILE_LIMIT = 3000;
-function paths(files) {
-  return files.flatMap((file2) => file2.previous_filename === undefined ? [file2.filename] : [file2.filename, file2.previous_filename]);
-}
-function nextPage(link) {
-  return /<([^>]+)>;\s*rel="next"/.exec(link ?? "")?.[1];
-}
-function present(nodes) {
-  return (nodes ?? []).filter((node2) => node2 !== null);
-}
-function toPullRequest(node2) {
-  const { author: author2 } = node2;
-  return {
-    number: node2.number,
-    title: node2.title,
-    author: author2 === null ? undefined : author2.__typename === "Bot" && !author2.login.endsWith("[bot]") ? `${author2.login}[bot]` : author2.login,
-    base: node2.baseRefName,
-    merged: node2.merged,
-    changedFiles: node2.changedFiles,
-    files: present(node2.files?.nodes).map(({ path }) => path),
-    renamed: present(node2.files?.nodes).some(({ changeType }) => changeType === "RENAMED")
-  };
-}
-function toCommit(node2) {
-  return {
-    sha: node2.oid,
-    parents: present(node2.parents.nodes).map(({ oid }) => oid),
-    author: node2.author?.user?.login,
-    message: node2.messageHeadline,
-    pullRequests: present(node2.associatedPullRequests?.nodes).map(toPullRequest)
-  };
-}
-function attributionCalls(octokit, repo) {
-  return {
-    async walkCommits(head, lookback = LOOKBACK) {
-      const commits = [];
-      let defaultBranch;
-      let after = null;
-      do {
-        const first = Math.min(PAGE, lookback - commits.length);
-        const data = await octokit.graphql(WALK, { ...repo, head, first, after });
-        const history = data.repository?.object?.history;
-        if (!history)
-          throw new Error(`GitHub has no commit ${head.slice(0, 7)} to walk back from.`);
-        defaultBranch = data.repository?.defaultBranchRef?.name;
-        if (defaultBranch === undefined)
-          throw new Error("GitHub named no default branch.");
-        commits.push(...present(history.nodes).map(toCommit));
-        after = history.pageInfo.hasNextPage ? history.pageInfo.endCursor : null;
-      } while (after !== null && commits.length < lookback);
-      return { defaultBranch, commits };
-    },
-    async listPullRequestFiles(number4) {
-      const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
-        ...repo,
-        pull_number: number4,
-        per_page: PAGE
-      });
-      return files.length >= FILE_LIMIT ? undefined : paths(files);
-    },
-    async listCommitFiles(sha) {
-      const first = await octokit.rest.repos.getCommit({ ...repo, ref: sha });
-      const files = [...first.data.files ?? []];
-      for (let next = nextPage(first.headers.link);next !== undefined; ) {
-        const page = await octokit.request(`GET ${next}`);
-        files.push(...page.data.files ?? []);
-        next = nextPage(page.headers.link);
-      }
-      return files.length >= FILE_LIMIT ? undefined : paths(files);
-    }
-  };
-}
-
-// src/github/octokit-checks.ts
-function toCheckRun(run) {
-  return { id: run.id, name: run.name, htmlUrl: run.html_url ?? "" };
-}
-function checkCalls(octokit, repo) {
-  return {
-    async listCheckRuns(sha) {
-      const runs = await octokit.paginate(octokit.rest.checks.listForRef, {
-        ...repo,
-        ref: sha,
-        filter: "latest",
-        per_page: 100
-      });
-      return runs.map(toCheckRun);
-    },
-    async createCheckRun({ sha, name, output: output3 }) {
-      const { data } = await octokit.rest.checks.create({
-        ...repo,
-        name,
-        head_sha: sha,
-        status: "completed",
-        conclusion: "neutral",
-        output: output3
-      });
-      return toCheckRun(data);
-    },
-    async updateCheckRun(id, output3) {
-      const { data } = await octokit.rest.checks.update({ ...repo, check_run_id: id, output: output3 });
-      return toCheckRun(data);
-    }
-  };
-}
-
-// src/github/octokit-deployments.ts
-var NEWEST_DEPLOYMENTS = `query ($owner: String!, $repo: String!, $environment: String!) {
-  repository(owner: $owner, name: $repo) {
-    deployments(environments: [$environment], first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
-      pageInfo {
-        hasNextPage
-      }
-      nodes {
-        databaseId
-        task
-        environment
-        commitOid
-        payload
-        createdAt
-        creator {
-          login
-        }
-        latestStatus {
-          state
-          description
-          createdAt
-        }
-        statuses(first: 2) {
-          nodes {
-            state
-            createdAt
-          }
-        }
-      }
-    }
-  }
-}`;
-function parsePayload(payload) {
-  let parsed = payload;
-  for (let depth = 0;depth < 2 && typeof parsed === "string"; depth++) {
-    try {
-      parsed = JSON.parse(parsed);
-    } catch {
-      break;
-    }
-  }
-  return parsed;
-}
-function toDeployment(deployment) {
-  return {
-    id: deployment.id,
-    task: deployment.task,
-    environment: deployment.environment,
-    sha: deployment.sha,
-    payload: parsePayload(deployment.payload),
-    createdAt: deployment.created_at,
-    ...deployment.creator?.login ? { creator: deployment.creator.login } : {}
-  };
-}
-function toStatus(status) {
-  return {
-    state: status.state,
-    description: status.description ?? "",
-    createdAt: status.created_at
-  };
-}
-function withSucceededAt(latest, newestFirst) {
-  if (latest.state !== "inactive")
-    return latest;
-  const under = newestFirst[1];
-  return under?.state.toLowerCase() === "success" ? { ...latest, succeededAt: under.createdAt } : latest;
-}
-function deploymentCalls(octokit, repo) {
-  return {
-    async createDeployment({ sha, task, environment, payload }) {
-      const { data } = await octokit.rest.repos.createDeployment({
-        ...repo,
-        ref: sha,
-        task,
-        environment,
-        payload,
-        auto_merge: false,
-        required_contexts: []
-      });
-      if (!("id" in data))
-        throw new Error("GitHub created no deployment record.");
-      return toDeployment(data);
-    },
-    async createDeploymentStatus(id, { state: state2, description, logUrl }) {
-      const { data } = await octokit.rest.repos.createDeploymentStatus({
-        ...repo,
-        deployment_id: id,
-        state: state2,
-        auto_inactive: false,
-        ...description === undefined ? {} : { description },
-        ...logUrl === undefined ? {} : { log_url: logUrl }
-      });
-      return toStatus(data);
-    },
-    async listNewestDeployments(environment) {
-      const { repository } = await octokit.graphql(NEWEST_DEPLOYMENTS, {
-        ...repo,
-        environment
-      });
-      if (!repository)
-        throw new Error("GitHub gave no repository to read deployments from.");
-      return {
-        records: repository.deployments.nodes.flatMap((node2) => node2 === null || node2.databaseId === null ? [] : {
-          id: node2.databaseId,
-          task: node2.task ?? "",
-          environment: node2.environment ?? "",
-          sha: node2.commitOid,
-          payload: parsePayload(node2.payload),
-          createdAt: node2.createdAt,
-          ...node2.creator?.login ? { creator: node2.creator.login } : {},
-          status: node2.latestStatus ? withSucceededAt({
-            state: node2.latestStatus.state.toLowerCase(),
-            description: node2.latestStatus.description ?? "",
-            createdAt: node2.latestStatus.createdAt
-          }, node2.statuses?.nodes ?? []) : undefined
-        }),
-        more: repository.deployments.pageInfo.hasNextPage
-      };
-    },
-    async newestDeploymentOfTask(task) {
-      const { data } = await octokit.rest.repos.listDeployments({ ...repo, task, per_page: 1 });
-      return data[0] ? toDeployment(data[0]) : undefined;
-    },
-    async latestDeploymentStatus(id) {
-      const { data } = await octokit.rest.repos.listDeploymentStatuses({
-        ...repo,
-        deployment_id: id,
-        per_page: 2
-      });
-      return data[0] ? withSucceededAt(toStatus(data[0]), data.map(({ state: state2, created_at }) => ({ state: state2, createdAt: created_at }))) : undefined;
-    },
-    async getDeployment(id) {
-      const { data } = await octokit.rest.repos.getDeployment({ ...repo, deployment_id: id });
-      return toDeployment(data);
-    },
-    async getWorkflowRun(runId) {
-      try {
-        const { data } = await octokit.rest.actions.getWorkflowRun({
-          ...repo,
-          run_id: Number(runId)
-        });
-        return { completed: data.status === "completed" };
-      } catch (error63) {
-        if (error63.status === 404)
-          return;
-        throw error63;
-      }
-    }
-  };
-}
-
-// src/github/port.ts
-class TokenRefused extends Error {
-  permission;
-  constructor(message, permission) {
-    super(message);
-    this.name = "TokenRefused";
-    this.permission = permission;
-  }
-}
-
-// src/github/octokit-pulls.ts
-var OPEN_PULL_REQUESTS = `query ($owner: String!, $repo: String!, $after: String) {
-  repository(owner: $owner, name: $repo) {
-    defaultBranchRef {
-      name
-    }
-    pullRequests(states: OPEN, first: 100, after: $after, orderBy: {field: CREATED_AT, direction: ASC}) {
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      nodes {
-        number
-        title
-        isDraft
-        baseRefName
-        headRefOid
-        mergeable
-        isCrossRepository
-        author {
-          __typename
-          login
-        }
-        changedFiles
-        files(first: 100) {
-          nodes {
-            path
-            changeType
-          }
-        }
-        commits(last: 1) {
-          nodes {
-            commit {
-              statusCheckRollup {
-                state
-                contexts(first: 100) {
-                  checkRunCountsByState {
-                    state
-                    count
-                  }
-                  statusContextCountsByState {
-                    state
-                    count
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}`;
-function present2(nodes) {
-  return (nodes ?? []).filter((node2) => node2 !== null);
-}
-var CHECKS = {
-  SUCCESS: "success",
-  PENDING: "pending",
-  EXPECTED: "pending",
-  FAILURE: "failure",
-  ERROR: "failure"
-};
-var PASSED_OR_RUNNING = new Set([
-  "SUCCESS",
-  "NEUTRAL",
-  "SKIPPED",
-  "IN_PROGRESS",
-  "PENDING",
-  "QUEUED",
-  "WAITING"
-]);
-var FAILED_STATUS = new Set(["FAILURE", "ERROR"]);
-function anyFailed(contexts) {
-  const some = (counts2, failed) => (counts2 ?? []).some(({ state: state2, count }) => count > 0 && failed(state2));
-  return some(contexts?.checkRunCountsByState, (state2) => !PASSED_OR_RUNNING.has(state2)) || some(contexts?.statusContextCountsByState, (state2) => FAILED_STATUS.has(state2));
-}
-function checksOf(rollup) {
-  if (!rollup)
-    return "none";
-  const checks3 = CHECKS[rollup.state] ?? "failure";
-  if (checks3 === "pending" && anyFailed(rollup.contexts))
-    return "failure";
-  return checks3;
-}
-function toPullRequest2(node2) {
-  const files = present2(node2.files?.nodes);
-  const rollup = present2(node2.commits.nodes)[0]?.commit.statusCheckRollup;
-  const { author: author2 } = node2;
-  return {
-    number: node2.number,
-    title: node2.title,
-    author: author2 === null ? undefined : author2.__typename === "Bot" && !author2.login.endsWith("[bot]") ? `${author2.login}[bot]` : author2.login,
-    draft: node2.isDraft,
-    base: node2.baseRefName,
-    head: node2.headRefOid,
-    mergeable: node2.mergeable === "MERGEABLE" ? "mergeable" : node2.mergeable === "CONFLICTING" ? "conflicting" : "unknown",
-    checks: checksOf(rollup),
-    files: files.map(({ path }) => path),
-    filesComplete: files.length === node2.changedFiles && files.every(({ changeType }) => changeType !== "RENAMED"),
-    fromFork: node2.isCrossRepository
-  };
-}
-var REFUSALS = new Set([405, 409, 422]);
-function statusOf(error63) {
-  const status = error63?.status;
-  return typeof status === "number" ? status : undefined;
-}
-function messageOf(error63) {
-  const response = error63?.response;
-  const message = response?.data?.message;
-  if (typeof message === "string")
-    return message;
-  return error63 instanceof Error ? error63.message : String(error63);
-}
-function refusedOrAsIs(error63) {
-  const errors4 = error63?.errors;
-  if (!Array.isArray(errors4) || errors4.length === 0)
-    return error63;
-  const refused = errors4;
-  if (!refused.every((one) => one.type === "FORBIDDEN"))
-    return error63;
-  const paths2 = refused.map(({ path }) => Array.isArray(path) ? path.map(String) : []);
-  const words = typeof refused[0]?.message === "string" ? refused[0].message : "refused";
-  const first = paths2[0] ?? [];
-  if (paths2.every((path) => path.join(".") === "repository.pullRequests")) {
-    return new TokenRefused(`GitHub answered "${words}" for the pull requests`, "pull-requests: read");
-  }
-  const parts = paths2.length === 1 ? "a part" : `${paths2.length} parts`;
-  return new TokenRefused(`GitHub answered "${words}" for ${parts} of the pull requests, the first at ${first.join(".")}`);
-}
-function pullCalls(octokit, repo) {
-  return {
-    async listOpenPullRequests() {
-      let defaultBranch;
-      const pullRequests = [];
-      let after = null;
-      for (;; ) {
-        const data = await octokit.graphql(OPEN_PULL_REQUESTS, { ...repo, after }).catch((error63) => {
-          throw refusedOrAsIs(error63);
-        });
-        defaultBranch ??= data.repository?.defaultBranchRef?.name;
-        const list = data.repository?.pullRequests;
-        pullRequests.push(...present2(list?.nodes).map(toPullRequest2));
-        const next = list?.pageInfo;
-        if (!next?.hasNextPage || !next.endCursor)
-          break;
-        after = next.endCursor;
-      }
-      if (defaultBranch === undefined)
-        throw new Error("GitHub named no default branch.");
-      return { defaultBranch, pullRequests };
-    },
-    async allowedMergeMethods() {
-      const { data } = await octokit.rest.repos.get(repo);
-      return {
-        squash: data.allow_squash_merge,
-        rebase: data.allow_rebase_merge,
-        merge: data.allow_merge_commit
-      };
-    },
-    async mergePullRequest(number4, { head, method }) {
-      try {
-        const { data } = await octokit.rest.pulls.merge({
-          ...repo,
-          pull_number: number4,
-          sha: head,
-          merge_method: method
-        });
-        return { merged: true, sha: data.sha };
-      } catch (error63) {
-        const status = statusOf(error63);
-        if (status === undefined || !REFUSALS.has(status))
-          throw error63;
-        return { merged: false, status, message: messageOf(error63) };
-      }
-    },
-    async readRepositoryFile({ owner, repo: name, path, ref }) {
-      try {
-        const { data } = await octokit.rest.repos.getContent({
-          owner,
-          repo: name,
-          path,
-          ...ref === undefined ? {} : { ref },
-          mediaType: { format: "raw" }
-        });
-        return typeof data === "string" ? data : undefined;
-      } catch (error63) {
-        if (statusOf(error63) === 404)
-          return;
-        throw error63;
-      }
-    }
-  };
-}
-
-// src/github/octokit-runs.ts
-function runCalls(octokit, repo) {
-  return {
-    async listIssuesRuns(workflow) {
-      const { data } = await octokit.rest.actions.listWorkflowRuns({
-        ...repo,
-        workflow_id: workflow,
-        event: "issues",
-        per_page: 100
-      });
-      return data.workflow_runs.map((run) => ({
-        id: String(run.id),
-        completed: run.status === "completed"
-      }));
-    },
-    async listQueuedRuns(workflow) {
-      const { data } = await octokit.rest.actions.listWorkflowRuns({
-        ...repo,
-        workflow_id: workflow,
-        status: "queued",
-        per_page: 100
-      });
-      return data.workflow_runs.map((run) => ({
-        id: String(run.id),
-        status: run.status ?? "",
-        since: run.run_started_at ?? run.created_at
-      }));
-    }
-  };
-}
-
-// src/github/octokit-port.ts
-var PINNED_ISSUES = `query ($owner: String!, $repo: String!) {
-  repository(owner: $owner, name: $repo) {
-    pinnedIssues(first: 3) {
-      nodes {
-        issue {
-          number
-        }
-      }
-    }
-  }
-}`;
-var PIN_ISSUE = `mutation ($issueId: ID!) {
-  pinIssue(input: {issueId: $issueId}) {
-    issue {
-      id
-    }
-  }
-}`;
-var EDIT_HISTORY = `query ($owner: String!, $repo: String!, $number: Int!, $first: Int!, $after: String) {
-  repository(owner: $owner, name: $repo) {
-    issue(number: $number) {
-      body
-      userContentEdits(first: $first, after: $after) {
-        totalCount
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        nodes {
-          editedAt
-          deletedAt
-          editor {
-            __typename
-            login
-          }
-          diff
-        }
-      }
-    }
-  }
-}`;
-function createOctokitPort(octokit, repo) {
-  return {
-    async listIssues({ label, state: state2 }) {
-      const issues = await octokit.paginate(octokit.rest.issues.listForRepo, {
-        ...repo,
-        labels: label,
-        state: state2,
-        sort: "created",
-        direction: "asc",
-        per_page: 100
-      });
-      return issues.filter((issue3) => !issue3.pull_request).map(toIssue);
-    },
-    async getIssue(number4) {
-      const { data } = await octokit.rest.issues.get({ ...repo, issue_number: number4 });
-      return toIssue(data);
-    },
-    async createIssue({ title, body: body2, labels }) {
-      const { data } = await octokit.rest.issues.create({ ...repo, title, body: body2, labels });
-      return toIssue(data);
-    },
-    async listRecentlyClosedIssues(label) {
-      const { data } = await octokit.rest.issues.listForRepo({
-        ...repo,
-        labels: label,
-        state: "closed",
-        sort: "updated",
-        direction: "desc",
-        per_page: 100
-      });
-      return data.filter((issue3) => !issue3.pull_request).map(toIssue);
-    },
-    async updateIssueTitle(number4, title) {
-      await octokit.rest.issues.update({ ...repo, issue_number: number4, title });
-    },
-    async updateIssueBody(number4, body2) {
-      const { data } = await octokit.rest.issues.update({ ...repo, issue_number: number4, body: body2 });
-      return toIssue(data);
-    },
-    async closeIssue(number4) {
-      await octokit.rest.issues.update({
-        ...repo,
-        issue_number: number4,
-        state: "closed",
-        state_reason: "not_planned"
-      });
-    },
-    async reopenIssue(number4) {
-      await octokit.rest.issues.update({ ...repo, issue_number: number4, state: "open" });
-    },
-    async createComment(number4, body2) {
-      await octokit.rest.issues.createComment({ ...repo, issue_number: number4, body: body2 });
-    },
-    async readEditHistory(number4, { size, after }) {
-      const data = await octokit.graphql(EDIT_HISTORY, {
-        ...repo,
-        number: number4,
-        first: size,
-        after: after ?? null
-      });
-      const issue3 = data.repository?.issue;
-      if (!issue3)
-        throw new Error(`GitHub gave no issue ${number4} when the edit history was read.`);
-      const { totalCount, pageInfo, nodes } = issue3.userContentEdits;
-      return {
-        body: issue3.body ?? "",
-        entries: (nodes ?? []).map(toHistoryEntry),
-        total: totalCount,
-        next: pageInfo.hasNextPage && pageInfo.endCursor !== null ? pageInfo.endCursor : undefined
-      };
-    },
-    async readTree(sha) {
-      const { data } = await octokit.rest.git.getTree({
-        ...repo,
-        tree_sha: sha,
-        recursive: "1"
-      });
-      return {
-        entries: data.tree.flatMap((entry4) => entry4.path === undefined || entry4.sha === undefined || entry4.type === undefined ? [] : [{ path: entry4.path, sha: entry4.sha, type: entry4.type }]),
-        truncated: data.truncated
-      };
-    },
-    async compareCommits(base, head) {
-      const { data } = await octokit.rest.repos.compareCommitsWithBasehead({
-        ...repo,
-        basehead: `${base}...${head}`,
-        per_page: 1
-      });
-      return {
-        status: data.status,
-        files: (data.files ?? []).map((file2) => file2.previous_filename === undefined ? { path: file2.filename } : { path: file2.filename, previousPath: file2.previous_filename })
-      };
-    },
-    async getPermission(login) {
-      let data;
-      try {
-        ({ data } = await octokit.rest.repos.getCollaboratorPermissionLevel({
-          ...repo,
-          username: login
-        }));
-      } catch (error63) {
-        if (isNoAccount(error63))
-          return;
-        throw error63;
-      }
-      const permissions = data.user?.permissions;
-      if (!permissions)
-        throw new Error(`GitHub's answer holds no permissions for ${login}.`);
-      return {
-        push: permissions.push === true,
-        maintain: permissions.maintain === true,
-        admin: permissions.admin === true
-      };
-    },
-    ...deploymentCalls(octokit, repo),
-    ...runCalls(octokit, repo),
-    ...attributionCalls(octokit, repo),
-    ...checkCalls(octokit, repo),
-    ...pullCalls(octokit, repo),
-    async pinIssue(nodeId) {
-      await octokit.graphql(PIN_ISSUE, { issueId: nodeId });
-    },
-    async listPinnedIssues() {
-      const data = await octokit.graphql(PINNED_ISSUES, { ...repo });
-      return (data.repository?.pinnedIssues?.nodes ?? []).flatMap((node2) => node2?.issue ? [node2.issue.number] : []);
-    },
-    async dispatchWorkflow(workflow, ref, inputs) {
-      const { data } = await octokit.request("POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches", {
-        ...repo,
-        workflow_id: workflow,
-        ref,
-        ...inputs ? { inputs } : {}
-      });
-      const page = data?.html_url;
-      return typeof page === "string" ? page : undefined;
-    }
-  };
-}
-function toHistoryEntry(edit) {
-  return {
-    editor: edit?.editor ? { login: edit.editor.login, type: edit.editor.__typename } : { login: "", type: "" },
-    editedAt: edit?.editedAt ?? "",
-    body: !edit || edit.deletedAt !== null ? null : edit.diff
-  };
-}
-function toIssue(issue3) {
-  return {
-    number: issue3.number,
-    nodeId: issue3.node_id,
-    state: issue3.state === "closed" ? "closed" : "open",
-    closedAt: issue3.closed_at,
-    title: issue3.title,
-    body: issue3.body ?? "",
-    labels: issue3.labels.flatMap((label) => typeof label === "string" ? label : label.name ?? []),
-    author: issue3.user ? { login: issue3.user.login, type: issue3.user.type } : { login: "", type: "" }
-  };
-}
-function isNoAccount(error63) {
-  const { status, response } = error63 ?? {};
-  const message = response?.data?.message;
-  return status === 404 && typeof message === "string" && / is not a user$/.test(message);
 }
 
 // src/github/outputs.ts
@@ -60807,6 +60872,48 @@ var HEADER_DOT = {
   "in-sync": COUNT_DOT["in-sync"]
 };
 
+// src/render/failed-run.ts
+function runUrl(run, repoUrl) {
+  return `${repoUrl}/actions/runs/${urlPart(run)}`;
+}
+function failedRunsLine(root, repoUrl, timeZone) {
+  const facts = root.failedRuns;
+  if (facts === undefined || facts.count < 1)
+    return;
+  const at = new Date(facts.at);
+  if (Number.isNaN(at.getTime()))
+    return;
+  const runs = facts.count === 1 ? "1 run" : `${facts.count} runs`;
+  const when = facts.count === 1 ? "on" : "the newest on";
+  return `[${runs} of this dashboard's workflow](${runUrl(facts.run, repoUrl)}) failed since the scan before this one, ${when} ${minuteAt(at, timeZone)}.`;
+}
+function failedRunsLogLine(facts, workflow, repoUrl) {
+  const runs = facts.count === 1 ? "1 run" : `${facts.count} runs`;
+  return `${runs} of ${workflow} failed since the scan before this one. The dashboard says so under the scan line until the next scan (record 0120): ${runUrl(facts.run, repoUrl)}`;
+}
+var RUN_FAILED_START = "The last run of this dashboard's workflow ";
+function runFailedLine(facts, repoUrl, timeZone) {
+  const what = facts.why === "step" ? "failed before Sluiceway ran" : `found a problem in ${facts.file}`;
+  return `${RUN_FAILED_START}${what}, on ${minuteAt(new Date(facts.at), timeZone)} · [run](${runUrl(facts.run, repoUrl)})`;
+}
+function spliceRunFailed(body2, line) {
+  const paragraphs = body2.replace(/\r\n?/g, `
+`).split(`
+
+`);
+  const root = parseDashboard(paragraphs[0] ?? "").root;
+  if (root?.version !== MARKER_VERSION)
+    return;
+  const scan = paragraphs.findIndex((one) => one.startsWith("Scanned "));
+  if (scan < 0)
+    return;
+  const replaces = paragraphs[scan + 1]?.startsWith(RUN_FAILED_START) ? 1 : 0;
+  paragraphs.splice(scan + 1, replaces, line);
+  return paragraphs.join(`
+
+`);
+}
+
 // src/render/freeze-line.ts
 function freezeLine(freeze, timeZone) {
   const reason = freeze.reason === undefined ? "" : ` (${escapeText(freeze.reason)})`;
@@ -60872,7 +60979,7 @@ function tickedMergeBlock(row) {
 }
 
 // src/render/scan-running.ts
-function runUrl(facts, repoUrl) {
+function runUrl2(facts, repoUrl) {
   return `${repoUrl}/actions/runs/${urlPart(facts.run)}`;
 }
 function scanRunningLine(root, repoUrl, timeZone) {
@@ -60882,10 +60989,10 @@ function scanRunningLine(root, repoUrl, timeZone) {
   const since = new Date(facts.since);
   if (Number.isNaN(since.getTime()))
     return;
-  return `A scan is running since ${minuteAt(since, timeZone)} · [run](${runUrl(facts, repoUrl)})`;
+  return `A scan is running since ${minuteAt(since, timeZone)} · [run](${runUrl2(facts, repoUrl)})`;
 }
 function scanRunningLogLine(facts, repoUrl) {
-  return `The dashboard says a scan is running, under the scan line, until this scan writes the body (record 0108): ${runUrl(facts, repoUrl)}`;
+  return `The dashboard says a scan is running, under the scan line, until this scan writes the body (record 0108): ${runUrl2(facts, repoUrl)}`;
 }
 
 // src/render/voice.ts
@@ -60959,7 +61066,7 @@ function waited(facts, scanAt) {
   const minutes = Math.floor((new Date(scanAt).getTime() - new Date(facts.since).getTime()) / 60000);
   return Number.isNaN(minutes) || minutes < 0 ? undefined : minutes;
 }
-function runUrl2(facts, repoUrl) {
+function runUrl3(facts, repoUrl) {
   return `${repoUrl}/actions/runs/${urlPart(facts.run)}`;
 }
 function waitingRunLine(root, repoUrl, timeZone) {
@@ -60971,7 +61078,7 @@ function waitingRunLine(root, repoUrl, timeZone) {
     return;
   const minutes = waited(facts, root.scanAt);
   const long = minutes === undefined ? "" : ` for ${duration3(minutes)},`;
-  const run = `[A run of this dashboard's workflow](${runUrl2(facts, repoUrl)})`;
+  const run = `[A run of this dashboard's workflow](${runUrl3(facts, repoUrl)})`;
   const line = `${run} has been waiting for a runner${long} since ${minuteAt(since, timeZone)}.`;
   if (facts.more === 0)
     return line;
@@ -60981,7 +61088,7 @@ function waitingRunLine(root, repoUrl, timeZone) {
 function waitingRunLogLine(facts, scanAt, workflow, repoUrl) {
   const minutes = waited(facts, scanAt) ?? RUN_WAIT_MINUTES;
   const more = facts.more === 0 ? "" : ` ${plural3(facts.more, "more run")} of it waited ${RUN_WAIT_MINUTES} minutes or more too.`;
-  return `Run ${facts.run} of ${workflow} has been waiting for a runner for ${duration3(minutes)}.${more} The dashboard says so under the scan line until it starts (record 0086): ${runUrl2(facts, repoUrl)}`;
+  return `Run ${facts.run} of ${workflow} has been waiting for a runner for ${duration3(minutes)}.${more} The dashboard says so under the scan line until it starts (record 0086): ${runUrl3(facts, repoUrl)}`;
 }
 
 // src/render/body.ts
@@ -61285,8 +61392,9 @@ function renderBody(input2) {
   const scan = scanLine(input2.root, input2.repoUrl, input2.timeZone);
   const running = scanRunningLine(input2.root, input2.repoUrl, input2.timeZone);
   const runWaits = waitingRunLine(input2.root, input2.repoUrl, input2.timeZone);
+  const runsFailed = failedRunsLine(input2.root, input2.repoUrl, input2.timeZone);
   const freezes = (input2.freezes ?? []).map((freeze) => freezeLine(freeze, input2.timeZone));
-  const scanLines = [scan, running, runWaits, ...freezes].filter((line) => line !== undefined);
+  const scanLines = [scan, running, runWaits, runsFailed, ...freezes].filter((line) => line !== undefined);
   if (input2.personality)
     out.push(picture(facts.headerState, facts.crates, facts.signs, input2.actionRef, facts.counts.busy, {
       previews: facts.counts.previewFailed,
@@ -62502,7 +62610,7 @@ function runLinks(run2) {
   const summary2 = `${base}/attempts/${run2.runAttempt}`;
   return { summary: summary2, log: run2.jobId === undefined ? summary2 : `${base}/job/${run2.jobId}` };
 }
-function runUrl3(repoUrl, run2, attempt2) {
+function runUrl4(repoUrl, run2, attempt2) {
   const base = `${repoUrl}/actions/runs/${run2}`;
   return attempt2 === undefined ? base : `${base}/attempts/${attempt2}`;
 }
@@ -62738,7 +62846,8 @@ async function swapRows(writer, issue3, rows) {
       fullScanAt: root.fullScanAt,
       fullScanRun: root.fullScanRun,
       waitingRun: carriedWaitingRun(root.waitingRun, writer.runId),
-      scanRunning: root.scanRunning
+      scanRunning: root.scanRunning,
+      failedRuns: root.failedRuns
     };
     const mine = await rows(live, kept);
     const drawn = fitted(fit(writer, {
@@ -62826,7 +62935,7 @@ function fit(writer, body2, aimAtTarget) {
       reason: entry4.reason,
       ticker: entry4.ticker,
       at: entry4.at,
-      runUrl: runUrl3(repoUrl, entry4.run, entry4.attempt),
+      runUrl: runUrl4(repoUrl, entry4.run, entry4.attempt),
       shipped: body2.shipped?.get(entry4),
       ...entry4.onMerge ? { onMerge: true } : {}
     })),
@@ -63035,7 +63144,7 @@ async function readDeploymentRecords(github, environments, fallBack) {
   return records;
 }
 function linkOf(writer) {
-  return runUrl3(writer.repoUrl, writer.runId, writer.runAttempt);
+  return runUrl4(writer.repoUrl, writer.runId, writer.runAttempt);
 }
 async function openRecord(writer, opening) {
   const { github } = writer;
@@ -63428,6 +63537,7 @@ function previewRow(stackId2, result2, links2, failure2, options = {}) {
   const drifted = (result2.diff.drift ?? []).length > 0;
   const read5 = result2.dependencies?.stackIds ?? [];
   const dependsOn = read5.length === 0 ? {} : { dependsOn: read5 };
+  const unchecked = options.driftUnchecked ? { driftUnchecked: true } : {};
   if (result2.diff.changes.length === 0) {
     if (drifted) {
       return {
@@ -63441,7 +63551,7 @@ function previewRow(stackId2, result2, links2, failure2, options = {}) {
         ...dependsOn
       };
     }
-    return { state: "in-sync", stackId: stackId2, failure: failure2, ...dependsOn };
+    return { state: "in-sync", stackId: stackId2, failure: failure2, ...dependsOn, ...unchecked };
   }
   const cost = result2.cost?.ok ? { cost: result2.cost.estimate } : {};
   return {
@@ -63453,7 +63563,8 @@ function previewRow(stackId2, result2, links2, failure2, options = {}) {
     previewUrl: options.pageUrl ?? (options.toolDiffInLog ? links2.log : undefined),
     failure: failure2,
     ...dependsOn,
-    ...cost
+    ...cost,
+    ...unchecked
   };
 }
 function previewSummary(stackId2, result2, merges, policies) {
@@ -63585,7 +63696,7 @@ async function notifyOutcome(context3, repo, report2) {
   const notification = applyNotification(report2.outcome ?? "failed", report2.stack, {
     repository: repositoryOf(context3.repoUrl),
     dashboardUrl: eventDashboardUrl(context3.repoUrl, context3.event),
-    runUrl: runUrl3(context3.repoUrl, context3.runId, context3.runAttempt)
+    runUrl: runUrl4(context3.repoUrl, context3.runId, context3.runAttempt)
   });
   if (!notification)
     return;
@@ -63657,7 +63768,7 @@ ${ALREADY_ENDED}
   const { payload } = claim3;
   report2.ticker = payload.ticker;
   report2.outcome = "failed";
-  const runUrl4 = runUrl3(context3.repoUrl, context3.runId, context3.runAttempt);
+  const runUrl5 = runUrl4(context3.repoUrl, context3.runId, context3.runAttempt);
   if (claim3.kind === "unclaimed") {
     throw new ApplyFailedError(`Deployment record ${id} of ${name} could not be marked in progress: ${message(claim3.error)}. Nothing was deployed. ${RECORD_PERMISSIONS}`);
   }
@@ -63665,7 +63776,7 @@ ${ALREADY_ENDED}
   const progress = { deploying: false };
   let attempt2;
   try {
-    attempt2 = await deploy(context3, repo, id_, payload, runUrl4, progress);
+    attempt2 = await deploy(context3, repo, id_, payload, runUrl5, progress);
   } catch (error63) {
     const end = unplannedEnd(progress.deploying);
     attempt2 = {
@@ -63693,7 +63804,7 @@ ${ALREADY_ENDED}
     await writeSummary(context3, renderApplySummary({
       stackId: id_,
       ticker: payload.ticker,
-      runUrl: runUrl4,
+      runUrl: runUrl5,
       outcome: attempt2.summary,
       ...payload.onMerge ? { onMerge: true } : {}
     }));
@@ -63708,7 +63819,7 @@ ${ALREADY_ENDED}
           reason: fact.reason,
           ticker: fact.ticker,
           at: fact.at,
-          runUrl: runUrl3(context3.repoUrl, fact.run, fact.attempt),
+          runUrl: runUrl4(context3.repoUrl, fact.run, fact.attempt),
           ...fact.onMerge ? { onMerge: true } : {}
         } : undefined;
         const row = previewRow(id_, made, runLinks(context3), failure2, {
@@ -63775,7 +63886,7 @@ function reasonOf(attempt2) {
 function applied(result2) {
   return result2.ok ? { kind: "diff", diff: result2.diff } : { kind: "preview-failed", reason: previewFailureText(result2.reason) };
 }
-async function deploy(context3, repo, id, payload, runUrl4, progress) {
+async function deploy(context3, repo, id, payload, runUrl5, progress) {
   const { log, adapter } = context3;
   const name = logGroupTitle(id);
   const notDeployed = (reason, why = "") => `${name} was not deployed: ${deployFailureText(reason)}.${why}`;
@@ -63848,7 +63959,7 @@ async function deploy(context3, repo, id, payload, runUrl4, progress) {
   };
   const fresh = unprepared ?? await adapter.preview(setup.stack.stack, { ...options, savePlan: true });
   try {
-    return await afterFreshPreview(context3, id, payload, runUrl4, progress, setup, fresh, options);
+    return await afterFreshPreview(context3, id, payload, runUrl5, progress, setup, fresh, options);
   } finally {
     if (fresh.ok)
       await fresh.plan?.dispose();
@@ -63906,7 +64017,7 @@ function movedText(why, { ref, checkout, name }) {
       return `${from} and the comparison lists the most files GitHub gives, so which stacks the newer commits change cannot be told.`;
   }
 }
-async function afterFreshPreview(context3, id, payload, runUrl4, progress, setup, previewed, options) {
+async function afterFreshPreview(context3, id, payload, runUrl5, progress, setup, previewed, options) {
   const { log, adapter } = context3;
   const name = logGroupTitle(id);
   const notDeployed = (reason, why = "") => `${name} was not deployed: ${deployFailureText(reason)}.${why}`;
@@ -63994,7 +64105,7 @@ async function afterFreshPreview(context3, id, payload, runUrl4, progress, setup
       state: "deploying",
       stackId: id,
       ticker: payload.ticker,
-      runUrl: runUrl4,
+      runUrl: runUrl5,
       waiting: false,
       destroys: fresh.diff.changes.filter(isDestroy).length,
       deletes: fresh.diff.changes.filter((change3) => change3.op === "delete").length,
@@ -66199,8 +66310,8 @@ var NOBODY = {
   "end-of-history": "the tick is older than the edit history GitHub keeps",
   "not-in-newest-entry": "the body kept moving"
 };
-function runUrl4(context3) {
-  return runUrl3(context3.repoUrl, context3.runId, context3.runAttempt);
+function runUrl5(context3) {
+  return runUrl4(context3.repoUrl, context3.runId, context3.runAttempt);
 }
 function clockOf(context3) {
   return context3.now ?? (() => new Date);
@@ -66307,7 +66418,7 @@ async function swapRows2(context3, config2, stacks2, ignored, issue3, swap) {
         state: "deploying",
         stackId: one.stackId,
         ticker: one.ticker,
-        runUrl: runUrl4(context3),
+        runUrl: runUrl5(context3),
         waiting: true,
         destroys: old?.known ? old.destroys : 0,
         deletes: old?.known ? old.deletes : undefined,
@@ -66327,7 +66438,7 @@ async function swapRows2(context3, config2, stacks2, ignored, issue3, swap) {
           state: "deploying",
           stackId: id,
           ticker: fact.ticker,
-          runUrl: runUrl3(context3.repoUrl, fact.run, fact.attempt),
+          runUrl: runUrl4(context3.repoUrl, fact.run, fact.attempt),
           waiting: fact.waiting,
           destroys: row.destroys,
           deletes: row.deletes,
@@ -66592,10 +66703,13 @@ async function auto(context3) {
       handed: () => handed
     };
   };
+  let configProblem;
   const attempt2 = async (what2, run2) => {
     try {
       await run2();
     } catch (error63) {
+      if (error63 instanceof ConfigError)
+        configProblem ??= error63;
       failures.push(`${what2}: ${message3(error63)}`);
     }
   };
@@ -66635,8 +66749,9 @@ async function auto(context3) {
   } finally {
     context3.outputs.set("matrix", matrixOutput(started));
   }
-  if (failures.length > 0)
-    throw new Error(failures.join(" "));
+  if (failures.length > 0) {
+    throw new Error(failures.join(" "), configProblem ? { cause: configProblem } : undefined);
+  }
 }
 async function runMode(context3, mode, step3) {
   switch (mode) {
@@ -68377,6 +68492,19 @@ function waitingBlock(line3, options = {}) {
   return block;
 }
 
+// src/core/failed-runs.ts
+var FAILED_CONCLUSIONS = ["failure", "timed_out", "startup_failure"];
+function failedRuns(runs, previousScanAt, now, ownRunId) {
+  const after = new Date(previousScanAt ?? "").getTime();
+  if (Number.isNaN(after))
+    return;
+  const failed2 = runs.filter((run2) => run2.status === "completed" && FAILED_CONCLUSIONS.includes(run2.conclusion ?? "") && run2.id !== ownRunId).map((run2) => ({ id: run2.id, at: new Date(run2.since) })).filter(({ at }) => at.getTime() > after && at.getTime() <= now.getTime()).sort((a, b) => b.at.getTime() - a.at.getTime() || b.id.length - a.id.length || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  const [newest] = failed2;
+  if (!newest)
+    return;
+  return { run: newest.id, at: newest.at.toISOString(), count: failed2.length };
+}
+
 // src/core/row-placement.ts
 var NO_DEPLOYS = {
   facts: { byStack: new Map, succeeded: [], trail: [], unread: 0 },
@@ -68426,7 +68554,8 @@ function placeRows(so, late) {
     else if (decided.row === "fresh" && mine) {
       const fresh = previewRow(id, mine.result, links2, failureLine2(so.repoUrl, id, fact, outside), {
         toolDiffInLog: logDiff,
-        pageUrl: so.pageUrls.get(id)
+        pageUrl: so.pageUrls.get(id),
+        driftUnchecked: mine.driftFailed
       });
       const everyRun = (fresh.state === "pending" || fresh.state === "drift") && liveRow?.known === true && liveRow.hash !== undefined && differsEveryRun({ hash: liveRow.hash, fingerprint: liveRow.fingerprint }, { hash: fresh.hash, fingerprint: valueFingerprint(fresh.diff) }, live.root?.scanSha === so.scan.sha);
       const row2 = fresh.state === "pending" ? {
@@ -68455,7 +68584,7 @@ function placeRows(so, late) {
         state: "deploying",
         stackId: id,
         ticker: fact.ticker,
-        runUrl: runUrl3(so.repoUrl, fact.run, fact.attempt),
+        runUrl: runUrl4(so.repoUrl, fact.run, fact.attempt),
         waiting: fact.waiting,
         destroys: destroysOf(mine, liveRow),
         deletes: deletesOf(mine, liveRow),
@@ -68495,7 +68624,8 @@ function placeRows(so, late) {
         scanAt: so.scan.at,
         fullScanAt: full ? so.scan.at : live.root?.fullScanAt,
         fullScanRun: full ? so.scan.runId : live.root?.fullScanRun,
-        waitingRun: so.scan.waitingRun
+        waitingRun: so.scan.waitingRun,
+        failedRuns: so.scan.endedRuns === undefined ? undefined : failedRuns(so.scan.endedRuns, live.root?.scanAt, new Date(so.scan.at), so.scan.runId)
       },
       facts: deploys.facts,
       shipped: late.shipped ?? new Map,
@@ -68545,7 +68675,7 @@ function failureLine2(repoUrl, id, deployFact, outside) {
     reason: fact.reason,
     ticker: fact.ticker,
     at: fact.at,
-    runUrl: runUrl3(repoUrl, fact.run, fact.attempt),
+    runUrl: runUrl4(repoUrl, fact.run, fact.attempt),
     ...fact.onMerge ? { onMerge: true } : {}
   };
 }
@@ -69110,7 +69240,7 @@ function reportOutputs2(context3, report2) {
   if (!previewed || !startedAt)
     return;
   const text9 = scanResultFile({
-    run: runUrl3(context3.repoUrl, context3.runId, undefined),
+    run: runUrl4(context3.repoUrl, context3.runId, undefined),
     commit: context3.sha,
     milliseconds: context3.now().getTime() - startedAt.getTime(),
     dashboard,
@@ -69128,6 +69258,7 @@ async function scanning(context3, report2) {
   const at = startedAt.toISOString();
   const links2 = runLinks(context3);
   let waitingRunFacts;
+  let endedRuns;
   const repo = openRepo(context3.root, context3.adapter);
   const config2 = repo.config();
   const { stacks: stacks2, ignored } = await repo.stacks();
@@ -69217,6 +69348,8 @@ async function scanning(context3, report2) {
     const full = isFullScan({ ids: ids2, previewed });
     if (waitingRunFacts === undefined)
       waitingRunFacts = await findWaitingRun(context3, at);
+    if (endedRuns === undefined)
+      endedRuns = await readEndedRuns(context3);
     const writer = {
       github: context3.github,
       runId: context3.runId,
@@ -69238,7 +69371,8 @@ async function scanning(context3, report2) {
         sha: context3.sha,
         runId: context3.runId,
         at,
-        waitingRun: waitingRunFacts.found
+        waitingRun: waitingRunFacts.found,
+        endedRuns: endedRuns.runs
       },
       repoUrl: context3.repoUrl,
       links: links2,
@@ -69328,6 +69462,9 @@ async function scanning(context3, report2) {
     log.info(`This scan falls back to a full scan: ${fullScanReasonText(why2)}. Previewing the other ${plural2(next.length, "stack")} now.`);
   }
   reportDashboard(context3, written, lastPlaced);
+  const runsFailed = parseDashboard(written.body).root?.failedRuns;
+  if (runsFailed)
+    log.info(failedRunsLogLine(runsFailed, context3.workflow, context3.repoUrl));
   for (const [id, wait] of [...waitsOnMerge].sort(([a], [b]) => byCodeUnit(a, b))) {
     log.info(onMergeLogLine(id, wait));
   }
@@ -69459,6 +69596,14 @@ async function findWaitingRun(context3, at) {
     context3.log.info(waitingRunLogLine(found, at, context3.workflow, context3.repoUrl));
   return { found };
 }
+async function readEndedRuns(context3) {
+  try {
+    return { runs: await context3.github.listEndedRuns(context3.workflow) };
+  } catch (error63) {
+    context3.log.info(`The runs of ${context3.workflow} that ended could not be read: ${error63 instanceof Error ? error63.message : error63}. The dashboard says nothing about runs that failed since the scan before this time. The scan job needs the permission \`actions: read\` (record 0120).`);
+    return { runs: undefined };
+  }
+}
 async function resolveWaits(context3, live, deploys) {
   const met = live.rows.some((row2) => row2.known && row2.ticked && deploys.facts.byStack.get(row2.stackId)?.kind !== "open") || live.merges.some((merge3) => merge3.ticked) || live.bulk.some((line3) => line3.ticked);
   if (!met)
@@ -69479,9 +69624,10 @@ async function makePlan(context3, config2, stacks2, knownDrift) {
   }
   const dashboard = narrows ? await findDashboard(context3.github, config2.dashboard.label) : undefined;
   const live = dashboard && parseDashboard(dashboard.body);
-  for (const row2 of live?.rows ?? [])
-    if (row2.known && row2.drift)
+  for (const row2 of live?.rows ?? []) {
+    if (row2.known && (row2.drift || row2.driftUnchecked))
       knownDrift.add(row2.stackId);
+  }
   const base = comparisonBase(context3.event, live, MARKER_VERSION, afterMerge);
   if (base.kind !== "compare")
     return full(base);
@@ -69699,13 +69845,14 @@ async function previewAll(context3, stacks2, logDiff, showValues, valueFingerpri
       milliseconds = now().getTime() - started;
     }
     result2 = withoutDocument(result2);
+    const driftFailed = drift !== undefined && !drift.ok;
     if (!logDiff || !result2.ok || result2.diff.changes.length === 0) {
-      return { id, result: result2, startedAt, milliseconds, drift, ...tested };
+      return { id, result: result2, startedAt, milliseconds, drift, driftFailed, ...tested };
     }
     const toolDiffStarted = now().getTime();
     const toolDiff5 = await adapter.toolDiff(configured.stack, options);
     log.info(`Ran the tool's own diff of ${logGroupTitle(id)} in ${seconds3(now().getTime() - toolDiffStarted)}${toolDiff5.ok ? "" : `: ${previewFailureText(toolDiff5.reason)}`}.`);
-    return { id, result: result2, startedAt, milliseconds, toolDiff: toolDiff5, drift, ...tested };
+    return { id, result: result2, startedAt, milliseconds, toolDiff: toolDiff5, drift, driftFailed, ...tested };
   };
   const previewed = await runPool(stacks2, context3.pool.size, (configured) => previewOne2(configured, false));
   const total = now().getTime() - poolStarted;
@@ -69836,7 +69983,7 @@ function logResults(context3, previewed) {
       log.warning(`${COUNT_DOT["preview-failed"]} The preview of ${logGroupTitle(id)} failed${firstTry ? " twice" : ""}: ${previewFailureText(result2.reason)}.`, "Preview failed");
     }
     if (drift !== undefined && !drift.ok) {
-      log.warning(`The drift check of ${logGroupTitle(id)} failed: ${previewFailureText(drift.reason)}. Its row shows the preview alone.`, "Drift check failed");
+      log.warning(`The drift check of ${logGroupTitle(id)} failed: ${previewFailureText(drift.reason)}. Its row says drift not checked.`, "Drift check failed");
     }
     if (result2.ok && result2.cost && !result2.cost.ok) {
       log.warning(`The cost of ${logGroupTitle(id)} was not estimated: ${costFailureText(result2.cost.reason)}. Its row shows no cost line.`, "Cost not estimated");
@@ -70366,7 +70513,7 @@ async function writeFailureLines(context3, config2, repo, ended) {
           reason: failure2.reason,
           ticker: failure2.ticker,
           at: failure2.at,
-          runUrl: runUrl3(context3.repoUrl, failure2.run, failure2.attempt),
+          runUrl: runUrl4(context3.repoUrl, failure2.run, failure2.attempt),
           ...failure2.onMerge ? { onMerge: true } : {}
         }, { timeZone: config2.dashboard.timeZone }));
       }
@@ -70781,7 +70928,10 @@ function starterWorkflow(options) {
     ...toolSteps(findings),
     ...credentialSteps(findings.envFiles),
     "      # It reads the event of the run: it scans, or deploys what a tick asks for.",
-    "      - uses: sluiceway/sluiceway@v0"
+    "      # It runs after a step above failed too, and then only says so on the",
+    "      # dashboard, so it never looks fresh while no scan could run.",
+    "      - uses: sluiceway/sluiceway@v0",
+    "        if: ${{ !cancelled() }}"
   ];
   return `${lines6.join(`
 `)}
@@ -71152,6 +71302,42 @@ async function runInit() {
   });
 }
 
+// src/modes/run-failed.ts
+function writesDashboard(mode, event) {
+  if (mode === "auto")
+    return event !== "pull_request" && event !== "pull_request_target";
+  return mode === "scan" || mode === "resolve" || mode === "apply" || mode === "settle";
+}
+async function sayRunFailed(context3, why2) {
+  const { log } = context3;
+  const settings = dashboardSettingsOf(context3.root);
+  const facts = { ...why2, run: context3.runId, at: context3.now().toISOString() };
+  const line3 = runFailedLine(facts, context3.repoUrl, settings.timeZone);
+  try {
+    const dashboard = await findDashboard(context3.github, settings.label);
+    if (dashboard === undefined) {
+      log.info(`The dashboard could not say this run failed: there is no open dashboard with the label ${settings.label} (record 0120).`);
+      return;
+    }
+    let spliced = true;
+    await writeBody(context3.github, dashboard.number, (body2) => {
+      const next = spliceRunFailed(body2, line3);
+      spliced = next !== undefined;
+      return next ?? body2;
+    });
+    if (!spliced) {
+      log.info("The dashboard could not say this run failed: its body is not one this version wrote, or has no scan line (record 0120).");
+      return;
+    }
+  } catch (error63) {
+    log.info(`The dashboard could not say this run failed: ${error63 instanceof Error ? error63.message : error63} (record 0120).`);
+    return;
+  }
+  const what2 = why2.why === "step" ? "failed before Sluiceway ran" : `found a problem in ${why2.file}`;
+  const until = why2.why === "step" ? "until a run gets as far as Sluiceway" : `until a run reads ${why2.file} again`;
+  log.info(`The dashboard says this run ${what2}, under the scan line, ${until} (record 0120): ${context3.repoUrl}/actions/runs/${urlPart(context3.runId)}`);
+}
+
 // src/mode.ts
 function parseMode(input2) {
   const mode = input2.trim();
@@ -71170,7 +71356,7 @@ var handlers = {
   check: () => runCheck(backendContext, undefined, pullRequestPreviewContext),
   init: runInit
 };
-async function run2(mode, directory, getInput2 = getInput, warn = (message5, title) => warning(message5, { title })) {
+async function run2(mode, directory, getInput2 = getInput, warn = (message5, title) => warning(message5, { title }), failure2 = jobFailure(getInput2)) {
   refuseDeploymentId(mode, getInput2);
   const unused = unusedNotifyInputs(mode, getInput2);
   if (unused.length > 0) {
@@ -71179,7 +71365,48 @@ async function run2(mode, directory, getInput2 = getInput, warn = (message5, tit
   const envFile = unusedEnvFileInput(mode, getInput2);
   if (envFile !== undefined)
     warn(envFile, "Env file input not used");
-  return handlers[mode](directory);
+  return guarded(mode, getInput2("job-status"), () => handlers[mode](directory), failure2);
+}
+async function guarded(mode, jobStatusInput, work, failure2) {
+  const jobStatus = parseJobStatus(jobStatusInput);
+  const writes = writesDashboard(mode, failure2.event);
+  if (jobStatus === "failure" || jobStatus === "cancelled") {
+    failure2.log?.(`An earlier step of this job ${jobStatus === "failure" ? "failed" : "was cancelled"}, so this step does not run ${mode} mode (record 0120).`);
+    if (jobStatus === "failure" && writes)
+      await failure2.say({ why: "step" });
+    return;
+  }
+  try {
+    await work();
+  } catch (error63) {
+    const problem4 = error63 instanceof ConfigError ? error63 : error63 instanceof Error && error63.cause instanceof ConfigError ? error63.cause : undefined;
+    if (problem4 && writes)
+      await failure2.say({ why: "config", file: problem4.file });
+    throw error63;
+  }
+}
+function jobFailure(getInput2) {
+  const log = actionsLog();
+  return {
+    event: process.env.GITHUB_EVENT_NAME ?? "",
+    log: (line3) => log.info(line3),
+    say: async (why2) => {
+      try {
+        const job = readJob(process.env);
+        const octokit = createGitHubClient(readToken(getInput2));
+        await sayRunFailed({
+          root: job.root,
+          github: createOctokitPort(octokit, { owner: job.owner, repo: job.repo }),
+          log,
+          repoUrl: job.repoUrl,
+          runId: job.runId,
+          now: () => new Date
+        }, why2);
+      } catch (error63) {
+        log.info(`The dashboard could not say this run failed: ${error63 instanceof Error ? error63.message : error63} (record 0120).`);
+      }
+    }
+  };
 }
 async function post(mode, getState2, settle4) {
   if (mode !== "auto")

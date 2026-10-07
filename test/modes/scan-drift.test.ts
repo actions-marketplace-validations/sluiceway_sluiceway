@@ -115,7 +115,7 @@ describe("a scheduled scan with drift on", () => {
     expect(log.warnings).toContainEqual({
       title: "Drift check failed",
       message:
-        "The drift check of network:dev failed: the tool exited with an error (exit code 255). Its row shows the preview alone.",
+        "The drift check of network:dev failed: the tool exited with an error (exit code 255). Its row says drift not checked.",
     });
     const group = log.groups.find((one) => one.title === "network:dev");
     expect(group?.lines.join("\n")).toContain("error: the backend is down");

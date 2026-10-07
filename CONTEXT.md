@@ -77,7 +77,7 @@ What the action does when its step names no mode: it reads the event of the run 
 _Avoid_: Default mode, smart mode, magic mode, router
 
 **One-step workflow**:
-The workflow people copy: one job with one Sluiceway step in auto mode, and no `if:` and no `needs:`. It previews and deploys with one set of credentials.
+The workflow people copy: one job with one Sluiceway step in auto mode, and no `if:` and no `needs:` but the step's `if: ${{ !cancelled() }}`, which lets it say on the dashboard that a step before it failed. It previews and deploys with one set of credentials.
 _Avoid_: Simple workflow, single-job workflow, minimal workflow
 
 **Split workflow**:

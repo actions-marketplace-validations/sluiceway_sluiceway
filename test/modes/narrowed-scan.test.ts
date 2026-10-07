@@ -710,7 +710,7 @@ describe("the job of a narrowed scan", () => {
     expect(scanned.log.warnings).toHaveLength(1);
   });
 
-  test("costs eighteen requests: the first read, the comparison, the first write that says a scan is running, the preview page of its pending stack, the queued runs of the workflow, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
+  test("costs nineteen requests: the first read, the comparison, the first write that says a scan is running, the preview page of its pending stack, the queued runs and the ended runs of the workflow, the write loop with its list and its late read of the deployment records, and the read of the pinned issues", async () => {
     const scanned = await pushed(TABLE, ahead("site/index.ts"), {
       next: { "site:prod": pending("site:prod", change("page")) },
     });
@@ -733,6 +733,8 @@ describe("the job of a narrowed scan", () => {
       "createCheckRun",
       // Record 0086: the queued runs of the workflow, once a job.
       "listQueuedRuns",
+      // Record 0120: the runs of the workflow that ended, once a job.
+      "listEndedRuns",
       "listIssues",
       "getIssue",
       "listNewestDeployments",

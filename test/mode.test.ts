@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { MODES, NotImplementedError, parseMode, post, run } from "../src/mode.ts";
+import { ConfigError } from "../src/core/config.ts";
+import { guarded, MODES, NotImplementedError, parseMode, post, run } from "../src/mode.ts";
 
 // Where a runner puts the action, handed in by the entry point.
 const ACTION = "/home/runner/work/_actions/sluiceway/sluiceway/v0";
@@ -162,5 +163,94 @@ describe("the env-file input on a step that never runs the tool", () => {
           '"env-file" is set on a step in settle mode, which never runs the tool, so the file is not read. Only scan, apply and the check with backend: true or pull-request-preview: true do. Take it out of this step.',
       },
     ]);
+  });
+});
+
+// Record 0120: a run that failed before Sluiceway ran, or on a problem in its
+// config, says so on the dashboard.
+describe("a run that failed", () => {
+  const said: unknown[] = [];
+  const failure = (event = "push") => ({
+    event,
+    say: async (why: unknown) => void said.push(why),
+  });
+
+  test("job-status failure: the step does not do its work, and puts the line on the dashboard", async () => {
+    said.length = 0;
+    const worked: string[] = [];
+    await guarded("scan", "failure", async () => void worked.push("scan"), failure());
+    expect(worked).toEqual([]);
+    expect(said).toEqual([{ why: "step" }]);
+  });
+
+  test("job-status success, or none: the step does its work", async () => {
+    said.length = 0;
+    const worked: string[] = [];
+    await guarded("scan", "success", async () => void worked.push("scan"), failure());
+    await guarded("scan", "", async () => void worked.push("scan"), failure());
+    expect(worked).toEqual(["scan", "scan"]);
+    expect(said).toEqual([]);
+  });
+
+  test("job-status failure on a pull request: nothing is done and nothing is written", async () => {
+    said.length = 0;
+    const worked: string[] = [];
+    await guarded(
+      "auto",
+      "failure",
+      async () => void worked.push("check"),
+      failure("pull_request"),
+    );
+    await guarded("check", "failure", async () => void worked.push("check"), failure());
+    expect(worked).toEqual([]);
+    expect(said).toEqual([]);
+  });
+
+  test("a job-status that is not one of GitHub's is refused, before anything is done", async () => {
+    await expect(guarded("scan", "failed", async () => {}, failure())).rejects.toThrow(
+      'The "job-status" input is "failed". Give it ${{ job.status }}, which is success, failure or cancelled.',
+    );
+  });
+
+  test("a problem in the config: the line names the file, and the job still fails with the problem", async () => {
+    said.length = 0;
+    const problem = new ConfigError(["something is wrong"], "sluiceway.yml");
+    await expect(
+      guarded(
+        "auto",
+        "",
+        async () => {
+          throw problem;
+        },
+        failure("schedule"),
+      ),
+    ).rejects.toBe(problem);
+    expect(said).toEqual([{ why: "config", file: "sluiceway.yml" }]);
+  });
+
+  test("a problem in the config that auto mode hands on as the cause names the file too", async () => {
+    said.length = 0;
+    const problem = new ConfigError(["something is wrong"]);
+    const wrapped = new Error(`scan: ${problem.message}`, { cause: problem });
+    await expect(
+      guarded("auto", "", async () => Promise.reject(wrapped), failure("push")),
+    ).rejects.toBe(wrapped);
+    expect(said).toEqual([{ why: "config", file: "sluiceway.yaml" }]);
+  });
+
+  test("any other error writes nothing, and a problem in the config of a pull request neither", async () => {
+    said.length = 0;
+    await expect(
+      guarded("scan", "", async () => Promise.reject(new Error("boom")), failure()),
+    ).rejects.toThrow("boom");
+    await expect(
+      guarded(
+        "auto",
+        "",
+        async () => Promise.reject(new ConfigError(["wrong"])),
+        failure("pull_request"),
+      ),
+    ).rejects.toThrow();
+    expect(said).toEqual([]);
   });
 });

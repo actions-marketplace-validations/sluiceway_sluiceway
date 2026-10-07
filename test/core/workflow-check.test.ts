@@ -376,7 +376,7 @@ describe("the rest of the workflow", () => {
   });
 
   test("an apply job with no if: at all", () => {
-    const { warnings } = broken((text) => text.replace(/ {4}if: \$\{\{ !cancelled\(\).*\n/, ""));
+    const { warnings } = broken((text) => text.replace(/^ {4}if: \$\{\{ !cancelled\(\).*\n/m, ""));
     expect(warnings).toEqual([
       { kind: "no-status-check", path: PATH, job: "apply", mode: "apply" },
     ]);

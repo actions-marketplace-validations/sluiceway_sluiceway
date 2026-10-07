@@ -170,11 +170,11 @@ function worstCase(count: number) {
 // walk and the files are kept for the job, so it pays only for the records,
 // the write and the read back. A write that sticks reads the edit history once
 // (record 0119). After the loop, one read of the pinned issues (slice 5.9).
-// Before it, once a job, the queued runs (record 0086), and before the
-// previews the first write that says a scan is running (record 0108): find,
-// read, one page of records, write, read back, the history, with the walk
-// moved there and paid once.
-const FIRST_TRY = 6 + 1 + 2 + 1 + 2 * 99 + 1 + LOOKBACK + 3 + 1;
+// Before it, once a job, the queued runs (record 0086) and the runs that ended
+// (record 0120), and before the previews the first write that says a scan is
+// running (record 0108): find, read, one page of records, write, read back,
+// the history, with the walk moved there and paid once.
+const FIRST_TRY = 6 + 2 + 2 + 1 + 2 * 99 + 1 + LOOKBACK + 3 + 1;
 const EVERY_OTHER_TRY = 1 + 2 * 99 + 2;
 // The preview pages, once per scan and before the write loop (record 0050):
 // one list of the commit's check runs, which holds 100 here, and one update
@@ -226,6 +226,8 @@ describe("the requests of a scan, counted against the API budget (record 0017)",
       "listIssues",
       // Record 0086: the queued runs of the workflow, once a job.
       "listQueuedRuns",
+      // Record 0120: the runs of the workflow that ended, once a job.
+      "listEndedRuns",
       "listIssues",
       "listRecentlyClosedIssues",
       "listNewestDeployments",
@@ -246,6 +248,7 @@ describe("the requests of a scan, counted against the API budget (record 0017)",
       "getIssue",
       "readEditHistory",
       "listQueuedRuns",
+      "listEndedRuns",
       "listIssues",
       "getIssue",
       "listNewestDeployments",

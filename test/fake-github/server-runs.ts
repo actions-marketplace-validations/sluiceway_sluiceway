@@ -3,7 +3,8 @@ import type { Route } from "./server.ts";
 
 // The calls of the orphan tick sweep and of the waiting run line on the fake
 // GitHub server, in GitHub's form: the runs of one workflow file that an
-// `issues` event started, or the ones that are queued (record 0086).
+// `issues` event started, the ones that are queued (record 0086), or the ones
+// that ended (record 0120).
 export function runRoutes(fake: FakeGitHub, repo: string): [string, RegExp, Route][] {
   return [
     [
@@ -21,6 +22,22 @@ export function runRoutes(fake: FakeGitHub, repo: string): [string, RegExp, Rout
               workflow_runs: queued.map((run) => ({
                 id: Number(run.id),
                 status: run.status,
+                created_at: run.since,
+                run_started_at: run.since,
+              })),
+            },
+          };
+        }
+        if (query.get("status") === "completed" && !query.has("event")) {
+          const ended = await fake.listEndedRuns(decodeURIComponent(workflow));
+          return {
+            status: 200,
+            json: {
+              total_count: ended.length,
+              workflow_runs: ended.map((run) => ({
+                id: Number(run.id),
+                status: run.status,
+                conclusion: run.conclusion ?? null,
                 created_at: run.since,
                 run_started_at: run.since,
               })),

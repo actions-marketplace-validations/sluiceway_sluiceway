@@ -52,6 +52,9 @@ jobs:
       # The credentials sit on this step only, so the install scripts of npm ci
       # never see them. They preview and deploy, so they must be able to change
       # things.
+      # Runs after a step above failed too, and then only says so on the
+      # dashboard, so it never looks fresh while no scan could run.
       - uses: sluiceway/sluiceway@v0
+        if: ${{ !cancelled() }}
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

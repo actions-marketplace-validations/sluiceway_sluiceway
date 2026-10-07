@@ -119,6 +119,7 @@ export class FakeGitHub implements GitHubPort {
   // first (record 0086).
   readonly #workflowRuns = new Map<string, RunOfTheWorkflow[]>();
   #queuedRunsFail: number | undefined;
+  #endedRunsFail: number | undefined;
   // The `issues.edited` events that were started and not delivered yet.
   readonly #events: { number: number; sender: IssueAuthor }[] = [];
   readonly #dispatches: { workflow: string; ref: string; inputs?: Record<string, string> }[] = [];
@@ -300,6 +301,11 @@ export class FakeGitHub implements GitHubPort {
   // Every later read of the queued runs is refused with this status.
   failQueuedRuns(status: number): void {
     this.#queuedRunsFail = status;
+  }
+
+  // Every later read of the ended runs is refused with this status.
+  failEndedRuns(status: number): void {
+    this.#endedRunsFail = status;
   }
 
   deployment(id: number): DeploymentRecord {
@@ -590,6 +596,19 @@ export class FakeGitHub implements GitHubPort {
     const runs = this.#workflowRuns.get(workflow) ?? [];
     return runs
       .filter((run) => run.status === "queued")
+      .slice(-PAGE_SIZE)
+      .reverse()
+      .map((run) => ({ ...run }));
+  }
+
+  // The runs that ended, with their conclusion (record 0120).
+  async listEndedRuns(workflow: string): Promise<RunOfTheWorkflow[]> {
+    this.#count("listEndedRuns");
+    if (this.#endedRunsFail !== undefined)
+      throw new FakeGitHubError(this.#endedRunsFail, "Resource not accessible by integration");
+    const runs = this.#workflowRuns.get(workflow) ?? [];
+    return runs
+      .filter((run) => run.status === "completed")
       .slice(-PAGE_SIZE)
       .reverse()
       .map((run) => ({ ...run }));

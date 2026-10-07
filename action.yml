@@ -126,6 +126,14 @@ inputs:
       way. Links on the dashboard use it to land on this job's log.
     required: false
     default: ${{ job.check_run_id }}
+  job-status:
+    description: >-
+      Leave it at the default. The status of the job before this step. A step that runs with
+      if: !cancelled() runs after an earlier step failed too, and then does none of its work:
+      it puts a line under the scan line of the dashboard that says the run failed before
+      Sluiceway ran, and ends.
+    required: false
+    default: ${{ job.status }}
 
 outputs:
   matrix:

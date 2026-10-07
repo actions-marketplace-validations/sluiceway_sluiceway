@@ -1,5 +1,7 @@
 # The dashboard says a scan is running, from the scan's first write
 
+> Amended by 0120: the line of a run that failed before Sluiceway ran, or on a problem in its config, sits right under the scan line, above this one. The scan's first write draws the body without it.
+>
 > Amends 0004 (a scan writes the body twice: once before its previews with no row of its own, once at the end), 0009 (two optional keys on the root marker), 0017 (five requests more per scan), 0025 (the rescan box is written back unticked at the scan's first write), 0029 (a line under the scan line) and 0086 (that line sits under this one). Built as slice 5.43, for issue 252.
 
 While a scan runs, the dashboard says nothing about it. The scan line still names the last scan, the rows are the old rows, and a person who just pushed or ticked the rescan box has no sign that anything is happening until the body is written minutes later. A deploy has a row that says `waiting to start` and then `deploying` (0027, 0063), and a run that waits for a runner has a line (0086). A scan that is running had nothing. Decided by the owner on 2026-09-25.

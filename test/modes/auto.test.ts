@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { ConfigError } from "../../src/core/config.ts";
 import type { MatrixEntry } from "../../src/core/resolve.ts";
 import type { OutputName } from "../../src/github/outputs.ts";
 import { apply } from "../../src/modes/apply.ts";
@@ -282,6 +283,30 @@ describe("auto mode on its other events", () => {
       },
     };
     await expect(auto(strict)).rejects.toThrow("A preview failed");
+  });
+
+  // Record 0120: the step says on the dashboard that the config has a
+  // problem, so the problem has to reach it as itself.
+  test("a problem in the config ends the step red, with the problem as the cause", async () => {
+    const h = await scanned(TABLE);
+    const w = wired(h, "workflow_dispatch", { ref: "refs/heads/main" });
+    const problem = new ConfigError(["something is wrong"], "sluiceway.yml");
+    const broken: AutoContext = {
+      ...w.context,
+      run: {
+        ...w.context.run,
+        resolve: async () => {
+          throw problem;
+        },
+        scan: async () => {
+          throw new ConfigError(["something else is wrong"]);
+        },
+      },
+    };
+    const error = await auto(broken).catch((thrown: unknown) => thrown);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("something is wrong");
+    expect((error as Error).cause).toBe(problem);
   });
 });
 
