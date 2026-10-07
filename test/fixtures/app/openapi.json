@@ -448,7 +448,7 @@
     "/api/v1/orgs/{org}/repos/{repo}/stacks/{stack}/tick": {
       "post": {
         "operationId": "tick",
-        "summary": "Ticks the stack as the token's person, judged by the action's own rule. The answer comes when the deployment record is open; poll its status.",
+        "summary": "Ticks the stack as the token's person, judged by the action's own rule. A stack that deletes or replaces resources is ticked only with its confirm. The answer comes when the deployment record is open; poll its status.",
         "parameters": [
           {
             "name": "org",
@@ -478,6 +478,44 @@
             }
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirm": {
+                    "type": "object",
+                    "properties": {
+                      "destroys": {
+                        "type": "integer",
+                        "description": "How many resources the stack's row deletes or replaces."
+                      },
+                      "scan": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "description": "The scanned commit the row was read at."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "destroys",
+                      "scan"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Needed for a stack that deletes or replaces resources, and only for one: the stack's own confirm, sent back. A tick without it, or with one of a row that changed or was scanned again since, is unconfirmed and asks nothing."
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "What came of the tick.",
@@ -1880,6 +1918,39 @@
                 "type": "null"
               }
             ]
+          },
+          "confirm": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "destroys": {
+                    "type": "integer",
+                    "description": "How many resources the stack's row deletes or replaces."
+                  },
+                  "scan": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "The scanned commit the row was read at."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "destroys",
+                  "scan"
+                ],
+                "additionalProperties": false,
+                "description": "What a tick of this stack sends back as confirm, or null for a stack that deletes and replaces nothing."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1898,7 +1969,8 @@
           "preview",
           "run",
           "lastDeploy",
-          "at"
+          "at",
+          "confirm"
         ],
         "additionalProperties": false
       },
@@ -2274,13 +2346,16 @@
             "type": "string",
             "enum": [
               "asked",
+              "queued",
+              "waits",
               "refused",
               "github",
               "moved",
               "taken",
-              "failed"
+              "failed",
+              "unconfirmed"
             ],
-            "description": "asked: the record is open and GitHub and the runner decide the rest; github: the tick happens on the dashboard on GitHub."
+            "description": "asked: the record is open and GitHub and the runner decide the rest; queued: the record is open and waits behind the stacks this one depends on, or for a deploy window or the end of a deploy freeze, and a later run of resolve starts it; waits: a stack this one depends on has a change waiting that nobody ticked, so nothing was asked; github: the tick happens on the dashboard on GitHub; unconfirmed: the stack deletes or replaces resources and the tick did not confirm it as it stands, so nothing was asked."
           },
           "sentence": {
             "type": "string"
@@ -2311,13 +2386,47 @@
           },
           "dashboard": {
             "type": "string"
+          },
+          "confirm": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "destroys": {
+                    "type": "integer",
+                    "description": "How many resources the stack's row deletes or replaces."
+                  },
+                  "scan": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "The scanned commit the row was read at."
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "destroys",
+                  "scan"
+                ],
+                "additionalProperties": false,
+                "description": "For an unconfirmed tick: what to send as confirm to deploy the stack."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "outcome",
           "sentence",
           "deployment",
-          "dashboard"
+          "dashboard",
+          "confirm"
         ],
         "additionalProperties": false
       },

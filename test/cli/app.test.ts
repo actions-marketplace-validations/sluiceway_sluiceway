@@ -461,11 +461,92 @@ describe("tick", () => {
     expect(app.calls.filter((call) => call.method === "POST")).toEqual([]);
   });
 
-  test("with --yes a destroy is ticked", async () => {
+  test("with --yes a destroy is ticked, sending back the stack's confirm", async () => {
     const { app, run } = await setup();
     const { code } = await run(["tick", "infra", "apps/api:prod", "--yes"]);
     expect(code).toBe(EXIT.ok);
-    expect(app.calls.filter((call) => call.method === "POST")).toHaveLength(1);
+    const posts = app.calls.filter((call) => call.method === "POST");
+    expect(posts.map((call) => call.body)).toEqual([
+      { confirm: { destroys: 1, scan: "0a1b2c3d4e5f" } },
+    ]);
+  });
+
+  test("a stack that needs no confirm is ticked with no body", async () => {
+    const { app, run } = await setup();
+    await run(["tick", "infra", "network:prod", "--yes"]);
+    const posts = app.calls.filter((call) => call.method === "POST");
+    expect(posts.map((call) => call.body)).toEqual([undefined]);
+  });
+
+  test("a destroy the app takes as unconfirmed is refused, and says to read it again", async () => {
+    const app = fakeApp();
+    const stack = app.state.stacks["apps/api:prod"];
+    if (stack === undefined) throw new Error("no stack");
+    // The row was scanned again between the read and the tick.
+    stack.confirmNow = { destroys: 2, scan: "9f8e7d6c5b4a" };
+    const { code, err } = await run(["tick", "infra", "apps/api:prod", "--yes"], app);
+    expect(code).toBe(EXIT.refused);
+    expect(err).toEqual([
+      "apps/api:prod deletes or replaces 1 resource. Read the stack and send its confirm with the tick.",
+      "Read it again with sluiceway stack infra apps/api:prod, and tick it with --yes if it should still deploy.",
+    ]);
+  });
+
+  test("a stack with dependencies is queued behind them, and the record is followed", async () => {
+    const app = fakeApp();
+    const stack = app.state.stacks["network:prod"];
+    if (stack === undefined) throw new Error("no stack");
+    stack.tick = {
+      outcome: "queued",
+      sentence:
+        "Asked GitHub to deploy network:prod once site:prod went out. Its deployment record is queued, and resolve starts it then.",
+      deployment: 4242,
+    };
+    app.state.deployments[4242] = [deploy(4242, "network:prod", "waiting to start")];
+    const { code, out, err } = await run(["tick", "infra", "network:prod"], app);
+    expect(code).toBe(EXIT.ok);
+    expect(err).toEqual([]);
+    expect(out).toEqual([
+      "Asked GitHub to deploy network:prod once site:prod went out. Its deployment record is queued, and resolve starts it then.",
+      "Deployment record 4242: waiting to start.",
+      "The run of resolve that starts it opens a deployment record of its own and deploys it through a fresh preview and the hash check. Follow it with sluiceway stack infra network:prod, or on the dashboard: https://github.com/acme/infra/issues/7",
+    ]);
+  });
+
+  test("a chain ticked in its order: the dependency is asked, the dependent queued behind it", async () => {
+    const app = fakeApp();
+    const dependency = app.state.stacks["network:prod"];
+    const dependent = app.state.stacks["apps/api:prod"];
+    if (dependency === undefined || dependent === undefined) throw new Error("no stack");
+    dependent.tick = {
+      outcome: "queued",
+      sentence:
+        "Asked GitHub to deploy apps/api:prod once network:prod went out. Its deployment record is queued, and resolve starts it then.",
+      deployment: 4243,
+    };
+    app.state.deployments[4242] = [deploy(4242, "network:prod", "waiting to start")];
+    const first = await run(["tick", "infra", "network:prod"], app);
+    const second = await run(["tick", "infra", "apps/api:prod", "--yes"], app);
+    expect([first.code, second.code]).toEqual([EXIT.ok, EXIT.ok]);
+    expect(first.out[0]).toBe(dependency.tick?.sentence);
+    expect(second.out.slice(0, 2)).toEqual([
+      "Asked GitHub to deploy apps/api:prod once network:prod went out. Its deployment record is queued, and resolve starts it then.",
+      "Deployment record 4243: waiting to start.",
+    ]);
+  });
+
+  test("a tick whose dependency has a change nobody ticked started nothing", async () => {
+    const app = fakeApp();
+    const stack = app.state.stacks["network:prod"];
+    if (stack === undefined) throw new Error("no stack");
+    const sentence =
+      "This tick started nothing: it depends on site:prod, which has a change waiting. Tick both to deploy them in order, or deploy site:prod first. Nothing was opened for network:prod: tick it again after its dependency is ticked.";
+    stack.tick = { outcome: "waits", sentence };
+    const { code, out, err } = await run(["tick", "infra", "network:prod"], app);
+    expect(code).toBe(EXIT.refused);
+    expect(out).toEqual([]);
+    expect(err).toEqual([sentence]);
+    expect(app.calls.filter((call) => call.url.includes("/deployments/"))).toEqual([]);
   });
 
   test.each([
@@ -474,6 +555,11 @@ describe("tick", () => {
     ["moved", "network:prod changed since the row was read. Read it again.", EXIT.refused],
     ["taken", "network:prod is already ticked.", EXIT.refused],
     ["failed", "The tick of network:prod could not be written.", EXIT.failed],
+    [
+      "failed",
+      "GitHub started a run for network:prod and did not say which, so no deployment record was opened. Nothing deploys from this tick.",
+      EXIT.failed,
+    ],
   ])("a tick that came to %s says the app's sentence", async (outcome, sentence, exit) => {
     const app = fakeApp();
     const stack = app.state.stacks["network:prod"];

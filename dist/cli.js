@@ -33949,8 +33949,19 @@ async function tick(client, repoPath3, parsed, io) {
   if (stack.destroys !== null && !parsed.yes) {
     throw new AppError(`${parsed.stack} deletes or replaces resources (${stack.destroys}). Run the tick again with --yes to deploy that.`, "needs-yes", EXIT.refused);
   }
-  const answer = await client.post(`${stackPath2}/tick`);
-  if (answer.outcome !== "asked") {
+  const answer = await client.post(`${stackPath2}/tick`, parsed.yes && stack.confirm ? { confirm: stack.confirm } : undefined);
+  if (answer.outcome === "unconfirmed") {
+    return {
+      exit: EXIT.refused,
+      lines: [],
+      errors: [
+        answer.sentence,
+        `Read it again with sluiceway stack ${parsed.repo} ${parsed.stack}, and tick it with --yes if it should still deploy.`
+      ],
+      json: { tick: answer, deploy: null }
+    };
+  }
+  if (answer.outcome !== "asked" && answer.outcome !== "queued") {
     return {
       exit: answer.outcome === "failed" ? EXIT.failed : EXIT.refused,
       lines: [],
@@ -33958,7 +33969,7 @@ async function tick(client, repoPath3, parsed, io) {
       json: { tick: answer, deploy: null }
     };
   }
-  const follow = `The workflow deploys it through a fresh preview and the hash check, and the dashboard says how it went: ${answer.dashboard}`;
+  const follow = answer.outcome === "queued" ? `The run of resolve that starts it opens a deployment record of its own and deploys it through a fresh preview and the hash check. Follow it with sluiceway stack ${parsed.repo} ${parsed.stack}, or on the dashboard: ${answer.dashboard}` : `The workflow deploys it through a fresh preview and the hash check, and the dashboard says how it went: ${answer.dashboard}`;
   if (answer.deployment === null) {
     return {
       exit: EXIT.ok,

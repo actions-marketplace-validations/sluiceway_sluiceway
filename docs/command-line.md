@@ -105,7 +105,7 @@ The app reads the page from GitHub when you ask, hands it on, and keeps none of 
 
 ### What a tick does, and what it does not
 
-`tick` reads the row first, and stops when the stack deletes or replaces anything unless you add `--yes`. Then it asks the app, which judges the tick by the same rule a tick on the dashboard gets and opens the deployment record. The command prints the app's answer, waits until the app shows the record, for at most a minute, and ends there:
+`tick` reads the row first, and stops when the stack deletes or replaces anything unless you add `--yes`; with `--yes` it sends back what the row deletes or replaces, as it read it, and the app ticks only that. Then it asks the app, which judges the tick by the same rule a tick on the dashboard gets and opens the deployment record. The command prints the app's answer, waits until the app shows the record, for at most a minute, and ends there:
 
 ```
 The tick of network:prod is asked: the deployment record is open.
@@ -114,6 +114,18 @@ The workflow deploys it through a fresh preview and the hash check, and the dash
 ```
 
 It does not wait for the deploy, and it never says a deploy went out: your workflow deploys the stack on your own runner, and the dashboard row says how it ended. Follow it there, or with `sluiceway stack`.
+
+A stack with `dependsOn`, a phase, a deploy window or deploy on merge is ticked the same way, and the app judges it by the action's rules, as `resolve` judges a tick on the dashboard. When it has to wait for the stacks it depends on, for its window or for the end of a deploy freeze, its record is queued, and a later run of `resolve` starts it, under a deployment record of its own:
+
+```
+Asked GitHub to deploy apps/api:prod once network:prod went out. Its deployment record is queued, and resolve starts it then.
+Deployment record 4243: waiting to start.
+The run of resolve that starts it opens a deployment record of its own and deploys it through a fresh preview and the hash check. Follow it with sluiceway stack infra apps/api:prod, or on the dashboard: https://github.com/acme/infra/issues/7
+```
+
+When a stack it depends on has a change nobody ticked, the tick starts nothing, says which, and exits as refused (5). Tick a chain in its order: the dependency first, then the stacks that depend on it, which are queued behind it.
+
+When the row changed between the read and the tick, so what `--yes` confirmed is no longer what it deletes, nothing is asked: read the stack again and tick it with `--yes` if it should still deploy.
 
 ### Setting a key
 
@@ -141,7 +153,7 @@ The exit code says how it ended:
 | 2 | Not understood: the command line, or a token that is not one | Fix the command |
 | 3 | Not signed in, or the token does not work (revoked, expired, the person left the org, the app left it) | `sluiceway login` with a new token |
 | 4 | Not found, or not in the token's org, or a stack with no preview | Check the repo and the stack id |
-| 5 | Refused: the tick rule, a tick that happens on GitHub, changes the app refused, a pull request already open, a destroy without `--yes` | Read the reason; do not retry as it is |
+| 5 | Refused: the tick rule, a tick that happens on GitHub, a tick that waits on a dependency nobody ticked, a destroy without `--yes` or one whose row changed since it was read, changes the app refused, a pull request already open | Read the reason; do not retry as it is |
 | 6 | Try again later: the rate limit (the message says in how many seconds), GitHub did not answer, the record not shown yet | Wait and run it again |
 
 The app allows 120 reads and 10 writes a minute per token.

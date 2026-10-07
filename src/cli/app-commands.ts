@@ -377,7 +377,10 @@ function preview(answer: Preview): Ending {
 // action's own rule, opens the deployment record, and answers. The command
 // line then polls the record until the app shows it, and stops there: the
 // workflow deploys it through a fresh preview and the hash check, and the
-// command line never waits for that or says it went out.
+// command line never waits for that or says it went out. A stack with
+// dependencies, a phase or a deploy window is judged by the action's rules
+// too (the app's record 0330): its record may be queued, which a later run of
+// resolve starts, or the tick waits, and nothing was asked.
 async function tick(
   client: AppClient,
   repoPath: string,
@@ -393,8 +396,24 @@ async function tick(
       EXIT.refused,
     );
   }
-  const answer = await client.post<TickAnswer>(`${stackPath}/tick`);
-  if (answer.outcome !== "asked") {
+  // --yes sends back what the app asks a destroying stack's tick to confirm,
+  // as the row was read (the app's record 0320).
+  const answer = await client.post<TickAnswer>(
+    `${stackPath}/tick`,
+    parsed.yes && stack.confirm ? { confirm: stack.confirm } : undefined,
+  );
+  if (answer.outcome === "unconfirmed") {
+    return {
+      exit: EXIT.refused,
+      lines: [],
+      errors: [
+        answer.sentence,
+        `Read it again with sluiceway stack ${parsed.repo} ${parsed.stack}, and tick it with --yes if it should still deploy.`,
+      ],
+      json: { tick: answer, deploy: null },
+    };
+  }
+  if (answer.outcome !== "asked" && answer.outcome !== "queued") {
     return {
       exit: answer.outcome === "failed" ? EXIT.failed : EXIT.refused,
       lines: [],
@@ -402,7 +421,12 @@ async function tick(
       json: { tick: answer, deploy: null },
     };
   }
-  const follow = `The workflow deploys it through a fresh preview and the hash check, and the dashboard says how it went: ${answer.dashboard}`;
+  // A queued record is started by a later run, which opens a record of its
+  // own, and this one ends as started in a later run.
+  const follow =
+    answer.outcome === "queued"
+      ? `The run of resolve that starts it opens a deployment record of its own and deploys it through a fresh preview and the hash check. Follow it with sluiceway stack ${parsed.repo} ${parsed.stack}, or on the dashboard: ${answer.dashboard}`
+      : `The workflow deploys it through a fresh preview and the hash check, and the dashboard says how it went: ${answer.dashboard}`;
   if (answer.deployment === null) {
     return {
       exit: EXIT.ok,
