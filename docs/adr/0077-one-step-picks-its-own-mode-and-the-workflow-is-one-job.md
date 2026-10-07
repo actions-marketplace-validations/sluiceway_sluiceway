@@ -1,5 +1,7 @@
 # One step picks its own mode, and the workflow is one job
 
+> Amended by 0120: the Sluiceway step of the one-step workflow has `if: ${{ !cancelled() }}`, so it runs after an earlier step failed and then only says so on the dashboard. The job still has no `if:` and no `needs:`.
+
 The workflow people copied was four jobs, one per mode, joined by `if:` and `needs:`: `if: github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'sluiceway'))` on `resolve`, `!cancelled()` and a matrix on `apply`, `always()` and two `needs` on `settle`, and two more jobs and a longer condition for merge and deploy. Every line was right, and every line was one more thing a person had to copy exactly and keep in step with `sluiceway.yaml`. The owner, 2026-09-22: "these crazy ifs, cant we make sure this isnt necessary anymore, we want the ux as simple as possible, easy to install and easy to configure." Build plan slice 5.12.
 
 This amends 0014, 0017, 0025, 0035, 0042, 0061, 0065 and 0074.

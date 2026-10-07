@@ -228,8 +228,13 @@ describe("the one-step workflow", () => {
     }
   });
 
+  // Record 0120: but the Sluiceway step's one condition, which lets it run
+  // after a step above failed and say so on the dashboard.
   test.each(oneStep)("has no if:, no needs: and no mode: $where", ({ workflow }) => {
-    const text = JSON.stringify(workflow);
+    const steps = Object.values(workflow.jobs).flatMap((job) => job.steps);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
+    expect(steps.filter(isSluiceway).map((step) => step.if)).toEqual(["${{ !cancelled() }}"]);
+    const text = JSON.stringify(workflow).replace('"if":"${{ !cancelled() }}"', "");
     expect(text).not.toContain('"if"');
     expect(text).not.toContain('"needs"');
     expect(text).not.toContain('"mode"');

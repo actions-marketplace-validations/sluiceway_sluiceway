@@ -28910,6 +28910,7 @@ var configSchema = exports_external.strictObject({
 class ConfigError extends Error {
   issues;
   problems;
+  file;
   constructor(issues, file2 = "sluiceway.yaml") {
     const all = issues.map((issue2) => typeof issue2 === "string" ? { kind: "worded", text: issue2, path: [] } : issue2);
     const problems = all.map(configProblemText);
@@ -28917,6 +28918,7 @@ class ConfigError extends Error {
     this.name = "ConfigError";
     this.issues = all;
     this.problems = problems;
+    this.file = file2;
   }
 }
 function parseConfig(text2) {
@@ -33245,7 +33247,10 @@ function starterWorkflow(options) {
     ...toolSteps(findings),
     ...credentialSteps(findings.envFiles),
     "      # It reads the event of the run: it scans, or deploys what a tick asks for.",
-    "      - uses: sluiceway/sluiceway@v0"
+    "      # It runs after a step above failed too, and then only says so on the",
+    "      # dashboard, so it never looks fresh while no scan could run.",
+    "      - uses: sluiceway/sluiceway@v0",
+    "        if: ${{ !cancelled() }}"
   ];
   return `${lines.join(`
 `)}

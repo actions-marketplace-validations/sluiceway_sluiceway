@@ -22,6 +22,9 @@ export interface RunOfTheWorkflow {
   status: string;
   // When the run, or its newest attempt, started waiting. ISO 8601.
   since: string;
+  // How a run that ended ended, such as `failure` or `success` (record
+  // 0120). Only the read of the failed runs asks for it.
+  conclusion?: string | undefined;
 }
 
 // The run that waited longest, when it waited at least the threshold by

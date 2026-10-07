@@ -27,6 +27,9 @@ export interface StepFacts {
   jobId: string;
   sha: string;
   event: string;
+  // What `${{ job.status }}` gives: the status of the job before the step
+  // (record 0120). `success` when absent, as no step of the e2e fails first.
+  jobStatus?: "success" | "failure" | "cancelled";
   // What `${{ github.token }}` gives. The fake asks for none, so it is no token.
   token: string;
   summaryFile: string;
@@ -43,6 +46,7 @@ export interface StepFacts {
 const EXPRESSION = "$".concat("{{");
 const TOKEN_EXPRESSION = `${EXPRESSION} github.token }}`;
 const JOB_ID_EXPRESSION = `${EXPRESSION} job.check_run_id }}`;
+const JOB_STATUS_EXPRESSION = `${EXPRESSION} job.status }}`;
 
 // A runner names the variable of an input like this: spaces become
 // underscores, upper case, and a dash stays a dash.
@@ -69,6 +73,7 @@ export function stepEnvironment(
     let value = inputs[name] ?? input.default;
     if (value === TOKEN_EXPRESSION) value = facts.token;
     if (value === JOB_ID_EXPRESSION) value = facts.jobId;
+    if (value === JOB_STATUS_EXPRESSION) value = facts.jobStatus ?? "success";
     if (value?.includes(EXPRESSION)) {
       throw new Error(
         `The default of the input "${name}" is ${value}, and only a runner can work that out.`,

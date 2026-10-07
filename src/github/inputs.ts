@@ -46,6 +46,18 @@ function wholeNumber<Fallback extends number | undefined>(
   return Number(text);
 }
 
+// The status of the job before this step, as `${{ job.status }}` gives it
+// (record 0120). Left out, the step runs as it always did. A value GitHub
+// never gives is refused, so a typo cannot make a step run after a failure.
+export function parseJobStatus(input: string): "success" | "failure" | "cancelled" | undefined {
+  const value = input.trim();
+  if (value === "") return undefined;
+  if (value === "success" || value === "failure" || value === "cancelled") return value;
+  throw new Error(
+    `The "job-status" input is ${JSON.stringify(value)}. Give it \${{ job.status }}, which is success, failure or cancelled.`,
+  );
+}
+
 // The one input every mode reads: the workflow's own token (record 0017).
 export function readToken(getInput: GetInput): string {
   const token = getInput("github-token");

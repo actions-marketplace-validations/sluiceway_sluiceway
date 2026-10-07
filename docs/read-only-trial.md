@@ -43,7 +43,10 @@ jobs:
       # run, which needs what a deploy needs (see Credentials). Whatever loads
       # a secret must also mask it, or name a file of NAME=value lines with
       # the env-file input and Sluiceway masks every value itself.
+      # Runs after a step above failed too, and then only says so on the
+      # dashboard, so it never looks fresh while no scan could run.
       - uses: sluiceway/sluiceway@v0
+        if: ${{ !cancelled() }}
 ```
 
 And tell Sluiceway that nothing acts on a box, in `sluiceway.yaml` at the repo root:

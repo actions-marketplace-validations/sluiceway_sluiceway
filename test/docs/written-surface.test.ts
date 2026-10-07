@@ -180,6 +180,7 @@ const WRITTEN_KEYS = {
       fullScanRun: "1",
       waitingRun: { run: "2", since: "t", more: 1 },
       scanRunning: { run: "3", since: "t" },
+      failedRuns: { run: "4", at: "t", count: 2 },
     }),
   ),
   row: keysOf(
@@ -203,6 +204,7 @@ const WRITTEN_KEYS = {
       tracking: 1,
       behind: ["c"],
       busy: true,
+      driftUnchecked: true,
     }),
   ),
   merge: keysOf(mergeMarker({ pr: 1, stackIds: ["a"], head: "h" })),

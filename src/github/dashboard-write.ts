@@ -160,6 +160,8 @@ export async function swapRows(
         waitingRun: carriedWaitingRun(root.waitingRun, writer.runId),
         // Only the scan that wrote it takes it away (record 0108).
         scanRunning: root.scanRunning,
+        // Only a scan counts them (record 0120).
+        failedRuns: root.failedRuns,
       };
       const mine = await rows(live, kept);
       const drawn = fitted(

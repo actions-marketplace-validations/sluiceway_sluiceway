@@ -24,6 +24,7 @@ import {
 import { DOCS } from "./docs-site.ts";
 import { COUNT_DOT, DOT_AT_ZERO, RESULT_DOT } from "./dots.ts";
 import { escapeText } from "./escape.ts";
+import { failedRunsLine } from "./failed-run.ts";
 import { freezeLine } from "./freeze-line.ts";
 import { mascotUrl, urlPart } from "./images.ts";
 import {
@@ -670,10 +671,14 @@ export function renderBody(input: BodyInput): string {
   // waits for a runner under that (records 0108 and 0086).
   const running = scanRunningLine(input.root, input.repoUrl, input.timeZone);
   const runWaits = waitingRunLine(input.root, input.repoUrl, input.timeZone);
+  // The runs that failed since the scan before, under them (record 0120).
+  const runsFailed = failedRunsLine(input.root, input.repoUrl, input.timeZone);
   // A deploy freeze under them (record 0115): it lasts, where they come and
   // go, so the lines that come and go stay right under the scan line.
   const freezes = (input.freezes ?? []).map((freeze) => freezeLine(freeze, input.timeZone));
-  const scanLines = [scan, running, runWaits, ...freezes].filter((line) => line !== undefined);
+  const scanLines = [scan, running, runWaits, runsFailed, ...freezes].filter(
+    (line) => line !== undefined,
+  );
   if (input.personality)
     out.push(
       picture(facts.headerState, facts.crates, facts.signs, input.actionRef, facts.counts.busy, {

@@ -216,7 +216,10 @@ jobs:
       # looks inside. Whatever loads a secret must also mask it. Or name a
       # file of NAME=value lines with the env-file input on the step below,
       # and Sluiceway loads it for the tool and masks every value itself.
+      # Runs after a step above failed too, and then only says so on the
+      # dashboard, so it never looks fresh while no scan could run.
       - uses: sluiceway/sluiceway@v0
+        if: ${{ !cancelled() }}
 ```
 
 ## What it promises

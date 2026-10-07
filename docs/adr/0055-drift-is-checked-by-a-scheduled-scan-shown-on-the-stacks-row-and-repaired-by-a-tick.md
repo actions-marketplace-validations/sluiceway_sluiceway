@@ -1,5 +1,7 @@
 # Drift is checked by a scheduled scan, shown on the stack's own row, and repaired by a tick
 
+> Amended by 0121: a row whose drift check failed says `drift not checked`, with the marker key `drift-check="failed"`, and a push that previews the stack checks it again. The warning on the run stays.
+>
 > Amended by 0059: `stacks[].drift.enabled` sets the check per stack, a drifted stack has a preview page and its row's link is `preview`, and the trail says when a deploy put drift back.
 >
 > Amended by 0066: drift stays one picture, because its count is always 0.

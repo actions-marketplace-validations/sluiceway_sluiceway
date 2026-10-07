@@ -451,6 +451,7 @@ describe("the reads are bounded", () => {
       "updateCheckRun",
       // Record 0086: the queued runs of the workflow, once a job.
       "listQueuedRuns",
+      "listEndedRuns",
       "listIssues",
       "getIssue",
       "listNewestDeployments",

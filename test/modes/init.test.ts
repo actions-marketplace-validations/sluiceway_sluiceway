@@ -208,7 +208,8 @@ describe("a sluiceway.yaml that is there", () => {
     // Auto mode reads the label from sluiceway.yaml, so the workflow names
     // none (record 0077).
     expect(workflow).not.toContain("infra-dashboard");
-    expect(workflow).not.toContain("if:");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
+    expect(workflow?.match(/if:.*/g)).toEqual(["if: ${{ !cancelled() }}"]);
     expect((await checked(root)).warnings).toEqual([]);
   });
 
@@ -447,8 +448,8 @@ describe("the workflow init writes", () => {
     for (const dir of ["pulumi", "tofu", "helm"]) rmSync(join(root, dir, CONFIG));
     const { workflow: text } = await run(root);
     const workflow = Bun.YAML.parse(text ?? "") as Workflow;
-    // Record 0077: one job, one Sluiceway step with no mode, no if: and no
-    // needs:, one queue for every run.
+    // Record 0077: one job, one Sluiceway step with no mode and no needs:,
+    // one queue for every run.
     expect(Object.keys(workflow.jobs)).toEqual(["sluiceway"]);
     const job = workflow.jobs.sluiceway;
     expect(job?.steps.filter(isSluiceway).length).toBe(1);
@@ -458,7 +459,10 @@ describe("the workflow init writes", () => {
       group: "sluiceway-${{ github.event.issue.number }}",
       queue: "max",
     });
-    expect(text).not.toContain("if:");
+    // Record 0120: the one if: is the step's, so it runs after a step above
+    // failed and says so on the dashboard.
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
+    expect(text?.match(/if:.*/g)).toEqual(["if: ${{ !cancelled() }}"]);
     expect(text).not.toContain("needs:");
     expect(text).not.toContain("mode:");
     const steps = Object.values(workflow.jobs).flatMap((job) => job.steps.filter(isSluiceway));

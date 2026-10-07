@@ -40,6 +40,8 @@ export interface FailureLine {
 export interface PendingRow {
   state: "pending";
   diff: Diff;
+  // The drift check of the stack failed (record 0121).
+  driftUnchecked?: boolean | undefined;
   // The diff hash of `diff`. It covers the whole diff whatever the row shows.
   hash: string;
   // The value fingerprint of `diff` (record 0102), for the marker. Absent when
@@ -155,6 +157,8 @@ export interface InSyncRow {
   state: "in-sync";
   stackId: string;
   failure?: FailureLine | undefined;
+  // The drift check of the stack failed (record 0121).
+  driftUnchecked?: boolean | undefined;
   dependsOn?: readonly string[] | undefined;
 }
 
@@ -601,7 +605,12 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
   // Drift the row also shows (record 0055). A resource that is gone outside
   // the code is no destroy: a deploy creates it again.
   const drift = sortedDrift(row.diff);
-  const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : "";
+  const driftCount =
+    drift.length > 0
+      ? ` · ${driftCounts(drift)}`
+      : row.driftUnchecked
+        ? ` · ${DRIFT_NOT_CHECKED}`
+        : "";
   // The counts of the first line, on the marker as well (record 0110).
   const { creates, updates, tracking } = changeCounts(changes);
   // How much the row shows under its first line (record 0114).
@@ -627,6 +636,7 @@ function pendingRow(row: PendingRow, options: RowOptions): string[] {
         updates,
         replaces: replaces.length,
         tracking,
+        driftUnchecked: row.driftUnchecked,
       },
     )}`,
   ];
@@ -751,6 +761,10 @@ function deployingRow(row: DeployingRow, options: RowOptions): string[] {
   return lines;
 }
 
+// What a row says when its drift check failed (record 0121). Quiet on
+// purpose: the stack is not known to have drifted, only not known not to.
+export const DRIFT_NOT_CHECKED = "drift not checked";
+
 // What a busy row says after its reason (record 0117).
 export const BUSY_ROW_WORDS = "the next scan previews it";
 
@@ -771,12 +785,14 @@ function previewFailedRow(row: PreviewFailedRow, options: RowOptions): string[] 
 }
 
 function inSyncRow(row: InSyncRow, options: RowOptions): string[] {
+  const unchecked = row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
   const lines = [
-    `- ${escapeText(row.stackId)} ${rowMarker({
+    `- ${escapeText(row.stackId)}${unchecked} ${rowMarker({
       stackId: row.stackId,
       state: "in-sync",
       failed: row.failure !== undefined,
       dependsOn: row.dependsOn,
+      driftUnchecked: row.driftUnchecked,
     })}`,
   ];
   if (row.failure) lines.push(failureLine(row.failure, options.timeZone));

@@ -90,7 +90,10 @@ export function starterWorkflow(options: WorkflowOptions): string {
     ...toolSteps(findings),
     ...credentialSteps(findings.envFiles),
     "      # It reads the event of the run: it scans, or deploys what a tick asks for.",
+    "      # It runs after a step above failed too, and then only says so on the",
+    "      # dashboard, so it never looks fresh while no scan could run.",
     "      - uses: sluiceway/sluiceway@v0",
+    "        if: ${{ !cancelled() }}",
   ];
   return `${lines.join("\n")}\n`;
 }

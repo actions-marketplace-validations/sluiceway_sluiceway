@@ -170,7 +170,10 @@ jobs:
       # looks inside. Whatever loads a secret must also mask it. Or name a
       # file of NAME=value lines with the env-file input on the step below,
       # and Sluiceway loads it for the tool and masks every value itself.
+      # Runs after a step above failed too, and then only says so on the
+      # dashboard, so it never looks fresh while no scan could run.
       - uses: sluiceway/sluiceway@v0
+        if: ${{ !cancelled() }}
 ```
 
 What the step does on each event:
@@ -194,6 +197,7 @@ What the parts are for:
 - **A tick deploys in the run it started.** `resolve` creates one deployment record per ticked stack in GitHub's Deployments list, and the same step deploys each of them in turn, the first one first. A deploy runs only while its record is still open, so "Re-run all jobs" deploys nothing. To try again, tick the box again. A deploy that fails does not stop the next one, and the job ends red.
 - **A run that is cancelled in the middle of a deploy** still gets its records ended: the action's post step settles them, puts the failure line on their rows within seconds, and starts a full scan that writes the rows again with the fresh diff.
 - **Set `timeout-minutes` on the job** to fit your longest scan and the deploys one run may hold. A deploy has no time limit of Sluiceway's unless the `deploy-timeout` input gives it one.
+- **`if: ${{ !cancelled() }}` on the Sluiceway step** lets it run after a step above it failed, such as the one that loads your credentials. It then does none of its work and puts a line under the scan line that says the run failed before Sluiceway ran ([a run that failed](#a-run-that-failed)).
 - **`@v0`** follows every release from 0.1.0 until 1.0.0. A commit SHA stays the choice if you want to review every update ([Pin a commit](#pin-a-commit)).
 
 ## What one job gives up
@@ -205,6 +209,16 @@ One job is the setup with the fewest parts. It gives up a few things that four j
 - **A tick runs where the scan runs.** An edit of the dashboard starts the job with your tools and credentials, on the same runner as a scan. In the split workflow the job an edit starts holds no credentials and can stay on a hosted runner.
 - **Deploys one at a time.** Stacks ticked together deploy one after the other in one job, and a tick waits for a deploy of another run that is going on. The split workflow deploys them side by side.
 - **One set of outputs.** When one step deploys more than one stack, `outcome`, `stack` and `result-file` describe the last deploy ([notifications](notifications.md)).
+
+## A run that failed
+
+A run that fails before Sluiceway does its work writes no scan, so the dashboard would show the scan before it as if nothing had happened. Three lines under the scan line say so instead. Each links a run, says what is true and never why: the run's log does.
+
+- **A step before Sluiceway failed.** With `if: ${{ !cancelled() }}` on the Sluiceway step, as in the workflow above, the step runs anyway, sees from its `job-status` input that the job failed, and does none of its work. It puts `The last run of this dashboard's workflow failed before Sluiceway ran, on 2026-10-06 10:50 UTC+2 · [run](…)` right under the scan line and ends. The job stays red for its own reason. Without the `if:`, GitHub skips the step and only the line of the next scan says anything. A workflow from before 0.50 has no `if:`: add it to the Sluiceway step.
+- **A problem in `sluiceway.yaml`.** The run puts `The last run of this dashboard's workflow found a problem in sluiceway.yaml, on … · [run](…)` there, and fails with the problem as before. It finds the dashboard by `dashboard.label` as the file still writes it, or by `sluiceway` when it cannot read even that.
+- **Runs failed since the scan before.** The next scan that works counts the runs of the workflow that failed, timed out or that GitHub could not start since the scan the dashboard showed before, and says `[4 runs of this dashboard's workflow](…) failed since the scan before this one, the newest on 2026-10-06 10:50 UTC+2.` It reads the runs with `actions: read`, once a scan.
+
+The first two go with the next run that gets as far as Sluiceway with a config it can read, the third with the scan after it. None of them decides anything. They are never written from a pull request, and never on a dashboard that does not exist yet: a first run that fails has nothing to write to. When no run of the workflow starts at all, as when the workflow file itself does not parse, nothing of Sluiceway runs and the scan line stops moving, until the next scan counts those runs.
 
 ## Self-hosted runners
 

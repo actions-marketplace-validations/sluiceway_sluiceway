@@ -72,6 +72,17 @@ export interface RootFacts {
   // act, carried by every other writer, and taken away by the scan's own
   // write of the body at the end.
   scanRunning?: ScanRunningFacts | undefined;
+  // The runs of the workflow that failed since the scan before (record 0120).
+  // Only a scan counts them, and every other writer carries them.
+  failedRuns?: FailedRunsFacts | undefined;
+}
+
+// How many runs failed since the scan before, the newest of them, and when it
+// started (ISO 8601, UTC).
+export interface FailedRunsFacts {
+  run: string;
+  at: string;
+  count: number;
 }
 
 // The run that waited longest, when it started waiting (ISO 8601, UTC), and
@@ -144,6 +155,10 @@ export interface RowFacts {
   // cache like `failed`: the header, the counts line and the sections tell a
   // busy row from a preview failure by it, and nothing is decided from it.
   busy?: boolean | undefined;
+  // The stack's drift check failed (record 0121): the row says `drift not
+  // checked`. A display cache like `busy`: not in the hash, and nothing is
+  // decided from it but whether a push checks the stack's drift again.
+  driftUnchecked?: boolean | undefined;
 }
 
 // A list of stack ids in one marker value, split on commas. An id is
@@ -247,6 +262,13 @@ export function rootMarker(facts: RootFacts): string {
       ["scan-running-since", facts.scanRunning.since],
     );
   }
+  if (facts.failedRuns !== undefined) {
+    pairs.push(
+      ["runs-failed", String(facts.failedRuns.count)],
+      ["runs-failed-newest", facts.failedRuns.run],
+      ["runs-failed-at", facts.failedRuns.at],
+    );
+  }
   return marker("dashboard", pairs);
 }
 
@@ -276,6 +298,7 @@ export function rowMarker(facts: RowFacts): string {
   }
   if (facts.behind && facts.behind.length > 0) pairs.push(["behind", encodeIds(facts.behind)]);
   if (facts.busy) pairs.push(["busy", "true"]);
+  if (facts.driftUnchecked) pairs.push(["drift-check", "failed"]);
   return marker("row", pairs);
 }
 
@@ -345,6 +368,7 @@ export interface ParsedRoot {
   fullScanRun?: string | undefined;
   waitingRun?: WaitingRunFacts | undefined;
   scanRunning?: ScanRunningFacts | undefined;
+  failedRuns?: FailedRunsFacts | undefined;
 }
 
 // A row block: every line from the one that ends in the open marker through
@@ -391,6 +415,9 @@ export type ParsedRow =
       // Busy, not failed, on a row of the state `preview-failed` (record
       // 0117). Absent on any other row.
       busy?: true;
+      // The drift check of the stack failed (record 0121). Absent when it
+      // did not, or when none ran.
+      driftUnchecked?: true;
       ticked: boolean;
       text: string;
     }
@@ -462,7 +489,18 @@ function readRoot(line: string): ParsedRoot | undefined {
     fullScanRun: pairs.get("full-scan-run"),
     waitingRun: readWaitingRun(pairs),
     scanRunning: readScanRunning(pairs),
+    failedRuns: readFailedRuns(pairs),
   };
+}
+
+// All three keys, with a whole number, or no failed runs.
+function readFailedRuns(pairs: Map<string, string>): FailedRunsFacts | undefined {
+  const count = pairs.get("runs-failed");
+  const run = pairs.get("runs-failed-newest");
+  const at = pairs.get("runs-failed-at");
+  if (count === undefined || run === undefined || at === undefined) return undefined;
+  if (!/^\d+$/.test(count)) return undefined;
+  return { run, at, count: Number(count) };
 }
 
 // Both the run and the time, or no running scan.
@@ -584,6 +622,7 @@ export function parseDashboard(body: string): ParsedDashboard {
       ...(state === "preview-failed" && pairs.get("busy") === "true"
         ? { busy: true as const }
         : {}),
+      ...(pairs.get("drift-check") === "failed" ? { driftUnchecked: true as const } : {}),
       ticked: match[1] === "x" || match[1] === "X",
       text,
     });

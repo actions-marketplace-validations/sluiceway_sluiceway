@@ -89,3 +89,42 @@ describe("the queued runs of a workflow, over HTTP (record 0086)", () => {
     await expect(port.listQueuedRuns("sluiceway.yml")).rejects.toThrow();
   });
 });
+
+// Record 0120: the runs that ended, with how each ended, for the line about
+// runs that failed since the scan before.
+describe("the ended runs of a workflow, through the real port", () => {
+  test("only runs that ended, newest first, with their conclusion, as the fake keeps them", async () => {
+    const { fake, port } = await served();
+    fake.seedWorkflowRun("sluiceway.yml", {
+      id: "7",
+      status: "completed",
+      since: "2026-10-05T12:19:00Z",
+      conclusion: "failure",
+    });
+    fake.seedWorkflowRun("sluiceway.yml", {
+      id: "8",
+      status: "queued",
+      since: "2026-10-05T12:30:00Z",
+    });
+    fake.seedWorkflowRun("sluiceway.yml", {
+      id: "9",
+      status: "completed",
+      since: "2026-10-05T13:00:00Z",
+      conclusion: "success",
+    });
+
+    expect(await port.listEndedRuns("sluiceway.yml")).toEqual([
+      { id: "9", status: "completed", since: "2026-10-05T13:00:00Z", conclusion: "success" },
+      { id: "7", status: "completed", since: "2026-10-05T12:19:00Z", conclusion: "failure" },
+    ]);
+    expect(await port.listEndedRuns("sluiceway.yml")).toEqual(
+      await fake.listEndedRuns("sluiceway.yml"),
+    );
+  });
+
+  test("a refused read throws", async () => {
+    const { fake, port } = await served();
+    fake.failEndedRuns(403);
+    await expect(port.listEndedRuns("sluiceway.yml")).rejects.toThrow();
+  });
+});

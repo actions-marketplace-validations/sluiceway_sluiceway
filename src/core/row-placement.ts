@@ -44,6 +44,7 @@ import {
   standingFailure,
   type TrailEntry,
 } from "./deployment.ts";
+import { failedRuns } from "./failed-runs.ts";
 import type { WaitingUpdate } from "./merge-and-deploy.ts";
 import type { OnMergeWait } from "./on-merge.ts";
 import { type TickAtLateRead, tickAtLateRead } from "./orphan-tick.ts";
@@ -52,6 +53,7 @@ import type { PolicyOutcome } from "./policy.ts";
 import { oneRowPerStack } from "./scan-plan.ts";
 import type { PreviewResult, ToolDeploy } from "./tool-result.ts";
 import { differsEveryRun, valueFingerprint } from "./value-fingerprint.ts";
+import type { RunOfTheWorkflow } from "./waiting-run.ts";
 
 // One stack this scan previewed.
 export interface PreviewedStack {
@@ -62,6 +64,8 @@ export interface PreviewedStack {
   // When the preview started. A deploy that ended after it is fresher than
   // the preview (record 0004).
   startedAt: Date;
+  // The scan ran a drift check of the stack, and it failed (record 0121).
+  driftFailed?: boolean | undefined;
 }
 
 // What the scan knows of the updates waiting to merge (record 0054): nothing
@@ -80,8 +84,15 @@ export interface ScanSoFar {
   ids: readonly string[];
   // The root marker a scan writes, less the keys of a full scan.
   // `waitingRun`: a run of the workflow that waits for a runner, as the scan
-  // found it (record 0086).
-  scan: { sha: string; runId: string; at: string; waitingRun?: WaitingRunFacts | undefined };
+  // found it (record 0086). `endedRuns`: the runs of the workflow that ended,
+  // as the scan read them, when it could (record 0120).
+  scan: {
+    sha: string;
+    runId: string;
+    at: string;
+    waitingRun?: WaitingRunFacts | undefined;
+    endedRuns?: readonly RunOfTheWorkflow[] | undefined;
+  };
   // `https://github.com/<owner>/<repo>`.
   repoUrl: string;
   links: RunLinks;
@@ -286,6 +297,7 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
       const fresh = previewRow(id, mine.result, links, failureLine(so.repoUrl, id, fact, outside), {
         toolDiffInLog: logDiff,
         pageUrl: so.pageUrls.get(id),
+        driftUnchecked: mine.driftFailed,
       });
       // A value the row does not show differed between this preview and the
       // live row's, at the commit of the live body's last scan (record 0102).
@@ -382,6 +394,12 @@ export function placeRows(so: ScanSoFar, late: LateRead): RowsAtLateRead {
         fullScanRun: full ? so.scan.runId : live.root?.fullScanRun,
         // Only the scan lists the runs, so it writes what it found, or no line.
         waitingRun: so.scan.waitingRun,
+        // The runs that failed since the scan the live body shows (record
+        // 0120), so a retry that reads another scan's body counts from it.
+        failedRuns:
+          so.scan.endedRuns === undefined
+            ? undefined
+            : failedRuns(so.scan.endedRuns, live.root?.scanAt, new Date(so.scan.at), so.scan.runId),
       },
       facts: deploys.facts,
       shipped: late.shipped ?? new Map(),

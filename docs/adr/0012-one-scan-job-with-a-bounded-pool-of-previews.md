@@ -1,5 +1,7 @@
 # A scan is one job that previews through a bounded pool, not a matrix of jobs
 
+> Amended by 0120: a problem in the config puts one line right under the scan line of an existing dashboard before the job fails, and a Sluiceway step that runs after an earlier step failed does none of its work.
+>
 > Amended by 0117: a preview that failed for a reason a second run can change is tried once more in the same scan, after one pause of 10 seconds, and only a preview that failed twice is a preview failure. A stack whose lock another update holds is busy and not failed: no warning, and `strict` does not count it.
 >
 > Amended by 0085: without the `concurrency` input the pool is the number of cores of the machine, from 1 to 8, and the job log says which number it used and where it came from.
