@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.50.0](https://github.com/sluiceway/sluiceway/compare/v0.49.0...v0.50.0) (2026-10-07)
+
+
+### Features
+
+* **cli:** tick stacks with dependencies from the command line, and --yes sends the stack's confirm ([#302](https://github.com/sluiceway/sluiceway/issues/302)) ([0d2701b](https://github.com/sluiceway/sluiceway/commit/0d2701b5c91b005ccc9bb7d5725177f11a9c582a))
+* the dashboard says when runs failed, and a row when its drift check failed ([#301](https://github.com/sluiceway/sluiceway/issues/301)) ([f731354](https://github.com/sluiceway/sluiceway/commit/f731354506beb7c35225b3a2feb2c91c727a153a))
+
+
+### Bug Fixes
+
+* a tick made while a writer writes the body is written back ([#298](https://github.com/sluiceway/sluiceway/issues/298)) ([9f2d913](https://github.com/sluiceway/sluiceway/commit/9f2d9132a0744f5fecfba3ce1eee1191e7907ad0))
+* the open pull requests read with pull-requests: read alone, and a list that fails says so ([#300](https://github.com/sluiceway/sluiceway/issues/300)) ([91e55c8](https://github.com/sluiceway/sluiceway/commit/91e55c84b3921de313329f66714032fc791bec7b))
+
 ## [0.49.0](https://github.com/sluiceway/sluiceway/compare/v0.48.0...v0.49.0) (2026-10-06)
 
 
