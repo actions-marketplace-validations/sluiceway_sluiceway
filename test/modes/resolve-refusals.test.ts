@@ -293,7 +293,8 @@ describe("a body that moves between the read and the walk", () => {
 
     await wake(h);
 
-    expect(h.github.requests.filter((request) => request === "readEditHistory")).toHaveLength(2);
+    const beforeTheWrite = h.github.requests.slice(0, h.github.requests.indexOf("updateIssueBody"));
+    expect(beforeTheWrite.filter((request) => request === "readEditHistory")).toHaveLength(2);
     expect((matrix(h) as { stack: string }[]).map(({ stack }) => stack)).toEqual([
       "a:prod",
       "b:prod",

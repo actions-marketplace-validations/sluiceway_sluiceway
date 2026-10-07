@@ -184,6 +184,7 @@ export async function swapRows(
     }),
   );
   if (!answer.fits) return answer;
+  sayRewritten(writer, issue, answer.written);
   return { ...answer.written, ...counted(last), fits: true };
 }
 
@@ -205,7 +206,17 @@ export async function writeScan(
     }),
   );
   if (!answer.fits) return answer;
+  sayRewritten(writer, answer.written.number, answer.written);
   return { ...answer.written, ...counted(last), fits: true };
+}
+
+// The job log says when a write went over an edit and wrote it back (record
+// 0119), because a person may ask where their tick went.
+function sayRewritten(writer: DashboardWriter, issue: number, written: WriteResult): void {
+  if (!written.rewritten) return;
+  writer.log.info(
+    `An edit landed on the dashboard (#${issue}) between the read and the write, and the write went over it. The dashboard was written again on top of that edit.`,
+  );
 }
 
 // The body a scan's rows make, without a request. A full scan checks it

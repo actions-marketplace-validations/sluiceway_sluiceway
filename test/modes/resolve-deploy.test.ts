@@ -182,8 +182,11 @@ describe("a tick by a person who may tick", () => {
 
     await wake(h);
 
+    // The write loop reads the history once more, after its write (record
+    // 0119).
+    const beforeTheWrite = h.github.requests.slice(0, h.github.requests.indexOf("updateIssueBody"));
     expect(h.github.requests[0]).toBe("readEditHistory");
-    expect(h.github.requests.filter((request) => request === "readEditHistory")).toHaveLength(1);
+    expect(beforeTheWrite.filter((request) => request === "readEditHistory")).toHaveLength(1);
     expect(h.adapter.previewed).toEqual([]);
     expect(h.adapter.versionChecks).toBe(0);
     expect("env" in h.context || "run" in h.context).toBe(false);

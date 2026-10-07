@@ -61398,26 +61398,50 @@ class BodyTooLargeError extends Error {
 }
 
 class DashboardWriteError extends Error {
-  constructor(number4, lastBody) {
-    super(`The dashboard (#${number4}) could not be written. Sluiceway tried ${MAX_TRIES} times, and each time the body GitHub stored afterwards was not the body it sent. Either other writers kept getting in between, or GitHub dropped the body without an error, which it does when a body is too large for it. The last body sent was ${count(lastBody.length)} characters and ${count(byteLength(lastBody))} bytes.`);
+  constructor(number4, lastBody, wentOver = false) {
+    super(wentOver ? `The dashboard (#${number4}) was written, and Sluiceway tried ${MAX_TRIES} times to write it without going over an edit that landed between its read and its write. Each time another edit landed. The last edit it went over is in the issue's edit history, and a box ticked in it needs a fresh tick.` : `The dashboard (#${number4}) could not be written. Sluiceway tried ${MAX_TRIES} times, and each time the body GitHub stored afterwards was not the body it sent. Either other writers kept getting in between, or GitHub dropped the body without an error, which it does when a body is too large for it. The last body sent was ${count(lastBody.length)} characters and ${count(byteLength(lastBody))} bytes.`);
     this.name = "DashboardWriteError";
   }
 }
 async function writeBody(github, number4, build) {
-  let live = await github.getIssue(number4);
+  let live = (await github.getIssue(number4)).body;
+  let stored = live;
+  let written = false;
+  let rewritten = false;
   for (let tries = 1;; tries++) {
-    const body2 = await build(live.body);
-    if (body2 === live.body)
-      return { written: false, tries, body: body2 };
+    const body2 = await build(live);
+    if (body2 === stored)
+      return { written, tries, body: body2, rewritten };
     if (body2.length > BODY_LIMIT)
       throw new BodyTooLargeError(body2);
     await github.updateIssueBody(number4, body2);
-    live = await github.getIssue(number4);
-    if (live.body === body2)
-      return { written: true, tries, body: body2 };
+    rewritten ||= written;
+    const after = (await github.getIssue(number4)).body;
+    if (after === body2) {
+      written = true;
+      const wentOver = await editWentOver(github, number4, body2, stored);
+      if (wentOver === undefined)
+        return { written, tries, body: body2, rewritten };
+      if (tries === MAX_TRIES)
+        throw new DashboardWriteError(number4, body2, true);
+      live = wentOver;
+      stored = body2;
+      continue;
+    }
     if (tries === MAX_TRIES)
       throw new DashboardWriteError(number4, body2);
+    live = after;
+    stored = after;
   }
+}
+async function editWentOver(github, number4, body2, replaced) {
+  const history = await github.readEditHistory(number4, { size: 2, after: undefined });
+  const [own2, before] = history.entries;
+  if (history.body !== body2 || own2?.body !== body2)
+    return;
+  if (!before?.body || before.body === replaced)
+    return;
+  return before.body;
 }
 function byteLength(text8) {
   return new TextEncoder().encode(text8).length;
@@ -62696,6 +62720,7 @@ async function swapRows(writer, issue3, rows) {
   }));
   if (!answer.fits)
     return answer;
+  sayRewritten(writer, issue3, answer.written);
   return { ...answer.written, ...counted(last), fits: true };
 }
 async function writeScan(writer, full, rows) {
@@ -62707,7 +62732,13 @@ async function writeScan(writer, full, rows) {
   }));
   if (!answer.fits)
     return answer;
+  sayRewritten(writer, answer.written.number, answer.written);
   return { ...answer.written, ...counted(last), fits: true };
+}
+function sayRewritten(writer, issue3, written) {
+  if (!written.rewritten)
+    return;
+  writer.log.info(`An edit landed on the dashboard (#${issue3}) between the read and the write, and the write went over it. The dashboard was written again on top of that edit.`);
 }
 function fitScan(writer, full, mine) {
   return fit(writer, {
@@ -64158,6 +64189,10 @@ import { readFileSync as readFileSync13 } from "node:fs";
 import { join as join35 } from "node:path";
 
 // src/core/edit-history.ts
+var BOT = { login: "github-actions", type: "Bot" };
+function isBot(editor) {
+  return editor.login === BOT.login && editor.type === BOT.type;
+}
 var HISTORY_CAP = 100;
 var HISTORY_PAGE_SIZE = 10;
 function holds(dashboard, tick) {
@@ -64215,7 +64250,12 @@ function ticksIn(body2) {
 async function nameTickers(ticks, readPage) {
   const answers = new Array(ticks.length).fill(undefined);
   const oldest = new Array(ticks.length).fill(undefined);
+  const looking = new Array(ticks.length).fill(false);
   const open2 = () => answers.some((answer) => answer === undefined);
+  const named2 = (index) => {
+    const made = oldest[index];
+    return made ? { named: true, editor: made.editor, editedAt: made.editedAt } : { named: false, reason: "not-in-newest-entry" };
+  };
   let after;
   let capped = false;
   while (open2()) {
@@ -64231,13 +64271,18 @@ async function nameTickers(ticks, readPage) {
       ticks.forEach((tick, index) => {
         if (answers[index] !== undefined)
           return;
+        const lookedThrough = looking[index];
+        looking[index] = false;
         if (dashboard === undefined) {
-          answers[index] = { named: false, reason: "entry-without-body" };
+          answers[index] = lookedThrough ? named2(index) : { named: false, reason: "entry-without-body" };
         } else if (holds(dashboard, tick)) {
           oldest[index] = entry4;
+        } else if (lookedThrough) {
+          answers[index] = named2(index);
+        } else if (isBot(entry4.editor) && oldest[index] && isBot(oldest[index].editor)) {
+          looking[index] = true;
         } else {
-          const made = oldest[index];
-          answers[index] = made ? { named: true, editor: made.editor, editedAt: made.editedAt } : { named: false, reason: "not-in-newest-entry" };
+          answers[index] = named2(index);
         }
       });
     }
@@ -64245,10 +64290,10 @@ async function nameTickers(ticks, readPage) {
       break;
     after = page.next;
   }
-  return answers.map((answer, index) => answer ?? {
+  return answers.map((answer, index) => answer ?? (looking[index] ? named2(index) : {
     named: false,
     reason: oldest[index] ? "end-of-history" : "not-in-newest-entry"
-  });
+  }));
 }
 
 // src/core/json5.ts

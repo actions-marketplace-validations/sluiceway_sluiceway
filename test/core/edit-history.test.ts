@@ -107,6 +107,104 @@ describe("the ticker is the person whose edit made the tick", () => {
   });
 });
 
+// Issue 291 (record 0119): a writer read the body before Bob's tick and wrote
+// after it, so its entry went over the tick. Its write loop saw that and wrote
+// again on top of Bob's edit. The entry that went over the tick is looked
+// through.
+describe("a write that went over a tick and was written again on top of it", () => {
+  test("is looked through, and the ticker is still the person who made the tick", async () => {
+    const { readPage } = history([
+      { editor: BOT, editedAt: "2026-09-25T06:30:07Z", body: lab("x", "x", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab("x", " ", " ") },
+      { editor: person("bob"), editedAt: "2026-09-25T06:30:01Z", body: lab("x", "x", " ") },
+      { editor: person("alice"), editedAt: "2026-09-25T06:29:58Z", body: lab("x", " ", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:00:00Z", body: lab(" ", " ", " ") },
+    ]);
+
+    expect(await nameTickers([A, B], readPage)).toEqual([
+      { named: true, editor: person("alice"), editedAt: "2026-09-25T06:29:58Z" },
+      { named: true, editor: person("bob"), editedAt: "2026-09-25T06:30:01Z" },
+    ]);
+  });
+
+  test("across the end of a page", async () => {
+    const { reads, readPage } = history(
+      [
+        { editor: BOT, editedAt: "2026-09-25T06:30:07Z", body: lab(" ", "x", " ") },
+        { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+        { editor: person("bob"), editedAt: "2026-09-25T06:30:01Z", body: lab(" ", "x", " ") },
+        { editor: BOT, editedAt: "2026-09-25T06:00:00Z", body: lab(" ", " ", " ") },
+      ],
+      2,
+    );
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: person("bob"), editedAt: "2026-09-25T06:30:01Z" },
+    ]);
+    expect(reads).toEqual([undefined, "2"]);
+  });
+
+  test("a bot entry without the tick, with no tick before it, still ends the stretch", async () => {
+    const { readPage } = history([
+      { editor: BOT, editedAt: "2026-09-25T06:30:07Z", body: lab(" ", "x", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+      { editor: person("bob"), editedAt: "2026-09-25T06:30:01Z", body: lab(" ", " ", " ") },
+    ]);
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: BOT, editedAt: "2026-09-25T06:30:07Z" },
+    ]);
+  });
+
+  // Carol ticked the row again herself. Hers is the tick.
+  test("is not looked through when a person's entry put the tick back", async () => {
+    const { readPage } = history([
+      { editor: person("carol"), editedAt: "2026-09-25T06:31:00Z", body: lab(" ", "x", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+      { editor: person("bob"), editedAt: "2026-09-25T06:30:01Z", body: lab(" ", "x", " ") },
+    ]);
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: person("carol"), editedAt: "2026-09-25T06:31:00Z" },
+    ]);
+  });
+
+  test("a person's entry without the tick is never looked through", async () => {
+    const { readPage } = history([
+      { editor: BOT, editedAt: "2026-09-25T06:31:00Z", body: lab(" ", "x", " ") },
+      { editor: person("carol"), editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+      { editor: person("bob"), editedAt: "2026-09-25T06:30:01Z", body: lab(" ", "x", " ") },
+    ]);
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: BOT, editedAt: "2026-09-25T06:31:00Z" },
+    ]);
+  });
+
+  test("an entry without a body before it is not looked into", async () => {
+    const { readPage } = history([
+      { editor: BOT, editedAt: "2026-09-25T06:30:07Z", body: lab(" ", "x", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+      { editor: person("mallory"), editedAt: "2026-09-25T06:30:01Z", body: null },
+    ]);
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: BOT, editedAt: "2026-09-25T06:30:07Z" },
+    ]);
+  });
+
+  test("the end of the history before it names the bot, as without the look", async () => {
+    const { readPage } = history([
+      { editor: BOT, editedAt: "2026-09-25T06:30:07Z", body: lab(" ", "x", " ") },
+      { editor: BOT, editedAt: "2026-09-25T06:30:06Z", body: lab(" ", " ", " ") },
+    ]);
+
+    expect(await nameTickers([B], readPage)).toEqual([
+      { named: true, editor: BOT, editedAt: "2026-09-25T06:30:07Z" },
+    ]);
+  });
+});
+
 describe("the history names nobody", () => {
   // Mallory ticks, waits for an admin's next edit and deletes her own entry.
   // Skipping over the entry would name the admin.

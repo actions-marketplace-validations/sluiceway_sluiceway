@@ -51,9 +51,17 @@ describe("a repo with a dashboard", () => {
       written: true,
       tries: 1,
       body: body("new rows"),
+      rewritten: false,
+      renamed: undefined,
     });
     expect(github.issue(number).body).toBe(body("new rows"));
-    expect(github.requests).toEqual(["listIssues", "getIssue", "updateIssueBody", "getIssue"]);
+    expect(github.requests).toEqual([
+      "listIssues",
+      "getIssue",
+      "updateIssueBody",
+      "getIssue",
+      "readEditHistory",
+    ]);
   });
 
   test("a scan that changes nothing writes nothing", async () => {
@@ -282,6 +290,7 @@ describe("pinning", () => {
       "getIssue",
       "updateIssueBody",
       "getIssue",
+      "readEditHistory",
       "listPinnedIssues",
       "pinIssue",
     ]);
