@@ -33,6 +33,7 @@ const NEWEST_DEPLOYMENTS = `query ($owner: String!, $repo: String!, $environment
         payload
         createdAt
         creator {
+          __typename
           login
         }
         latestStatus {
@@ -74,7 +75,7 @@ interface DeploymentNode {
   commitOid: string;
   payload: string | null;
   createdAt: string;
-  creator?: { login: string } | null;
+  creator?: { __typename?: string; login: string } | null;
   latestStatus: { state: string; description: string | null; createdAt: string } | null;
   // Newest first, as GitHub lists them (seen in the lab repo on 2026-09-22).
   statuses?: { nodes: ({ state: string; createdAt: string } | null)[] | null } | null;
@@ -99,6 +100,13 @@ function parsePayload(payload: unknown): unknown {
     }
   }
   return parsed;
+}
+
+// GraphQL names an app without the "[bot]" the site and REST write
+// (`sluiceway`, type `Bot`), and recordWriters lists it as the site does
+// (records 0109 and 0122).
+function siteLogin({ __typename, login }: { __typename?: string; login: string }): string {
+  return __typename === "Bot" && !login.endsWith("[bot]") ? `${login}[bot]` : login;
 }
 
 function toDeployment(deployment: ApiDeployment): Deployment {
@@ -188,7 +196,7 @@ export function deploymentCalls(
                 sha: node.commitOid,
                 payload: parsePayload(node.payload),
                 createdAt: node.createdAt,
-                ...(node.creator?.login ? { creator: node.creator.login } : {}),
+                ...(node.creator?.login ? { creator: siteLogin(node.creator) } : {}),
                 status: node.latestStatus
                   ? withSucceededAt(
                       {

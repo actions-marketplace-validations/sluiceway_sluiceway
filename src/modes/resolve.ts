@@ -1299,9 +1299,13 @@ async function startQueued(
       );
       continue;
     }
+    // A warning, not a line: a writer whose records are all left alone sees
+    // every run it dispatched end without a result, and the reason has to be
+    // on the run (record 0122).
     if (creator === undefined || !writers.has(creator.toLowerCase())) {
-      log.info(
-        `Deployment record ${id} names this run, and ${creator === undefined ? "GitHub names nobody who opened it" : `${creator} opened it, who is not in recordWriters`}. It is left alone.`,
+      log.warning(
+        `Deployment record ${id} names this run, and ${creator === undefined ? "GitHub names nobody who opened it" : `${creator} opened it, who is not in recordWriters`}. It is left alone. recordWriters names ${[...writers].join(", ")}.`,
+        "Deployment record left alone",
       );
       continue;
     }
