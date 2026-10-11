@@ -150,9 +150,10 @@ describe("a record that names the run and is left alone", () => {
     await wake(h, DISPATCH);
 
     expect(matrix(h)).toEqual([]);
-    expect(h.log.lines).toContain(
-      `Deployment record ${record.id} names this run, and mallory opened it, who is not in recordWriters. It is left alone.`,
-    );
+    expect(h.log.warnings).toContainEqual({
+      title: "Deployment record left alone",
+      message: `Deployment record ${record.id} names this run, and mallory opened it, who is not in recordWriters. It is left alone. recordWriters names deploy-bot[bot].`,
+    });
   });
 
   test("a record of another run", async () => {

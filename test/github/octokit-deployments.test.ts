@@ -188,6 +188,36 @@ describe("the newest deployment records of an environment", () => {
     expect(String((sent[0]?.body as { query?: string } | undefined)?.query)).toContain("creator {");
   });
 
+  // GraphQL names an app without the "[bot]" that REST and recordWriters
+  // write: the Sluiceway app's records came back as "sluiceway", and every
+  // record a config listing "sluiceway[bot]" let through was left alone.
+  test("names an app as the site does, with [bot]", async () => {
+    const { port } = portThatAnswers([
+      {
+        json: {
+          data: {
+            repository: {
+              deployments: {
+                pageInfo: { hasNextPage: false },
+                nodes: [
+                  node({ creator: { __typename: "Bot", login: "sluiceway" } }),
+                  node({ creator: { __typename: "Bot", login: "deploy-bot[bot]" } }),
+                  node({ creator: { __typename: "User", login: "alice" } }),
+                ],
+              },
+            },
+          },
+        },
+      },
+    ]);
+    const { records } = await port.listNewestDeployments("sluiceway");
+    expect(records.map(({ creator }) => creator)).toEqual([
+      "sluiceway[bot]",
+      "deploy-bot[bot]",
+      "alice",
+    ]);
+  });
+
   test("one GraphQL request for one page of 100, newest first", async () => {
     const { port, sent } = portThatAnswers([
       {
