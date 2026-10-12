@@ -116,6 +116,14 @@ export function isDeploymentsQuery(query: string): boolean {
   return query.includes("deployments(");
 }
 
+// GraphQL names an app without the `[bot]` that REST and the site write, and
+// gives the type next to it (record 0122): `sluiceway`, a `Bot`.
+function creator(login: string): unknown {
+  return login.endsWith("[bot]")
+    ? { __typename: "Bot", login: login.slice(0, -"[bot]".length) }
+    : { __typename: "User", login };
+}
+
 // GraphQL gives the payload encoded twice and shouts the state (seen in the
 // lab on 2026-09-21). A record without a payload has null there.
 export async function deploymentsQuery(fake: FakeGitHub, variables: unknown): Promise<Answer> {
@@ -139,7 +147,7 @@ export async function deploymentsQuery(fake: FakeGitHub, variables: unknown): Pr
                 ? null
                 : JSON.stringify(JSON.stringify(record.payload)),
               createdAt: record.createdAt,
-              creator: { login: record.creator ?? "github-actions[bot]" },
+              creator: creator(record.creator ?? "github-actions[bot]"),
               latestStatus: record.status
                 ? {
                     state: record.status.state.toUpperCase(),

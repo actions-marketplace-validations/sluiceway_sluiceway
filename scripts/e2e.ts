@@ -50,6 +50,10 @@
 //  14. A push between the tick and the deploy (record 0111): apply compares
 //      the commit it checked out with main, refuses as moved before the tool
 //      runs and starts a full scan, which shows the row pending with the push.
+//  15. A tick from the command line (records 0116 and 0122): the committed
+//      bundle of `npx sluiceway` signs in to a fake app and ticks app:prod. The
+//      app dispatches the workflow and opens a record as sluiceway[bot], and
+//      the run it dispatched deploys it with the real tool.
 //
 // The tool only runs in a copy inside the work directory, against a file
 // backend made there, with an environment built from nothing. `node` on PATH
@@ -67,10 +71,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { type FakeCheckRun, FakeGitHub } from "../test/fake-github/fake-github.ts";
 import { startFakeGitHubServer } from "../test/fake-github/server.ts";
+import { APP_LOGIN, startApp, TOKEN } from "./e2e/app.ts";
 import {
   checkEnvFile,
   checkFullScan,
@@ -158,6 +163,44 @@ function run(argv: string[], cwd: string, env: Record<string, string>): Promise<
       }),
     );
   });
+}
+
+// The committed bundle of the command line, `npx sluiceway`, as a person
+// runs it: with node alone on PATH, so that no keychain command is found and
+// the token goes to a file in the work directory, and with the token, when
+// given, on stdin.
+async function cli(args: string[], input?: string): Promise<Ran> {
+  const node = Bun.which("node", { PATH: jobEnvironment.PATH ?? "" });
+  if (node === null) throw new Error('There is no "node" on PATH.');
+  const env = {
+    PATH: dirname(node),
+    HOME: join(work, "cli-home"),
+    XDG_CONFIG_HOME: join(work, "cli-config"),
+    NO_COLOR: "1",
+  };
+  console.log(`$ sluiceway ${args.join(" ")}`);
+  const child = Bun.spawn([node, join(REPO, "dist/cli.js"), ...args], {
+    cwd: workspace,
+    env,
+    stdin: input === undefined ? "ignore" : new TextEncoder().encode(input),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  console.log(stdout + stderr);
+  return { exitCode, output: stdout + stderr };
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
 }
 
 async function prepare(argv: string[], dir: string): Promise<string> {
@@ -1264,6 +1307,124 @@ good =
     ...(afterPush.exitCode === 0 ? [] : [`The scan ended with exit code ${afterPush.exitCode}.`]),
     ...checkPendingAfterRefusal(dashboardBody(afterPush), "app:prod"),
   ]) && good;
+
+// 15. A tick from the command line (records 0116 and 0122). alice signs in to
+// the app with `sluiceway login` and ticks app:prod with `sluiceway tick`,
+// both the committed bundle of the command line. The app dispatches the
+// workflow and opens a record in its own name, sluiceway[bot], which the
+// repo lists in recordWriters. The dispatched run hands the record on,
+// deploys it with the real tool and settles, and `sluiceway stack` reads
+// the deploy back.
+console.log("::group::The repo lists the app as a record writer");
+appendFileSync(configFile, `  - ${APP_LOGIN}\n`);
+console.log(readFileSync(configFile, "utf8"));
+console.log("::endgroup::");
+const cliHash = rowHash(dashboardBody(afterPush), "app:prod");
+const cliFingerprint = rowFingerprint(dashboardBody(afterPush), "app:prod");
+let cliRun: string | undefined;
+const appDispatchesBefore = fake.dispatches.length;
+const app = startApp(
+  {
+    tick: async (stack, ticker) => {
+      await fake.dispatchWorkflow(WORKFLOW, "main");
+      runNumber++;
+      cliRun = String(runNumber);
+      // The app found the run it started, and GitHub knows it while it runs.
+      fake.seedRun(cliRun, { completed: false });
+      return fake.seedDeployment({
+        task: `sluiceway:${stack}`,
+        environment: "sluiceway",
+        sha: PUSHED_SHA,
+        creator: APP_LOGIN,
+        payload: {
+          v: 1,
+          hash: cliHash ?? "",
+          ticker,
+          run: cliRun,
+          ...(cliFingerprint === undefined ? {} : { fingerprint: cliFingerprint }),
+        },
+        status: { state: "queued" },
+      }).id;
+    },
+    record: (id) => {
+      try {
+        const record = fake.deployment(id);
+        return { stack: record.task.replace(/^sluiceway:/, ""), state: record.status?.state };
+      } catch {
+        return undefined;
+      }
+    },
+  },
+  ["app:prod"],
+);
+const appDeploysBeforeCli = await deploysOf("app", "prod");
+try {
+  const login = await cli(["login", "--app", app.url], TOKEN);
+  const ticked = await cli(["tick", "acme/infra", "app:prod", "--app", app.url, "--json"]);
+  const tickJson = parseJson(ticked.output) as {
+    tick?: { outcome?: string; deployment?: { id?: number } | null };
+    deploy?: { result?: string } | null;
+  };
+  const cliRecord = tickJson.tick?.deployment?.id;
+  good =
+    report("A tick from the command line", [
+      ...(cliHash === undefined ? ["The row of app:prod is not pending with a hash."] : []),
+      ...(login.exitCode === 0
+        ? []
+        : [`sluiceway login ended with exit code ${login.exitCode}: ${login.output}`]),
+      ...(ticked.exitCode === 0
+        ? []
+        : [`sluiceway tick ended with exit code ${ticked.exitCode}: ${ticked.output}`]),
+      ...(tickJson.tick?.outcome === "asked" && cliRecord !== undefined
+        ? []
+        : [`sluiceway tick answered ${ticked.output}, expected an asked tick with a record.`]),
+      ...(tickJson.deploy?.result === "waiting to start"
+        ? []
+        : [
+            `sluiceway tick says the record is ${tickJson.deploy?.result}, expected waiting to start.`,
+          ]),
+      ...(fake.dispatches.length === appDispatchesBefore + 1
+        ? []
+        : ["The app's tick dispatched no workflow run."]),
+    ]) && good;
+  if (cliRecord !== undefined && cliRun !== undefined) {
+    const cliStep = await loopStep(undefined, {
+      runId: cliRun,
+      sha: PUSHED_SHA,
+      event: "workflow_dispatch",
+      payload: { ref: "refs/heads/main", inputs: {} },
+      title: `Run ${cliRun}: the one step, dispatched by the app for the tick of record ${cliRecord}`,
+    });
+    fake.seedRun(cliRun, { completed: true });
+    const shown = await cli(["stack", "acme/infra", "app:prod", "--app", app.url, "--json"]);
+    const shownJson = parseJson(shown.output) as {
+      lastDeploy?: { deployment?: number; result?: string } | null;
+    };
+    good =
+      reportStep("The tick from the command line: the run the app dispatched", cliStep, [
+        ...checkOutsideRecord(cliStep, { stack: "app:prod", deployment: cliRecord }),
+        ...checkApply(cliStep, {
+          stack: "app:prod",
+          deployment: cliRecord,
+          outcome: "deployed",
+        }),
+        ...checkSettle(cliStep, { ended: undefined, before: cliStep.records }),
+        ...checkDeploys("app:prod", await deploysOf("app", "prod"), appDeploysBeforeCli + 1),
+        ...(cliStep.log.includes("Deployment record left alone")
+          ? ["The run left a record alone for its writer."]
+          : []),
+        ...(shown.exitCode === 0 &&
+        shownJson.lastDeploy?.deployment === cliRecord &&
+        shownJson.lastDeploy.result === "went out"
+          ? []
+          : [
+              `sluiceway stack answered ${shown.output}, expected the last deploy of record ${cliRecord} to have gone out.`,
+            ]),
+      ]) && good;
+  }
+} finally {
+  await app.close();
+}
 
 console.log("::group::The dashboard after the narrowed scan");
 console.log(dashboardBody(second));

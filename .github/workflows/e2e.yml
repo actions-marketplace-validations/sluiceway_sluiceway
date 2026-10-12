@@ -20,7 +20,9 @@ jobs:
     # it: ticks that resolve, deploy with the real tool and settle in one
     # step, with a refused tick, a rehearsal, a stack deployed by hand so that
     # nothing is left to deploy, a chain and a merge. A re-run and a
-    # cancelled deploy run the split workflow's jobs. Last, a scan started the way a runner starts
+    # cancelled deploy run the split workflow's jobs. A tick from the command
+    # line, with `npx sluiceway` against a fake app, is resolved and deployed
+    # by the run it dispatched. Last, a scan started the way a runner starts
     # `uses: sluiceway/sluiceway@v0`, from a moving tag (hotfix 0.1.1).
     #
     # The bundle is started by scripts/e2e.ts and not by a `uses: ./` step. A

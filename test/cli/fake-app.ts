@@ -136,26 +136,9 @@ export function stackLine(
   return { stack, repo: "acme/infra", state, word, destroys: false, line: "", at: null, ...extra };
 }
 
-export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
-  const calls: Call[] = [];
-  const repoLine = {
-    name: "acme/infra",
-    page: `${origin}/acme/infra`,
-    dashboard: "https://github.com/acme/infra/issues/7",
-    stacks: 4,
-    counts: { ...COUNTS, pending: 2, deploying: 1, "in-sync": 1 },
-    recordWriter: null,
-  };
-  const lines = [
-    stackLine("site:prod", "in-sync", "in sync"),
-    stackLine("network:prod", "pending", "pending", { line: "1 update · from #12 by alice" }),
-    stackLine("apps/api:prod", "pending", "pending", {
-      destroys: true,
-      line: "1 update, 1 replace · from #14 by bob",
-    }),
-    stackLine("db:prod", "deploying", "queued", { line: "ticked by carol" }),
-  ];
-  const row = (stack: string, extra: Record<string, Json> = {}) => ({
+// A stack's row as the app shows it, pending with one update.
+export function stackRow(stack: string, extra: Record<string, Json> = {}): Record<string, Json> {
+  return {
     stack,
     repo: "acme/infra",
     state: "pending",
@@ -177,7 +160,28 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
     at: "2026-09-26T08:00:00Z",
     confirm: null,
     ...extra,
-  });
+  };
+}
+
+export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
+  const calls: Call[] = [];
+  const repoLine = {
+    name: "acme/infra",
+    page: `${origin}/acme/infra`,
+    dashboard: "https://github.com/acme/infra/issues/7",
+    stacks: 4,
+    counts: { ...COUNTS, pending: 2, deploying: 1, "in-sync": 1 },
+    recordWriter: null,
+  };
+  const lines = [
+    stackLine("site:prod", "in-sync", "in sync"),
+    stackLine("network:prod", "pending", "pending", { line: "1 update · from #12 by alice" }),
+    stackLine("apps/api:prod", "pending", "pending", {
+      destroys: true,
+      line: "1 update, 1 replace · from #14 by bob",
+    }),
+    stackLine("db:prod", "deploying", "queued", { line: "ticked by carol" }),
+  ];
   const state: FakeApp["state"] = {
     tokens: new Map([
       [TOKEN, { login: "alice", org: "acme", name: "laptop", expiresAt: "2026-12-25T00:00:00Z" }],
@@ -206,7 +210,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
     stacks: {
       "network:prod": {
         line: lines[1] as Record<string, Json>,
-        row: row("network:prod"),
+        row: stackRow("network:prod"),
         tick: {
           outcome: "asked",
           sentence: "The tick of network:prod is asked: the deployment record is open.",
@@ -215,7 +219,7 @@ export function fakeApp(origin = "https://console.sluiceway.dev"): FakeApp {
       },
       "apps/api:prod": {
         line: lines[2] as Record<string, Json>,
-        row: row("apps/api:prod", {
+        row: stackRow("apps/api:prod", {
           line: "1 update, 1 replace · from #14 by bob",
           counts: {
             creates: 0,
