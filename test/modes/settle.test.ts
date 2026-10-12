@@ -323,7 +323,7 @@ describe("settle", () => {
     const result = settle(settleContext(h));
 
     await expect(result).rejects.toThrow(
-      "A full scan could not be started: Resource not accessible by integration. The settle job needs the permission `actions: write`",
+      "A full scan could not be started: Resource not accessible by integration. The settle job needs the permission `actions: write`, and the workflow (sluiceway.yml) needs a `workflow_dispatch` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.",
     );
     expect(h.github.deployment(deploymentOf(h, "a:prod")).status?.state).toBe("error");
   });

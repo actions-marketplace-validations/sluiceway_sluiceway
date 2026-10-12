@@ -22,7 +22,7 @@ import { sharedFiles, suggestedUnrelated } from "../core/check.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { type CostSettings, costFailureText, costSettings } from "../core/cost.ts";
 import { withReadDependencies } from "../core/dependencies.ts";
-import { deployState, shownFreezes } from "../core/deploy-window.ts";
+import { deployState } from "../core/deploy-window.ts";
 import {
   type DeployFacts,
   deployFacts,
@@ -89,7 +89,7 @@ import { type RunOfTheWorkflow, waitingRun } from "../core/waiting-run.ts";
 import { type AttributionSource, attributionSource } from "../github/attribution.ts";
 import { type DashboardResult, findDashboard } from "../github/dashboard.ts";
 import {
-  type DashboardWriter,
+  dashboardWriter,
   fitScan,
   type LiveDashboard,
   liveDashboard,
@@ -551,22 +551,7 @@ async function scanning(context: ScanContext, report: ScanReport): Promise<void>
     // Once a job too, and counted at the late read against the scan the live
     // body shows (record 0120).
     if (endedRuns === undefined) endedRuns = await readEndedRuns(context);
-    const writer: DashboardWriter = {
-      github: context.github,
-      runId: context.runId,
-      log,
-      repoUrl: context.repoUrl,
-      actionRef: context.actionRef,
-      dashboard: config.dashboard,
-      deploys: config.deploys,
-      ignored,
-      // The deploy freezes (record 0115), by this scan's clock.
-      freezes:
-        config.freezes.length === 0
-          ? []
-          : shownFreezes(config.freezes, context.now(), config.dashboard.timeZone),
-      budget: context.limits?.body,
-    };
+    const writer = dashboardWriter({ ...context, log }, config, ignored, context.now);
 
     // Only a full scan reads the tools' histories: after every preview, once,
     // and before the late read that matches them with the records (record
@@ -880,22 +865,7 @@ async function sayRunning(
     if (!dashboard) return undefined;
     let before: string | undefined;
     const answer = await swapRows(
-      {
-        github,
-        runId: context.runId,
-        log,
-        repoUrl: context.repoUrl,
-        actionRef: context.actionRef,
-        dashboard: config.dashboard,
-        deploys: config.deploys,
-        ignored,
-        // The deploy freezes (record 0115), by this scan's clock.
-        freezes:
-          config.freezes.length === 0
-            ? []
-            : shownFreezes(config.freezes, context.now(), config.dashboard.timeZone),
-        budget: context.limits?.body,
-      },
+      dashboardWriter({ ...context, github, log }, config, ignored, context.now),
       dashboard.number,
       async (live) => {
         before ??= live.body;

@@ -13,7 +13,7 @@ import { byCodeUnit, errorMessage, plural } from "../core/basics.ts";
 import type { BulkAct } from "../core/bulk.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { queueState, withReadDependencies } from "../core/dependencies.ts";
-import { deployState, queuedWindow, shownFreezes } from "../core/deploy-window.ts";
+import { deployState, queuedWindow } from "../core/deploy-window.ts";
 import { deployFacts, lastDeployedCommit, taskStackId } from "../core/deployment.ts";
 import {
   type Tick as BodyTick,
@@ -57,7 +57,7 @@ import {
 import { WORKFLOW_DIRECTORY } from "../core/workflow-check.ts";
 import { type AttributionSource, attributionSource } from "../github/attribution.ts";
 import { findDashboard, isBotIssueWithRootMarker } from "../github/dashboard.ts";
-import { swapRows as swapInto, type Written } from "../github/dashboard-write.ts";
+import { dashboardWriter, swapRows as swapInto, type Written } from "../github/dashboard-write.ts";
 import {
   openRecord,
   readDeploymentRecords,
@@ -74,7 +74,7 @@ import {
   refusedTicks,
   type Tick,
 } from "../github/ticks.ts";
-import type { WorkflowRef } from "../github/workflow-ref.ts";
+import { startFullScan, type WorkflowRef } from "../github/workflow-ref.ts";
 import type { Notifier } from "../notify/send.ts";
 import { BODY_LIMIT, type BudgetOptions } from "../render/budget.ts";
 import { bulkName } from "../render/bulk-box.ts";
@@ -951,17 +951,7 @@ async function dispatchScan(
       "A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to.",
     );
   }
-  try {
-    return await context.github.dispatchWorkflow(
-      context.workflow.file,
-      context.workflow.ref,
-      inputs,
-    );
-  } catch (error) {
-    throw new Error(
-      `A full scan could not be started: ${errorMessage(error)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`,
-    );
-  }
+  return startFullScan(context.github, context.workflow, "resolve", "", inputs);
 }
 
 async function readRecords(
@@ -1037,19 +1027,7 @@ async function swapRows(
   // By `scan-sha`, so the walk is made once however many tries the write takes.
   const attribution = new Map<string, AttributionSource>();
   const result = await swapInto(
-    {
-      github: context.github,
-      runId: context.runId,
-      log: context.log,
-      repoUrl: context.repoUrl,
-      actionRef: context.actionRef,
-      dashboard: config.dashboard,
-      deploys: config.deploys,
-      ignored,
-      // The deploy freezes (record 0115), by this run's clock.
-      freezes: shownFreezes(config.freezes, clockOf(context)(), config.dashboard.timeZone),
-      budget: context.limits?.body,
-    },
+    dashboardWriter(context, config, ignored, clockOf(context)),
     issue,
     async (live, root) => {
       const droppedStacks = stacks.filter(({ stack }) => swap.dropped.includes(stackId(stack)));

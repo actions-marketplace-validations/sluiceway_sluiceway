@@ -12,14 +12,14 @@ import type { Adapter } from "../adapters/adapter.ts";
 import { errorMessage } from "../core/basics.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { queueState } from "../core/dependencies.ts";
-import { deployState, shownFreezes } from "../core/deploy-window.ts";
+import { deployState } from "../core/deploy-window.ts";
 import { type DeploymentRecord, deployFacts } from "../core/deployment.ts";
 import { openRepo } from "../core/repo.ts";
 import { failureToWrite } from "../core/settle.ts";
 import { stackId } from "../core/stack.ts";
 import { attributionSource } from "../github/attribution.ts";
 import { findDashboard } from "../github/dashboard.ts";
-import { swapRows } from "../github/dashboard-write.ts";
+import { dashboardWriter, swapRows } from "../github/dashboard-write.ts";
 import {
   type EndedRecord,
   type FallBackStack,
@@ -32,7 +32,7 @@ import { editedIssue } from "../github/event.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { eventDashboardUrl, type StepOutputs } from "../github/outputs.ts";
 import type { GitHubPort } from "../github/port.ts";
-import type { WorkflowRef } from "../github/workflow-ref.ts";
+import { startFullScan, type WorkflowRef } from "../github/workflow-ref.ts";
 import type { BudgetOptions } from "../render/budget.ts";
 import { DOT_AT_ZERO, RESULT_DOT } from "../render/dots.ts";
 import { runUrl } from "../render/links.ts";
@@ -156,23 +156,7 @@ async function writeFailureLines(
       return;
     }
     const result = await swapRows(
-      {
-        github,
-        log,
-        runId: context.runId,
-        repoUrl: context.repoUrl,
-        actionRef: context.actionRef,
-        dashboard: config.dashboard,
-        deploys: config.deploys,
-        ignored: repo.ignored,
-        // The deploy freezes (record 0115), by this job's clock.
-        freezes: shownFreezes(
-          config.freezes,
-          (context.now ?? (() => new Date()))(),
-          config.dashboard.timeZone,
-        ),
-        budget: context.limits?.body,
-      },
+      dashboardWriter(context, config, repo.ignored, context.now ?? (() => new Date())),
       dashboard.number,
       async (live, root) => {
         const facts = deployFacts(
@@ -330,11 +314,10 @@ async function dispatchScan(context: SettleContext): Promise<void> {
       "A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to. The records are ended, and the next scan writes their rows again.",
     );
   }
-  try {
-    await context.github.dispatchWorkflow(context.workflow.file, context.workflow.ref);
-  } catch (error) {
-    throw new Error(
-      `A full scan could not be started: ${errorMessage(error)}. The settle job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`,
-    );
-  }
+  await startFullScan(
+    context.github,
+    context.workflow,
+    "settle",
+    " The records are ended, and the next scan writes their rows again.",
+  );
 }

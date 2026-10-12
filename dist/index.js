@@ -61668,6 +61668,13 @@ function readWorkflowRef(env) {
   const ref = value.slice(at + 1);
   return file2 === "" || ref === "" ? undefined : { file: file2, ref };
 }
+async function startFullScan(github, workflow, job, after, inputs) {
+  try {
+    return await github.dispatchWorkflow(workflow.file, workflow.ref, inputs);
+  } catch (error63) {
+    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The ${job} job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).${after}`);
+  }
+}
 
 // src/render/notification.ts
 var NAMES_IN_A_NOTIFICATION = 10;
@@ -62746,6 +62753,20 @@ function applyResultFile(input2) {
 }
 
 // src/github/dashboard-write.ts
+function dashboardWriter(run2, config2, ignored, now) {
+  return {
+    github: run2.github,
+    runId: run2.runId,
+    log: run2.log,
+    repoUrl: run2.repoUrl,
+    actionRef: run2.actionRef,
+    dashboard: config2.dashboard,
+    deploys: config2.deploys,
+    ignored,
+    freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, now(), config2.dashboard.timeZone),
+    budget: run2.limits?.body
+  };
+}
 async function swapRows(writer, issue3, rows) {
   let last;
   const answer = await doesItFit(() => writeBody(writer.github, issue3, async (body2) => {
@@ -63784,12 +63805,8 @@ async function dispatchScan(context3) {
   const { workflow } = context3;
   if (!workflow)
     return;
-  try {
-    await context3.github.dispatchWorkflow(workflow.file, workflow.ref);
-    context3.log.info("A full scan was started, which shows the change as it is now on the row.");
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`);
-  }
+  await startFullScan(context3.github, workflow, "apply", " The record is ended, and the next scan writes its row again.");
+  context3.log.info("A full scan was started, which shows the change as it is now on the row.");
 }
 function reasonOf(attempt2) {
   return attempt2.end.kind === "failed" ? attempt2.end.reason : undefined;
@@ -64131,18 +64148,7 @@ async function swapRow(context3, setup, id, make) {
     log.info("There is no open dashboard to write. The next scan makes one.");
     return;
   }
-  const result2 = await swapRows({
-    github,
-    log,
-    runId: context3.runId,
-    repoUrl: context3.repoUrl,
-    actionRef: context3.actionRef,
-    dashboard: setup.config.dashboard,
-    deploys: setup.config.deploys,
-    ignored: setup.ignored,
-    freezes: setup.config.freezes.length === 0 ? [] : shownFreezes(setup.config.freezes, context3.now(), setup.config.dashboard.timeZone),
-    budget: context3.limits?.body
-  }, dashboard.number, async (live) => {
+  const result2 = await swapRows(dashboardWriter({ ...context3, github, log }, setup.config, setup.ignored, context3.now), dashboard.number, async (live) => {
     const facts = deployFacts(await readDeploymentRecords(github, setup.stacks.map(({ environment }) => environment), [{ stackId: id, environment: setup.stack.environment }]));
     const attributed = await setup.attribution.attribute(new Map([[id, lastDeployedCommit(facts, id)]]));
     const mine = make(facts, attributed.get(id)?.lines, live.outside);
@@ -66247,11 +66253,7 @@ async function dispatchScan2(context3, inputs) {
   if (!context3.workflow) {
     throw new Error("A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to.");
   }
-  try {
-    return await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref, inputs);
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`);
-  }
+  return startFullScan(context3.github, context3.workflow, "resolve", "", inputs);
 }
 async function readRecords(context3, environments, fallBack) {
   try {
@@ -66279,18 +66281,7 @@ async function openDeployments(context3, ticked) {
 }
 async function swapRows2(context3, config2, stacks2, ignored, issue3, swap) {
   const attribution = new Map;
-  const result2 = await swapRows({
-    github: context3.github,
-    runId: context3.runId,
-    log: context3.log,
-    repoUrl: context3.repoUrl,
-    actionRef: context3.actionRef,
-    dashboard: config2.dashboard,
-    deploys: config2.deploys,
-    ignored,
-    freezes: shownFreezes(config2.freezes, clockOf(context3)(), config2.dashboard.timeZone),
-    budget: context3.limits?.body
-  }, issue3, async (live, root) => {
+  const result2 = await swapRows(dashboardWriter(context3, config2, ignored, clockOf(context3)), issue3, async (live, root) => {
     const droppedStacks = stacks2.filter(({ stack }) => swap.dropped.includes(stackId(stack)));
     const facts = deployFacts(await readRecords(context3, stacks2.map(({ environment }) => environment), droppedStacks));
     const source = attribution.get(root.scanSha) ?? attributionSource(context3.github, {
@@ -69238,18 +69229,7 @@ async function scanning(context3, report2) {
       waitingRunFacts = await findWaitingRun(context3, at);
     if (endedRuns === undefined)
       endedRuns = await readEndedRuns(context3);
-    const writer = {
-      github: context3.github,
-      runId: context3.runId,
-      log,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored,
-      freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, context3.now(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    };
+    const writer = dashboardWriter({ ...context3, log }, config2, ignored, context3.now);
     if (histories === undefined && ids2.length > 0 && full) {
       histories = await readHistories(context3, stacks2, config2.dashboard.recentlyDeployed, envFiles(stacks2.map(({ stack, envFile }) => ({ id: stackId(stack), envFile }))));
     }
@@ -69438,18 +69418,7 @@ async function sayRunning(context3, config2, stacks2, ignored, attribution, at) 
     if (!dashboard)
       return;
     let before;
-    const answer = await swapRows({
-      github,
-      runId: context3.runId,
-      log,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored,
-      freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, context3.now(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    }, dashboard.number, async (live) => {
+    const answer = await swapRows(dashboardWriter({ ...context3, github, log }, config2, ignored, context3.now), dashboard.number, async (live) => {
       before ??= live.body;
       const records = await readDeploymentRecords(github, stacks2.map(({ environment }) => environment), stacks2.map(({ stack, environment }) => ({ stackId: stackId(stack), environment })).filter(({ stackId: id }) => isDeployingState(live.first.get(id)?.state ?? "")));
       const deploys = deployFacts(records);
@@ -70374,18 +70343,7 @@ async function writeFailureLines(context3, config2, repo, ended) {
       log.info("There is no open dashboard to write. The full scan writes the row.");
       return;
     }
-    const result2 = await swapRows({
-      github,
-      log,
-      runId: context3.runId,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored: repo.ignored,
-      freezes: shownFreezes(config2.freezes, (context3.now ?? (() => new Date))(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    }, dashboard.number, async (live, root) => {
+    const result2 = await swapRows(dashboardWriter(context3, config2, repo.ignored, context3.now ?? (() => new Date)), dashboard.number, async (live, root) => {
       const facts = deployFacts(await readDeploymentRecords(github, repo.stacks.map(({ environment }) => environment), mine.map(({ stack, environment }) => ({ stackId: stackId(stack), environment }))));
       const carried = new Map;
       for (const { stack } of mine) {
@@ -70466,11 +70424,7 @@ async function dispatchScan3(context3) {
   if (!context3.workflow) {
     throw new Error("A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to. The records are ended, and the next scan writes their rows again.");
   }
-  try {
-    await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref);
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The settle job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`);
-  }
+  await startFullScan(context3.github, context3.workflow, "settle", " The records are ended, and the next scan writes their rows again.");
 }
 
 // src/modes/settle-job.ts

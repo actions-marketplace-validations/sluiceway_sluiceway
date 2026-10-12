@@ -2,6 +2,9 @@
 // and passed on as data (build plan, section 5). The rescan box starts a scan
 // by dispatching this same workflow on this same ref (records 0009 and 0017).
 
+import { errorMessage } from "../core/basics.ts";
+import type { GitHubPort } from "./port.ts";
+
 export interface WorkflowRef {
   // The file name under `.github/workflows/`, which is what the dispatch
   // endpoint takes as the workflow's id.
@@ -23,4 +26,23 @@ export function readWorkflowRef(
   const file = value.slice(0, at).split("/").at(-1) ?? "";
   const ref = value.slice(at + 1);
   return file === "" || ref === "" ? undefined : { file, ref };
+}
+
+// Starts a full scan by dispatching the workflow again (record 0017). A
+// dispatch GitHub refuses names what the job needs, then `after`: what the
+// job left behind it, said in the mode's own words.
+export async function startFullScan(
+  github: Pick<GitHubPort, "dispatchWorkflow">,
+  workflow: WorkflowRef,
+  job: "resolve" | "apply" | "settle",
+  after: string,
+  inputs?: Record<string, string>,
+): Promise<string | undefined> {
+  try {
+    return await github.dispatchWorkflow(workflow.file, workflow.ref, inputs);
+  } catch (error) {
+    throw new Error(
+      `A full scan could not be started: ${errorMessage(error)}. The ${job} job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).${after}`,
+    );
+  }
 }

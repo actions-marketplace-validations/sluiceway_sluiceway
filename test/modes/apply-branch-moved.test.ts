@@ -151,7 +151,7 @@ describe("a push to the branch between the tick and the deploy", () => {
       throw new Error("403 Resource not accessible by integration");
     };
     await expect(runApply(h)).rejects.toThrow(
-      "A full scan could not be started: 403 Resource not accessible by integration. The apply job needs the permission `actions: write`",
+      "A full scan could not be started: 403 Resource not accessible by integration. The apply job needs the permission `actions: write`, and the workflow (sluiceway.yml) needs a `workflow_dispatch` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.",
     );
     expect(states(h).at(-1)).toBe("error");
     expect(h.github.comments(h.number)).toHaveLength(1);
