@@ -138,7 +138,7 @@ function listedLine(node: unknown): ListedObject | undefined {
 // One object whatever its API version: the group, the kind, the namespace as
 // written and the name. A manifest that moves from one version to another is
 // the same object, as on a row (record 0060).
-export function sameObject(a: ListedObject, b: ListedObject): boolean {
+function sameObject(a: ListedObject, b: ListedObject): boolean {
   return (
     groupOf(a.apiVersion) === groupOf(b.apiVersion) &&
     a.kind === b.kind &&

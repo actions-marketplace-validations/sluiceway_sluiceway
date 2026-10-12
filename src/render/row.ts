@@ -226,7 +226,7 @@ export interface ChangeCounts {
   tracking: number;
 }
 
-export function changeCounts(changes: readonly Change[]): ChangeCounts {
+function changeCounts(changes: readonly Change[]): ChangeCounts {
   const of = (op: Change["op"]) => changes.filter((change) => change.op === op).length;
   return {
     creates: of("create"),
@@ -280,7 +280,7 @@ const HEAD_LENGTH = 24;
 // provider defines, and as much of its end, where the leaf is, as fits. The
 // end starts at a segment when it holds one. Counted in code points, so a cut
 // never splits a character.
-export function shortPath(path: string): string {
+function shortPath(path: string): string {
   const points = Array.from(path);
   if (points.length <= ROW_PATH_LENGTH) return path;
   const first = /^(?:\["(?:[^"\\]|\\.)*"\]|[^.[]+)/.exec(path)?.[0] ?? "";
@@ -557,7 +557,7 @@ export function policyFailureLine(
 
 // The line of a row whose policies could not run (record 0106): a warning,
 // and the box stays. The reason is one of Sluiceway's own (record 0022).
-export function policiesNotRunLine(
+function policiesNotRunLine(
   outcome: Extract<PolicyOutcome, { kind: "not-run" }>,
   runUrl: string,
 ): string {

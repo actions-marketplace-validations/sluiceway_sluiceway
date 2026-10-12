@@ -22,7 +22,7 @@ export const PLAN_JSON = "plan.json";
 
 // `diff` gives the change between the plan's prior state and its planned
 // state, which is what a row shows: the change to the bill, never the bill.
-export function costArgs(): string[] {
+function costArgs(): string[] {
   return [INFRACOST, "diff", "--path", PLAN_JSON, "--format", "json", "--no-color"];
 }
 
@@ -56,7 +56,7 @@ const output = z.object({
   ),
 });
 
-export function readCostOutput(stdout: string): CostResult {
+function readCostOutput(stdout: string): CostResult {
   let parsed: unknown;
   try {
     parsed = JSON.parse(stdout);

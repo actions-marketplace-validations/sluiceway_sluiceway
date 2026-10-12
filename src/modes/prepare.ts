@@ -22,7 +22,7 @@ export interface PrepareContext extends ToolContext {
 
 // The preview failure of a stack whose env file could not be loaded (record
 // 0103). The tool never ran for it, so there are no words of the tool's.
-export function envFileFailure(detail: string[]): PreviewResult {
+function envFileFailure(detail: string[]): PreviewResult {
   return { ok: false, reason: { kind: "env-file-not-loaded" }, detail, toolLog: "" };
 }
 

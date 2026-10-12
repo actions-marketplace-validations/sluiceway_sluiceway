@@ -138,7 +138,7 @@ function keys(
 // A path in the notation every adapter uses (record 0046): a name, `.name`
 // after the first, `[0]` for a list index and `["key"]` for a key that is not
 // letters, digits and underscores.
-export function propertyPath(change: FieldChange): string {
+function propertyPath(change: FieldChange): string {
   let path = "";
   for (const part of (change.path ?? "").split(".")) {
     if (part === "") continue;

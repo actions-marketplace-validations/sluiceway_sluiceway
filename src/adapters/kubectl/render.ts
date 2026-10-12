@@ -13,7 +13,7 @@ export function isKustomization(file: string): boolean {
   return KUSTOMIZATION.has(file);
 }
 
-export function isManifestFile(file: string): boolean {
+function isManifestFile(file: string): boolean {
   return MANIFEST.test(file) && !isKustomization(file);
 }
 

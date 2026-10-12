@@ -35,7 +35,7 @@ export interface DashboardResult extends WriteResult {
 // Label, root marker and author together (record 0009). A person can put the
 // label on any issue and can paste a marker, and cannot make the bot the
 // author.
-export function isDashboard(issue: DashboardCandidate, label: string): boolean {
+function isDashboard(issue: DashboardCandidate, label: string): boolean {
   return issue.labels.includes(label) && isBotIssueWithRootMarker(issue);
 }
 

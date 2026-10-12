@@ -119,7 +119,7 @@ export function changedPaths(
 // the mark, so a fingerprint enters a sensitive value as its mark and never
 // in the clear (record 0102). The marks are walked with the value: a mark
 // for a key the value does not hold marks nothing.
-export function maskSensitive(value: unknown, sensitive: unknown): unknown {
+function maskSensitive(value: unknown, sensitive: unknown): unknown {
   if (sensitive === true) return SECRET_MARK;
   if (Array.isArray(value)) {
     return value.map((item, index) => maskSensitive(item, child(sensitive, index)));

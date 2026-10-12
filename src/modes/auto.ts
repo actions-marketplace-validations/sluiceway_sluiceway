@@ -64,7 +64,7 @@ function text(value: unknown): string | undefined {
 }
 
 // What the rule needs of the event, read from its payload.
-export function autoEvent(eventName: string, payload: unknown): AutoEvent {
+function autoEvent(eventName: string, payload: unknown): AutoEvent {
   const body = record(payload);
   const inputs = record(body?.inputs);
   return {
