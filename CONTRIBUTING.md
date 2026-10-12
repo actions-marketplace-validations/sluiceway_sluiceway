@@ -26,10 +26,13 @@ bun install
 | `bun run format` | Biome format only, and writes the result. |
 | `bun run typecheck` | TypeScript, strict, no emit. |
 | `bun run test` | Unit tests with `bun test`. |
-| `bun run build:schema` | Writes `schema/sluiceway.schema.json` from the Zod schema in `src/core/config.ts`. |
+| `bun run build:schema` | Writes the JSON schemas in `schema/`: `sluiceway.schema.json` from the Zod schema in `src/core/config.ts`, and `result-file.schema.json` and `deployment-payload.schema.json`. |
 | `bun run check:schema` | Generates, then fails if `schema/` differs from what is committed. |
 | `bun run record:fixtures` | Records `test/fixtures/pulumi/` with the `pulumi` CLI on your PATH. With `--tool opentofu` it records `test/fixtures/opentofu/` with `tofu`, and with `--tool helm` `test/fixtures/helm/` with `helm` and its diff plugin against the cluster `KUBECONFIG` names. See below before you commit its output. |
+| `bun run record:conftest` | Records `test/fixtures/conftest/` with the `conftest` binary on your PATH, over the policies and inputs of `scripts/fixtures/conftest/` (record 0106). |
 | `bun run example` | Writes the example dashboard to `assets/example-dashboard.md` and into the README, from the made-up rows of `scripts/example-dashboard.ts`. |
+| `bun run example:written` | Writes the examples of `docs/what-sluiceway-writes.md` from a run of the example project (record 0096). |
+| `bun run roadmap` | Writes the part of `docs/roadmap.md` that comes from `docs/later.md`. Run it after any change to `docs/later.md`. |
 | `bun run build` | Bundles `src/main.ts` into `dist/index.js` for the Node runtime of GitHub Actions, and `src/cli.ts` into `dist/cli.js`, the command line the npm package `sluiceway` runs (record 0094). |
 | `bun run check:dist` | Builds, then fails if `dist/` differs from what is committed. |
 | `bun run check` | All of the above, as CI runs them. |
@@ -129,7 +132,7 @@ To try it on your machine: `bun run record:fixtures --tool infracost --out /tmp/
 ## Rules for code
 
 - TypeScript, strict, ESM.
-- `src/core/`, `src/adapters/` and `src/render/` never import `@actions/*`, `@octokit/*`, anything under `src/github/` or `src/modes/`, or the entry point. They never read a GitHub event payload. A lint rule and `test/boundary.test.ts` enforce this. See [src/README.md](src/README.md).
+- `src/core/`, `src/adapters/` and `src/render/` never import `@actions/*`, `@octokit/*`, anything under `src/github/`, `src/modes/`, `src/notify/` or `src/cli/`, or an entry point. `src/core/` and `src/render/` never import `src/adapters/` either. They never read a GitHub event payload. A lint rule and `test/boundary.test.ts` enforce this. See [src/README.md](src/README.md).
 - No property value ever leaves an adapter. Do not add a field that could hold one. The one exception is the tool's own diff of record 0048, which only the job log takes, and only when a repo turned on `scan.logDiff`.
 - Do not print, log or store anything from the environment.
 - Ask in an issue before you add a runtime dependency. Everything in `dependencies` ends up in the bundle that every user downloads on every run.
