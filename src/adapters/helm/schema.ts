@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { place } from "../opentofu/schema.ts";
+import { place } from "../paths.ts";
 
 // What `helm diff upgrade --output=structured` prints (the plugin's README,
 // "Structured JSON output", and diff/structured.go at v3.15.13): one entry per

@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Adapter } from "../adapters/adapter.ts";
+import { byCodeUnit, errorMessage, plural } from "../core/basics.ts";
 import type { BulkAct } from "../core/bulk.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { queueState, withReadDependencies } from "../core/dependencies.ts";
@@ -89,7 +90,7 @@ import {
 import { clearMergeTick, type MergeNote } from "../render/merge-row.ts";
 import type { RefusedTick } from "../render/refused-ticks.ts";
 import { resolveSummary } from "../render/resolve-summary.ts";
-import { byCodeUnit, plural, type Row, windowWords } from "../render/row.ts";
+import { type Row, windowWords } from "../render/row.ts";
 import { minuteAt } from "../render/time.ts";
 import { type ResolvePart, resolveTimingLine } from "../render/timing.ts";
 
@@ -216,7 +217,7 @@ async function writeRunSummary(context: ResolveContext, report: RunReport): Prom
       }),
     );
   } catch (error) {
-    context.log.info(`The job summary could not be written: ${message(error)}`);
+    context.log.info(`The job summary could not be written: ${errorMessage(error)}`);
   }
 }
 
@@ -237,10 +238,6 @@ interface Started {
   onMerge?: boolean | undefined;
   // Waits for the stack's deploy window, and is not handed on (record 0104).
   window?: true | undefined;
-}
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 async function resolveTicks(
@@ -418,7 +415,7 @@ async function resolveTicks(
       );
     } catch (error) {
       failures.push(
-        `The deployment record of ${logGroupTitle(id)} could not be written: ${message(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the ticks that are left stay for the next run.`,
+        `The deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the ticks that are left stay for the next run.`,
       );
       break;
     }
@@ -466,7 +463,7 @@ async function resolveTicks(
             : `Started a full scan, which previews the merged change and hands it to apply. It is narrowed to the merged change when ${logGroupTitle(context.workflow?.file ?? "the workflow")} declares the workflow_dispatch input ${MERGE_SCAN_INPUT} (record 0064).`,
       );
     } catch (error) {
-      failures.push(message(error));
+      failures.push(errorMessage(error));
     }
   }
 
@@ -502,14 +499,16 @@ async function resolveTicks(
       );
     } catch (error) {
       written = false;
-      failures.push(message(error));
+      failures.push(errorMessage(error));
     }
   }
   if (written) {
     try {
       await commentOnRefusedTicks(github, issue.number, outcomes, merging.problems);
     } catch (error) {
-      failures.push(`The comment about the refused ticks could not be written: ${message(error)}.`);
+      failures.push(
+        `The comment about the refused ticks could not be written: ${errorMessage(error)}.`,
+      );
     }
     // The same ticks the comment is about, in one message (record 0078). A
     // send never throws.
@@ -587,7 +586,7 @@ function findingText(finding: Finding, timeZone = "UTC"): string {
     case "refused":
       return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
     case "unverified":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${message(finding.error)}. The box is cleared.`;
+      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
     case "over-cap": {
       const one = finding.over === 1;
       return `One run starts at most ${finding.started} deploys. ${plural(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
@@ -751,13 +750,13 @@ async function mergeAll(
       error instanceof TokenRefused && error.permission !== undefined
         ? ` The resolve job needs the permission \`${error.permission}\` (record 0119).`
         : "";
-    result.failure = `The open pull requests could not be read: ${message(error)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
+    result.failure = `The open pull requests could not be read: ${errorMessage(error)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
     return result;
   }
   try {
     method = mergeMethod(await github.allowedMergeMethods(), await renovateStrategyOf(context));
   } catch (error) {
-    result.failure = `The merge settings of the repo could not be read: ${message(error)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
+    result.failure = `The merge settings of the repo could not be read: ${errorMessage(error)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
     return result;
   }
 
@@ -798,7 +797,7 @@ async function mergeAll(
     try {
       answer = await github.mergePullRequest(tick.pr, { head: tick.head, method: verdict.method });
     } catch (error) {
-      result.failure = `#${tick.pr} could not be merged: ${message(error)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing more was merged, and the boxes that are left stay ticked for the next run.`;
+      result.failure = `#${tick.pr} could not be merged: ${errorMessage(error)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing more was merged, and the boxes that are left stay ticked for the next run.`;
       return result;
     }
     if (!answer.merged) {
@@ -838,7 +837,7 @@ async function mergeAll(
           `${logGroupTitle(id)}: deployment record ${record.deployment} is queued and deploys after the scan of the merge.`,
         );
       } catch (error) {
-        result.failure = `#${tick.pr} is merged, and the deployment record of ${logGroupTitle(id)} could not be written: ${message(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). Nothing deploys for it: the scan shows the stack as pending, and a tick on its row deploys it. Nothing more was merged.`;
+        result.failure = `#${tick.pr} is merged, and the deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). Nothing deploys for it: the scan shows the stack as pending, and a tick on its row deploys it. Nothing more was merged.`;
         return result;
       }
     }
@@ -960,7 +959,7 @@ async function dispatchScan(
     );
   } catch (error) {
     throw new Error(
-      `A full scan could not be started: ${message(error)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`,
+      `A full scan could not be started: ${errorMessage(error)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`,
     );
   }
 }
@@ -978,7 +977,7 @@ async function readRecords(
     );
   } catch (error) {
     throw new Error(
-      `The deployment records could not be read: ${message(error)}. The resolve job needs the permissions \`deployments: write\` and \`actions: read\` next to \`contents: read\` and \`issues: write\` (record 0003).`,
+      `The deployment records could not be read: ${errorMessage(error)}. The resolve job needs the permissions \`deployments: write\` and \`actions: read\` next to \`contents: read\` and \`issues: write\` (record 0003).`,
     );
   }
 }
@@ -1438,7 +1437,7 @@ async function startQueued(
       );
     } catch (error) {
       failures.push(
-        `The deployment record of ${logGroupTitle(id)} could not be written: ${message(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the queued stacks that are left wait for the next run.`,
+        `The deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the queued stacks that are left wait for the next run.`,
       );
       break;
     }
@@ -1470,7 +1469,7 @@ async function startQueued(
           : `The dashboard (#${dashboard.number}) already says all of this. Nothing was written.`,
       );
     } catch (error) {
-      failures.push(message(error));
+      failures.push(errorMessage(error));
     }
   }
   if (failures.length > 0) throw new Error(failures.join("\n"));

@@ -1,5 +1,6 @@
 import { type Dirent, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { byCodeUnit } from "../../core/basics.ts";
 
 // What a stack's directory holds, the way kubectl reads it (record 0060).
 
@@ -13,7 +14,7 @@ export function isKustomization(file: string): boolean {
   return KUSTOMIZATION.has(file);
 }
 
-export function isManifestFile(file: string): boolean {
+function isManifestFile(file: string): boolean {
   return MANIFEST.test(file) && !isKustomization(file);
 }
 
@@ -76,10 +77,6 @@ function walk(dir: string, recursive: boolean, prefix = ""): string[] {
       if (entry.isDirectory()) return recursive ? walk(dir, true, path) : [];
       return entry.isFile() ? [path] : [];
     });
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // The files of the directory itself, as `kubectl apply -f <dir>` reads it

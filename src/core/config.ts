@@ -2,6 +2,7 @@ import { LineCounter, parseDocument } from "yaml";
 import { z } from "zod";
 import { configErrorText, configProblemText } from "../render/config-problems.ts";
 import { LOOKBACK, NAMED_ON_A_ROW } from "./attribution.ts";
+import { byCodeUnit } from "./basics.ts";
 import {
   type DeployFreeze,
   type DeployWindow,
@@ -1366,10 +1367,6 @@ function phasesOf(
 // The stack ids an entry names. `auto` names none in the file.
 function listed(dependsOn: StackEntry["dependsOn"]): string[] {
   return Array.isArray(dependsOn) ? dependsOn : [];
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // A dependency that could never hold anything back is an error, never a gate

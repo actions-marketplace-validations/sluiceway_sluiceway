@@ -1,6 +1,7 @@
 // The one row renderer every writer uses (records 0009 and 0027). A row block
 // is a pure function of plain data: no clock, no environment, no GitHub.
 
+import { byCodeUnit, plural } from "../core/basics.ts";
 import type { CostEstimate } from "../core/cost.ts";
 import type { QueuedWindow } from "../core/deploy-window.ts";
 import type { Change, Diff } from "../core/diff.ts";
@@ -203,16 +204,8 @@ export type PendingDetail = "full" | "compact" | "names";
 
 export const INDENT = "  ";
 
-export function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
 export function isDestroy(change: Change): boolean {
   return change.op === "replace" || change.op === "delete";
-}
-
-export function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 // How many changes of each kind a diff holds: the numbers of the first line,
@@ -226,7 +219,7 @@ export interface ChangeCounts {
   tracking: number;
 }
 
-export function changeCounts(changes: readonly Change[]): ChangeCounts {
+function changeCounts(changes: readonly Change[]): ChangeCounts {
   const of = (op: Change["op"]) => changes.filter((change) => change.op === op).length;
   return {
     creates: of("create"),
@@ -280,7 +273,7 @@ const HEAD_LENGTH = 24;
 // provider defines, and as much of its end, where the leaf is, as fits. The
 // end starts at a segment when it holds one. Counted in code points, so a cut
 // never splits a character.
-export function shortPath(path: string): string {
+function shortPath(path: string): string {
   const points = Array.from(path);
   if (points.length <= ROW_PATH_LENGTH) return path;
   const first = /^(?:\["(?:[^"\\]|\\.)*"\]|[^.[]+)/.exec(path)?.[0] ?? "";
@@ -557,7 +550,7 @@ export function policyFailureLine(
 
 // The line of a row whose policies could not run (record 0106): a warning,
 // and the box stays. The reason is one of Sluiceway's own (record 0022).
-export function policiesNotRunLine(
+function policiesNotRunLine(
   outcome: Extract<PolicyOutcome, { kind: "not-run" }>,
   runUrl: string,
 ): string {

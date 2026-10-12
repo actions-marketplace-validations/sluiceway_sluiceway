@@ -1,7 +1,10 @@
-import type { ShownValue } from "../../core/diff.ts";
-import { isListedPath, shortValue } from "../../core/show-values.ts";
-import { changeFingerprint, differingLeaves, SECRET_MARK } from "../../core/value-fingerprint.ts";
+import { isRecord } from "../core/basics.ts";
+import type { ShownValue } from "../core/diff.ts";
+import { isListedPath, shortValue } from "../core/show-values.ts";
+import { changeFingerprint, differingLeaves, SECRET_MARK } from "../core/value-fingerprint.ts";
 
+// Property paths, which the OpenTofu, Helm and kubectl adapters share.
+//
 // The property paths that change on an update or a replace, found by
 // comparing `before` and `after` in memory (records 0021 and 0046). The plan
 // JSON gives no list of changed paths, so this is the one way to know. What
@@ -67,11 +70,11 @@ export function changedPaths(
       changed(path);
       return;
     }
-    if (isObject(before) && isObject(after)) {
+    if (isRecord(before) && isRecord(after)) {
       const keys = new Set([
         ...Object.keys(before),
         ...Object.keys(after),
-        ...(isObject(unknown) ? Object.keys(unknown) : []),
+        ...(isRecord(unknown) ? Object.keys(unknown) : []),
       ]);
       for (const key of keys) {
         walk(
@@ -119,12 +122,12 @@ export function changedPaths(
 // the mark, so a fingerprint enters a sensitive value as its mark and never
 // in the clear (record 0102). The marks are walked with the value: a mark
 // for a key the value does not hold marks nothing.
-export function maskSensitive(value: unknown, sensitive: unknown): unknown {
+function maskSensitive(value: unknown, sensitive: unknown): unknown {
   if (sensitive === true) return SECRET_MARK;
   if (Array.isArray(value)) {
     return value.map((item, index) => maskSensitive(item, child(sensitive, index)));
   }
-  if (isObject(value)) {
+  if (isRecord(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, maskSensitive(item, child(sensitive, key))]),
     );
@@ -174,7 +177,7 @@ export function segment(key: string, top: boolean): string {
 
 function child(node: unknown, key: string | number): unknown {
   if (typeof key === "number") return Array.isArray(node) ? node[key] : undefined;
-  return isObject(node) ? node[key] : undefined;
+  return isRecord(node) ? node[key] : undefined;
 }
 
 function arrayLength(node: unknown): number {
@@ -184,12 +187,8 @@ function arrayLength(node: unknown): number {
 function holdsUnknown(node: unknown): boolean {
   if (node === true) return true;
   if (Array.isArray(node)) return node.some(holdsUnknown);
-  if (isObject(node)) return Object.values(node).some(holdsUnknown);
+  if (isRecord(node)) return Object.values(node).some(holdsUnknown);
   return false;
-}
-
-function isObject(node: unknown): node is Record<string, unknown> {
-  return typeof node === "object" && node !== null && !Array.isArray(node);
 }
 
 // A missing value and null are the same: the plan writes an attribute that is
@@ -201,8 +200,8 @@ function equal(a: unknown, b: unknown): boolean {
       Array.isArray(b) && a.length === b.length && a.every((item, index) => equal(item, b[index]))
     );
   }
-  if (isObject(a)) {
-    if (!isObject(b)) return false;
+  if (isRecord(a)) {
+    if (!isRecord(b)) return false;
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
     return [...keys].every((key) => equal(a[key], b[key]));
   }
@@ -218,4 +217,15 @@ function shown(value: unknown): string | "refused" | undefined {
   if (typeof value !== "string") return "refused";
   if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value)) return "refused";
   return shortValue(value);
+}
+
+// Where in a tool's output a schema found a problem. A path is made of the
+// schema's field names and of indexes, so it holds nothing the tool wrote.
+export function place(path: PropertyKey[]): string {
+  if (path.length === 0) return "the top";
+  return path
+    .map((part, index) =>
+      typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`,
+    )
+    .join("");
 }

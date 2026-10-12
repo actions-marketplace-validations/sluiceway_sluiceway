@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, posix, relative, sep } from "node:path";
 import { parse } from "yaml";
+import { isRecord } from "../../core/basics.ts";
 import { type Cloud, type CredentialNeed, cloudWays, regionWays } from "../../core/credentials.ts";
 import type { Stack } from "../../core/stack.ts";
 
@@ -335,8 +336,4 @@ function isFile(path: string): boolean {
 
 function repoPath(root: string, path: string): string {
   return relative(root, path).split(sep).join("/");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

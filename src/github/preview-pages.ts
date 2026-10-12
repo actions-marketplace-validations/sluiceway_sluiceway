@@ -5,6 +5,7 @@
 // runs, and each page costs one write. A page that cannot be written only
 // costs its row the link: the row falls back to the summary.
 
+import { errorMessage } from "../core/basics.ts";
 import { previewPageName } from "../render/preview-page.ts";
 import type { CheckRun, CheckRunOutput, GitHubPort } from "./port.ts";
 
@@ -37,16 +38,12 @@ function statusOf(error: unknown): unknown {
   return (error as { status?: unknown } | null)?.status;
 }
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 // A 403 or a 429 answers every later write the same way: a token without
 // `checks: write`, or a rate limit (research, preview-page.md).
 function refusal(error: unknown): WrittenPages["refused"] {
   const status = statusOf(error);
   if (status !== 403 && status !== 429) return undefined;
-  const message = messageOf(error);
+  const message = errorMessage(error);
   return { message, permission: /not accessible by integration/i.test(message) };
 }
 
@@ -83,7 +80,7 @@ export function previewPages(github: GitHubPort, sha: string): PreviewPages {
         } catch (error) {
           // Without the list no page can be found again, and a create would
           // add a second page of one name.
-          refused = refusal(error) ?? { message: messageOf(error), permission: false };
+          refused = refusal(error) ?? { message: errorMessage(error), permission: false };
           written.refused = refused;
           return skipRest(0);
         }
@@ -113,7 +110,7 @@ export function previewPages(github: GitHubPort, sha: string): PreviewPages {
         } catch (error) {
           const stopped = refuse(error, index);
           if (stopped) return stopped;
-          written.failed.push({ stackId, message: messageOf(error) });
+          written.failed.push({ stackId, message: errorMessage(error) });
         }
       }
       return written;

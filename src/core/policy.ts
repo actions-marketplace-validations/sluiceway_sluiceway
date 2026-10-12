@@ -108,7 +108,7 @@ const entry = z.object({
 const report = z.array(entry);
 
 // The report Conftest printed, or nothing when it is not one.
-export function parseConftestReport(stdout: string): PolicyReport | undefined {
+function parseConftestReport(stdout: string): PolicyReport | undefined {
   let json: unknown;
   try {
     json = JSON.parse(stdout);

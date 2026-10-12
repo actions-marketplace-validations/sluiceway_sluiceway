@@ -7,12 +7,13 @@
 // along: the renderer checks its own output against them.
 
 import { z } from "zod";
+import { byCodeUnit } from "../core/basics.ts";
 import type { Change, Diff } from "../core/diff.ts";
 import type { AppliedPreview, ApplyOutcome } from "./apply-summary.ts";
 import { orderChanges } from "./changes.ts";
 import { dashboardFacts } from "./dashboard-facts.ts";
 import type { ParsedRow } from "./marker.ts";
-import { byCodeUnit, sortedDrift, sortedKeys } from "./row.ts";
+import { sortedDrift, sortedKeys } from "./row.ts";
 import type { SummaryMerge, SummaryStack } from "./summary.ts";
 
 // The shape of the file. A reader checks it before anything else, and a

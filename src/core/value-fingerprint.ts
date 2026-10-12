@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { byCodeUnit } from "./basics.ts";
 import type { Change, Diff } from "./diff.ts";
 
 // The value fingerprint (record 0102): a hash of the values of a diff that the
@@ -20,11 +21,6 @@ export const SECRET_MARK: unique symbol = Symbol("sluiceway:secret");
 export type HiddenValue =
   | { path: string; old?: unknown; new?: unknown }
   | { path: string; secret: true };
-
-// Plain code unit order, with no locale (record 0008).
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 // JSON with sorted object keys and no whitespace. Values are the tool's own
 // JSON, so they can be anything JSON holds.

@@ -1,3 +1,4 @@
+import { byteLength } from "../core/basics.ts";
 import { BODY_LIMIT } from "../render/budget.ts";
 import type { GitHubPort } from "./port.ts";
 
@@ -102,10 +103,6 @@ async function editWentOver(
   if (history.body !== body || own?.body !== body) return undefined;
   if (!before?.body || before.body === replaced) return undefined;
   return before.body;
-}
-
-function byteLength(text: string): number {
-  return new TextEncoder().encode(text).length;
 }
 
 function count(n: number): string {

@@ -2,6 +2,7 @@
 // of the root facts, the row blocks and the deployment records. Every writer
 // regenerates it, and nothing in it is ever patched or carried through.
 
+import { byCodeUnit, plural } from "../core/basics.ts";
 import { type BulkState, sectionBulk } from "../core/bulk.ts";
 import {
   type Config,
@@ -218,14 +219,6 @@ function signed(state: Counted, signs: DestroySigns): { suffix: string; fact: st
   const suffix = `${signs.deletes ? "-deletes" : ""}${signs.replaces ? "-replaces" : ""}`;
   const subject = state === "pending" ? "some" : "some changes";
   return { suffix, fact: suffix === "" ? "" : `, ${subject} ${verb} resources` };
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 // A freshly rendered row as a row block. Its facts are read back from its own

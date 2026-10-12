@@ -24,15 +24,10 @@ import {
   tickedMergeBlock,
 } from "../render/merge-row.ts";
 import { previewRow } from "../render/preview-result.ts";
-import {
-  type AttributionLines,
-  byCodeUnit,
-  type FailureLine,
-  isDestroy,
-  type Row,
-} from "../render/row.ts";
+import { type AttributionLines, type FailureLine, isDestroy, type Row } from "../render/row.ts";
 import { waitingBlock } from "../render/waiting-line.ts";
 import type { Attribution } from "./attribution.ts";
+import { byCodeUnit } from "./basics.ts";
 import type { BulkState } from "./bulk.ts";
 import { type DeployFreeze, type DeployWindow, queuedWindow } from "./deploy-window.ts";
 import {

@@ -6,8 +6,9 @@
 // works the line out again with this one function.
 
 import { escapeText } from "../render/escape.ts";
-import { type AttributionLines, plural } from "../render/row.ts";
+import type { AttributionLines } from "../render/row.ts";
 import type { SummaryMerge } from "../render/summary.ts";
+import { plural } from "./basics.ts";
 import { type Claimant, claim } from "./claim.ts";
 
 // The lookback: how many of the newest commits a job walks, when

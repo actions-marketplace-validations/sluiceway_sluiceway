@@ -3,6 +3,7 @@
 // every stack in every earlier phase. The edges are derived here, and the
 // rules of record 0056 work on them as on the ones `dependsOn` names. Pure.
 
+import { byCodeUnit } from "./basics.ts";
 import type { Config } from "./config.ts";
 
 // The keys of a tool's own file that `phase: { from }` entries point at
@@ -23,10 +24,6 @@ export const PHASE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export interface PhaseGroup {
   phase: string;
   stackIds: string[];
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // Every phase in the order of the file, with its stacks. A phase no stack is

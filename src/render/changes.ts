@@ -1,5 +1,5 @@
+import { byCodeUnit } from "../core/basics.ts";
 import type { Change, Diff } from "../core/diff.ts";
-import { byCodeUnit } from "./row.ts";
 
 // The order every list of changes has (record 0024): deletes, then replaces,
 // then the rest, each sorted by address by code unit.

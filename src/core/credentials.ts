@@ -106,10 +106,6 @@ export function regionWays(cloud: Cloud): CredentialWay[] | undefined {
   ];
 }
 
-export function isCloud(name: string): name is Cloud {
-  return (CLOUDS as readonly string[]).includes(name);
-}
-
 // A way, as the check writes it.
 export function wayWords(way: CredentialWay): string {
   if (way.names.length > 0) return way.names.join(" with ");

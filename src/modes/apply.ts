@@ -14,6 +14,7 @@ import type {
 } from "../adapters/adapter.ts";
 import { ToolVersionError } from "../adapters/adapter.ts";
 import type { ProcessRunner } from "../adapters/process.ts";
+import { errorMessage } from "../core/basics.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { applyOutcome, deployEnd, deployGate, unplannedEnd } from "../core/deploy-gate.ts";
 import { shownFreezes } from "../core/deploy-window.ts";
@@ -143,10 +144,6 @@ export class ApplyFailedError extends Error {
   }
 }
 
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function lines(text: string): string[] {
   const all = text.split(/\r?\n/);
   if (all.at(-1) === "") all.pop();
@@ -245,7 +242,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
   if (claim.kind === "unread") {
     report.outcome = "failed";
     throw new ApplyFailedError(
-      `Deployment record ${id} could not be read: ${message(claim.error)}. ${RECORD_PERMISSIONS}`,
+      `Deployment record ${id} could not be read: ${errorMessage(claim.error)}. ${RECORD_PERMISSIONS}`,
     );
   }
   // Every way out from here to the deploy is a record this job may not deploy.
@@ -298,7 +295,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
   const runUrl = runUrlOf(context.repoUrl, context.runId, context.runAttempt);
   if (claim.kind === "unclaimed") {
     throw new ApplyFailedError(
-      `Deployment record ${id} of ${name} could not be marked in progress: ${message(claim.error)}. Nothing was deployed. ${RECORD_PERMISSIONS}`,
+      `Deployment record ${id} of ${name} could not be marked in progress: ${errorMessage(claim.error)}. Nothing was deployed. ${RECORD_PERMISSIONS}`,
     );
   }
   log.info(
@@ -315,7 +312,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     const end = unplannedEnd(progress.deploying);
     attempt = {
       end,
-      failed: `${name} was not deployed: ${deployFailureText(end.reason)}. ${message(error)}`,
+      failed: `${name} was not deployed: ${deployFailureText(end.reason)}. ${errorMessage(error)}`,
     };
   }
   const reason = reasonOf(attempt);
@@ -335,7 +332,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     log.info(`${RESULT_DOT[report.outcome]} Deployment record ${id} ended as ${state}.`);
   } catch (error) {
     failures.push(
-      `Deployment record ${id} of ${name} could not be given its result (${state}): ${message(error)}. The \`settle\` job of this run ends it. ${RECORD_PERMISSIONS}`,
+      `Deployment record ${id} of ${name} could not be given its result (${state}): ${errorMessage(error)}. The \`settle\` job of this run ends it. ${RECORD_PERMISSIONS}`,
     );
   }
 
@@ -378,7 +375,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
         return row.state === "pending" ? { ...row, attribution } : row;
       });
     } catch (error) {
-      failures.push(`The dashboard could not be written: ${message(error)}`);
+      failures.push(`The dashboard could not be written: ${errorMessage(error)}`);
     }
     // A moved change is told to the ticker in one comment (record 0051). It
     // says that the row shows the fresh diff, so it is written only once
@@ -399,7 +396,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
         );
       } catch (error) {
         failures.push(
-          `The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
+          `The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${errorMessage(error)}. The job needs the permission \`issues: write\`.`,
         );
       }
     }
@@ -413,7 +410,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
     try {
       await dispatchScan(context);
     } catch (error) {
-      failures.push(message(error));
+      failures.push(errorMessage(error));
     }
     try {
       const dashboard = await findDashboard(github, setup.config.dashboard.label);
@@ -429,7 +426,7 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
       }
     } catch (error) {
       failures.push(
-        `The comment to ${payload.ticker} about the newer commit could not be written: ${message(error)}. The job needs the permission \`issues: write\`.`,
+        `The comment to ${payload.ticker} about the newer commit could not be written: ${errorMessage(error)}. The job needs the permission \`issues: write\`.`,
       );
     }
   }
@@ -448,7 +445,7 @@ async function dispatchScan(context: ApplyContext): Promise<void> {
     context.log.info("A full scan was started, which shows the change as it is now on the row.");
   } catch (error) {
     throw new Error(
-      `A full scan could not be started: ${message(error)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`,
+      `A full scan could not be started: ${errorMessage(error)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`,
     );
   }
 }
@@ -561,7 +558,10 @@ async function deploy(
     };
   } catch (error) {
     const reason: DeployFailureReason = { kind: "not-started" };
-    return { end: { kind: "failed", reason }, failed: notDeployed(reason, ` ${message(error)}`) };
+    return {
+      end: { kind: "failed", reason },
+      failed: notDeployed(reason, ` ${errorMessage(error)}`),
+    };
   }
 
   // A push after the checkout never reaches the fresh preview, so the
@@ -653,7 +653,7 @@ async function sinceCheckout(
   } catch (error) {
     return refused(
       { kind: "not-started" },
-      `Comparing ${checkout}, the commit this run checked out, with ${ref} failed: ${message(error)}. Without it nothing says the branch did not move since the tick. The job needs the permission \`contents: read\`.`,
+      `Comparing ${checkout}, the commit this run checked out, with ${ref} failed: ${errorMessage(error)}. Without it nothing says the branch did not move since the tick. The job needs the permission \`contents: read\`.`,
     );
   }
   const found = movedSinceCheckout({
@@ -851,7 +851,7 @@ async function afterFreshPreview(
       ...(payload.onMerge ? { onMerge: true } : {}),
     }));
   } catch (error) {
-    log.info(`The dashboard could not be written before the deploy: ${message(error)}`);
+    log.info(`The dashboard could not be written before the deploy: ${errorMessage(error)}`);
   }
 
   progress.deploying = true;
@@ -974,7 +974,7 @@ async function writeSummary(context: ApplyContext, text: string): Promise<void> 
   try {
     await context.log.writeSummary(text);
   } catch (error) {
-    context.log.info(`Writing the summary failed: ${message(error)}`);
+    context.log.info(`Writing the summary failed: ${errorMessage(error)}`);
     context.log.warning(
       "The summary of this run could not be written. The job log holds what happened.",
       "Summary not written",

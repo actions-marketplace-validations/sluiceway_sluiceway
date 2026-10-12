@@ -1,3 +1,4 @@
+import { byCodeUnit } from "../../core/basics.ts";
 import { type Stack, stackId } from "../../core/stack.ts";
 import type { ReadDependencies } from "../adapter.ts";
 import { projectName } from "./discover.ts";
@@ -56,8 +57,4 @@ export async function readDependencies(
 
 function orElse<T>(first: T[], second: () => T[]): T[] {
   return first.length > 0 ? first : second();
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

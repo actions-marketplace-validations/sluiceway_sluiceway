@@ -1,6 +1,7 @@
+import { byCodeUnit } from "../../core/basics.ts";
 import type { Change, Op, Tracking } from "../../core/diff.ts";
 import type { Folded } from "../folded.ts";
-import { changedPaths, hiddenFingerprint, replacePath } from "./paths.ts";
+import { changedPaths, hiddenFingerprint, replacePath } from "../paths.ts";
 import type { ResourceChange } from "./schema.ts";
 
 // From the plan's actions to what a change says (records 0007 and 0053),
@@ -185,8 +186,4 @@ function keys(
 
 function sortedSet(names: string[]): string[] {
   return [...new Set(names.filter((name) => name !== ""))].sort(byCodeUnit);
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

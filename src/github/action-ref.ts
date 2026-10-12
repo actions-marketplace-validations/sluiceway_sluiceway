@@ -20,7 +20,7 @@ export interface ActionRefFacts {
 const FULL_SHA = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const EXACT_TAG = /^v\d+\.\d+\.\d+$/;
 
-export function isExactRef(ref: string): boolean {
+function isExactRef(ref: string): boolean {
   return FULL_SHA.test(ref) || EXACT_TAG.test(ref);
 }
 

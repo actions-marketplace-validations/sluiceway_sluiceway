@@ -7,6 +7,7 @@
 
 import type { BulkLine } from "../render/bulk-box.ts";
 import type { BulkNote, BulkSection, BulkStack, ParsedBulk, ParsedRow } from "../render/marker.ts";
+import { byCodeUnit } from "./basics.ts";
 
 // What a walk through the edit history looks for (record 0025): the ticked
 // bulk box of a section, or its ticked confirm box at exactly these stacks
@@ -17,10 +18,6 @@ export type BulkTick =
 
 // One row per section is enough: one row already has its own box.
 export const BULK_MIN_ROWS = 2;
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 // The rows a bulk line of the section is about: the known rows of the
 // section's state that show a diff hash, the first block of each stack, in

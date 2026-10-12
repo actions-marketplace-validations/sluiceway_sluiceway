@@ -5,9 +5,9 @@
 // through. It decides nothing. Every renderer reads these facts and none
 // counts rows for itself, so two of them cannot drift apart.
 
+import { byCodeUnit } from "../core/basics.ts";
 import { escapeText } from "./escape.ts";
 import { isDeployingState, type ParsedRow } from "./marker.ts";
-import { byCodeUnit } from "./row.ts";
 
 type KnownRow = Extract<ParsedRow, { known: true }>;
 

@@ -8575,25 +8575,25 @@ var require_picomatch = __commonJS((exports, module) => {
     }
     const matcher = (input2, returnObject = false) => {
       const { isMatch, match, output: output2 } = picomatch.test(input2, regex, options, { glob, posix });
-      const result2 = { glob, state, regex, posix, input: input2, output: output2, match, isMatch };
+      const result = { glob, state, regex, posix, input: input2, output: output2, match, isMatch };
       if (typeof opts.onResult === "function") {
-        opts.onResult(result2);
+        opts.onResult(result);
       }
       if (isMatch === false) {
-        result2.isMatch = false;
-        return returnObject ? result2 : false;
+        result.isMatch = false;
+        return returnObject ? result : false;
       }
       if (isIgnored(input2)) {
         if (typeof opts.onIgnore === "function") {
-          opts.onIgnore(result2);
+          opts.onIgnore(result);
         }
-        result2.isMatch = false;
-        return returnObject ? result2 : false;
+        result.isMatch = false;
+        return returnObject ? result : false;
       }
       if (typeof opts.onMatch === "function") {
-        opts.onMatch(result2);
+        opts.onMatch(result);
       }
-      return returnObject ? result2 : true;
+      return returnObject ? result : true;
     };
     if (returnState) {
       matcher.state = state;
@@ -8608,11 +8608,11 @@ var require_picomatch = __commonJS((exports, module) => {
       return { isMatch: false, output: "" };
     }
     const opts = options || {};
-    const format3 = opts.format || (posix ? utils.toPosixSlashes : null);
+    const format2 = opts.format || (posix ? utils.toPosixSlashes : null);
     let match = input2 === glob;
-    let output2 = match && format3 ? format3(input2) : input2;
+    let output2 = match && format2 ? format2(input2) : input2;
     if (match === false) {
-      output2 = format3 ? format3(input2) : input2;
+      output2 = format2 ? format2(input2) : input2;
       match = output2 === glob;
     }
     if (match === false || opts.capture === true) {
@@ -8703,6 +8703,18 @@ import { fileURLToPath } from "node:url";
 // src/cli/run.ts
 import { statSync as statSync6 } from "node:fs";
 import { resolve as resolve2 } from "node:path";
+
+// src/core/basics.ts
+function byCodeUnit(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function plural(count, word) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+var ENCODER = new TextEncoder;
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 // node_modules/yaml/dist/index.js
 var composer = require_composer();
@@ -19346,8 +19358,8 @@ var error43 = () => {
       case "not_multiple_of":
         return `Número inválido: deve ser múltiplo de ${issue2.divisor}`;
       case "unrecognized_keys": {
-        const plural = issue2.keys.length > 1 ? "s" : "";
-        return `Chave${plural} inválida${plural}: ${joinValues(issue2.keys, ", ")}`;
+        const plural2 = issue2.keys.length > 1 ? "s" : "";
+        return `Chave${plural2} inválida${plural2}: ${joinValues(issue2.keys, ", ")}`;
       }
       case "invalid_key":
         return `Entrada inválida n${translateOriginWithArticle(issue2.origin, "definite")}`;
@@ -19489,8 +19501,8 @@ var error44 = () => {
       case "not_multiple_of":
         return `Número inválido: deve ser múltiplo de ${issue2.divisor}`;
       case "unrecognized_keys": {
-        const plural = issue2.keys.length > 1 ? "s" : "";
-        return `Chave${plural} inválida${plural}: ${joinValues(issue2.keys, ", ")}`;
+        const plural2 = issue2.keys.length > 1 ? "s" : "";
+        return `Chave${plural2} inválida${plural2}: ${joinValues(issue2.keys, ", ")}`;
       }
       case "invalid_key":
         return `Entrada inválida n${translateOriginWithArticle(issue2.origin, "definite")}`;
@@ -27416,7 +27428,7 @@ function containsRef(value) {
     return Object.values(sub).some(containsRef);
   });
 }
-function plural(n) {
+function plural2(n) {
   return n === 1 ? "element" : "elements";
 }
 function checkArrayGuards(arraySchema, guards) {
@@ -27455,7 +27467,7 @@ function checkArrayGuards(arraySchema, guards) {
       if (matches < minContains) {
         payload.issues.push({
           code: "custom",
-          message: `Array must contain at least ${minContains} matching ${plural(minContains)}; found ${matches}`,
+          message: `Array must contain at least ${minContains} matching ${plural2(minContains)}; found ${matches}`,
           input: items,
           continue: true
         });
@@ -27463,7 +27475,7 @@ function checkArrayGuards(arraySchema, guards) {
       if (guards.maxContains !== undefined && matches > guards.maxContains) {
         payload.issues.push({
           code: "custom",
-          message: `Array must contain at most ${guards.maxContains} matching ${plural(guards.maxContains)}`,
+          message: `Array must contain at most ${guards.maxContains} matching ${plural2(guards.maxContains)}`,
           input: items,
           continue: true
         });
@@ -28433,95 +28445,6 @@ function escapeText(text) {
   return text.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ").replace(/www\.|:\/\/|gh-(?=\d)|[&<>"*_`~[\]|\\#@]/gi, escapeOne);
 }
 
-// src/core/policy.ts
-var result = exports_external.object({ msg: exports_external.string() });
-var entry = exports_external.object({
-  namespace: exports_external.string(),
-  successes: exports_external.number().int().nonnegative().optional(),
-  failures: exports_external.array(result).optional(),
-  warnings: exports_external.array(result).optional()
-});
-var report = exports_external.array(entry);
-
-// src/render/marker.ts
-var utf8 = new TextDecoder;
-var PAIRS = '((?: [^\\s="]+="[^"]*")*)';
-var ROOT_LINE = new RegExp(`^<!-- sluiceway:dashboard${PAIRS} -->[ \\t]*$`);
-var ROW_LINE = new RegExp(`^- (?:\\[([ xX])\\] )?.*<!-- sluiceway:row${PAIRS} -->[ \\t]*$`);
-var MERGE_LINE = new RegExp(`^- (?:\\[([ xX])\\] )?.*<!-- sluiceway:merge${PAIRS} -->[ \\t]*$`);
-var WAITING_LINE = new RegExp(`^- .*<!-- sluiceway:waiting${PAIRS} -->[ \\t]*$`);
-var OUTSIDE_LINE = new RegExp(`^- .*<!-- sluiceway:outside${PAIRS} -->[ \\t]*$`);
-var BULK_LINE = new RegExp(`^- \\[([ xX])\\] .*<!-- sluiceway:bulk${PAIRS} -->[ \\t]*$`);
-
-// src/render/time.ts
-var formats2 = new Map;
-function format2(timeZone) {
-  let found = formats2.get(timeZone);
-  if (found === undefined) {
-    found = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    });
-    formats2.set(timeZone, found);
-  }
-  return found;
-}
-function isUtc2(timeZone) {
-  return timeZone === undefined || timeZone === "UTC";
-}
-function wall2(at, timeZone) {
-  if (isUtc2(timeZone)) {
-    const iso = at.toISOString();
-    return {
-      year: at.getUTCFullYear(),
-      day: iso.slice(5, 10),
-      minute: iso.slice(11, 16),
-      offset: 0
-    };
-  }
-  const parts = {};
-  for (const part of format2(timeZone).formatToParts(at)) {
-    if (part.type !== "literal")
-      parts[part.type] = Number(part.value);
-  }
-  const { year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0 } = parts;
-  const shown = Date.UTC(year, month - 1, day, hour, minute, second);
-  const offset = Math.round((shown - Math.floor(at.getTime() / 1000) * 1000) / 60000);
-  const two = (value) => String(value).padStart(2, "0");
-  return {
-    year,
-    day: `${two(month)}-${two(day)}`,
-    minute: `${two(hour)}:${two(minute)}`,
-    offset
-  };
-}
-function fullDay(time3) {
-  return `${String(time3.year).padStart(4, "0")}-${time3.day}`;
-}
-function offsetName(offset) {
-  if (offset === 0)
-    return "UTC";
-  const sign = offset > 0 ? "+" : "-";
-  const hours = Math.floor(Math.abs(offset) / 60);
-  const minutes = Math.abs(offset) % 60;
-  return `UTC${sign}${hours}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`}`;
-}
-function minuteAt(at, timeZone) {
-  const time3 = wall2(at, timeZone);
-  return `${fullDay(time3)} ${time3.minute} ${offsetName(time3.offset)}`;
-}
-
-// src/render/row.ts
-function plural2(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
-
 // src/core/glob.ts
 var import_picomatch = __toESM(require_picomatch2(), 1);
 function globMatcher(globs) {
@@ -28605,6 +28528,16 @@ function describe3(stack) {
   return typeof tool === "string" ? `the stack ${where2} that a stacks entry declares with tool: ${tool}` : `the Pulumi stack ${where2}`;
 }
 
+// src/render/marker.ts
+var utf8 = new TextDecoder;
+var PAIRS = '((?: [^\\s="]+="[^"]*")*)';
+var ROOT_LINE = new RegExp(`^<!-- sluiceway:dashboard${PAIRS} -->[ \\t]*$`);
+var ROW_LINE = new RegExp(`^- (?:\\[([ xX])\\] )?.*<!-- sluiceway:row${PAIRS} -->[ \\t]*$`);
+var MERGE_LINE = new RegExp(`^- (?:\\[([ xX])\\] )?.*<!-- sluiceway:merge${PAIRS} -->[ \\t]*$`);
+var WAITING_LINE = new RegExp(`^- .*<!-- sluiceway:waiting${PAIRS} -->[ \\t]*$`);
+var OUTSIDE_LINE = new RegExp(`^- .*<!-- sluiceway:outside${PAIRS} -->[ \\t]*$`);
+var BULK_LINE = new RegExp(`^- \\[([ xX])\\] .*<!-- sluiceway:bulk${PAIRS} -->[ \\t]*$`);
+
 // src/core/notify.ts
 var NOTIFY_EVENTS = ["pending", "drift", "deployed", "failed", "refused"];
 var DEFAULT_NOTIFY_EVENTS = [
@@ -28617,27 +28550,24 @@ var DEFAULT_NOTIFY_EVENTS = [
 // src/core/phases.ts
 function phaseKeysOf(config2) {
   return [
-    ...new Set(config2.stacks.flatMap((entry2) => typeof entry2.phase === "object" ? [entry2.phase.from] : []))
+    ...new Set(config2.stacks.flatMap((entry) => typeof entry.phase === "object" ? [entry.phase.from] : []))
   ];
 }
 var PHASE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-function byCodeUnit2(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function phaseGroups(phases, phaseOf) {
   return phases.map((phase) => ({
     phase,
-    stackIds: [...phaseOf].flatMap(([id, one]) => one === phase ? [id] : []).sort(byCodeUnit2)
+    stackIds: [...phaseOf].flatMap(([id, one]) => one === phase ? [id] : []).sort(byCodeUnit)
   }));
 }
 function phaseDependencies(phases, phaseOf) {
   const index = (id) => phases.indexOf(phaseOf.get(id) ?? "");
   const edges = new Map;
-  for (const id of [...phaseOf.keys()].sort(byCodeUnit2)) {
+  for (const id of [...phaseOf.keys()].sort(byCodeUnit)) {
     const at = index(id);
     if (at === -1)
       continue;
-    edges.set(id, [...phaseOf.keys()].filter((other) => index(other) !== -1 && index(other) < at).sort(byCodeUnit2));
+    edges.set(id, [...phaseOf.keys()].filter((other) => index(other) !== -1 && index(other) < at).sort(byCodeUnit));
   }
   return edges;
 }
@@ -28650,7 +28580,7 @@ function waitsByPhase(input2) {
   const { phases, phaseOf, stackId: stackId2 } = input2;
   const named = [];
   const grouped = new Map;
-  for (const id of [...new Set(input2.waitingOn)].sort(byCodeUnit2)) {
+  for (const id of [...new Set(input2.waitingOn)].sort(byCodeUnit)) {
     const phase = phaseOf.get(id);
     if (phase === undefined || !throughPhase(phases, phaseOf, stackId2, id))
       named.push(id);
@@ -28668,14 +28598,14 @@ function waitsByPhase(input2) {
 
 // src/core/show-values.ts
 var patterns = new Map;
-function showValuesEntryProblem(entry2) {
-  const quoted = JSON.stringify(entry2);
-  if (entry2 === "")
+function showValuesEntryProblem(entry) {
+  const quoted = JSON.stringify(entry);
+  if (entry === "")
     return;
-  if (entry2.includes("**")) {
+  if (entry.includes("**")) {
     return `${quoted} uses "**". An entry matches one path, and "*" stands for part of one name. Write each path whose value may appear.`;
   }
-  if (!/[^*.[\]]/.test(entry2)) {
+  if (!/[^*.[\]]/.test(entry)) {
     return `${quoted} names no property. Write each path whose value may appear.`;
   }
   return;
@@ -28770,19 +28700,19 @@ var stackEntry = exports_external.strictObject({
       refuse(context, { kind: "cost-threshold-without-enabled" }, ["threshold"]);
   }).describe("The cost estimate of these stacks. Default: the top level cost.").exactOptional(),
   options: exports_external.record(exports_external.string(), exports_external.unknown()).describe("Named adapter options of the tool. Only an entry with tool takes them.").exactOptional()
-}).superRefine((entry2, context) => {
-  if (entry2.tool !== undefined)
+}).superRefine((entry, context) => {
+  if (entry.tool !== undefined)
     return;
-  for (const name of Object.keys(entry2.options ?? {})) {
+  for (const name of Object.keys(entry.options ?? {})) {
     refuse(context, { kind: "option-without-tool", option: name }, ["options"]);
   }
 });
 var stackEntries = exports_external.array(stackEntry).superRefine((entries, context) => {
   const seen = new Map;
-  entries.forEach((entry2, index) => {
+  entries.forEach((entry, index) => {
     const id = stackId({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name }
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name }
     });
     const first = seen.get(id);
     if (first === undefined)
@@ -28826,8 +28756,8 @@ var configSchema = exports_external.strictObject({
     redact: exports_external.boolean().describe("Keep resource types, resource names and property names out of the issue. The summary stays full. Not access control.").default(false),
     personality: exports_external.boolean().describe("Show the header image and use the voice. false removes both.").default(true),
     readOnly: exports_external.boolean().describe("Draw no boxes: pending rows have none, there is no rescan box, and a line under the Pending heading says so. For a workflow that only scans.").default(false),
-    showValues: exports_external.array(text.superRefine((entry2, context) => {
-      const problem = showValuesEntryProblem(entry2);
+    showValues: exports_external.array(text.superRefine((entry, context) => {
+      const problem = showValuesEntryProblem(entry);
       if (problem !== undefined)
         refuse(context, { kind: "worded", text: problem });
     })).describe('Property paths whose old and new value may appear on the dashboard, as "old → new". Exact paths, or "*" for part of one name. Never a value the tool marks secret, and none at all with redact on.').default([]),
@@ -28896,10 +28826,10 @@ var configSchema = exports_external.strictObject({
     if (first !== index)
       refuse(context, { kind: "phase-named-twice", phase, first }, ["phases", index]);
   });
-  config2.stacks.forEach((entry2, index) => {
-    if (typeof entry2.phase !== "string" || config2.phases.includes(entry2.phase))
+  config2.stacks.forEach((entry, index) => {
+    if (typeof entry.phase !== "string" || config2.phases.includes(entry.phase))
       return;
-    refuse(context, { kind: "unknown-phase", phase: entry2.phase, phases: config2.phases }, [
+    refuse(context, { kind: "unknown-phase", phase: entry.phase, phases: config2.phases }, [
       "stacks",
       index,
       "phase"
@@ -28923,12 +28853,12 @@ class ConfigError extends Error {
 }
 function parseConfig(text2) {
   const raw = text2 === undefined ? null : readYaml(text2);
-  const result2 = configSchema.safeParse(raw ?? {});
-  if (!result2.success) {
-    const found = result2.error.issues.flatMap((issue2) => classify(issue2, raw));
+  const result = configSchema.safeParse(raw ?? {});
+  if (!result.success) {
+    const found = result.error.issues.flatMap((issue2) => classify(issue2, raw));
     throw new ConfigError(inFileOrder(found, raw).map((one) => one.issue));
   }
-  return result2.data;
+  return result.data;
 }
 function readYaml(text2) {
   const lineCounter2 = new $LineCounter;
@@ -29105,26 +29035,26 @@ function unwrap(schema) {
   }
   return inner;
 }
-function ignoreGlob(entry2) {
-  return typeof entry2 === "string" ? entry2 : entry2.glob;
+function ignoreGlob(entry) {
+  return typeof entry === "string" ? entry : entry.glob;
 }
 function ignoredStacks(config2, found) {
   return found.map(stackId).sort((a, b) => a < b ? -1 : a > b ? 1 : 0).flatMap((id) => {
-    const entry2 = config2.ignore.find((one) => globMatcher([ignoreGlob(one)])(id));
-    return entry2 === undefined || typeof entry2 === "string" ? [] : [{ stackId: id, reason: entry2.reason }];
+    const entry = config2.ignore.find((one) => globMatcher([ignoreGlob(one)])(id));
+    return entry === undefined || typeof entry === "string" ? [] : [{ stackId: id, reason: entry.reason }];
   });
 }
 function withIds(config2, found) {
   const given = new Map;
   const issues = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.id === undefined)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.id === undefined)
       return;
     const path = ["stacks", index, "id"];
-    const covered = found.filter((stack) => covers(entry2, stack));
+    const covered = found.filter((stack) => covers(entry, stack));
     const [only] = covered;
     if (only === undefined) {
-      issues.push({ kind: "id-covers-no-stack", id: entry2.id, path });
+      issues.push({ kind: "id-covers-no-stack", id: entry.id, path });
     } else if (covered.length > 1) {
       issues.push({ kind: "id-covers-stacks", stackIds: covered.map(stackId), path });
     } else if (given.has(only)) {
@@ -29135,17 +29065,17 @@ function withIds(config2, found) {
         path
       });
     } else {
-      given.set(only, entry2.id);
+      given.set(only, entry.id);
     }
   });
   const taken = new Set(found.filter((stack) => !given.has(stack)).map(stackId));
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.id === undefined || ![...given.values()].includes(entry2.id))
+  config2.stacks.forEach((entry, index) => {
+    if (entry.id === undefined || ![...given.values()].includes(entry.id))
       return;
-    if (taken.has(entry2.id)) {
-      issues.push({ kind: "id-taken", id: entry2.id, path: ["stacks", index, "id"] });
+    if (taken.has(entry.id)) {
+      issues.push({ kind: "id-taken", id: entry.id, path: ["stacks", index, "id"] });
     }
-    taken.add(entry2.id);
+    taken.add(entry.id);
   });
   if (issues.length > 0)
     throw new ConfigError(once(issues));
@@ -29167,12 +29097,12 @@ function once(issues) {
 var DEFAULT_ENVIRONMENT = "sluiceway";
 function applyConfig(config2, found) {
   const stacks = knownStacks(found, config2.ignore.map(ignoreGlob));
-  const misses = config2.stacks.flatMap((entry2, index) => {
-    const inPath = stacks.filter((stack) => stack.path === entry2.path);
-    if (inPath.some((stack) => covers(entry2, stack)))
+  const misses = config2.stacks.flatMap((entry, index) => {
+    const inPath = stacks.filter((stack) => stack.path === entry.path);
+    if (inPath.some((stack) => covers(entry, stack)))
       return [];
-    const ignored = found.filter((stack) => covers(entry2, stack));
-    return [{ ...miss(entry2, inPath, ignored), path: ["stacks", index] }];
+    const ignored = found.filter((stack) => covers(entry, stack));
+    return [{ ...miss(entry, inPath, ignored), path: ["stacks", index] }];
   });
   if (misses.length > 0)
     throw new ConfigError(misses);
@@ -29189,29 +29119,29 @@ function applyConfig(config2, found) {
   return stacks.map((stack) => {
     const entries = entriesOf(config2, stack);
     const id = stackId(stack);
-    const previewTimeout = entries.findLast((entry2) => entry2.previewTimeout)?.previewTimeout;
-    const drift = entries.findLast((entry2) => entry2.drift)?.drift?.enabled;
-    const deploy = entries.findLast((entry2) => entry2.deploy)?.deploy;
-    const valueFingerprint = entries.findLast((entry2) => entry2.valueFingerprint !== undefined)?.valueFingerprint;
-    const envFile = entries.findLast((entry2) => entry2.envFile !== undefined)?.envFile;
-    const windows = entries.findLast((entry2) => entry2.deployWindows !== undefined)?.deployWindows ?? config2.deployWindows;
-    const createInBackend = entries.findLast((entry2) => entry2.createInBackend !== undefined)?.createInBackend;
+    const previewTimeout = entries.findLast((entry) => entry.previewTimeout)?.previewTimeout;
+    const drift = entries.findLast((entry) => entry.drift)?.drift?.enabled;
+    const deploy = entries.findLast((entry) => entry.deploy)?.deploy;
+    const valueFingerprint = entries.findLast((entry) => entry.valueFingerprint !== undefined)?.valueFingerprint;
+    const envFile = entries.findLast((entry) => entry.envFile !== undefined)?.envFile;
+    const windows = entries.findLast((entry) => entry.deployWindows !== undefined)?.deployWindows ?? config2.deployWindows;
+    const createInBackend = entries.findLast((entry) => entry.createInBackend !== undefined)?.createInBackend;
     const cost = costOf(entries);
     const phase = phases.phaseOf.get(id);
     const from = phases.from.get(id);
     const policies = [
-      ...new Set([...config2.policies, ...entries.flatMap((entry2) => entry2.policies ?? [])])
+      ...new Set([...config2.policies, ...entries.flatMap((entry) => entry.policies ?? [])])
     ];
     return {
       stack,
-      environment: entries.findLast((entry2) => entry2.environment)?.environment ?? DEFAULT_ENVIRONMENT,
-      tickers: entries.findLast((entry2) => entry2.tickers)?.tickers ?? config2.tickers,
-      inputs: [...new Set(entries.flatMap((entry2) => entry2.inputs ?? []))],
+      environment: entries.findLast((entry) => entry.environment)?.environment ?? DEFAULT_ENVIRONMENT,
+      tickers: entries.findLast((entry) => entry.tickers)?.tickers ?? config2.tickers,
+      inputs: [...new Set(entries.flatMap((entry) => entry.inputs ?? []))],
       ...previewTimeout === undefined ? {} : { previewTimeout },
       ...dependsOnOf(entries, derived2.get(id)),
       ...phase === undefined ? {} : { phase },
       ...from === undefined ? {} : { phaseFrom: from },
-      ...entries.some((entry2) => entry2.dependsOn === DEPENDS_ON_AUTO) ? { dependsOnAuto: true } : {},
+      ...entries.some((entry) => entry.dependsOn === DEPENDS_ON_AUTO) ? { dependsOnAuto: true } : {},
       ...drift === undefined ? {} : { drift },
       ...deploy === "on-merge" ? { deploy } : {},
       ...valueFingerprint === undefined ? {} : { valueFingerprint },
@@ -29225,8 +29155,8 @@ function applyConfig(config2, found) {
   });
 }
 function costOf(entries) {
-  const enabled = entries.findLast((entry2) => entry2.cost?.enabled !== undefined)?.cost?.enabled;
-  const threshold = entries.findLast((entry2) => entry2.cost?.threshold !== undefined)?.cost?.threshold;
+  const enabled = entries.findLast((entry) => entry.cost?.enabled !== undefined)?.cost?.enabled;
+  const threshold = entries.findLast((entry) => entry.cost?.threshold !== undefined)?.cost?.threshold;
   if (enabled === undefined && threshold === undefined)
     return;
   return {
@@ -29241,7 +29171,7 @@ function checkCostThresholds(config2, stacks) {
     const cost = costOf(entries);
     if (cost?.threshold === undefined || (cost.enabled ?? config2.cost.enabled))
       continue;
-    const setBy = entries.findLast((entry2) => entry2.cost?.threshold !== undefined);
+    const setBy = entries.findLast((entry) => entry.cost?.threshold !== undefined);
     if (setBy !== undefined)
       refused.add(config2.stacks.indexOf(setBy));
   }
@@ -29251,12 +29181,12 @@ function checkCostThresholds(config2, stacks) {
   }));
 }
 function entriesOf(config2, stack) {
-  return config2.stacks.filter((entry2) => covers(entry2, stack)).sort((a, b) => Number(a.name !== undefined) - Number(b.name !== undefined));
+  return config2.stacks.filter((entry) => covers(entry, stack)).sort((a, b) => Number(a.name !== undefined) - Number(b.name !== undefined));
 }
 function dependsOnOf(entries, fromPhases = []) {
   const ids = [
-    ...new Set([...entries.flatMap((entry2) => listed(entry2.dependsOn)), ...fromPhases])
-  ].sort(byCodeUnit3);
+    ...new Set([...entries.flatMap((entry) => listed(entry.dependsOn)), ...fromPhases])
+  ].sort(byCodeUnit);
   return ids.length === 0 ? {} : { dependsOn: ids };
 }
 function phasesOf(config2, stacks) {
@@ -29264,16 +29194,16 @@ function phasesOf(config2, stacks) {
   const from = new Map;
   const issues = [];
   for (const stack of stacks) {
-    const entry2 = entriesOf(config2, stack).findLast((one) => one.phase !== undefined);
-    if (entry2?.phase === undefined)
+    const entry = entriesOf(config2, stack).findLast((one) => one.phase !== undefined);
+    if (entry?.phase === undefined)
       continue;
     const id = stackId(stack);
-    if (typeof entry2.phase === "string") {
-      phaseOf.set(id, entry2.phase);
+    if (typeof entry.phase === "string") {
+      phaseOf.set(id, entry.phase);
       continue;
     }
-    const path = ["stacks", config2.stacks.indexOf(entry2), "phase"];
-    const key = entry2.phase.from;
+    const path = ["stacks", config2.stacks.indexOf(entry), "phase"];
+    const key = entry.phase.from;
     const read = stack.phaseKeys?.[key];
     if (read === undefined) {
       issues.push({ kind: "no-phase-key", stackId: id, key, path });
@@ -29289,13 +29219,10 @@ function phasesOf(config2, stacks) {
 function listed(dependsOn) {
   return Array.isArray(dependsOn) ? dependsOn : [];
 }
-function byCodeUnit3(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function checkDependsOn(config2, found, stacks, phaseOf) {
   const known = new Set(stacks.map(stackId));
   const all = new Set(found.map(stackId));
-  const issues = config2.stacks.flatMap((entry2, index) => listed(entry2.dependsOn).flatMap((id, at) => {
+  const issues = config2.stacks.flatMap((entry, index) => listed(entry.dependsOn).flatMap((id, at) => {
     const path = ["stacks", index, "dependsOn", at];
     if (all.has(id) && !known.has(id)) {
       const reason = ignoredStacks(config2, found).find((one) => one.stackId === id)?.reason;
@@ -29320,9 +29247,9 @@ function checkDependsOn(config2, found, stacks, phaseOf) {
       ];
     }
     const self = stacks.find((stack) => stackId(stack) === id);
-    if (self && covers(entry2, self))
+    if (self && covers(entry, self))
       return [{ kind: "depends-on-itself", stackId: id, path }];
-    const earlier = stacks.filter((stack) => covers(entry2, stack)).map(stackId).sort(byCodeUnit3).find((one) => throughPhase(config2.phases, phaseOf, id, one));
+    const earlier = stacks.filter((stack) => covers(entry, stack)).map(stackId).sort(byCodeUnit).find((one) => throughPhase(config2.phases, phaseOf, id, one));
     if (earlier !== undefined)
       return [
         {
@@ -29369,31 +29296,31 @@ function dependencyCircles(edges) {
         continue;
       }
       const circle = path.slice(at);
-      const start = circle.indexOf([...circle].sort(byCodeUnit3)[0] ?? "");
+      const start = circle.indexOf([...circle].sort(byCodeUnit)[0] ?? "");
       const turned = [...circle.slice(start), ...circle.slice(0, start)];
-      const key = [...turned].sort(byCodeUnit3).join(`
+      const key = [...turned].sort(byCodeUnit).join(`
 `);
       if (!circles.has(key))
         circles.set(key, [...turned, turned[0] ?? ""]);
     }
   };
-  for (const id of [...edges.keys()].sort(byCodeUnit3))
+  for (const id of [...edges.keys()].sort(byCodeUnit))
     walk([id]);
-  return [...circles.values()].sort((a, b) => byCodeUnit3(a[0] ?? "", b[0] ?? ""));
+  return [...circles.values()].sort((a, b) => byCodeUnit(a[0] ?? "", b[0] ?? ""));
 }
-function covers(entry2, stack) {
-  return entry2.path === stack.path && (entry2.name === undefined || entry2.name === stack.name);
+function covers(entry, stack) {
+  return entry.path === stack.path && (entry.name === undefined || entry.name === stack.name);
 }
-function miss(entry2, inPath, ignored) {
+function miss(entry, inPath, ignored) {
   if (ignored.length > 0)
     return { kind: "entry-only-ignored", stackIds: ignored.map(stackId) };
-  if (entry2.name === undefined || inPath.length === 0) {
-    return { kind: "entry-no-stack", stackPath: entry2.path };
+  if (entry.name === undefined || inPath.length === 0) {
+    return { kind: "entry-no-stack", stackPath: entry.path };
   }
   return {
     kind: "entry-no-named-stack",
-    name: entry2.name,
-    stackPath: entry2.path,
+    name: entry.name,
+    stackPath: entry.path,
     names: inPath.flatMap((stack) => stack.name === undefined ? [] : [stack.name])
   };
 }
@@ -29484,17 +29411,17 @@ function discoverHelm(root, config2) {
   const stacks = [];
   const optionProblems = [];
   const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== HELM)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== HELM)
       return;
-    const parsed = parseHelmOptions(entry2.options, index);
+    const parsed = parseHelmOptions(entry.options, index);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
     }
     const { options } = parsed;
-    const dir = join(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
+    const dir = join(root, entry.path);
+    const shown = JSON.stringify(entry.path);
     if (!isDirectory(dir)) {
       problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${WHAT_PATH_IS}`);
       return;
@@ -29546,8 +29473,8 @@ function discoverHelm(root, config2) {
       ...chart === undefined ? { builds: [] } : chart
     };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...bag }
     });
   });
@@ -29697,19 +29624,16 @@ function walk(dir, recursive2, prefix = "") {
   } catch {
     return [];
   }
-  return entries.sort((a, b) => byCodeUnit4(a.name, b.name)).flatMap((entry2) => {
-    const path = prefix === "" ? entry2.name : `${prefix}/${entry2.name}`;
-    if (entry2.isDirectory())
+  return entries.sort((a, b) => byCodeUnit(a.name, b.name)).flatMap((entry) => {
+    const path = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory())
       return recursive2 ? walk(dir, true, path) : [];
-    return entry2.isFile() ? [path] : [];
+    return entry.isFile() ? [path] : [];
   });
-}
-function byCodeUnit4(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 function filesIn(dir) {
   try {
-    return readdirSync(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+    return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
   } catch {
     return;
   }
@@ -29721,16 +29645,16 @@ function discoverKubectl(root, config2) {
   const stacks = [];
   const optionProblems = [];
   const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== KUBECTL)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== KUBECTL)
       return;
-    const parsed = parseKubectlOptions(entry2.options, index);
+    const parsed = parseKubectlOptions(entry.options, index);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
     }
-    const shown = JSON.stringify(entry2.path);
-    const dir = join3(root, entry2.path);
+    const shown = JSON.stringify(entry.path);
+    const dir = join3(root, entry.path);
     const files = filesIn(dir);
     if (files === undefined) {
       problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${NAMES}`);
@@ -29744,7 +29668,7 @@ function discoverKubectl(root, config2) {
     const nested = recursive2 ? nestedKustomizations(dir) : [];
     if (nested.length > 0) {
       for (const sub of nested) {
-        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry2.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
+        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
       }
       return;
     }
@@ -29754,8 +29678,8 @@ function discoverKubectl(root, config2) {
     }
     const options = { tool: KUBECTL, ...parsed.options };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...options }
     });
   });
@@ -29829,11 +29753,11 @@ function discoverOpenTofu(root, config2) {
   const optionProblems = [];
   const problems = [];
   const declaredBy = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (!isFamilyTool(entry2.tool))
+  config2.stacks.forEach((entry, index) => {
+    if (!isFamilyTool(entry.tool))
       return;
-    const tool = entry2.tool;
-    const parsed = parseOpenTofuOptions(entry2.options, index, tool);
+    const tool = entry.tool;
+    const parsed = parseOpenTofuOptions(entry.options, index, tool);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
@@ -29843,23 +29767,23 @@ function discoverOpenTofu(root, config2) {
     if (wrapper !== undefined && parsed.options.varFiles.length > 0) {
       optionProblems.push(wrapper === TERRAGRUNT ? `stacks[${index}].options.varFiles: a Terragrunt unit passes its var files in its own terragrunt.hcl (extra_arguments), so the entry takes none.` : `stacks[${index}].options.varFiles: a CDK for Terraform app sets its variables in code, so the entry takes none.`);
     }
-    if (wrapper === CDKTF && entry2.name === undefined) {
+    if (wrapper === CDKTF && entry.name === undefined) {
       optionProblems.push(`stacks[${index}].name: an entry with wrapper: cdktf names the CDK for Terraform stack it deploys, as the app calls it.`);
     }
-    if (wrapper === CDKTF && entry2.name !== undefined && !CDKTF_STACK_NAME.test(entry2.name)) {
-      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry2.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
+    if (wrapper === CDKTF && entry.name !== undefined && !CDKTF_STACK_NAME.test(entry.name)) {
+      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
     }
     const kind = `tool: ${tool}${wrapper === undefined ? "" : ` and wrapper: ${wrapper}`}`;
-    const earlier = declaredBy.get(entry2.path);
+    const earlier = declaredBy.get(entry.path);
     if (earlier === undefined) {
-      declaredBy.set(entry2.path, { index, kind });
+      declaredBy.set(entry.path, { index, kind });
     } else if (earlier.kind !== kind) {
-      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry2.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
+      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
     }
     if (optionProblems.length > before)
       return;
-    const dir = join4(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
+    const dir = join4(root, entry.path);
+    const shown = JSON.stringify(entry.path);
     const files = filesIn2(dir);
     const names = wrapper === TERRAGRUNT ? "the directory of one Terragrunt unit" : wrapper === CDKTF ? "the directory of a CDK for Terraform app" : "the directory of a root module";
     const about = wrapper === undefined ? `An entry with tool: ${tool}` : `An entry with wrapper: ${wrapper}`;
@@ -29899,8 +29823,8 @@ function discoverOpenTofu(root, config2) {
       return;
     const options = { tool, ...parsed.options };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...options }
     });
   });
@@ -29910,7 +29834,7 @@ function discoverOpenTofu(root, config2) {
 }
 function filesIn2(dir) {
   try {
-    return readdirSync2(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+    return readdirSync2(dir, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
   } catch {
     return;
   }
@@ -30175,9 +30099,9 @@ function explainRootModules(root, config2) {
 function judge(root, config2) {
   const repo = readRepo(root);
   const declared = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== undefined && !declared.has(entry2.path))
-      declared.set(entry2.path, index);
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== undefined && !declared.has(entry.path))
+      declared.set(entry.path, index);
   });
   const namedBy = new Map;
   for (const directory of repo.directories) {
@@ -30219,7 +30143,7 @@ function judge(root, config2) {
     const chosen = [
       ...directory.chosenFiles,
       ...[...repo.varDirectories].filter(([under]) => posix.dirname(under) === path).flatMap(([under, files]) => files.map((file2) => posix.relative(path, `${under}/${file2}`)))
-    ].sort(byCodeUnit5);
+    ].sort(byCodeUnit);
     if (chosen.length > 0) {
       return left(`${listed2(chosen)} ${chosen.length === 1 ? "is a file" : "are files"} the tool loads only when told to: which one a stack takes is the repo's to say`);
     }
@@ -30245,7 +30169,7 @@ function readRepo(root) {
     } catch {
       return;
     }
-    const files = entries.filter((entry2) => entry2.isFile()).map((entry2) => entry2.name).sort(byCodeUnit5);
+    const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort(byCodeUnit);
     const path = relative3 || ".";
     const terragrunt = files.find((file2) => TERRAGRUNT_FILE.test(file2));
     if (terragrunt !== undefined && repo.terragrunt === undefined) {
@@ -30258,14 +30182,14 @@ function readRepo(root) {
     } else if (chosenFiles.length > 0) {
       repo.varDirectories.set(path, chosenFiles);
     }
-    for (const entry2 of entries) {
-      if (!entry2.isDirectory() || entry2.name.startsWith(".") || SKIPPED.has(entry2.name))
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".") || SKIPPED.has(entry.name))
         continue;
-      walk2(relative3 === "" ? entry2.name : `${relative3}/${entry2.name}`);
+      walk2(relative3 === "" ? entry.name : `${relative3}/${entry.name}`);
     }
   };
   walk2("");
-  repo.directories.sort((a, b) => byCodeUnit5(a.path, b.path));
+  repo.directories.sort((a, b) => byCodeUnit(a.path, b.path));
   return repo;
 }
 function readDirectory(root, path, files, code, chosenFiles) {
@@ -30351,15 +30275,12 @@ function readJson(text5) {
   };
 }
 function field(value, name) {
-  return isObject2(value) ? value[name] : undefined;
+  return isRecord(value) ? value[name] : undefined;
 }
 function objects(value) {
   if (Array.isArray(value))
-    return value.filter(isObject2);
-  return isObject2(value) ? [value] : [];
-}
-function isObject2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+    return value.filter(isRecord);
+  return isRecord(value) ? [value] : [];
 }
 function localSource(from, source) {
   if (!source.startsWith("./") && !source.startsWith("../"))
@@ -30380,9 +30301,6 @@ function read(file2) {
   } catch {
     return "";
   }
-}
-function byCodeUnit5(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/discover.ts
@@ -30419,15 +30337,15 @@ async function discover(root, config2) {
         problems.push(`${slashed(relative3(root, projectFile))}: ${error62.message}`);
       }
     }
-    for (const entry2 of entries) {
-      if (entry2.isDirectory() && !SKIPPED2.has(entry2.name))
-        await walk2(join6(dir, entry2.name));
+    for (const entry of entries) {
+      if (entry.isDirectory() && !SKIPPED2.has(entry.name))
+        await walk2(join6(dir, entry.name));
     }
   };
   await walk2(root);
   if (problems.length > 0)
-    throw new DiscoveryError(problems.sort(compare));
-  return stacks.sort((a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""));
+    throw new DiscoveryError(problems.sort(byCodeUnit));
+  return stacks.sort((a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? ""));
 }
 
 class ProjectFileProblem extends Error {
@@ -30444,12 +30362,12 @@ function keysOf(project, keys) {
   }
   return Object.keys(read2).length === 0 ? undefined : read2;
 }
-function configText(entry2) {
-  if (typeof entry2 === "string")
-    return entry2;
-  if (!isMapping2(entry2) || entry2.secret === true)
+function configText(entry) {
+  if (typeof entry === "string")
+    return entry;
+  if (!isMapping2(entry) || entry.secret === true)
     return;
-  const text5 = entry2.value ?? entry2.default;
+  const text5 = entry.value ?? entry.default;
   return typeof text5 === "string" ? text5 : undefined;
 }
 function isMapping2(value) {
@@ -30487,7 +30405,7 @@ function stackNames(files, extension) {
   return files.filter((file2) => file2.startsWith(prefix) && file2.endsWith(extension)).map((file2) => file2.slice(prefix.length, -extension.length)).filter((name) => name !== "");
 }
 function fileNames(entries) {
-  return entries.filter((entry2) => !entry2.isDirectory()).map((entry2) => entry2.name);
+  return entries.filter((entry) => !entry.isDirectory()).map((entry) => entry.name);
 }
 async function fileNamesIn(dir) {
   try {
@@ -30502,31 +30420,28 @@ async function fileNamesIn(dir) {
 function slashed(path) {
   return path.split(sep3).join("/");
 }
-function compare(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 // src/adapters/discover-all.ts
 var TOOLS = [OPENTOFU, TERRAFORM, HELM, KUBECTL];
 var DISCOVERY_SWITCHES = [ROOT_MODULES];
 async function discoverAll(root, config2) {
-  const toolProblems = config2.stacks.flatMap((entry2, index) => {
-    if (entry2.tool === undefined)
+  const toolProblems = config2.stacks.flatMap((entry, index) => {
+    if (entry.tool === undefined)
       return [];
-    if (!TOOLS.includes(entry2.tool)) {
+    if (!TOOLS.includes(entry.tool)) {
       return [
-        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry2.tool)}. Known tools: ${TOOLS.join(", ")}.`
+        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry.tool)}. Known tools: ${TOOLS.join(", ")}.`
       ];
     }
     return [
-      ...entry2.dependsOn === DEPENDS_ON_AUTO ? [
-        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry2.tool} stack has none. Name the stack ids instead.`
+      ...entry.dependsOn === DEPENDS_ON_AUTO ? [
+        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry.tool} stack has none. Name the stack ids instead.`
       ] : [],
-      ...typeof entry2.phase === "object" ? [
-        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry2.tool} stack has none. Name the phase instead.`
+      ...typeof entry.phase === "object" ? [
+        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry.tool} stack has none. Name the phase instead.`
       ] : [],
-      ...entry2.createInBackend !== undefined ? [
-        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry2.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
+      ...entry.createInBackend !== undefined ? [
+        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
       ] : []
     ];
   });
@@ -30559,7 +30474,7 @@ async function discoverAll(root, config2) {
   const discovered = await discover(root, config2);
   if (declared.length === 0)
     return withIds(config2, discovered);
-  return withIds(config2, [...discovered, ...declared].sort((a, b) => compare2(a.path, b.path) || compare2(a.name ?? "", b.name ?? "")));
+  return withIds(config2, [...discovered, ...declared].sort((a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? "")));
 }
 function tryDiscover(discover2) {
   try {
@@ -30571,9 +30486,6 @@ function tryDiscover(discover2) {
 function byEntry(a, b) {
   const index = (text5) => Number(/^stacks\[(\d+)\]/.exec(text5)?.[1] ?? 0);
   return index(a) - index(b);
-}
-function compare2(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/core/config-file.ts
@@ -30918,8 +30830,8 @@ function cdktfNeeds(root, path) {
     { what: "the backend the app sets in code", namedIn: file2, ways: [] }
   ];
   const named = new Map;
-  for (const entry2 of Array.isArray(listed3) ? listed3 : []) {
-    const spec = typeof entry2 === "string" ? entry2 : typeof entry2 === "object" && entry2 !== null && typeof entry2.name === "string" ? entry2.name : undefined;
+  for (const entry of Array.isArray(listed3) ? listed3 : []) {
+    const spec = typeof entry === "string" ? entry : typeof entry === "object" && entry !== null && typeof entry.name === "string" ? entry.name : undefined;
     if (spec === undefined)
       continue;
     const name = (spec.split("@")[0] ?? "").split("/").at(-1) ?? "";
@@ -30932,7 +30844,7 @@ function cdktfNeeds(root, path) {
 function readDirectory2(root, path) {
   let names;
   try {
-    names = readdirSync4(join8(root, path)).sort(byCodeUnit6);
+    names = readdirSync4(join8(root, path)).sort(byCodeUnit);
   } catch {
     names = [];
   }
@@ -31056,9 +30968,6 @@ function text5(file2) {
   } catch {
     return "";
   }
-}
-function byCodeUnit6(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/credentials.ts
@@ -31338,9 +31247,6 @@ function isFile3(path) {
 function repoPath(root, path) {
   return relative4(root, path).split(sep4).join("/");
 }
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 // src/adapters/credentials.ts
 async function credentialNeeds3(root, stack) {
@@ -31389,7 +31295,7 @@ async function readsFiles2(root, stack) {
     return [];
   const projectPath = join11(projectDir, `Pulumi${extension}`);
   const project = read4(projectPath);
-  if (!isRecord2(project))
+  if (!isRecord(project))
     return [];
   const keep = (path, from, namedIn, want) => {
     if (isAbsolute4(path) || path.includes("${"))
@@ -31424,12 +31330,12 @@ ${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
     }
   }
   const pathLike = (value) => value.includes("/") || value.startsWith(".");
-  if (isRecord2(project.config)) {
+  if (isRecord(project.config)) {
     for (const declared of Object.values(project.config)) {
       if (typeof declared === "string" && pathLike(declared)) {
         keep(declared, projectDir, projectPath, "any");
       }
-      if (!isRecord2(declared) || declared.secret === true)
+      if (!isRecord(declared) || declared.secret === true)
         continue;
       for (const value of [declared.default, declared.value]) {
         if (typeof value === "string" && pathLike(value))
@@ -31441,23 +31347,23 @@ ${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
     const stackDir = typeof project.stackConfigDir === "string" ? join11(projectDir, project.stackConfigDir) : projectDir;
     const stackPath2 = join11(stackDir, `Pulumi.${stack.name}${extension}`);
     const stackFile = read4(stackPath2);
-    if (isRecord2(stackFile) && isRecord2(stackFile.config)) {
+    if (isRecord(stackFile) && isRecord(stackFile.config)) {
       plainStrings(stackFile.config, (value) => {
         if (pathLike(value))
           keep(value, projectDir, stackPath2, "any");
       });
     }
   }
-  return [...found.values()].sort((a, b) => compare3(a.path, b.path));
+  return [...found.values()].sort((a, b) => byCodeUnit(a.path, b.path));
 }
 function runtimeName2(runtime) {
-  return isRecord2(runtime) ? runtime.name : runtime;
+  return isRecord(runtime) ? runtime.name : runtime;
 }
 function walk3(value, visit3) {
   if (Array.isArray(value)) {
     for (const item of value)
       walk3(item, visit3);
-  } else if (isRecord2(value)) {
+  } else if (isRecord(value)) {
     for (const [key, inner] of Object.entries(value)) {
       visit3(key, inner);
       walk3(inner, visit3);
@@ -31470,7 +31376,7 @@ function plainStrings(value, visit3) {
   else if (Array.isArray(value))
     for (const item of value)
       plainStrings(item, visit3);
-  else if (isRecord2(value) && !("secure" in value)) {
+  else if (isRecord(value) && !("secure" in value)) {
     for (const inner of Object.values(value))
       plainStrings(inner, visit3);
   }
@@ -31495,12 +31401,6 @@ function isFile4(path) {
 }
 function repoPath2(root, path) {
   return relative5(root, path).split(sep5).join("/");
-}
-function isRecord2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function compare3(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/file-references.ts
@@ -31565,7 +31465,7 @@ var SHARED_FILES = new Set([
   "Directory.Packages.props"
 ]);
 function sharedFiles(files) {
-  return files.filter((file2) => SHARED_FILES.has(file2.slice(file2.lastIndexOf("/") + 1))).sort(byCodeUnit7);
+  return files.filter((file2) => SHARED_FILES.has(file2.slice(file2.lastIndexOf("/") + 1))).sort(byCodeUnit);
 }
 function checkSetup(config2, found, files, references = new Map) {
   const stacks = applyConfig(config2, found);
@@ -31580,7 +31480,7 @@ function checkSetup(config2, found, files, references = new Map) {
   const reads = readsOf(claimants, files, new Set(claimed.unclaimed), references);
   return {
     stacks,
-    ignore: config2.ignore.map((entry2) => ignoreReport(ignoreGlob(entry2), found)),
+    ignore: config2.ignore.map((entry) => ignoreReport(ignoreGlob(entry), found)),
     unclaimed: groups(unclaimed),
     suggested: suggestedUnrelated(unclaimed),
     shared: sharedFiles(unclaimed),
@@ -31595,7 +31495,7 @@ function readsOf(claimants, files, unclaimed, references) {
     const matches = globMatcher(inputs);
     const claims = (file2) => path === "." || file2.startsWith(`${path}/`) || matches(file2);
     const read5 = references.get(id) ?? [];
-    return [...read5].sort((a, b) => byCodeUnit7(a.path, b.path)).flatMap((reference) => {
+    return [...read5].sort((a, b) => byCodeUnit(a.path, b.path)).flatMap((reference) => {
       const under = reference.kind === "file" ? [reference.path] : files.filter((file2) => file2.startsWith(`${reference.path}/`));
       const left = under.filter((file2) => !claims(file2));
       if (left.length === 0)
@@ -31649,11 +31549,8 @@ function groups(files) {
     const slash = file2.indexOf("/");
     return slash === -1 ? "." : file2.slice(0, slash);
   };
-  const byDirectory = Map.groupBy([...files].sort(byCodeUnit7), top);
-  return [...byDirectory].sort(([a], [b]) => a === "." ? -1 : b === "." ? 1 : byCodeUnit7(a, b)).map(([directory, grouped]) => ({ directory, files: grouped }));
-}
-function byCodeUnit7(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+  const byDirectory = Map.groupBy([...files].sort(byCodeUnit), top);
+  return [...byDirectory].sort(([a], [b]) => a === "." ? -1 : b === "." ? 1 : byCodeUnit(a, b)).map(([directory, grouped]) => ({ directory, files: grouped }));
 }
 
 // src/core/repo-files.ts
@@ -31664,14 +31561,14 @@ async function repoFiles(root) {
   const files = [];
   const walk4 = async (relative6) => {
     const entries = await readdir2(join12(root, ...relative6), { withFileTypes: true });
-    for (const entry2 of entries) {
-      if (entry2.name === ".git")
+    for (const entry of entries) {
+      if (entry.name === ".git")
         continue;
-      if (entry2.isDirectory()) {
-        if (!SKIPPED3.has(entry2.name))
-          await walk4([...relative6, entry2.name]);
+      if (entry.isDirectory()) {
+        if (!SKIPPED3.has(entry.name))
+          await walk4([...relative6, entry.name]);
       } else {
-        files.push([...relative6, entry2.name].join("/"));
+        files.push([...relative6, entry.name].join("/"));
       }
     }
   };
@@ -31725,11 +31622,11 @@ var WORKFLOW_DIRECTORY = ".github/workflows";
 function readWorkflowFiles(root) {
   let names;
   try {
-    names = readdirSync6(join13(root, WORKFLOW_DIRECTORY), { withFileTypes: true }).filter((entry2) => entry2.isFile() && /\.ya?ml$/.test(entry2.name)).map((entry2) => entry2.name);
+    names = readdirSync6(join13(root, WORKFLOW_DIRECTORY), { withFileTypes: true }).filter((entry) => entry.isFile() && /\.ya?ml$/.test(entry.name)).map((entry) => entry.name);
   } catch {
     return [];
   }
-  return names.sort(byCodeUnit8).map((name) => ({
+  return names.sort(byCodeUnit).map((name) => ({
     path: `${WORKFLOW_DIRECTORY}/${name}`,
     text: readFileSync9(join13(root, WORKFLOW_DIRECTORY, name), "utf8")
   }));
@@ -31778,13 +31675,10 @@ function refKind(ref) {
     return "commit";
   return "other";
 }
-function isRecord3(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 function permissionsOf(value) {
   if (value === "read-all" || value === "write-all")
     return value;
-  if (!isRecord3(value))
+  if (!isRecord(value))
     return;
   return Object.fromEntries(Object.entries(value).map(([key, level]) => [key, String(level)]));
 }
@@ -31793,12 +31687,12 @@ function triggersOf(value) {
     return { [value]: null };
   if (Array.isArray(value))
     return Object.fromEntries(value.map((event) => [String(event), null]));
-  return isRecord3(value) ? value : {};
+  return isRecord(value) ? value : {};
 }
 function environmentOf(value) {
   if (typeof value === "string" || typeof value === "number")
     return String(value);
-  if (!isRecord3(value) || value.name === undefined || value.name === null)
+  if (!isRecord(value) || value.name === undefined || value.name === null)
     return;
   return String(value.name);
 }
@@ -31806,7 +31700,7 @@ function concurrencyOf(value) {
   if (typeof value === "string" || typeof value === "number") {
     return { group: String(value), queue: "", cancels: false };
   }
-  if (!isRecord3(value) || value.group === undefined)
+  if (!isRecord(value) || value.group === undefined)
     return;
   const cancels = value["cancel-in-progress"];
   return {
@@ -31822,11 +31716,11 @@ function parseWorkflow(text7) {
   } catch {
     return "unreadable";
   }
-  if (!isRecord3(document) || !isRecord3(document.jobs))
+  if (!isRecord(document) || !isRecord(document.jobs))
     return;
   const jobs = {};
   for (const [name, job] of Object.entries(document.jobs)) {
-    if (!isRecord3(job))
+    if (!isRecord(job))
       continue;
     jobs[name] = {
       permissions: permissionsOf(job.permissions),
@@ -31834,7 +31728,7 @@ function parseWorkflow(text7) {
       concurrency: concurrencyOf(job.concurrency),
       condition: job.if === undefined || job.if === null ? "" : String(job.if),
       needs: typeof job.needs === "string" ? [job.needs] : Array.isArray(job.needs) ? job.needs.map(String) : [],
-      outputs: isRecord3(job.outputs) ? Object.keys(job.outputs) : [],
+      outputs: isRecord(job.outputs) ? Object.keys(job.outputs) : [],
       strategy: job.strategy === undefined ? "" : JSON.stringify(job.strategy),
       environment: environmentOf(job.environment),
       env: envNames(job.env)
@@ -31848,24 +31742,24 @@ function parseWorkflow(text7) {
   };
 }
 function envNames(value) {
-  return isRecord3(value) ? Object.keys(value) : [];
+  return isRecord(value) ? Object.keys(value) : [];
 }
 function handedSecret(step) {
-  return [step.with, step.env].some((block) => isRecord3(block) && Object.values(block).some((value) => /secrets\./.test(String(value))));
+  return [step.with, step.env].some((block) => isRecord(block) && Object.values(block).some((value) => /secrets\./.test(String(value))));
 }
 function actionOf(uses) {
   return uses.trim().split("@")[0] ?? "";
 }
 function providesOf(steps, at, workflowEnv, jobEnv) {
   const own2 = steps[at];
-  const stepEnv = isRecord3(own2) ? envNames(own2.env) : [];
+  const stepEnv = isRecord(own2) ? envNames(own2.env) : [];
   const names = [
     ...workflowEnv.map((name) => ({ name, where: "env: on the workflow" })),
     ...jobEnv.map((name) => ({ name, where: "env: on the job" })),
     ...stepEnv.map((name) => ({ name, where: "env: on the step" }))
   ];
   const others = steps.flatMap((step, index) => {
-    if (index === at || !isRecord3(step))
+    if (index === at || !isRecord(step))
       return [];
     const uses = typeof step.uses === "string" ? actionOf(step.uses) : undefined;
     const run = typeof step.run === "string" ? step.run : undefined;
@@ -31885,17 +31779,17 @@ function providesOf(steps, at, workflowEnv, jobEnv) {
 function sluicewayJob(job, parsed, workflowEnv, auto) {
   const { steps } = parsed;
   for (const [index, step] of steps.entries()) {
-    if (!isRecord3(step) || typeof step.uses !== "string")
+    if (!isRecord(step) || typeof step.uses !== "string")
       continue;
     const ref = SLUICEWAY_STEP.exec(step.uses.trim())?.[1];
     if (ref === undefined)
       continue;
-    const written = isRecord3(step.with) ? String(step.with.mode ?? "").trim() : "";
+    const written = isRecord(step.with) ? String(step.with.mode ?? "").trim() : "";
     const named = written === "" ? "auto" : written;
     const mode = isMode(named) ? named : undefined;
     const runs = mode === undefined ? [] : mode === "auto" ? auto : [mode];
     const provides = providesOf(steps, index, workflowEnv, parsed.env);
-    const preview = isRecord3(step.with) ? step.with["pull-request-preview"] : undefined;
+    const preview = isRecord(step.with) ? step.with["pull-request-preview"] : undefined;
     const previews = preview === true || String(preview ?? "").trim() === "true";
     return {
       job,
@@ -31935,25 +31829,25 @@ function missing(granted, wanted) {
   }).map(([scope, level]) => `${scope}: ${level}`);
 }
 function has(granted, scope) {
-  return granted === "write-all" || isRecord3(granted) && granted[scope] === "write";
+  return granted === "write-all" || isRecord(granted) && granted[scope] === "write";
 }
 function checkWorkflows(files, config2) {
-  const report2 = { workflows: [], warnings: [], notes: [] };
+  const report = { workflows: [], warnings: [], notes: [] };
   for (const { path, text: text7 } of files) {
     const parsed = parseWorkflow(text7);
     if (parsed === "unreadable") {
       if (/sluiceway\/sluiceway@/i.test(text7)) {
-        report2.warnings.push({ kind: "unreadable", path });
+        report.warnings.push({ kind: "unreadable", path });
       }
       continue;
     }
     if (parsed === undefined)
       continue;
-    checkOne(path, parsed, config2, report2);
+    checkOne(path, parsed, config2, report);
   }
-  return report2;
+  return report;
 }
-function checkOne(path, workflow, config2, report2) {
+function checkOne(path, workflow, config2, report) {
   const auto = autoRuns(workflow.on, config2);
   const found = Object.entries(workflow.jobs).flatMap(([name, job]) => {
     const step = sluicewayJob(name, job, workflow.env, auto);
@@ -31965,8 +31859,8 @@ function checkOne(path, workflow, config2, report2) {
   });
   if (found.length === 0)
     return;
-  const { warnings, notes } = report2;
-  report2.workflows.push({
+  const { warnings, notes } = report;
+  report.workflows.push({
     path,
     jobs: found.map(({
       step: { job, mode, runs: runs2, ref, refKind: refKind2, environment, provides, previewsPullRequests }
@@ -32117,13 +32011,10 @@ function checkJobs(path, workflow, found, config2, warnings) {
 function listensToEdits(issues, present) {
   if (!present)
     return false;
-  if (!isRecord3(issues) || issues.types === undefined)
+  if (!isRecord(issues) || issues.types === undefined)
     return true;
   const types = issues.types;
   return Array.isArray(types) ? types.includes("edited") : types === "edited";
-}
-function byCodeUnit8(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/core/failure-reason.ts
@@ -32158,6 +32049,80 @@ function previewFailureText(reason) {
     case "in-summary":
       return "the reason is in the summary of the run";
   }
+}
+
+// src/core/policy.ts
+var result = exports_external.object({ msg: exports_external.string() });
+var entry = exports_external.object({
+  namespace: exports_external.string(),
+  successes: exports_external.number().int().nonnegative().optional(),
+  failures: exports_external.array(result).optional(),
+  warnings: exports_external.array(result).optional()
+});
+var report = exports_external.array(entry);
+
+// src/render/time.ts
+var formats2 = new Map;
+function format2(timeZone) {
+  let found = formats2.get(timeZone);
+  if (found === undefined) {
+    found = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    formats2.set(timeZone, found);
+  }
+  return found;
+}
+function isUtc2(timeZone) {
+  return timeZone === undefined || timeZone === "UTC";
+}
+function wall2(at, timeZone) {
+  if (isUtc2(timeZone)) {
+    const iso = at.toISOString();
+    return {
+      year: at.getUTCFullYear(),
+      day: iso.slice(5, 10),
+      minute: iso.slice(11, 16),
+      offset: 0
+    };
+  }
+  const parts = {};
+  for (const part of format2(timeZone).formatToParts(at)) {
+    if (part.type !== "literal")
+      parts[part.type] = Number(part.value);
+  }
+  const { year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0 } = parts;
+  const shown = Date.UTC(year, month - 1, day, hour, minute, second);
+  const offset = Math.round((shown - Math.floor(at.getTime() / 1000) * 1000) / 60000);
+  const two = (value) => String(value).padStart(2, "0");
+  return {
+    year,
+    day: `${two(month)}-${two(day)}`,
+    minute: `${two(hour)}:${two(minute)}`,
+    offset
+  };
+}
+function fullDay(time3) {
+  return `${String(time3.year).padStart(4, "0")}-${time3.day}`;
+}
+function offsetName(offset) {
+  if (offset === 0)
+    return "UTC";
+  const sign = offset > 0 ? "+" : "-";
+  const hours = Math.floor(Math.abs(offset) / 60);
+  const minutes = Math.abs(offset) % 60;
+  return `UTC${sign}${hours}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`}`;
+}
+function minuteAt(at, timeZone) {
+  const time3 = wall2(at, timeZone);
+  return `${fullDay(time3)} ${time3.minute} ${offsetName(time3.offset)}`;
 }
 
 // src/render/log-text.ts
@@ -32206,7 +32171,7 @@ var NO_SCAN_WORKFLOW = "No workflow in .github/workflows runs a scan yet.";
 var WORKFLOWS_AS_TEXT = "The check reads the workflow files as text. The repo's default token permissions, the rules of an environment and what GitHub itself validates live elsewhere and do not show here.";
 var FILES_PER_DIRECTORY = 20;
 function foundText(count) {
-  return count === 0 ? "Found no stacks." : `Found ${plural2(count, "stack")}.`;
+  return count === 0 ? "Found no stacks." : `Found ${plural(count, "stack")}.`;
 }
 function settingsText(configured, phases = []) {
   const { environment, tickers: tickers2, inputs } = configured;
@@ -32258,7 +32223,7 @@ function listed3(words) {
   return words.length <= 1 ? words[0] ?? "" : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
 }
 function ignoreText({ glob, stacks }) {
-  return `ignore ${JSON.stringify(glob)} leaves out ${plural2(stacks.length, "stack")}: ${stacks.join(", ")}.`;
+  return `ignore ${JSON.stringify(glob)} leaves out ${plural(stacks.length, "stack")}: ${stacks.join(", ")}.`;
 }
 function unmatchedText(entry2) {
   return `ignore ${JSON.stringify(entry2.glob)} matches no stack. ${unmatchedWhy(entry2)}`;
@@ -32268,7 +32233,7 @@ function unmatchedWhy({ hint }) {
   return hint === undefined ? why : `${why} ${JSON.stringify(hint.glob)} would leave out ${hint.stacks.join(", ")}.`;
 }
 function unclaimedText(count) {
-  return `${plural2(count, "file")} ${count === 1 ? "is" : "are"} claimed by no stack. A push that changes one of them gives a full scan.`;
+  return `${plural(count, "file")} ${count === 1 ? "is" : "are"} claimed by no stack. A push that changes one of them gives a full scan.`;
 }
 function unrelatedBlock(existing, suggested) {
   const globs2 = [...new Set([...existing, ...suggested])];
@@ -32522,7 +32487,7 @@ function discoveryPart(notes) {
     return { log: [], summary: [] };
   const found = notes.filter((note) => note.outcome === "found").length;
   const left = notes.filter((note) => note.outcome === "left-out").length;
-  const count = `Discovery found ${found === 0 ? "no root module" : plural2(found, "root module")}${left === 0 ? "" : ` and left out ${left} ${left === 1 ? "directory" : "directories"}`}.`;
+  const count = `Discovery found ${found === 0 ? "no root module" : plural(found, "root module")}${left === 0 ? "" : ` and left out ${left} ${left === 1 ? "directory" : "directories"}`}.`;
   return {
     log: [
       { info: count },
@@ -32821,8 +32786,8 @@ function groupLine({ directory, files }) {
   const where2 = directory === "." ? "The repo root" : escapeText(`${directory}/`);
   const shown = files.slice(0, FILES_PER_DIRECTORY).map(escapeText).join(", ");
   const rest = files.length - FILES_PER_DIRECTORY;
-  const more = rest > 0 ? `, and ${plural2(rest, "more file")}. The job log lists them all.` : "";
-  return `- ${where2}, ${plural2(files.length, "file")}: ${shown}${more}`;
+  const more = rest > 0 ? `, and ${plural(rest, "more file")}. The job log lists them all.` : "";
+  return `- ${where2}, ${plural(files.length, "file")}: ${shown}${more}`;
 }
 function row(cells) {
   return `| ${cells.map(escapeText).join(" | ")} |`;
@@ -32990,9 +32955,9 @@ function openTofuRoots(files, read5) {
   const code = files.filter((file2) => /\.(tf|tofu)$/.test(file2) && !SKIPPED4.test(file2));
   const directories = [...new Set(code.map(directoryOf))];
   const called = new Set(code.flatMap((file2) => [...(read5(file2) ?? "").matchAll(/^\s*source\s*=\s*"(\.\.?\/[^"]*)"/gm)].map((match) => normal(posix4.join(directoryOf(file2), match[1] ?? "")))));
-  return directories.filter((path) => !called.has(path) && !path.split("/").includes("modules")).sort(byCodeUnit9).map((path) => ({
+  return directories.filter((path) => !called.has(path) && !path.split("/").includes("modules")).sort(byCodeUnit).map((path) => ({
     path,
-    varFiles: files.filter((file2) => directoryOf(file2) === path).map((file2) => posix4.basename(file2)).filter((name) => /\.tfvars(\.json)?$/.test(name)).filter((name) => !/^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/.test(name)).sort(byCodeUnit9)
+    varFiles: files.filter((file2) => directoryOf(file2) === path).map((file2) => posix4.basename(file2)).filter((name) => /\.tfvars(\.json)?$/.test(name)).filter((name) => !/^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/.test(name)).sort(byCodeUnit)
   }));
 }
 function helmCharts(files, read5) {
@@ -33009,7 +32974,7 @@ function helmCharts(files, read5) {
       return [];
     const release = releaseName(typeof chart.name === "string" ? chart.name : "", path);
     return release === undefined ? [] : [{ path, release }];
-  }).sort((a, b) => byCodeUnit9(a.path, b.path));
+  }).sort((a, b) => byCodeUnit(a.path, b.path));
 }
 function releaseName(name, path) {
   for (const candidate of [name, posix4.basename(path)]) {
@@ -33040,7 +33005,7 @@ function findForWorkflow(stacks, files, read5) {
     helm: stacks.some((stack) => tool(stack) === HELM),
     kubectl: stacks.some((stack) => tool(stack) === KUBECTL),
     node: nodePaths.length === 0 ? undefined : nodeFindings(nodePaths, files, read5),
-    otherRuntimes: [...other].map(([runtime, found]) => ({ runtime, paths: found.map(({ path }) => path) })).sort((a, b) => byCodeUnit9(a.runtime, b.runtime)),
+    otherRuntimes: [...other].map(([runtime, found]) => ({ runtime, paths: found.map(({ path }) => path) })).sort((a, b) => byCodeUnit(a.runtime, b.runtime)),
     helmRepositories: helmRepositories(stacks, read5),
     envFiles: envFiles(files, read5)
   };
@@ -33071,7 +33036,7 @@ function nodeFindings(paths, files, read5) {
   const managers = new Set(installs.values());
   const manifest = yamlObject(read5("package.json"));
   return {
-    installs: [...installs].map(([directory, manager]) => ({ directory, manager })).sort((a, b) => byCodeUnit9(a.directory, b.directory)),
+    installs: [...installs].map(([directory, manager]) => ({ directory, manager })).sort((a, b) => byCodeUnit(a.directory, b.directory)),
     withoutLockfile,
     versionFile: [".nvmrc", ".node-version"].find((file2) => files.includes(file2)),
     yarnBerry: managers.has("yarn") && files.includes(".yarnrc.yml"),
@@ -33090,7 +33055,7 @@ function helmRepositories(stacks, read5) {
       return typeof repository === "string" && /^https?:\/\//.test(repository) ? [repository] : [];
     });
   });
-  return [...new Set(repositories)].sort(byCodeUnit9);
+  return [...new Set(repositories)].sort(byCodeUnit);
 }
 function envFiles(files, read5) {
   const found = files.filter((file2) => /(^|\/)(\.env(\.[^/]+)?|[^/]+\.env)$/.test(file2)).filter((file2) => /^[\w./-]+$/.test(file2)).filter((file2) => (read5(file2) ?? "").split(`
@@ -33133,9 +33098,6 @@ function directoryOf(file2) {
 function normal(path) {
   const joined = posix4.normalize(path).replace(/\/$/, "");
   return joined === "" ? "." : joined;
-}
-function byCodeUnit9(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // examples/workflows/export-env.sh

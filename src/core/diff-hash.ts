@@ -1,11 +1,6 @@
 import { createHash } from "node:crypto";
+import { byCodeUnit } from "./basics.ts";
 import type { Change, Diff } from "./diff.ts";
-
-// Plain code unit order, with no locale (record 0008). This is what `<` does
-// on two strings.
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 function sortedSet(keys: readonly string[]): string[] {
   return [...new Set(keys)].sort(byCodeUnit);

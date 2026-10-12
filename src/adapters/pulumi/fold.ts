@@ -1,3 +1,4 @@
+import { byCodeUnit } from "../../core/basics.ts";
 import type { Change, Op, Tracking } from "../../core/diff.ts";
 import type { Folded } from "../folded.ts";
 import type { PreviewStep } from "./schema.ts";
@@ -133,8 +134,4 @@ function keys(
 
 function sortedSet(names: string[]): string[] {
   return [...new Set(names)].sort(byCodeUnit);
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
