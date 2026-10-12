@@ -83,6 +83,7 @@ export function starterWorkflow(options: WorkflowOptions): string {
     "    # One run at a time and none dropped. An edit of any other issue gets a",
     "    # group of its own, so it never waits for a scan or a deploy.",
     "    concurrency:",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     "      group: sluiceway-${{ github.event.issue.number }}",
     "      queue: max",
     "    steps:",
@@ -93,6 +94,7 @@ export function starterWorkflow(options: WorkflowOptions): string {
     "      # It runs after a step above failed too, and then only says so on the",
     "      # dashboard, so it never looks fresh while no scan could run.",
     "      - uses: sluiceway/sluiceway@v0",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     "        if: ${{ !cancelled() }}",
   ];
   return `${lines.join("\n")}\n`;

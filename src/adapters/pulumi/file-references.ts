@@ -76,6 +76,7 @@ export async function readsFiles(root: string, stack: Stack): Promise<FileRefere
       walk(program, (key, value) => {
         const want = PROGRAM_FUNCTIONS[key];
         if (want === undefined || typeof value !== "string") return;
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: a Pulumi interpolation, not a template.
         keep(value.replaceAll("${pulumi.cwd}", "."), programDir, file, want);
       });
     }

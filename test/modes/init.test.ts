@@ -275,6 +275,7 @@ describe("an env file of secret references", () => {
       "        run: op run --env-file=ci/deploy.env --no-masking -- bash .github/scripts/export-env.sh ci/deploy.env\n",
     );
     expect(workflow).not.toContain("ci/preview.env");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(workflow).toContain("OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}");
     expect(readFileSync(join(root, ".github/scripts/export-env.sh"), "utf8")).toBe(
       readFileSync(join(ROOT, "examples/workflows/export-env.sh"), "utf8"),

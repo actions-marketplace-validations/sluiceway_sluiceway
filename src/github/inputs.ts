@@ -120,6 +120,7 @@ export function readApplyInputs(getInput: GetInput): ApplyInputs {
   const text = getInput("deployment-id").trim();
   if (text === "") {
     throw new Error(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       'The "deployment-id" input is required in apply mode. Set it to the deployment of the matrix entry: deployment-id: ${{ matrix.deployment }}.',
     );
   }

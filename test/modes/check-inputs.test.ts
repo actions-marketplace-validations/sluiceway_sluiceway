@@ -165,6 +165,7 @@ describe("what a Pulumi stack's files name", () => {
             "    type: aws:s3:BucketObject",
             "    properties:",
             "      content:",
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: a Pulumi interpolation, not a template.
             "        fn::readFile: ${stack}/../x.txt",
             "",
           ].join("\n"),

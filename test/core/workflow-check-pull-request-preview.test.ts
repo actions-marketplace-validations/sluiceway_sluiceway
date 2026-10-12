@@ -63,9 +63,9 @@ describe("a check step that previews pull requests", () => {
         job: "check",
       },
     ]);
-    expect(workflowWarningText(report.warnings[0]!)).toBe(
+    expect(report.warnings.map(workflowWarningText)).toEqual([
       ".github/workflows/deploy-dashboard-check.yml, job check: pull-request-preview: true runs on pull_request_target, which Sluiceway never previews on: it runs with the secrets of the base branch against code that is not merged. Run it on pull_request, where a fork's pull request is refused.",
-    );
+    ]);
   });
 
   test("a check step without the input needs nothing new", () => {

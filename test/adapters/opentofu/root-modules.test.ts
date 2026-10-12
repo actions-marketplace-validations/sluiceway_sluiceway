@@ -210,6 +210,7 @@ describe("a root module built for several workspaces or var files", () => {
   });
 
   test("code that reads terraform.workspace is left to a stacks entry per workspace", async () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
     const files = root({ "infra/names.tf": 'locals {\n  env = "${terraform.workspace}-app"\n}\n' });
     expect(await discover(files)).toEqual([]);
   });
@@ -255,6 +256,7 @@ describe("what discovery never reads", () => {
       "modules/app/main.tf": MODULE_LOOKING_LIKE_A_ROOT,
       "app/main.tf": BACKEND,
       "app/.terraform.lock.hcl": TOFU_LOCK,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
       "live/prod/terragrunt.hcl": 'terraform {\n  source = "${get_repo_root()}/app"\n}\n',
     };
     expect(await discover(files)).toEqual([]);
@@ -365,6 +367,7 @@ describe("reading the files", () => {
         '      backend "s3" {}',
         "    }",
         "  EOT",
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
         '  filename = "${lookup({ a = "}" }, "a")}-$${literal}"',
         "}",
       ),
@@ -377,6 +380,7 @@ describe("reading the files", () => {
     const files = {
       "prod/main.tf": lines(
         'locals {\n  text = <<EOT\nmodule "x" { source = "../nowhere" }\nEOT\n}',
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
         'locals {\n  name = "${join("-", ["a", "}"])}"\n}',
         BACKEND,
         'module "network" {\n  source = "../network"\n}',

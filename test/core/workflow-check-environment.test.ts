@@ -42,7 +42,9 @@ describe("the environment of a job", () => {
   });
 
   test("is an expression as written, which only a run evaluates", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(environmentOf("    environment:\n      name: ${{ matrix.environment }}\n")).toBe(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       "${{ matrix.environment }}",
     );
   });

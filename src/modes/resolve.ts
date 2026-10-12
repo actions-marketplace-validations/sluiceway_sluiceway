@@ -1386,7 +1386,7 @@ async function startQueued(
         : `which opens ${minuteAt(window.opens, timeZone)}`;
     log.info(
       fact.behind
-        ? `${logGroupTitle(id)}: what it waited behind went out, and its deploy window ${window.opens === undefined ? "is closed, and " + opens : opens.replace("which opens", "opens")}. It starts in a run inside the window.`
+        ? `${logGroupTitle(id)}: what it waited behind went out, and its deploy window ${window.opens === undefined ? `is closed, and ${opens}` : opens.replace("which opens", "opens")}. It starts in a run inside the window.`
         : `${logGroupTitle(id)} waits for its deploy window, ${opens}. Nothing starts it before then.`,
     );
   }

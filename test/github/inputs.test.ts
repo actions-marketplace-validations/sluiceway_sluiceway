@@ -162,6 +162,7 @@ describe("the inputs of apply", () => {
 
   test("a missing deployment-id says where it comes from", () => {
     expect(() => read({ ...APPLY, "deployment-id": "" })).toThrow(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       'The "deployment-id" input is required in apply mode. Set it to the deployment of the matrix entry: deployment-id: ${{ matrix.deployment }}.',
     );
   });

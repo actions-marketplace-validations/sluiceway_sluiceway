@@ -234,6 +234,7 @@ describe("the one-step workflow", () => {
     const steps = Object.values(workflow.jobs).flatMap((job) => job.steps);
     // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(steps.filter(isSluiceway).map((step) => step.if)).toEqual(["${{ !cancelled() }}"]);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     const text = JSON.stringify(workflow).replace('"if":"${{ !cancelled() }}"', "");
     expect(text).not.toContain('"if"');
     expect(text).not.toContain('"needs"');

@@ -766,7 +766,7 @@ describe("the summary of a scan that fell back because of unclaimed files", () =
     expect(scanned.adapter.previewed).toEqual(ALL);
     const summary = scanned.log.summaries.at(-1) ?? "";
     expect(section(summary)).toBe(
-      [
+      `${[
         "### Why this was a full scan",
         "This push fell back to a full scan, because no stack claims 2 of the changed files: docs/diagram.png, package.json. A push that changes one of them previews every stack.",
         "A file that some stacks read belongs under the inputs of those stacks in sluiceway.yaml. A file that no program reads, such as docs, can be listed under scan.unrelated. Keep package.json off that list: it is a lockfile or a package manifest, and a change to it should preview every stack.",
@@ -774,7 +774,7 @@ describe("the summary of a scan that fell back because of unclaimed files", () =
         ["```yaml", "scan:", "  unrelated:", '    - "**/*.txt"', '    - "docs/**"', "```"].join(
           "\n",
         ),
-      ].join("\n\n") + "\n",
+      ].join("\n\n")}\n`,
     );
   });
 

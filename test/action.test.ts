@@ -75,6 +75,7 @@ describe("action.yml", () => {
   // environment. As the default of an input it costs no permission, and the
   // lab saw it equal the job's id on real GitHub on 2026-09-21.
   test("takes the id of the running job from job.check_run_id", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(action.inputs["job-id"]?.default).toBe("${{ job.check_run_id }}");
     expect(action.inputs["job-id"]?.required).toBe(false);
   });
@@ -94,6 +95,7 @@ describe("action.yml", () => {
   // Record 0120: like the job's id, the status of the job before the step
   // reaches it as the default of an input.
   test("takes the status of the job from job.status", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(action.inputs["job-status"]?.default).toBe("${{ job.status }}");
     expect(action.inputs["job-status"]?.required).toBe(false);
   });

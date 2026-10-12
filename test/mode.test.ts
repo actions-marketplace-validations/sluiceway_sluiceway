@@ -208,6 +208,7 @@ describe("a run that failed", () => {
 
   test("a job-status that is not one of GitHub's is refused, before anything is done", async () => {
     await expect(guarded("scan", "failed", async () => {}, failure())).rejects.toThrow(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       'The "job-status" input is "failed". Give it ${{ job.status }}, which is success, failure or cancelled.',
     );
   });
