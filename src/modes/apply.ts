@@ -17,7 +17,6 @@ import type { ProcessRunner } from "../adapters/process.ts";
 import { errorMessage } from "../core/basics.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { applyOutcome, deployEnd, deployGate, unplannedEnd } from "../core/deploy-gate.ts";
-import { shownFreezes } from "../core/deploy-window.ts";
 import {
   type DeployFacts,
   type DeploymentPayload,
@@ -45,14 +44,14 @@ import { shownValues } from "../core/show-values.ts";
 import { stackId } from "../core/stack.ts";
 import { type AttributionSource, attributionSource } from "../github/attribution.ts";
 import { findDashboard } from "../github/dashboard.ts";
-import { swapRows } from "../github/dashboard-write.ts";
+import { dashboardWriter, swapRows } from "../github/dashboard-write.ts";
 import { claimRecord, endRecord, readDeploymentRecords } from "../github/deployments.ts";
 import { type StackEnvFilesLoad, stackEnvFiles } from "../github/env-file.ts";
 import { publicRepo } from "../github/event.ts";
 import type { JobLog } from "../github/job-log.ts";
 import { eventDashboardUrl, type StepOutputs, writeResultFile } from "../github/outputs.ts";
 import type { GitHubPort } from "../github/port.ts";
-import type { WorkflowRef } from "../github/workflow-ref.ts";
+import { startFullScan, type WorkflowRef } from "../github/workflow-ref.ts";
 import type { Notifier } from "../notify/send.ts";
 import {
   ALREADY_ENDED,
@@ -440,14 +439,13 @@ async function applying(context: ApplyContext, repo: Repo, report: ApplyReport):
 async function dispatchScan(context: ApplyContext): Promise<void> {
   const { workflow } = context;
   if (!workflow) return;
-  try {
-    await context.github.dispatchWorkflow(workflow.file, workflow.ref);
-    context.log.info("A full scan was started, which shows the change as it is now on the row.");
-  } catch (error) {
-    throw new Error(
-      `A full scan could not be started: ${errorMessage(error)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`,
-    );
-  }
+  await startFullScan(
+    context.github,
+    workflow,
+    "apply",
+    " The record is ended, and the next scan writes its row again.",
+  );
+  context.log.info("A full scan was started, which shows the change as it is now on the row.");
 }
 
 // How far the job got with the tool's deploy.
@@ -1018,24 +1016,7 @@ async function swapRow(
     return undefined;
   }
   const result = await swapRows(
-    {
-      github,
-      log,
-      runId: context.runId,
-      repoUrl: context.repoUrl,
-      actionRef: context.actionRef,
-      dashboard: setup.config.dashboard,
-      deploys: setup.config.deploys,
-      ignored: setup.ignored,
-      // The deploy freezes (record 0115), by this job's clock.
-      // The clock is asked only when there is one, so the timings of a job
-      // without freezes are what they were.
-      freezes:
-        setup.config.freezes.length === 0
-          ? []
-          : shownFreezes(setup.config.freezes, context.now(), setup.config.dashboard.timeZone),
-      budget: context.limits?.body,
-    },
+    dashboardWriter({ ...context, github, log }, setup.config, setup.ignored, context.now),
     dashboard.number,
     async (live) => {
       const facts = deployFacts(

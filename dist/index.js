@@ -61668,6 +61668,13 @@ function readWorkflowRef(env) {
   const ref = value.slice(at + 1);
   return file2 === "" || ref === "" ? undefined : { file: file2, ref };
 }
+async function startFullScan(github, workflow, job, after, inputs) {
+  try {
+    return await github.dispatchWorkflow(workflow.file, workflow.ref, inputs);
+  } catch (error63) {
+    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The ${job} job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).${after}`);
+  }
+}
 
 // src/render/notification.ts
 var NAMES_IN_A_NOTIFICATION = 10;
@@ -62746,6 +62753,20 @@ function applyResultFile(input2) {
 }
 
 // src/github/dashboard-write.ts
+function dashboardWriter(run2, config2, ignored, now) {
+  return {
+    github: run2.github,
+    runId: run2.runId,
+    log: run2.log,
+    repoUrl: run2.repoUrl,
+    actionRef: run2.actionRef,
+    dashboard: config2.dashboard,
+    deploys: config2.deploys,
+    ignored,
+    freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, now(), config2.dashboard.timeZone),
+    budget: run2.limits?.body
+  };
+}
 async function swapRows(writer, issue3, rows) {
   let last;
   const answer = await doesItFit(() => writeBody(writer.github, issue3, async (body2) => {
@@ -63784,12 +63805,8 @@ async function dispatchScan(context3) {
   const { workflow } = context3;
   if (!workflow)
     return;
-  try {
-    await context3.github.dispatchWorkflow(workflow.file, workflow.ref);
-    context3.log.info("A full scan was started, which shows the change as it is now on the row.");
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`);
-  }
+  await startFullScan(context3.github, workflow, "apply", " The record is ended, and the next scan writes its row again.");
+  context3.log.info("A full scan was started, which shows the change as it is now on the row.");
 }
 function reasonOf(attempt2) {
   return attempt2.end.kind === "failed" ? attempt2.end.reason : undefined;
@@ -64131,18 +64148,7 @@ async function swapRow(context3, setup, id, make) {
     log.info("There is no open dashboard to write. The next scan makes one.");
     return;
   }
-  const result2 = await swapRows({
-    github,
-    log,
-    runId: context3.runId,
-    repoUrl: context3.repoUrl,
-    actionRef: context3.actionRef,
-    dashboard: setup.config.dashboard,
-    deploys: setup.config.deploys,
-    ignored: setup.ignored,
-    freezes: setup.config.freezes.length === 0 ? [] : shownFreezes(setup.config.freezes, context3.now(), setup.config.dashboard.timeZone),
-    budget: context3.limits?.body
-  }, dashboard.number, async (live) => {
+  const result2 = await swapRows(dashboardWriter({ ...context3, github, log }, setup.config, setup.ignored, context3.now), dashboard.number, async (live) => {
     const facts = deployFacts(await readDeploymentRecords(github, setup.stacks.map(({ environment }) => environment), [{ stackId: id, environment: setup.stack.environment }]));
     const attributed = await setup.attribution.attribute(new Map([[id, lastDeployedCommit(facts, id)]]));
     const mine = make(facts, attributed.get(id)?.lines, live.outside);
@@ -65678,6 +65684,156 @@ function resolveSummary({ lines: lines3, scanUrl, scanStarted }) {
 `;
 }
 
+// src/render/tick-findings.ts
+function findingText(finding, timeZone = "UTC") {
+  switch (finding.kind) {
+    case "taken": {
+      const { tick, fact } = finding;
+      return tick.kind === "merge" ? `${tickName(tick)} is ticked, and the stack already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. Nothing is merged and the box is cleared. Tick it again once that deploy is over.` : `${tickName(tick)} is ticked and already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. The tick is dropped.`;
+    }
+    case "deploys-off": {
+      const off = `${tickName(finding.tick)} is ticked, and deploys are turned off in sluiceway.yaml (deploys: false).`;
+      switch (finding.tick.kind) {
+        case "merge":
+          return `${off} Nothing is merged and the box is cleared.`;
+        case "bulk":
+          return `${off} The box goes.`;
+        case "confirm":
+          return `${off} Nothing is deployed and the box goes.`;
+        default:
+          return `${off} The box is cleared.`;
+      }
+    }
+    case "policy-failed":
+      return `${tickName(finding.tick)} is ticked, and a policy failed on its change, so its row has no box. The box is cleared.`;
+    case "moving":
+      return `${tickName(finding.tick)} is ticked in a body that kept moving. Left for the run that edit woke.`;
+    case "nameless":
+      return `${tickName(finding.tick)} is ticked and the edit history names nobody for it (${NOBODY[finding.reason]}). The box is cleared.`;
+    case "not-a-person":
+      return `${targetName(finding.target)} was ticked by ${finding.editor.login || "nobody"}, who is not a person. Left alone.`;
+    case "allowed":
+      return `${targetName(finding.target)} was ticked by ${finding.login}.`;
+    case "bulk-allowed": {
+      const { rows } = finding;
+      const name = capitalized(bulkName("box", finding.section));
+      return rows.length < 2 ? `${name} was ticked by ${finding.login}, and the section has fewer than two rows now. Each has its own box, so the box goes.` : `${name} was ticked by ${finding.login}. Its confirm box names ${plural2(rows.length, "stack")}: ${listed5(rows)}.`;
+    }
+    case "refused":
+      return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
+    case "unverified":
+      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
+    case "over-cap": {
+      const one = finding.over === 1;
+      return `One run starts at most ${finding.started} deploys. ${plural2(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
+    }
+    case "waits-on": {
+      const words = [
+        ...finding.named.map(logGroupTitle),
+        ...finding.phases.flatMap(({ phase, stackIds }) => stackIds.map((dependency) => `${logGroupTitle(dependency)} of the ${phase} phase`))
+      ];
+      const one = finding.waitingOn.length === 1;
+      return `${logGroupTitle(finding.stackId)} is ticked, and it depends on ${words.join(" and ")}, which ${one ? "has a change" : "have changes"} waiting and ${one ? "is" : "are"} not ticked. The box is cleared.`;
+    }
+    case "window-closed":
+      if (finding.freeze !== undefined) {
+        return `${logGroupTitle(finding.stackId)} is ticked during a deploy freeze. Its deployment record waits for ${windowWords({ opens: finding.opens, freeze: finding.freeze }, timeZone)}, and the first run after that starts it.`;
+      }
+      return `${logGroupTitle(finding.stackId)} is ticked outside its deploy window, ${finding.opens === undefined ? "and no window of it opens within a week" : `which opens ${minuteAt(finding.opens, timeZone)}`}. Its deployment record waits for the window, and a run inside the window starts it.`;
+    case "confirm-stale": {
+      const { tick, changes } = finding;
+      const section = tick.kind === "confirm" ? tick.section : "pending";
+      const what2 = [
+        ...changes.added.length > 0 ? [`${listed5(changes.added)} ${changes.added.length === 1 ? "is" : "are"} new`] : [],
+        ...changes.gone.length > 0 ? [
+          `${listed5(changes.gone)} ${changes.gone.length === 1 ? "is" : "are"} not ${section === "pending" ? "pending" : "drifted"} any more`
+        ] : [],
+        ...changes.moved.length > 0 ? [`${listed5(changes.moved)} ${changes.moved.length === 1 ? "has" : "have"} a new diff`] : []
+      ];
+      return `${tickName(tick)} was ticked, and its rows changed since it was drawn (${what2.join(", ")}). Nothing is deployed and the bulk box asks for a fresh tick.`;
+    }
+    case "confirm-own-row":
+      return `${logGroupTitle(finding.stackId)} is ticked on its own row too. That tick and its ticker count.`;
+    case "confirm-unknown":
+      return `${logGroupTitle(finding.stackId)} is in ${bulkName("confirm", finding.section)}, and discovery knows no such stack. Left alone.`;
+    case "confirm-handed-on":
+      return `${tickName(finding.tick)} was ticked by ${finding.login}. It stands for a tick on each of ${plural2(finding.stackIds.length, "stack")}: ${listed5(finding.stackIds)}.`;
+  }
+}
+function tickName(tick) {
+  if (tick.kind === "row")
+    return logGroupTitle(tick.stackId);
+  if (tick.kind === "merge") {
+    return `The merge of #${tick.pr} for ${tick.stackIds.map(logGroupTitle).join(" and ")}`;
+  }
+  if (tick.kind === "bulk")
+    return capitalized(bulkName("box", tick.section));
+  if (tick.kind === "confirm")
+    return capitalized(bulkName("confirm", tick.section));
+  return "The rescan box";
+}
+function capitalized(text8) {
+  return `${text8.charAt(0).toUpperCase()}${text8.slice(1)}`;
+}
+function listed5(ids2) {
+  const names2 = ids2.map(logGroupTitle);
+  return names2.length < 2 ? names2.join("") : `${names2.slice(0, -1).join(", ")} and ${names2[names2.length - 1]}`;
+}
+function targetName(target2) {
+  if (target2.kind === "stack")
+    return logGroupTitle(target2.stackId);
+  if (target2.kind === "merge") {
+    return `The merge of #${target2.pr} for ${target2.stackIds.map(logGroupTitle).join(" and ")}`;
+  }
+  if (target2.kind === "bulk")
+    return capitalized(bulkName("box", target2.section));
+  return "The rescan box";
+}
+function mergeRefusalText(refusal) {
+  switch (refusal.kind) {
+    case "waits-on": {
+      const one = refusal.stackIds.length === 1;
+      return `and the stack depends on ${refusal.stackIds.map(logGroupTitle).join(" and ")}, which ${one ? "has a change" : "have changes"} waiting. Nothing is merged.`;
+    }
+    case "closed":
+      return "and the pull request is not open any more.";
+    case "head-moved":
+      return "and the pull request has a new head commit since.";
+    case "not-qualified":
+      return `and the pull request no longer qualifies: ${notQualifiedText(refusal.why)}.`;
+    case "no-method":
+      return "and the repo allows no merge method.";
+  }
+}
+function notQualifiedText(why2) {
+  return why2 === "other-stacks" ? "its files belong to another stack" : NOT_QUALIFIED[why2];
+}
+function mergeProblem(refusal) {
+  switch (refusal.kind) {
+    case "waits-on":
+      return { reason: "waits-on", detail: undefined, waitsOn: refusal.stackIds };
+    case "closed":
+      return { reason: "not-qualified", detail: "it is not open any more", waitsOn: undefined };
+    case "head-moved":
+      return { reason: "head-moved", detail: undefined, waitsOn: undefined };
+    case "not-qualified":
+      return { reason: "not-qualified", detail: notQualifiedText(refusal.why), waitsOn: undefined };
+    case "no-method":
+      return {
+        reason: "merge-refused",
+        detail: "the repository allows no merge method",
+        waitsOn: undefined
+      };
+    case "refused-by-github":
+      return { reason: "merge-refused", detail: refusal.message, waitsOn: undefined };
+  }
+}
+var NOBODY = {
+  "entry-without-body": "an entry of the edit history has no body",
+  "end-of-history": "the tick is older than the edit history GitHub keeps",
+  "not-in-newest-entry": "the body kept moving"
+};
+
 // src/render/timing.ts
 var RESOLVE_PARTS = [
   "dashboard",
@@ -65956,113 +66112,9 @@ async function resolveTicks(context3, handOn, report2, watch) {
     throw new Error(failures.join(`
 `));
 }
-function findingText(finding, timeZone = "UTC") {
-  switch (finding.kind) {
-    case "taken": {
-      const { tick, fact } = finding;
-      return tick.kind === "merge" ? `${tickName(tick)} is ticked, and the stack already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. Nothing is merged and the box is cleared. Tick it again once that deploy is over.` : `${tickName(tick)} is ticked and already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. The tick is dropped.`;
-    }
-    case "deploys-off": {
-      const off = `${tickName(finding.tick)} is ticked, and deploys are turned off in sluiceway.yaml (deploys: false).`;
-      switch (finding.tick.kind) {
-        case "merge":
-          return `${off} Nothing is merged and the box is cleared.`;
-        case "bulk":
-          return `${off} The box goes.`;
-        case "confirm":
-          return `${off} Nothing is deployed and the box goes.`;
-        default:
-          return `${off} The box is cleared.`;
-      }
-    }
-    case "policy-failed":
-      return `${tickName(finding.tick)} is ticked, and a policy failed on its change, so its row has no box. The box is cleared.`;
-    case "moving":
-      return `${tickName(finding.tick)} is ticked in a body that kept moving. Left for the run that edit woke.`;
-    case "nameless":
-      return `${tickName(finding.tick)} is ticked and the edit history names nobody for it (${NOBODY[finding.reason]}). The box is cleared.`;
-    case "not-a-person":
-      return `${targetName(finding.target)} was ticked by ${finding.editor.login || "nobody"}, who is not a person. Left alone.`;
-    case "allowed":
-      return `${targetName(finding.target)} was ticked by ${finding.login}.`;
-    case "bulk-allowed": {
-      const { rows } = finding;
-      const name = capitalized(bulkName("box", finding.section));
-      return rows.length < 2 ? `${name} was ticked by ${finding.login}, and the section has fewer than two rows now. Each has its own box, so the box goes.` : `${name} was ticked by ${finding.login}. Its confirm box names ${plural2(rows.length, "stack")}: ${listed5(rows)}.`;
-    }
-    case "refused":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
-    case "unverified":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
-    case "over-cap": {
-      const one = finding.over === 1;
-      return `One run starts at most ${finding.started} deploys. ${plural2(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
-    }
-    case "waits-on": {
-      const words = [
-        ...finding.named.map(logGroupTitle),
-        ...finding.phases.flatMap(({ phase, stackIds }) => stackIds.map((dependency) => `${logGroupTitle(dependency)} of the ${phase} phase`))
-      ];
-      const one = finding.waitingOn.length === 1;
-      return `${logGroupTitle(finding.stackId)} is ticked, and it depends on ${words.join(" and ")}, which ${one ? "has a change" : "have changes"} waiting and ${one ? "is" : "are"} not ticked. The box is cleared.`;
-    }
-    case "window-closed":
-      if (finding.freeze !== undefined) {
-        return `${logGroupTitle(finding.stackId)} is ticked during a deploy freeze. Its deployment record waits for ${windowWords({ opens: finding.opens, freeze: finding.freeze }, timeZone)}, and the first run after that starts it.`;
-      }
-      return `${logGroupTitle(finding.stackId)} is ticked outside its deploy window, ${finding.opens === undefined ? "and no window of it opens within a week" : `which opens ${minuteAt(finding.opens, timeZone)}`}. Its deployment record waits for the window, and a run inside the window starts it.`;
-    case "confirm-stale": {
-      const { tick, changes } = finding;
-      const section = tick.kind === "confirm" ? tick.section : "pending";
-      const what2 = [
-        ...changes.added.length > 0 ? [`${listed5(changes.added)} ${changes.added.length === 1 ? "is" : "are"} new`] : [],
-        ...changes.gone.length > 0 ? [
-          `${listed5(changes.gone)} ${changes.gone.length === 1 ? "is" : "are"} not ${section === "pending" ? "pending" : "drifted"} any more`
-        ] : [],
-        ...changes.moved.length > 0 ? [`${listed5(changes.moved)} ${changes.moved.length === 1 ? "has" : "have"} a new diff`] : []
-      ];
-      return `${tickName(tick)} was ticked, and its rows changed since it was drawn (${what2.join(", ")}). Nothing is deployed and the bulk box asks for a fresh tick.`;
-    }
-    case "confirm-own-row":
-      return `${logGroupTitle(finding.stackId)} is ticked on its own row too. That tick and its ticker count.`;
-    case "confirm-unknown":
-      return `${logGroupTitle(finding.stackId)} is in ${bulkName("confirm", finding.section)}, and discovery knows no such stack. Left alone.`;
-    case "confirm-handed-on":
-      return `${tickName(finding.tick)} was ticked by ${finding.login}. It stands for a tick on each of ${plural2(finding.stackIds.length, "stack")}: ${listed5(finding.stackIds)}.`;
-  }
-}
 function refusedStacks(refused) {
   const ids2 = refused.flatMap(({ target: target2 }) => target2.kind === "stack" ? [target2.stackId] : target2.kind === "merge" ? target2.stackIds : []);
   return [...new Set(ids2)].sort(byCodeUnit);
-}
-function tickName(tick) {
-  if (tick.kind === "row")
-    return logGroupTitle(tick.stackId);
-  if (tick.kind === "merge") {
-    return `The merge of #${tick.pr} for ${tick.stackIds.map(logGroupTitle).join(" and ")}`;
-  }
-  if (tick.kind === "bulk")
-    return capitalized(bulkName("box", tick.section));
-  if (tick.kind === "confirm")
-    return capitalized(bulkName("confirm", tick.section));
-  return "The rescan box";
-}
-function capitalized(text8) {
-  return `${text8.charAt(0).toUpperCase()}${text8.slice(1)}`;
-}
-function listed5(ids2) {
-  const names2 = ids2.map(logGroupTitle);
-  return names2.length < 2 ? names2.join("") : `${names2.slice(0, -1).join(", ")} and ${names2[names2.length - 1]}`;
-}
-function targetName(target2) {
-  if (target2.kind === "stack")
-    return logGroupTitle(target2.stackId);
-  if (target2.kind === "merge") {
-    return `The merge of #${target2.pr} for ${target2.stackIds.map(logGroupTitle).join(" and ")}`;
-  }
-  if (target2.kind === "bulk")
-    return capitalized(bulkName("box", target2.section));
-  return "The rescan box";
 }
 async function renovateStrategyOf(context3) {
   const [owner = "", repo = ""] = new URL(context3.repoUrl).pathname.split("/").filter(Boolean);
@@ -66171,50 +66223,6 @@ async function mergeAll(context3, config2, read5, ticks) {
   }
   return result2;
 }
-function mergeRefusalText(refusal) {
-  switch (refusal.kind) {
-    case "waits-on": {
-      const one = refusal.stackIds.length === 1;
-      return `and the stack depends on ${refusal.stackIds.map(logGroupTitle).join(" and ")}, which ${one ? "has a change" : "have changes"} waiting. Nothing is merged.`;
-    }
-    case "closed":
-      return "and the pull request is not open any more.";
-    case "head-moved":
-      return "and the pull request has a new head commit since.";
-    case "not-qualified":
-      return `and the pull request no longer qualifies: ${notQualifiedText(refusal.why)}.`;
-    case "no-method":
-      return "and the repo allows no merge method.";
-  }
-}
-function notQualifiedText(why2) {
-  return why2 === "other-stacks" ? "its files belong to another stack" : NOT_QUALIFIED[why2];
-}
-function mergeProblem(refusal) {
-  switch (refusal.kind) {
-    case "waits-on":
-      return { reason: "waits-on", detail: undefined, waitsOn: refusal.stackIds };
-    case "closed":
-      return { reason: "not-qualified", detail: "it is not open any more", waitsOn: undefined };
-    case "head-moved":
-      return { reason: "head-moved", detail: undefined, waitsOn: undefined };
-    case "not-qualified":
-      return { reason: "not-qualified", detail: notQualifiedText(refusal.why), waitsOn: undefined };
-    case "no-method":
-      return {
-        reason: "merge-refused",
-        detail: "the repository allows no merge method",
-        waitsOn: undefined
-      };
-    case "refused-by-github":
-      return { reason: "merge-refused", detail: refusal.message, waitsOn: undefined };
-  }
-}
-var NOBODY = {
-  "entry-without-body": "an entry of the edit history has no body",
-  "end-of-history": "the tick is older than the edit history GitHub keeps",
-  "not-in-newest-entry": "the body kept moving"
-};
 function runUrl5(context3) {
   return runUrl4(context3.repoUrl, context3.runId, context3.runAttempt);
 }
@@ -66247,11 +66255,7 @@ async function dispatchScan2(context3, inputs) {
   if (!context3.workflow) {
     throw new Error("A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to.");
   }
-  try {
-    return await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref, inputs);
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`);
-  }
+  return startFullScan(context3.github, context3.workflow, "resolve", "", inputs);
 }
 async function readRecords(context3, environments, fallBack) {
   try {
@@ -66279,18 +66283,7 @@ async function openDeployments(context3, ticked) {
 }
 async function swapRows2(context3, config2, stacks2, ignored, issue3, swap) {
   const attribution = new Map;
-  const result2 = await swapRows({
-    github: context3.github,
-    runId: context3.runId,
-    log: context3.log,
-    repoUrl: context3.repoUrl,
-    actionRef: context3.actionRef,
-    dashboard: config2.dashboard,
-    deploys: config2.deploys,
-    ignored,
-    freezes: shownFreezes(config2.freezes, clockOf(context3)(), config2.dashboard.timeZone),
-    budget: context3.limits?.body
-  }, issue3, async (live, root) => {
+  const result2 = await swapRows(dashboardWriter(context3, config2, ignored, clockOf(context3)), issue3, async (live, root) => {
     const droppedStacks = stacks2.filter(({ stack }) => swap.dropped.includes(stackId(stack)));
     const facts = deployFacts(await readRecords(context3, stacks2.map(({ environment }) => environment), droppedStacks));
     const source = attribution.get(root.scanSha) ?? attributionSource(context3.github, {
@@ -69238,18 +69231,7 @@ async function scanning(context3, report2) {
       waitingRunFacts = await findWaitingRun(context3, at);
     if (endedRuns === undefined)
       endedRuns = await readEndedRuns(context3);
-    const writer = {
-      github: context3.github,
-      runId: context3.runId,
-      log,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored,
-      freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, context3.now(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    };
+    const writer = dashboardWriter({ ...context3, log }, config2, ignored, context3.now);
     if (histories === undefined && ids2.length > 0 && full) {
       histories = await readHistories(context3, stacks2, config2.dashboard.recentlyDeployed, envFiles(stacks2.map(({ stack, envFile }) => ({ id: stackId(stack), envFile }))));
     }
@@ -69438,18 +69420,7 @@ async function sayRunning(context3, config2, stacks2, ignored, attribution, at) 
     if (!dashboard)
       return;
     let before;
-    const answer = await swapRows({
-      github,
-      runId: context3.runId,
-      log,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored,
-      freezes: config2.freezes.length === 0 ? [] : shownFreezes(config2.freezes, context3.now(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    }, dashboard.number, async (live) => {
+    const answer = await swapRows(dashboardWriter({ ...context3, github, log }, config2, ignored, context3.now), dashboard.number, async (live) => {
       before ??= live.body;
       const records = await readDeploymentRecords(github, stacks2.map(({ environment }) => environment), stacks2.map(({ stack, environment }) => ({ stackId: stackId(stack), environment })).filter(({ stackId: id }) => isDeployingState(live.first.get(id)?.state ?? "")));
       const deploys = deployFacts(records);
@@ -70374,18 +70345,7 @@ async function writeFailureLines(context3, config2, repo, ended) {
       log.info("There is no open dashboard to write. The full scan writes the row.");
       return;
     }
-    const result2 = await swapRows({
-      github,
-      log,
-      runId: context3.runId,
-      repoUrl: context3.repoUrl,
-      actionRef: context3.actionRef,
-      dashboard: config2.dashboard,
-      deploys: config2.deploys,
-      ignored: repo.ignored,
-      freezes: shownFreezes(config2.freezes, (context3.now ?? (() => new Date))(), config2.dashboard.timeZone),
-      budget: context3.limits?.body
-    }, dashboard.number, async (live, root) => {
+    const result2 = await swapRows(dashboardWriter(context3, config2, repo.ignored, context3.now ?? (() => new Date)), dashboard.number, async (live, root) => {
       const facts = deployFacts(await readDeploymentRecords(github, repo.stacks.map(({ environment }) => environment), mine.map(({ stack, environment }) => ({ stackId: stackId(stack), environment }))));
       const carried = new Map;
       for (const { stack } of mine) {
@@ -70466,11 +70426,7 @@ async function dispatchScan3(context3) {
   if (!context3.workflow) {
     throw new Error("A full scan could not be started: GITHUB_WORKFLOW_REF is not set, so this job does not know which workflow it belongs to. The records are ended, and the next scan writes their rows again.");
   }
-  try {
-    await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref);
-  } catch (error63) {
-    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The settle job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`);
-  }
+  await startFullScan(context3.github, context3.workflow, "settle", " The records are ended, and the next scan writes their rows again.");
 }
 
 // src/modes/settle-job.ts

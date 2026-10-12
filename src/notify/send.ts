@@ -1,5 +1,5 @@
 // The built-in notifications on the wire (record 0078). The one place where
-// Sluiceway calls something that is neither the GitHub API nor the tool: the
+// the action calls something that is neither the GitHub API nor the tool: the
 // channels a repo names in the step's inputs, from its own secrets. What to
 // send is decided in core/notify.ts and worded in render/notification.ts.
 //

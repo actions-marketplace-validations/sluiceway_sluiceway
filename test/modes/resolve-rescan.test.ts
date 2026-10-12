@@ -53,7 +53,7 @@ describe("the rescan box", () => {
     tick(h, ALICE, [], { rescan: true });
 
     await expect(wake(h)).rejects.toThrow(
-      "A full scan could not be started: Resource not accessible by integration. The resolve job needs the permission `actions: write`",
+      "A full scan could not be started: Resource not accessible by integration. The resolve job needs the permission `actions: write`, and the workflow (sluiceway.yml) needs a `workflow_dispatch` trigger that runs the scan (record 0017).",
     );
 
     expect(matrix(h)).toEqual([]);

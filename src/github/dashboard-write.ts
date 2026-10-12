@@ -7,7 +7,7 @@
 
 import type { BulkState } from "../core/bulk.ts";
 import type { Config, IgnoredStack } from "../core/config.ts";
-import type { ShownFreeze } from "../core/deploy-window.ts";
+import { type ShownFreeze, shownFreezes } from "../core/deploy-window.ts";
 import type { DeployFacts, TrailEntry } from "../core/deployment.ts";
 import type { OutsideDeploy } from "../core/outside-deploy.ts";
 import { carriedWaitingRun } from "../core/waiting-run.ts";
@@ -53,6 +53,34 @@ export interface DashboardWriter {
   freezes: readonly ShownFreeze[];
   // Only a test has a reason to set this.
   budget?: BudgetOptions | undefined;
+}
+
+// The writer of a mode's run, the same in every mode. The deploy freezes
+// (record 0115) are by the run's clock, which is asked only when the config
+// has a freeze, so the timings of a run without one are what they were.
+export function dashboardWriter(
+  run: Pick<DashboardWriter, "github" | "runId" | "log" | "repoUrl" | "actionRef"> & {
+    limits?: { body?: BudgetOptions } | undefined;
+  },
+  config: Pick<Config, "dashboard" | "deploys" | "freezes">,
+  ignored: readonly IgnoredStack[],
+  now: () => Date,
+): DashboardWriter {
+  return {
+    github: run.github,
+    runId: run.runId,
+    log: run.log,
+    repoUrl: run.repoUrl,
+    actionRef: run.actionRef,
+    dashboard: config.dashboard,
+    deploys: config.deploys,
+    ignored,
+    freezes:
+      config.freezes.length === 0
+        ? []
+        : shownFreezes(config.freezes, now(), config.dashboard.timeZone),
+    budget: run.limits?.body,
+  };
 }
 
 // The live body as a writer's late read gets it, read once per try.

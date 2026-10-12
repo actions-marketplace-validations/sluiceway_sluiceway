@@ -189,6 +189,20 @@ describe("the run after the freeze", () => {
     expect(stacksOf(h)).toEqual(["app:prod"]);
   });
 
+  test("a record it may not write turns the job red, and what is left waits for the next run", async () => {
+    const h = await ticked();
+    later(h, JUST_AFTER);
+    h.github.createDeployment = async () => {
+      throw new Error("403 Resource not accessible by integration");
+    };
+
+    await expect(wake(h, DISPATCH)).rejects.toThrow(
+      "The deployment record of app:prod could not be written: 403 Resource not accessible by integration. The resolve job needs the permission `deployments: write` (record 0003). No further deploy was started, and the queued stacks that are left wait for the next run.",
+    );
+    expect(matrix(h)).toEqual([]);
+    expect(recordOf(h, "app:prod")?.status?.state).toBe("queued");
+  });
+
   test("a freeze the repo took out of the file lets what waited go with the next run", async () => {
     const h = await ticked();
     writeFileSync(
