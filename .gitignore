@@ -2,6 +2,10 @@ node_modules/
 coverage/
 *.tsbuildinfo
 .DS_Store
+*.log
+.env
+.env.*
+.claude/settings.local.json
 
 # dist/ is committed on purpose. GitHub runs a JavaScript action straight from the repo.
 

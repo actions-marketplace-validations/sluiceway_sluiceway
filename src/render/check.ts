@@ -423,11 +423,13 @@ const MISSING_TRIGGER: Record<
 };
 
 const NO_CONCURRENCY: Record<"scan" | "resolve" | "apply" | "auto", string> = {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
   auto: "Two runs could scan or deploy at once. Use one group with queue: max, such as group: sluiceway-${{ github.event.issue.number }}, so the runs wait in line and an edit of another issue waits for none of them.",
   scan: "Scans would run side by side. Use concurrency: sluiceway-scan, so they run one at a time.",
   resolve:
     "Two runs could handle the same tick. Use concurrency: sluiceway-resolve, so ticks are handled one run at a time.",
   apply:
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     "Two deploys of one stack could run at once. Use a group per stack, group: sluiceway-apply-${{ matrix.stack }}, with queue: max.",
 };
 

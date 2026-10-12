@@ -66565,7 +66565,7 @@ async function startQueued(context3, repo, handOn, watch, report2) {
       continue;
     }
     const opens = window.opens === undefined ? "no window of it opens within a week" : `which opens ${minuteAt(window.opens, timeZone)}`;
-    log.info(fact.behind ? `${logGroupTitle(id)}: what it waited behind went out, and its deploy window ${window.opens === undefined ? "is closed, and " + opens : opens.replace("which opens", "opens")}. It starts in a run inside the window.` : `${logGroupTitle(id)} waits for its deploy window, ${opens}. Nothing starts it before then.`);
+    log.info(fact.behind ? `${logGroupTitle(id)}: what it waited behind went out, and its deploy window ${window.opens === undefined ? `is closed, and ${opens}` : opens.replace("which opens", "opens")}. It starts in a run inside the window.` : `${logGroupTitle(id)} waits for its deploy window, ${opens}. Nothing starts it before then.`);
   }
   if (ready.length === 0 && outside.length === 0) {
     log.info("No queued stack is ready to start. Nothing to do.");

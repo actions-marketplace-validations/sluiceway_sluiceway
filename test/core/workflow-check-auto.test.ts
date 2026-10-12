@@ -135,6 +135,7 @@ describe("the one-step workflow", () => {
 
   test("with no concurrency group", () => {
     const none = ONE_STEP.replace(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       "    concurrency:\n      group: sluiceway-${{ github.event.issue.number }}\n      queue: max\n",
       "",
     );
@@ -150,6 +151,7 @@ describe("the one-step workflow", () => {
 
   // The group's name is not checked: a fixed one works too, slower.
   test("a group of another name is fine, and one without queue: max is not", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
     expect(kinds(ONE_STEP.replace("sluiceway-${{ github.event.issue.number }}", "deploy"))).toEqual(
       [],
     );

@@ -96,6 +96,7 @@ describe("a job with nothing around the step", () => {
 
   test("a step handed a secret in with: is marked", () => {
     const found = provides(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       "on: push\njobs:\n  sluiceway:\n    steps:\n      - uses: hashicorp/vault-action@v3\n        with:\n          token: ${{ secrets.VAULT_TOKEN }}\n      - uses: sluiceway/sluiceway@v0\n",
     );
     expect(found?.steps).toEqual([

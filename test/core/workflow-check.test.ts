@@ -338,6 +338,7 @@ describe("the rest of the workflow", () => {
   test("an apply job with no concurrency group", () => {
     const { warnings } = broken((text) =>
       text.replace(
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
         "    concurrency:\n      group: sluiceway-apply-${{ matrix.stack }}\n      queue: max\n",
         "",
       ),
@@ -347,6 +348,7 @@ describe("the rest of the workflow", () => {
 
   test("an apply group that is not one per stack", () => {
     const { warnings } = broken((text) =>
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       text.replace("group: sluiceway-apply-${{ matrix.stack }}", "group: sluiceway-apply"),
     );
     expect(warnings).toEqual([{ kind: "apply-group-shared", path: PATH, job: "apply" }]);
@@ -406,6 +408,7 @@ describe("the rest of the workflow", () => {
 // apply job that takes it, and settle waiting for both.
 const MERGED = WHOLE.replace(
   "    concurrency: sluiceway-scan\n",
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
   "    concurrency: sluiceway-scan\n    outputs:\n      matrix: ${{ steps.scan.outputs.matrix }}\n",
 )
   .replace(
@@ -468,6 +471,7 @@ describe("the second apply job of merge and deploy", () => {
 
   test("a second apply job that reads a scan with no matrix output", () => {
     const { warnings } = merged((text) =>
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       text.replace("    outputs:\n      matrix: ${{ steps.scan.outputs.matrix }}\n", ""),
     );
     expect(warnings).toEqual([

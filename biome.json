@@ -51,6 +51,16 @@
   },
   "overrides": [
     {
+      "includes": ["assets/mascot/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["src/core/**", "src/adapters/**", "src/render/**"],
       "linter": {
         "rules": {

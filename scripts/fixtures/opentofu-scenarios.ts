@@ -150,7 +150,9 @@ const DEV_LOCK_INFO = "network/terraform.tfstate.d/dev/.terraform.tfstate.lock.i
 
 const updatedConfig = edit("    greeting = var.motd\n", '    greeting = "hi"\n');
 const replacedNotes = edit(
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
   '  content  = "CANARY-VALUE ${var.motd}"\n',
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: an HCL interpolation, not a template.
   '  content  = "CANARY-VALUE ${var.motd}, second edition"\n',
 );
 const removedTrigger = edit(NULL_RESOURCE, "");

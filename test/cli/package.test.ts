@@ -183,7 +183,9 @@ describe("the npm job of the release workflow", () => {
     expect(checkout).toBeDefined();
     expect(JSON.stringify(checkout)).toContain("needs.release-please.outputs.tag_name");
     expect(workflow.jobs["release-please"]?.outputs).toMatchObject({
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       release_created: "${{ steps.release.outputs.release_created }}",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
       tag_name: "${{ steps.release.outputs.tag_name }}",
     });
   });

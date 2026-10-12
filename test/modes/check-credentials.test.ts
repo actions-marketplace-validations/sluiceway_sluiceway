@@ -122,7 +122,9 @@ describe("what the workflow provides", () => {
       repo({
         ...STACKS,
         [WORKFLOW]: ONE_STEP(
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
           "      - uses: aws-actions/configure-aws-credentials@v6\n        with:\n          role-to-assume: ${{ vars.ROLE }}\n",
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
           "        env:\n          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}\n          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PASSPHRASE }}\n",
         ),
       }),
@@ -158,6 +160,7 @@ describe("what the workflow provides", () => {
       repo({
         ...STACKS,
         [WORKFLOW]: ONE_STEP(
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a template.
           "      - name: Load the environment\n        env:\n          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP }}\n        run: op run --env-file=ci/deploy.env -- bash .github/scripts/export-env.sh ci/deploy.env\n",
           "",
         ),

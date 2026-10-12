@@ -23,6 +23,7 @@ bun install
 |---|---|
 | `bun run lint` | Biome lint and format check. |
 | `bun run lint:fix` | The same, and writes the fixes. |
+| `bun run format` | Biome format only, and writes the result. |
 | `bun run typecheck` | TypeScript, strict, no emit. |
 | `bun run test` | Unit tests with `bun test`. |
 | `bun run build:schema` | Writes `schema/sluiceway.schema.json` from the Zod schema in `src/core/config.ts`. |
