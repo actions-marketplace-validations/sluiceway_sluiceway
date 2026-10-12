@@ -1,0 +1,3 @@
+[test]
+# Every temp dir a test makes lands under one dir per run, removed at exit.
+preload = ["./test/setup.ts"]
