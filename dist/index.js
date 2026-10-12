@@ -65684,6 +65684,156 @@ function resolveSummary({ lines: lines3, scanUrl, scanStarted }) {
 `;
 }
 
+// src/render/tick-findings.ts
+function findingText(finding, timeZone = "UTC") {
+  switch (finding.kind) {
+    case "taken": {
+      const { tick, fact } = finding;
+      return tick.kind === "merge" ? `${tickName(tick)} is ticked, and the stack already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. Nothing is merged and the box is cleared. Tick it again once that deploy is over.` : `${tickName(tick)} is ticked and already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. The tick is dropped.`;
+    }
+    case "deploys-off": {
+      const off = `${tickName(finding.tick)} is ticked, and deploys are turned off in sluiceway.yaml (deploys: false).`;
+      switch (finding.tick.kind) {
+        case "merge":
+          return `${off} Nothing is merged and the box is cleared.`;
+        case "bulk":
+          return `${off} The box goes.`;
+        case "confirm":
+          return `${off} Nothing is deployed and the box goes.`;
+        default:
+          return `${off} The box is cleared.`;
+      }
+    }
+    case "policy-failed":
+      return `${tickName(finding.tick)} is ticked, and a policy failed on its change, so its row has no box. The box is cleared.`;
+    case "moving":
+      return `${tickName(finding.tick)} is ticked in a body that kept moving. Left for the run that edit woke.`;
+    case "nameless":
+      return `${tickName(finding.tick)} is ticked and the edit history names nobody for it (${NOBODY[finding.reason]}). The box is cleared.`;
+    case "not-a-person":
+      return `${targetName(finding.target)} was ticked by ${finding.editor.login || "nobody"}, who is not a person. Left alone.`;
+    case "allowed":
+      return `${targetName(finding.target)} was ticked by ${finding.login}.`;
+    case "bulk-allowed": {
+      const { rows } = finding;
+      const name = capitalized(bulkName("box", finding.section));
+      return rows.length < 2 ? `${name} was ticked by ${finding.login}, and the section has fewer than two rows now. Each has its own box, so the box goes.` : `${name} was ticked by ${finding.login}. Its confirm box names ${plural2(rows.length, "stack")}: ${listed5(rows)}.`;
+    }
+    case "refused":
+      return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
+    case "unverified":
+      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
+    case "over-cap": {
+      const one = finding.over === 1;
+      return `One run starts at most ${finding.started} deploys. ${plural2(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
+    }
+    case "waits-on": {
+      const words = [
+        ...finding.named.map(logGroupTitle),
+        ...finding.phases.flatMap(({ phase, stackIds }) => stackIds.map((dependency) => `${logGroupTitle(dependency)} of the ${phase} phase`))
+      ];
+      const one = finding.waitingOn.length === 1;
+      return `${logGroupTitle(finding.stackId)} is ticked, and it depends on ${words.join(" and ")}, which ${one ? "has a change" : "have changes"} waiting and ${one ? "is" : "are"} not ticked. The box is cleared.`;
+    }
+    case "window-closed":
+      if (finding.freeze !== undefined) {
+        return `${logGroupTitle(finding.stackId)} is ticked during a deploy freeze. Its deployment record waits for ${windowWords({ opens: finding.opens, freeze: finding.freeze }, timeZone)}, and the first run after that starts it.`;
+      }
+      return `${logGroupTitle(finding.stackId)} is ticked outside its deploy window, ${finding.opens === undefined ? "and no window of it opens within a week" : `which opens ${minuteAt(finding.opens, timeZone)}`}. Its deployment record waits for the window, and a run inside the window starts it.`;
+    case "confirm-stale": {
+      const { tick, changes } = finding;
+      const section = tick.kind === "confirm" ? tick.section : "pending";
+      const what2 = [
+        ...changes.added.length > 0 ? [`${listed5(changes.added)} ${changes.added.length === 1 ? "is" : "are"} new`] : [],
+        ...changes.gone.length > 0 ? [
+          `${listed5(changes.gone)} ${changes.gone.length === 1 ? "is" : "are"} not ${section === "pending" ? "pending" : "drifted"} any more`
+        ] : [],
+        ...changes.moved.length > 0 ? [`${listed5(changes.moved)} ${changes.moved.length === 1 ? "has" : "have"} a new diff`] : []
+      ];
+      return `${tickName(tick)} was ticked, and its rows changed since it was drawn (${what2.join(", ")}). Nothing is deployed and the bulk box asks for a fresh tick.`;
+    }
+    case "confirm-own-row":
+      return `${logGroupTitle(finding.stackId)} is ticked on its own row too. That tick and its ticker count.`;
+    case "confirm-unknown":
+      return `${logGroupTitle(finding.stackId)} is in ${bulkName("confirm", finding.section)}, and discovery knows no such stack. Left alone.`;
+    case "confirm-handed-on":
+      return `${tickName(finding.tick)} was ticked by ${finding.login}. It stands for a tick on each of ${plural2(finding.stackIds.length, "stack")}: ${listed5(finding.stackIds)}.`;
+  }
+}
+function tickName(tick) {
+  if (tick.kind === "row")
+    return logGroupTitle(tick.stackId);
+  if (tick.kind === "merge") {
+    return `The merge of #${tick.pr} for ${tick.stackIds.map(logGroupTitle).join(" and ")}`;
+  }
+  if (tick.kind === "bulk")
+    return capitalized(bulkName("box", tick.section));
+  if (tick.kind === "confirm")
+    return capitalized(bulkName("confirm", tick.section));
+  return "The rescan box";
+}
+function capitalized(text8) {
+  return `${text8.charAt(0).toUpperCase()}${text8.slice(1)}`;
+}
+function listed5(ids2) {
+  const names2 = ids2.map(logGroupTitle);
+  return names2.length < 2 ? names2.join("") : `${names2.slice(0, -1).join(", ")} and ${names2[names2.length - 1]}`;
+}
+function targetName(target2) {
+  if (target2.kind === "stack")
+    return logGroupTitle(target2.stackId);
+  if (target2.kind === "merge") {
+    return `The merge of #${target2.pr} for ${target2.stackIds.map(logGroupTitle).join(" and ")}`;
+  }
+  if (target2.kind === "bulk")
+    return capitalized(bulkName("box", target2.section));
+  return "The rescan box";
+}
+function mergeRefusalText(refusal) {
+  switch (refusal.kind) {
+    case "waits-on": {
+      const one = refusal.stackIds.length === 1;
+      return `and the stack depends on ${refusal.stackIds.map(logGroupTitle).join(" and ")}, which ${one ? "has a change" : "have changes"} waiting. Nothing is merged.`;
+    }
+    case "closed":
+      return "and the pull request is not open any more.";
+    case "head-moved":
+      return "and the pull request has a new head commit since.";
+    case "not-qualified":
+      return `and the pull request no longer qualifies: ${notQualifiedText(refusal.why)}.`;
+    case "no-method":
+      return "and the repo allows no merge method.";
+  }
+}
+function notQualifiedText(why2) {
+  return why2 === "other-stacks" ? "its files belong to another stack" : NOT_QUALIFIED[why2];
+}
+function mergeProblem(refusal) {
+  switch (refusal.kind) {
+    case "waits-on":
+      return { reason: "waits-on", detail: undefined, waitsOn: refusal.stackIds };
+    case "closed":
+      return { reason: "not-qualified", detail: "it is not open any more", waitsOn: undefined };
+    case "head-moved":
+      return { reason: "head-moved", detail: undefined, waitsOn: undefined };
+    case "not-qualified":
+      return { reason: "not-qualified", detail: notQualifiedText(refusal.why), waitsOn: undefined };
+    case "no-method":
+      return {
+        reason: "merge-refused",
+        detail: "the repository allows no merge method",
+        waitsOn: undefined
+      };
+    case "refused-by-github":
+      return { reason: "merge-refused", detail: refusal.message, waitsOn: undefined };
+  }
+}
+var NOBODY = {
+  "entry-without-body": "an entry of the edit history has no body",
+  "end-of-history": "the tick is older than the edit history GitHub keeps",
+  "not-in-newest-entry": "the body kept moving"
+};
+
 // src/render/timing.ts
 var RESOLVE_PARTS = [
   "dashboard",
@@ -65962,113 +66112,9 @@ async function resolveTicks(context3, handOn, report2, watch) {
     throw new Error(failures.join(`
 `));
 }
-function findingText(finding, timeZone = "UTC") {
-  switch (finding.kind) {
-    case "taken": {
-      const { tick, fact } = finding;
-      return tick.kind === "merge" ? `${tickName(tick)} is ticked, and the stack already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. Nothing is merged and the box is cleared. Tick it again once that deploy is over.` : `${tickName(tick)} is ticked and already has an open deployment, ticked by ${fact.ticker} in run ${fact.run}. The tick is dropped.`;
-    }
-    case "deploys-off": {
-      const off = `${tickName(finding.tick)} is ticked, and deploys are turned off in sluiceway.yaml (deploys: false).`;
-      switch (finding.tick.kind) {
-        case "merge":
-          return `${off} Nothing is merged and the box is cleared.`;
-        case "bulk":
-          return `${off} The box goes.`;
-        case "confirm":
-          return `${off} Nothing is deployed and the box goes.`;
-        default:
-          return `${off} The box is cleared.`;
-      }
-    }
-    case "policy-failed":
-      return `${tickName(finding.tick)} is ticked, and a policy failed on its change, so its row has no box. The box is cleared.`;
-    case "moving":
-      return `${tickName(finding.tick)} is ticked in a body that kept moving. Left for the run that edit woke.`;
-    case "nameless":
-      return `${tickName(finding.tick)} is ticked and the edit history names nobody for it (${NOBODY[finding.reason]}). The box is cleared.`;
-    case "not-a-person":
-      return `${targetName(finding.target)} was ticked by ${finding.editor.login || "nobody"}, who is not a person. Left alone.`;
-    case "allowed":
-      return `${targetName(finding.target)} was ticked by ${finding.login}.`;
-    case "bulk-allowed": {
-      const { rows } = finding;
-      const name = capitalized(bulkName("box", finding.section));
-      return rows.length < 2 ? `${name} was ticked by ${finding.login}, and the section has fewer than two rows now. Each has its own box, so the box goes.` : `${name} was ticked by ${finding.login}. Its confirm box names ${plural2(rows.length, "stack")}: ${listed5(rows)}.`;
-    }
-    case "refused":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
-    case "unverified":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
-    case "over-cap": {
-      const one = finding.over === 1;
-      return `One run starts at most ${finding.started} deploys. ${plural2(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
-    }
-    case "waits-on": {
-      const words = [
-        ...finding.named.map(logGroupTitle),
-        ...finding.phases.flatMap(({ phase, stackIds }) => stackIds.map((dependency) => `${logGroupTitle(dependency)} of the ${phase} phase`))
-      ];
-      const one = finding.waitingOn.length === 1;
-      return `${logGroupTitle(finding.stackId)} is ticked, and it depends on ${words.join(" and ")}, which ${one ? "has a change" : "have changes"} waiting and ${one ? "is" : "are"} not ticked. The box is cleared.`;
-    }
-    case "window-closed":
-      if (finding.freeze !== undefined) {
-        return `${logGroupTitle(finding.stackId)} is ticked during a deploy freeze. Its deployment record waits for ${windowWords({ opens: finding.opens, freeze: finding.freeze }, timeZone)}, and the first run after that starts it.`;
-      }
-      return `${logGroupTitle(finding.stackId)} is ticked outside its deploy window, ${finding.opens === undefined ? "and no window of it opens within a week" : `which opens ${minuteAt(finding.opens, timeZone)}`}. Its deployment record waits for the window, and a run inside the window starts it.`;
-    case "confirm-stale": {
-      const { tick, changes } = finding;
-      const section = tick.kind === "confirm" ? tick.section : "pending";
-      const what2 = [
-        ...changes.added.length > 0 ? [`${listed5(changes.added)} ${changes.added.length === 1 ? "is" : "are"} new`] : [],
-        ...changes.gone.length > 0 ? [
-          `${listed5(changes.gone)} ${changes.gone.length === 1 ? "is" : "are"} not ${section === "pending" ? "pending" : "drifted"} any more`
-        ] : [],
-        ...changes.moved.length > 0 ? [`${listed5(changes.moved)} ${changes.moved.length === 1 ? "has" : "have"} a new diff`] : []
-      ];
-      return `${tickName(tick)} was ticked, and its rows changed since it was drawn (${what2.join(", ")}). Nothing is deployed and the bulk box asks for a fresh tick.`;
-    }
-    case "confirm-own-row":
-      return `${logGroupTitle(finding.stackId)} is ticked on its own row too. That tick and its ticker count.`;
-    case "confirm-unknown":
-      return `${logGroupTitle(finding.stackId)} is in ${bulkName("confirm", finding.section)}, and discovery knows no such stack. Left alone.`;
-    case "confirm-handed-on":
-      return `${tickName(finding.tick)} was ticked by ${finding.login}. It stands for a tick on each of ${plural2(finding.stackIds.length, "stack")}: ${listed5(finding.stackIds)}.`;
-  }
-}
 function refusedStacks(refused) {
   const ids2 = refused.flatMap(({ target: target2 }) => target2.kind === "stack" ? [target2.stackId] : target2.kind === "merge" ? target2.stackIds : []);
   return [...new Set(ids2)].sort(byCodeUnit);
-}
-function tickName(tick) {
-  if (tick.kind === "row")
-    return logGroupTitle(tick.stackId);
-  if (tick.kind === "merge") {
-    return `The merge of #${tick.pr} for ${tick.stackIds.map(logGroupTitle).join(" and ")}`;
-  }
-  if (tick.kind === "bulk")
-    return capitalized(bulkName("box", tick.section));
-  if (tick.kind === "confirm")
-    return capitalized(bulkName("confirm", tick.section));
-  return "The rescan box";
-}
-function capitalized(text8) {
-  return `${text8.charAt(0).toUpperCase()}${text8.slice(1)}`;
-}
-function listed5(ids2) {
-  const names2 = ids2.map(logGroupTitle);
-  return names2.length < 2 ? names2.join("") : `${names2.slice(0, -1).join(", ")} and ${names2[names2.length - 1]}`;
-}
-function targetName(target2) {
-  if (target2.kind === "stack")
-    return logGroupTitle(target2.stackId);
-  if (target2.kind === "merge") {
-    return `The merge of #${target2.pr} for ${target2.stackIds.map(logGroupTitle).join(" and ")}`;
-  }
-  if (target2.kind === "bulk")
-    return capitalized(bulkName("box", target2.section));
-  return "The rescan box";
 }
 async function renovateStrategyOf(context3) {
   const [owner = "", repo = ""] = new URL(context3.repoUrl).pathname.split("/").filter(Boolean);
@@ -66177,50 +66223,6 @@ async function mergeAll(context3, config2, read5, ticks) {
   }
   return result2;
 }
-function mergeRefusalText(refusal) {
-  switch (refusal.kind) {
-    case "waits-on": {
-      const one = refusal.stackIds.length === 1;
-      return `and the stack depends on ${refusal.stackIds.map(logGroupTitle).join(" and ")}, which ${one ? "has a change" : "have changes"} waiting. Nothing is merged.`;
-    }
-    case "closed":
-      return "and the pull request is not open any more.";
-    case "head-moved":
-      return "and the pull request has a new head commit since.";
-    case "not-qualified":
-      return `and the pull request no longer qualifies: ${notQualifiedText(refusal.why)}.`;
-    case "no-method":
-      return "and the repo allows no merge method.";
-  }
-}
-function notQualifiedText(why2) {
-  return why2 === "other-stacks" ? "its files belong to another stack" : NOT_QUALIFIED[why2];
-}
-function mergeProblem(refusal) {
-  switch (refusal.kind) {
-    case "waits-on":
-      return { reason: "waits-on", detail: undefined, waitsOn: refusal.stackIds };
-    case "closed":
-      return { reason: "not-qualified", detail: "it is not open any more", waitsOn: undefined };
-    case "head-moved":
-      return { reason: "head-moved", detail: undefined, waitsOn: undefined };
-    case "not-qualified":
-      return { reason: "not-qualified", detail: notQualifiedText(refusal.why), waitsOn: undefined };
-    case "no-method":
-      return {
-        reason: "merge-refused",
-        detail: "the repository allows no merge method",
-        waitsOn: undefined
-      };
-    case "refused-by-github":
-      return { reason: "merge-refused", detail: refusal.message, waitsOn: undefined };
-  }
-}
-var NOBODY = {
-  "entry-without-body": "an entry of the edit history has no body",
-  "end-of-history": "the tick is older than the edit history GitHub keeps",
-  "not-in-newest-entry": "the body kept moving"
-};
 function runUrl5(context3) {
   return runUrl4(context3.repoUrl, context3.runId, context3.runAttempt);
 }

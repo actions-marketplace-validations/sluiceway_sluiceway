@@ -1,0 +1,82 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`the words of the workflow check every warning 1`] = `
+[
+  ".github/workflows/sluiceway.yml is not valid YAML, so the check cannot read how it runs Sluiceway. The Actions tab of the repo shows GitHub's own error.",
+  ".github/workflows/sluiceway.yml, job scan: the Sluiceway step has mode "deploy", which does not exist. Leave the mode out, or use one of: auto, scan, resolve, apply, settle, check.",
+  ".github/workflows/sluiceway.yml, job scan: sluiceway/sluiceway@main is not a release. A branch runs code that is not released yet. Use a major tag such as @v0 to follow every release, an exact tag such as @v0.8.0, or a full commit SHA.",
+  ".github/workflows/sluiceway.yml runs Sluiceway at v0 and v0.8.0. Use one ref in every job, so that a scan and the deploy it leads to run the same version.",
+  ".github/workflows/sluiceway.yml scans and has no push trigger. A push to the default branch starts the scan that shows its change as pending.",
+  ".github/workflows/sluiceway.yml scans and has no schedule. The daily full scan catches a change that is not a file in the repo, such as another stack's output.",
+  ".github/workflows/sluiceway.yml has no workflow_dispatch trigger. The rescan box and settle start a scan through it.",
+  ".github/workflows/sluiceway.yml has a resolve job and does not listen to issue edits (issues, with the type edited). A tick would start nothing.",
+  ".github/workflows/sluiceway.yml runs on pull_request. A scan would write the dashboard from code that is not on the default branch yet. Only the workflow of the check may run on pull requests or in a merge queue.",
+  ".github/workflows/sluiceway.yml runs on pull_request, and its Sluiceway job loads the credentials of your stacks before it. On pull_request those steps would run code that is not on the default branch yet. Keep the check in a workflow of its own, which needs no credentials.",
+  ".github/workflows/sluiceway.yml has no settle job. The four jobs scan, resolve, apply and settle stay in one file: a scan looks for waiting ticks among the runs of its own workflow, and the rescan box and settle start that same workflow again.",
+  ".github/workflows/sluiceway.yml scans, and no job in it resolves a tick, so a box on the dashboard does nothing. For a workflow that only scans, set dashboard.readOnly: true in sluiceway.yaml.",
+  ".github/workflows/sluiceway.yml, job scan: there is no permissions block, so the token gets the repo's default, which a file does not show. scan needs contents: read.",
+  ".github/workflows/sluiceway.yml, job sluiceway: there is no permissions block, so the token gets the repo's default, which a file does not show. the modes it runs need actions: write.",
+  ".github/workflows/sluiceway.yml, job apply: apply needs deployments: write. A job's own permissions replace the workflow's.",
+  ".github/workflows/sluiceway.yml, job check: pull-request-preview: true runs on pull_request_target, which Sluiceway never previews on: it runs with the secrets of the base branch against code that is not merged. Run it on pull_request, where a fork's pull request is refused.",
+  ".github/workflows/sluiceway.yml, job scan: there is no concurrency group. Scans would run side by side. Use concurrency: sluiceway-scan, so they run one at a time.",
+  ".github/workflows/sluiceway.yml, job resolve: there is no concurrency group. Two runs could handle the same tick. Use concurrency: sluiceway-resolve, so ticks are handled one run at a time.",
+  ".github/workflows/sluiceway.yml, job apply: there is no concurrency group. Two deploys of one stack could run at once. Use a group per stack, group: sluiceway-apply-\${{ matrix.stack }}, with queue: max.",
+  ".github/workflows/sluiceway.yml, job sluiceway: there is no concurrency group. Two runs could scan or deploy at once. Use one group with queue: max, such as group: sluiceway-\${{ github.event.issue.number }}, so the runs wait in line and an edit of another issue waits for none of them.",
+  ".github/workflows/sluiceway.yml, job sluiceway: the concurrency group has no queue: max, so a run that waits is dropped when a newer one arrives, a push's scan or a deploy that a dispatch started with it.",
+  ".github/workflows/sluiceway.yml, job sluiceway: cancel-in-progress stops a deploy half way when a newer run arrives. Take it out of this job.",
+  ".github/workflows/sluiceway.yml, job apply: the concurrency group does not name the stack, so a deploy waits for the deploy of every other stack. Use group: sluiceway-apply-\${{ matrix.stack }}.",
+  ".github/workflows/sluiceway.yml, job apply: the concurrency group has no queue: max, so a deploy that waits is cancelled when a newer one for the same stack arrives.",
+  ".github/workflows/sluiceway.yml, job apply: cancel-in-progress stops a deploy half way when a newer one for the same stack arrives. Take it out of this job.",
+  ".github/workflows/sluiceway.yml, job apply: the if: has no !cancelled(). Without a status check GitHub skips the deploys that resolve started whenever resolve itself ends red.",
+  ".github/workflows/sluiceway.yml, job settle: the if: has no always(). settle exists for deploys that were cancelled or failed, and without always() GitHub skips it exactly then.",
+  ".github/workflows/sluiceway.yml, job settle: settle does not wait for the job apply-merged. Add apply-merged to its needs, so it ends the records of those deploys too.",
+  ".github/workflows/sluiceway.yml: mergeAndDeploy is on, and no apply job takes the matrix of the scan. The scan after a merge hands the deploy on through its own matrix output, so a merged update would never deploy. Add a copy of the apply job that takes needs.scan.outputs.matrix.",
+  ".github/workflows/sluiceway.yml: a stack is set to deploy: on-merge, and no apply job takes the matrix of the scan. The scan of a merge hands that deploy on through its own matrix output, so it would never start. Add a copy of the apply job that takes needs.scan.outputs.matrix.",
+  ".github/workflows/sluiceway.yml, job apply-merged: it takes the matrix of the job scan, which has no matrix output. Add outputs: matrix: \${{ steps.<id>.outputs.matrix }} to scan, with that id on its Sluiceway step.",
+]
+`;
+
+exports[`the words of the workflow check every warning and note, as the summary of the check shows them 1`] = `
+[
+  "### Workflows",
+  "No workflow in .github/workflows runs a scan yet.",
+  
+"- .github/workflows/sluiceway.yml is not valid YAML, so the check cannot read how it runs Sluiceway. The Actions tab of the repo shows GitHub's own error.
+- .github/workflows/sluiceway.yml, job scan: the Sluiceway step has mode &quot;deploy&quot;, which does not exist. Leave the mode out, or use one of: auto, scan, resolve, apply, settle, check.
+- .github/workflows/sluiceway.yml, job scan: sluiceway/sluiceway<span>@</span>main is not a release. A branch runs code that is not released yet. Use a major tag such as <span>@</span>v0 to follow every release, an exact tag such as <span>@</span>v0.8.0, or a full commit SHA.
+- .github/workflows/sluiceway.yml runs Sluiceway at v0 and v0.8.0. Use one ref in every job, so that a scan and the deploy it leads to run the same version.
+- .github/workflows/sluiceway.yml scans and has no push trigger. A push to the default branch starts the scan that shows its change as pending.
+- .github/workflows/sluiceway.yml scans and has no schedule. The daily full scan catches a change that is not a file in the repo, such as another stack's output.
+- .github/workflows/sluiceway.yml has no workflow&#95;dispatch trigger. The rescan box and settle start a scan through it.
+- .github/workflows/sluiceway.yml has a resolve job and does not listen to issue edits (issues, with the type edited). A tick would start nothing.
+- .github/workflows/sluiceway.yml runs on pull&#95;request. A scan would write the dashboard from code that is not on the default branch yet. Only the workflow of the check may run on pull requests or in a merge queue.
+- .github/workflows/sluiceway.yml runs on pull&#95;request, and its Sluiceway job loads the credentials of your stacks before it. On pull&#95;request those steps would run code that is not on the default branch yet. Keep the check in a workflow of its own, which needs no credentials.
+- .github/workflows/sluiceway.yml has no settle job. The four jobs scan, resolve, apply and settle stay in one file: a scan looks for waiting ticks among the runs of its own workflow, and the rescan box and settle start that same workflow again.
+- .github/workflows/sluiceway.yml scans, and no job in it resolves a tick, so a box on the dashboard does nothing. For a workflow that only scans, set dashboard.readOnly: true in sluiceway.yaml.
+- .github/workflows/sluiceway.yml, job scan: there is no permissions block, so the token gets the repo's default, which a file does not show. scan needs contents: read.
+- .github/workflows/sluiceway.yml, job sluiceway: there is no permissions block, so the token gets the repo's default, which a file does not show. the modes it runs need actions: write.
+- .github/workflows/sluiceway.yml, job apply: apply needs deployments: write. A job's own permissions replace the workflow's.
+- .github/workflows/sluiceway.yml, job check: pull-request-preview: true runs on pull&#95;request&#95;target, which Sluiceway never previews on: it runs with the secrets of the base branch against code that is not merged. Run it on pull&#95;request, where a fork's pull request is refused.
+- .github/workflows/sluiceway.yml, job scan: there is no concurrency group. Scans would run side by side. Use concurrency: sluiceway-scan, so they run one at a time.
+- .github/workflows/sluiceway.yml, job resolve: there is no concurrency group. Two runs could handle the same tick. Use concurrency: sluiceway-resolve, so ticks are handled one run at a time.
+- .github/workflows/sluiceway.yml, job apply: there is no concurrency group. Two deploys of one stack could run at once. Use a group per stack, group: sluiceway-apply-\${{ matrix.stack }}, with queue: max.
+- .github/workflows/sluiceway.yml, job sluiceway: there is no concurrency group. Two runs could scan or deploy at once. Use one group with queue: max, such as group: sluiceway-\${{ github.event.issue.number }}, so the runs wait in line and an edit of another issue waits for none of them.
+- .github/workflows/sluiceway.yml, job sluiceway: the concurrency group has no queue: max, so a run that waits is dropped when a newer one arrives, a push's scan or a deploy that a dispatch started with it.
+- .github/workflows/sluiceway.yml, job sluiceway: cancel-in-progress stops a deploy half way when a newer run arrives. Take it out of this job.
+- .github/workflows/sluiceway.yml, job apply: the concurrency group does not name the stack, so a deploy waits for the deploy of every other stack. Use group: sluiceway-apply-\${{ matrix.stack }}.
+- .github/workflows/sluiceway.yml, job apply: the concurrency group has no queue: max, so a deploy that waits is cancelled when a newer one for the same stack arrives.
+- .github/workflows/sluiceway.yml, job apply: cancel-in-progress stops a deploy half way when a newer one for the same stack arrives. Take it out of this job.
+- .github/workflows/sluiceway.yml, job apply: the if: has no !cancelled(). Without a status check GitHub skips the deploys that resolve started whenever resolve itself ends red.
+- .github/workflows/sluiceway.yml, job settle: the if: has no always(). settle exists for deploys that were cancelled or failed, and without always() GitHub skips it exactly then.
+- .github/workflows/sluiceway.yml, job settle: settle does not wait for the job apply-merged. Add apply-merged to its needs, so it ends the records of those deploys too.
+- .github/workflows/sluiceway.yml: mergeAndDeploy is on, and no apply job takes the matrix of the scan. The scan after a merge hands the deploy on through its own matrix output, so a merged update would never deploy. Add a copy of the apply job that takes needs.scan.outputs.matrix.
+- .github/workflows/sluiceway.yml: a stack is set to deploy: on-merge, and no apply job takes the matrix of the scan. The scan of a merge hands that deploy on through its own matrix output, so it would never start. Add a copy of the apply job that takes needs.scan.outputs.matrix.
+- .github/workflows/sluiceway.yml, job apply-merged: it takes the matrix of the job scan, which has no matrix output. Add outputs: matrix: \${{ steps.&lt;id&gt;.outputs.matrix }} to scan, with that id on its Sluiceway step."
+,
+  
+"- .github/workflows/sluiceway.yml, job scan: without checks: write there are no preview pages, and a pending row's preview link opens the run's summary.
+- .github/workflows/sluiceway.yml is called from another workflow. Its triggers and permissions come from the caller, which the check does not follow."
+,
+  "The check reads the workflow files as text. The repo's default token permissions, the rules of an environment and what GitHub itself validates live elsewhere and do not show here.",
+]
+`;
