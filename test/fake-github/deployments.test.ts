@@ -280,3 +280,48 @@ describe("a writer that is not Sluiceway, over HTTP", () => {
     expect(fake.deployment(first.id).status?.state).toBe("inactive");
   });
 });
+
+describe("the creator of a record, over HTTP", () => {
+  // The fake once gave GraphQL the login as REST writes it, `sluiceway[bot]`,
+  // so the port's reading of `sluiceway` was never tried and every tick of
+  // the command line ended without a result (record 0122).
+  test("GraphQL names an app without [bot], with its type, and REST with it", async () => {
+    const fake = new FakeGitHub();
+    const server = await startFakeGitHubServer(fake);
+    servers.push(server);
+    const app = fake.seedDeployment({ task: "sluiceway:a", creator: "sluiceway[bot]" });
+    fake.seedDeployment({ task: "sluiceway:b", creator: "alice" });
+    const headers = { "x-github-api-version": API_VERSION };
+
+    const page = await fetch(`${server.url}/graphql`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        query: "query { repository { deployments(first: 100) { nodes { creator { login } } } } }",
+        variables: { environment: "sluiceway" },
+      }),
+    });
+    const nodes = (
+      (await page.json()) as { data: { repository: { deployments: { nodes: unknown[] } } } }
+    ).data.repository.deployments.nodes;
+    expect(nodes.map((node) => (node as { creator: unknown }).creator)).toEqual([
+      { __typename: "User", login: "alice" },
+      { __typename: "Bot", login: "sluiceway" },
+    ]);
+
+    const one = await fetch(`${server.url}/repos/acme/infra/deployments/${app.id}`, { headers });
+    expect(((await one.json()) as { creator: unknown }).creator).toEqual({
+      login: "sluiceway[bot]",
+    });
+  });
+
+  test("the port reads an app's record as the site writes it, sluiceway[bot]", async () => {
+    const fake = new FakeGitHub();
+    const port = await overHttp(fake);
+    fake.seedDeployment({ task: "sluiceway:a", creator: "sluiceway[bot]" });
+    fake.seedDeployment({ task: "sluiceway:b", creator: "alice" });
+
+    const { records } = await port.listNewestDeployments("sluiceway");
+    expect(records.map(({ creator }) => creator)).toEqual(["alice", "sluiceway[bot]"]);
+  });
+});
