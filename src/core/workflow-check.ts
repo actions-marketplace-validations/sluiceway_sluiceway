@@ -8,6 +8,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
 import { autoModesOn, isMode, type Mode } from "./auto-mode.ts";
+import { byCodeUnit, isRecord } from "./basics.ts";
 import type { Config } from "./config.ts";
 
 // Where GitHub reads workflows from, relative to the repo root.
@@ -250,10 +251,6 @@ interface Parsed {
   jobs: Record<string, ParsedJob>;
   // The names of the workflow's env: block.
   env: string[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function permissionsOf(value: unknown): Permissions {
@@ -658,8 +655,4 @@ function listensToEdits(issues: unknown, present: boolean): boolean {
   if (!isRecord(issues) || issues.types === undefined) return true;
   const types = issues.types;
   return Array.isArray(types) ? types.includes("edited") : types === "edited";
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

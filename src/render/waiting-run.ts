@@ -3,14 +3,11 @@
 // runner, and never why: a runner that is busy, offline or never handed the
 // job looks the same from here.
 
+import { plural } from "../core/basics.ts";
 import { RUN_WAIT_MINUTES } from "../core/waiting-run.ts";
 import { urlPart } from "./images.ts";
 import type { RootFacts, WaitingRunFacts } from "./marker.ts";
 import { minuteAt } from "./time.ts";
-
-function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
 
 // `42 minutes`, `1 hour`, `2 hours and 5 minutes`.
 function duration(minutes: number): string {

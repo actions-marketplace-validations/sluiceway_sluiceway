@@ -2,6 +2,7 @@
 // worked out without a preview, a credential or a GitHub call. It holds the
 // facts. The words are render/check.ts.
 
+import { byCodeUnit } from "./basics.ts";
 import { claim } from "./claim.ts";
 import { applyConfig, type Config, type ConfiguredStack, ignoreGlob } from "./config.ts";
 import type { PreviewFailureReason } from "./failure-reason.ts";
@@ -275,8 +276,4 @@ function groups(files: string[]): UnclaimedGroup[] {
   return [...byDirectory]
     .sort(([a], [b]) => (a === "." ? -1 : b === "." ? 1 : byCodeUnit(a, b)))
     .map(([directory, grouped]) => ({ directory, files: grouped }));
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

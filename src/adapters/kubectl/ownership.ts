@@ -1,4 +1,5 @@
-import { segment } from "../opentofu/paths.ts";
+import { isRecord } from "../../core/basics.ts";
+import { segment } from "../paths.ts";
 
 // Who holds a field of a live object (record 0070). The API server keeps, in
 // `metadata.managedFields`, one entry per field manager and operation with
@@ -20,7 +21,7 @@ import { segment } from "../opentofu/paths.ts";
 export function ownedPaths(object: unknown, fields: unknown): string[] {
   const paths: string[] = [];
   const walk = (node: unknown, set: unknown, path: string): void => {
-    if (!isObject(set)) return;
+    if (!isRecord(set)) return;
     for (const [key, below] of Object.entries(set)) {
       if (key === ".") {
         if (path !== "") paths.push(path);
@@ -28,7 +29,7 @@ export function ownedPaths(object: unknown, fields: unknown): string[] {
       }
       const step = stepOf(node, key, path);
       if (step === undefined) continue;
-      if (isObject(below) && Object.keys(below).length === 0) paths.push(step.path);
+      if (isRecord(below) && Object.keys(below).length === 0) paths.push(step.path);
       else walk(step.node, below, step.path);
     }
   };
@@ -46,7 +47,7 @@ function stepOf(
   const rest = key.slice(colon + 1);
   if (kind === "f") {
     return {
-      node: isObject(node) ? node[rest] : undefined,
+      node: isRecord(node) ? node[rest] : undefined,
       path: path + segment(rest, path === ""),
     };
   }
@@ -60,10 +61,10 @@ function stepOf(
     } catch {
       return undefined;
     }
-    if (kind === "k" && isObject(wanted)) {
+    if (kind === "k" && isRecord(wanted)) {
       index = node.findIndex(
         (item) =>
-          isObject(item) &&
+          isRecord(item) &&
           Object.entries(wanted).every(([name, value]) => same(item[name], value)),
       );
     } else if (kind === "v") {
@@ -85,9 +86,9 @@ export function heldByOthers(
   paths: readonly string[],
   manager: string,
 ): string[] {
-  const metadata = isObject(object.metadata) ? object.metadata : {};
+  const metadata = isRecord(object.metadata) ? object.metadata : {};
   const entries = (Array.isArray(metadata.managedFields) ? metadata.managedFields : []).filter(
-    isObject,
+    isRecord,
   );
   const ours: string[] = [];
   const others: string[] = [];
@@ -113,8 +114,4 @@ function within(path: string, held: string): boolean {
 
 function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
-}
-
-function isObject(node: unknown): node is Record<string, unknown> {
-  return typeof node === "object" && node !== null && !Array.isArray(node);
 }

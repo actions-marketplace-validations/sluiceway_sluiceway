@@ -1,5 +1,6 @@
 import { posix } from "node:path";
 import { parse } from "yaml";
+import { byCodeUnit } from "../core/basics.ts";
 import { SECRET_REFERENCE } from "../core/env-file.ts";
 import type {
   Declarable,
@@ -264,8 +265,4 @@ function directoryOf(file: string): string {
 function normal(path: string): string {
   const joined = posix.normalize(path).replace(/\/$/, "");
   return joined === "" ? "." : joined;
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

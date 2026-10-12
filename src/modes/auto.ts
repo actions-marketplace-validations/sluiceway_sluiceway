@@ -12,6 +12,7 @@ import {
   autoModes,
   scanSkippedAfterResolve,
 } from "../core/auto-mode.ts";
+import { errorMessage } from "../core/basics.ts";
 import { ConfigError } from "../core/config.ts";
 import { loadConfig } from "../core/config-file.ts";
 import { type MatrixEntry, matrixOutput, parseMatrixOutput } from "../core/resolve.ts";
@@ -87,10 +88,6 @@ function readOnly(root: string): boolean {
   }
 }
 
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 export async function auto(context: AutoContext): Promise<void> {
   const event = autoEvent(context.eventName, context.event);
   const plan = autoModes(event, { readOnly: readOnly(context.root) });
@@ -152,7 +149,7 @@ export async function auto(context: AutoContext): Promise<void> {
       await run();
     } catch (error) {
       if (error instanceof ConfigError) configProblem ??= error;
-      failures.push(`${what}: ${message(error)}`);
+      failures.push(`${what}: ${errorMessage(error)}`);
     }
   };
 

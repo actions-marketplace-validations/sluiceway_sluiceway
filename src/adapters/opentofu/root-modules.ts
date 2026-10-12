@@ -1,5 +1,6 @@
 import { type Dirent, readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
+import { byCodeUnit, isRecord } from "../../core/basics.ts";
 import type { Config } from "../../core/config.ts";
 import type { DiscoveryNote } from "../../core/discovery.ts";
 import type { Stack } from "../../core/stack.ts";
@@ -335,16 +336,12 @@ function readJson(text: string): ReadFile {
 }
 
 function field(value: unknown, name: string): unknown {
-  return isObject(value) ? value[name] : undefined;
+  return isRecord(value) ? value[name] : undefined;
 }
 
 function objects(value: unknown): Record<string, unknown>[] {
-  if (Array.isArray(value)) return value.filter(isObject);
-  return isObject(value) ? [value] : [];
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (Array.isArray(value)) return value.filter(isRecord);
+  return isRecord(value) ? [value] : [];
 }
 
 // The directory a local source names, from the repo root, or undefined for a
@@ -369,9 +366,4 @@ function read(file: string): string {
   } catch {
     return "";
   }
-}
-
-// By code unit, so the order is the same on every machine.
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

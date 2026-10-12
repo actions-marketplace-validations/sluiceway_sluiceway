@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { byCodeUnit } from "../../core/basics.ts";
 import type { Stack } from "../../core/stack.ts";
 import type { Preparation, PrepareResult, ToolContext } from "../adapter.ts";
 import { runTool, stripAnsi } from "../tool-run.ts";
@@ -65,8 +66,4 @@ async function step(
   // value.
   const toolLog = stripAnsi(result.stdout + result.stderr);
   return result.ok ? { ok: true, toolLog } : { ok: false, reason: result.reason, toolLog };
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

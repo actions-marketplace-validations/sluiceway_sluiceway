@@ -4,11 +4,12 @@
 // the result is a reason from the fixed list (record 0022). It needs no
 // budget: it is about one stack.
 
+import { plural } from "../core/basics.ts";
 import { IN_SYNC_DESCRIPTION, REHEARSED_DESCRIPTION } from "../core/deployment.ts";
 import type { Diff } from "../core/diff.ts";
 import { orderChanges } from "./changes.ts";
 import { escapeText } from "./escape.ts";
-import { changeLine, counts, driftCounts, driftLine, plural, sortedDrift } from "./row.ts";
+import { changeLine, counts, driftCounts, driftLine, sortedDrift } from "./row.ts";
 
 // What a preview of the stack gave: its diff, or the reason it gave none.
 export type AppliedPreview =

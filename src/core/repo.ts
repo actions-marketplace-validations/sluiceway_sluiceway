@@ -1,3 +1,4 @@
+import { byCodeUnit } from "./basics.ts";
 import {
   applyConfig,
   type Config,
@@ -74,8 +75,4 @@ export function openRepo(root: string, discovery: Discovery): Repo {
       return stacks;
     },
   };
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

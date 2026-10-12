@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { LineCounter, parseDocument } from "yaml";
+import { byCodeUnit } from "../../core/basics.ts";
 import type { Config } from "../../core/config.ts";
 import { DiscoveryError } from "../../core/discovery.ts";
 import { phaseKeysOf } from "../../core/phases.ts";
@@ -58,8 +59,10 @@ export async function discover(root: string, config?: Config): Promise<Stack[]> 
   };
 
   await walk(root);
-  if (problems.length > 0) throw new DiscoveryError(problems.sort(compare));
-  return stacks.sort((a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""));
+  if (problems.length > 0) throw new DiscoveryError(problems.sort(byCodeUnit));
+  return stacks.sort(
+    (a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? ""),
+  );
 }
 
 class ProjectFileProblem extends Error {}
@@ -182,9 +185,4 @@ async function fileNamesIn(dir: string): Promise<string[]> {
 
 function slashed(path: string): string {
   return path.split(sep).join("/");
-}
-
-// By code unit, so the order is the same on every machine.
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

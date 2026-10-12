@@ -2,6 +2,7 @@
 // as updates waiting to merge, and how a tick merges one. Pure: the glue hands
 // in the pull requests and the repo's settings as data.
 
+import { byCodeUnit } from "./basics.ts";
 import { type Claimant, claim } from "./claim.ts";
 
 // An open pull request, in the port's words.
@@ -85,10 +86,6 @@ export function qualify(pullRequest: OpenPullRequest, options: QualifyOptions): 
     return { qualifies: false, why: "stacks-depend" };
   }
   return { qualifies: true, stackIds };
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // Whether one of the stacks waits on another of them, directly or through

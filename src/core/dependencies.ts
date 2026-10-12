@@ -3,6 +3,7 @@
 // on a change that can still go out: a pending row, an open deployment, or a
 // tick in the same run. Pure: the modes hand in what they read.
 
+import { byCodeUnit } from "./basics.ts";
 import {
   type DeploymentRecord,
   isHandedOn,
@@ -30,10 +31,6 @@ export interface DeployPlan {
   // Starts nothing: a stack it depends on has a change waiting that nobody
   // ticked. The box is cleared with a note that names them.
   refused: { stackId: string; waitingOn: string[] }[];
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // Which ticks start, which are queued and which are refused. A refusal

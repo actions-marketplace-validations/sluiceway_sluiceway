@@ -24777,8 +24777,8 @@ var require_scan = __commonJS((exports, module) => {
     CHAR_RIGHT_PARENTHESES,
     CHAR_RIGHT_SQUARE_BRACKET
   } = require_constants6();
-  var isPathSeparator = (code2) => {
-    return code2 === CHAR_FORWARD_SLASH || code2 === CHAR_BACKWARD_SLASH;
+  var isPathSeparator = (code) => {
+    return code === CHAR_FORWARD_SLASH || code === CHAR_BACKWARD_SLASH;
   };
   var depth = (token) => {
     if (token.isPrefix !== true) {
@@ -24808,38 +24808,38 @@ var require_scan = __commonJS((exports, module) => {
     let finished = false;
     let braces = 0;
     let prev;
-    let code2;
+    let code;
     let token = { value: "", depth: 0, isGlob: false };
     const eos = () => index >= length;
     const peek = () => str.charCodeAt(index + 1);
     const advance = () => {
-      prev = code2;
+      prev = code;
       return str.charCodeAt(++index);
     };
     while (index < length) {
-      code2 = advance();
+      code = advance();
       let next;
-      if (code2 === CHAR_BACKWARD_SLASH) {
+      if (code === CHAR_BACKWARD_SLASH) {
         backslashes = token.backslashes = true;
-        code2 = advance();
-        if (code2 === CHAR_LEFT_CURLY_BRACE) {
+        code = advance();
+        if (code === CHAR_LEFT_CURLY_BRACE) {
           braceEscaped = true;
         }
         continue;
       }
-      if (braceEscaped === true || code2 === CHAR_LEFT_CURLY_BRACE) {
+      if (braceEscaped === true || code === CHAR_LEFT_CURLY_BRACE) {
         braces++;
-        while (eos() !== true && (code2 = advance())) {
-          if (code2 === CHAR_BACKWARD_SLASH) {
+        while (eos() !== true && (code = advance())) {
+          if (code === CHAR_BACKWARD_SLASH) {
             backslashes = token.backslashes = true;
             advance();
             continue;
           }
-          if (code2 === CHAR_LEFT_CURLY_BRACE) {
+          if (code === CHAR_LEFT_CURLY_BRACE) {
             braces++;
             continue;
           }
-          if (braceEscaped !== true && code2 === CHAR_DOT && (code2 = advance()) === CHAR_DOT) {
+          if (braceEscaped !== true && code === CHAR_DOT && (code = advance()) === CHAR_DOT) {
             isBrace = token.isBrace = true;
             isGlob = token.isGlob = true;
             finished = true;
@@ -24848,7 +24848,7 @@ var require_scan = __commonJS((exports, module) => {
             }
             break;
           }
-          if (braceEscaped !== true && code2 === CHAR_COMMA) {
+          if (braceEscaped !== true && code === CHAR_COMMA) {
             isBrace = token.isBrace = true;
             isGlob = token.isGlob = true;
             finished = true;
@@ -24857,7 +24857,7 @@ var require_scan = __commonJS((exports, module) => {
             }
             break;
           }
-          if (code2 === CHAR_RIGHT_CURLY_BRACE) {
+          if (code === CHAR_RIGHT_CURLY_BRACE) {
             braces--;
             if (braces === 0) {
               braceEscaped = false;
@@ -24872,7 +24872,7 @@ var require_scan = __commonJS((exports, module) => {
         }
         break;
       }
-      if (code2 === CHAR_FORWARD_SLASH) {
+      if (code === CHAR_FORWARD_SLASH) {
         slashes.push(index);
         tokens.push(token);
         token = { value: "", depth: 0, isGlob: false };
@@ -24886,27 +24886,27 @@ var require_scan = __commonJS((exports, module) => {
         continue;
       }
       if (opts.noext !== true) {
-        const isExtglobChar = code2 === CHAR_PLUS || code2 === CHAR_AT || code2 === CHAR_ASTERISK || code2 === CHAR_QUESTION_MARK || code2 === CHAR_EXCLAMATION_MARK;
+        const isExtglobChar = code === CHAR_PLUS || code === CHAR_AT || code === CHAR_ASTERISK || code === CHAR_QUESTION_MARK || code === CHAR_EXCLAMATION_MARK;
         if (isExtglobChar === true && peek() === CHAR_LEFT_PARENTHESES) {
           isGlob = token.isGlob = true;
           isExtglob = token.isExtglob = true;
           finished = true;
-          if (code2 === CHAR_EXCLAMATION_MARK && index === start) {
+          if (code === CHAR_EXCLAMATION_MARK && index === start) {
             negatedExtglob = true;
           }
           if (scanToEnd === true) {
             let parens = 0;
-            while (eos() !== true && (code2 = advance())) {
-              if (code2 === CHAR_BACKWARD_SLASH) {
+            while (eos() !== true && (code = advance())) {
+              if (code === CHAR_BACKWARD_SLASH) {
                 backslashes = token.backslashes = true;
                 advance();
                 continue;
               }
-              if (code2 === CHAR_LEFT_PARENTHESES) {
+              if (code === CHAR_LEFT_PARENTHESES) {
                 parens++;
                 continue;
               }
-              if (code2 === CHAR_RIGHT_PARENTHESES && --parens === 0) {
+              if (code === CHAR_RIGHT_PARENTHESES && --parens === 0) {
                 finished = true;
                 break;
               }
@@ -24916,7 +24916,7 @@ var require_scan = __commonJS((exports, module) => {
           break;
         }
       }
-      if (code2 === CHAR_ASTERISK) {
+      if (code === CHAR_ASTERISK) {
         if (prev === CHAR_ASTERISK)
           isGlobstar = token.isGlobstar = true;
         isGlob = token.isGlob = true;
@@ -24926,7 +24926,7 @@ var require_scan = __commonJS((exports, module) => {
         }
         break;
       }
-      if (code2 === CHAR_QUESTION_MARK) {
+      if (code === CHAR_QUESTION_MARK) {
         isGlob = token.isGlob = true;
         finished = true;
         if (scanToEnd === true) {
@@ -24934,7 +24934,7 @@ var require_scan = __commonJS((exports, module) => {
         }
         break;
       }
-      if (code2 === CHAR_LEFT_SQUARE_BRACKET) {
+      if (code === CHAR_LEFT_SQUARE_BRACKET) {
         while (eos() !== true && (next = advance())) {
           if (next === CHAR_BACKWARD_SLASH) {
             backslashes = token.backslashes = true;
@@ -24953,26 +24953,26 @@ var require_scan = __commonJS((exports, module) => {
         }
         break;
       }
-      if (opts.nonegate !== true && code2 === CHAR_EXCLAMATION_MARK && index === start) {
+      if (opts.nonegate !== true && code === CHAR_EXCLAMATION_MARK && index === start) {
         negated = token.negated = true;
         start++;
         continue;
       }
-      if (opts.noparen !== true && code2 === CHAR_LEFT_PARENTHESES) {
+      if (opts.noparen !== true && code === CHAR_LEFT_PARENTHESES) {
         isGlob = token.isGlob = true;
         if (scanToEnd === true) {
           let parens = 1;
-          while (eos() !== true && (code2 = advance())) {
-            if (code2 === CHAR_BACKWARD_SLASH) {
+          while (eos() !== true && (code = advance())) {
+            if (code === CHAR_BACKWARD_SLASH) {
               backslashes = token.backslashes = true;
               advance();
               continue;
             }
-            if (code2 === CHAR_LEFT_PARENTHESES) {
+            if (code === CHAR_LEFT_PARENTHESES) {
               parens++;
               continue;
             }
-            if (code2 === CHAR_RIGHT_PARENTHESES && --parens === 0) {
+            if (code === CHAR_RIGHT_PARENTHESES && --parens === 0) {
               finished = true;
               break;
             }
@@ -25038,7 +25038,7 @@ var require_scan = __commonJS((exports, module) => {
     };
     if (opts.tokens === true) {
       state.maxDepth = 0;
-      if (!isPathSeparator(code2)) {
+      if (!isPathSeparator(code)) {
         tokens.push(token);
       }
       state.tokens = tokens;
@@ -26136,25 +26136,25 @@ var require_picomatch = __commonJS((exports, module) => {
     }
     const matcher = (input2, returnObject = false) => {
       const { isMatch, match, output: output2 } = picomatch.test(input2, regex, options, { glob, posix });
-      const result2 = { glob, state, regex, posix, input: input2, output: output2, match, isMatch };
+      const result = { glob, state, regex, posix, input: input2, output: output2, match, isMatch };
       if (typeof opts.onResult === "function") {
-        opts.onResult(result2);
+        opts.onResult(result);
       }
       if (isMatch === false) {
-        result2.isMatch = false;
-        return returnObject ? result2 : false;
+        result.isMatch = false;
+        return returnObject ? result : false;
       }
       if (isIgnored(input2)) {
         if (typeof opts.onIgnore === "function") {
-          opts.onIgnore(result2);
+          opts.onIgnore(result);
         }
-        result2.isMatch = false;
-        return returnObject ? result2 : false;
+        result.isMatch = false;
+        return returnObject ? result : false;
       }
       if (typeof opts.onMatch === "function") {
-        opts.onMatch(result2);
+        opts.onMatch(result);
       }
-      return returnObject ? result2 : true;
+      return returnObject ? result : true;
     };
     if (returnState) {
       matcher.state = state;
@@ -26169,11 +26169,11 @@ var require_picomatch = __commonJS((exports, module) => {
       return { isMatch: false, output: "" };
     }
     const opts = options || {};
-    const format3 = opts.format || (posix ? utils.toPosixSlashes : null);
+    const format2 = opts.format || (posix ? utils.toPosixSlashes : null);
     let match = input2 === glob;
-    let output2 = match && format3 ? format3(input2) : input2;
+    let output2 = match && format2 ? format2(input2) : input2;
     if (match === false) {
-      output2 = format3 ? format3(input2) : input2;
+      output2 = format2 ? format2(input2) : input2;
       match = output2 === glob;
     }
     if (match === false || opts.capture === true) {
@@ -26369,14 +26369,14 @@ var require_lib = __commonJS((exports) => {
     return function(mod) {
       if (mod && mod.__esModule)
         return mod;
-      var result2 = {};
+      var result = {};
       if (mod != null) {
         for (var k = ownKeys(mod), i = 0;i < k.length; i++)
           if (k[i] !== "default")
-            __createBinding(result2, mod, k[i]);
+            __createBinding(result, mod, k[i]);
       }
-      __setModuleDefault(result2, mod);
-      return result2;
+      __setModuleDefault(result, mod);
+      return result;
     };
   }();
   var __awaiter2 = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
@@ -26400,8 +26400,8 @@ var require_lib = __commonJS((exports) => {
           reject(e);
         }
       }
-      function step(result2) {
-        result2.done ? resolve(result2.value) : adopt(result2.value).then(fulfilled, rejected);
+      function step(result) {
+        result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
       }
       step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
@@ -47364,122 +47364,295 @@ function escapeText(text) {
   return text.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ").replace(/www\.|:\/\/|gh-(?=\d)|[&<>"*_`~[\]|\\#@]/gi, escapeOne);
 }
 
-// src/core/policy.ts
-var CONFTEST_MINIMUM_VERSION = "0.50.0";
-var CONFTEST_VERSION_ARGV = ["conftest", "--version"];
-function conftestArgv(policies, document) {
-  return [
-    "conftest",
-    "test",
-    "--output",
-    "json",
-    "--all-namespaces",
-    "--no-color",
-    ...policies.flatMap((path) => ["--policy", path]),
-    document
-  ];
+// src/core/basics.ts
+function byCodeUnit(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
-function parseConftestVersion(stdout) {
-  return /^Conftest: v?(\d+\.\d+\.\d+)\s*$/m.exec(stdout)?.[1];
+function plural2(count, word) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
-function conftestVersionProblem(found) {
-  if (found === undefined)
-    return { kind: "no-version" };
-  const parts = (version2) => version2.split(".").map(Number);
-  const [a = 0, b = 0, c = 0] = parts(found);
-  const [x = 0, y = 0, w = 0] = parts(CONFTEST_MINIMUM_VERSION);
-  const older = a < x || a === x && (b < y || b === y && c < w);
-  return older ? { kind: "too-old", found } : undefined;
+var ENCODER = new TextEncoder;
+function byteLength(text) {
+  return ENCODER.encode(text).length;
 }
-var CONFTEST_EXIT_CODES = { success: [0, 1] };
-var result = exports_external.object({ msg: exports_external.string() });
-var entry = exports_external.object({
-  namespace: exports_external.string(),
-  successes: exports_external.number().int().nonnegative().optional(),
-  failures: exports_external.array(result).optional(),
-  warnings: exports_external.array(result).optional()
-});
-var report = exports_external.array(entry);
-function parseConftestReport(stdout) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return;
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function errorMessage(error63) {
+  return error63 instanceof Error ? error63.message : String(error63);
+}
+
+// src/core/glob.ts
+var import_picomatch = __toESM(require_picomatch2(), 1);
+function globMatcher(globs) {
+  if (globs.length === 0)
+    return () => false;
+  return import_picomatch.default(globs, { dot: true });
+}
+function globOf(text) {
+  return text.replace(/[\\*?[\]{}()!+@|]/g, "\\$&");
+}
+
+// src/core/claim.ts
+var DEFAULT_UNRELATED = [
+  "**/*.md",
+  "**/LICENSE*",
+  "**/.gitignore",
+  "**/.gitattributes",
+  ".editorconfig",
+  ".github/**"
+];
+var isDefaultUnrelated = globMatcher([...DEFAULT_UNRELATED]);
+function inside(directory, file2) {
+  return directory === "." || file2.startsWith(`${directory}/`);
+}
+function claim2(stacks, changed, unrelated) {
+  const isUnrelated = globMatcher(unrelated);
+  const matchers = stacks.map((stack) => ({ stack, matches: globMatcher(stack.inputs) }));
+  const claims = new Map;
+  const unclaimed = [];
+  for (const file2 of new Set(changed)) {
+    if (isUnrelated(file2))
+      continue;
+    const claimants = matchers.filter(({ stack, matches }) => inside(stack.path, file2) || matches(file2));
+    if (claimants.length === 0 && !isDefaultUnrelated(file2))
+      unclaimed.push(file2);
+    for (const { stack } of claimants)
+      claims.set(stack.id, [...claims.get(stack.id) ?? [], file2]);
   }
-  const parsed = report.safeParse(json2);
-  if (!parsed.success)
-    return;
-  const byNamespace = (a, b) => a < b ? -1 : a > b ? 1 : 0;
-  const entries = [...parsed.data].sort((a, b) => byNamespace(a.namespace, b.namespace));
-  const found = (key) => entries.flatMap((one) => (one[key] ?? []).map(({ msg }) => ({ namespace: one.namespace, message: msg })));
+  return { claims, unclaimed };
+}
+
+// src/core/attribution.ts
+var LOOKBACK = 100;
+var NAMED_ON_A_ROW = 5;
+var OUTSIDE_NAMED = 20;
+function isCommitId(text) {
+  return /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(text);
+}
+var NEVER_DEPLOYED = "not deployed from this dashboard yet";
+function pullRequestOf(commit, walk) {
+  return commit.pullRequests.find((pullRequest) => pullRequest.merged && pullRequest.base === walk.defaultBranch);
+}
+function inRange(walk, from, to) {
+  const bySha = new Map(walk.commits.map((commit) => [commit.sha, commit]));
+  const reach = (start) => {
+    const reached2 = new Set;
+    const queue = bySha.has(start) ? [start] : [];
+    for (let sha = queue.pop();sha !== undefined; sha = queue.pop()) {
+      if (reached2.has(sha))
+        continue;
+      reached2.add(sha);
+      queue.push(...bySha.get(sha)?.parents.filter((parent) => bySha.has(parent)) ?? []);
+    }
+    return reached2;
+  };
+  if (to !== undefined && !bySha.has(to))
+    return { earlier: false };
+  const under = to === undefined ? undefined : reach(to);
+  const reached = reach(from);
   return {
-    failures: found("failures"),
-    warnings: found("warnings"),
-    passed: entries.reduce((sum, one) => sum + (one.successes ?? 0), 0),
-    namespaces: [...new Set(entries.map((one) => one.namespace))].sort(byNamespace)
+    commits: walk.commits.filter(({ sha }) => !reached.has(sha) && (under?.has(sha) ?? true)),
+    earlier: !bySha.has(from)
   };
 }
-function policyOutcome(run) {
-  if (!run.ok) {
-    const { reason } = run;
-    if (reason.kind === "tool-error" && reason.exitCode === null) {
-      return { kind: "not-run", reason: { kind: "tool-missing" } };
-    }
-    if (reason.kind === "tool-error") {
-      return { kind: "not-run", reason: { kind: "tool-error", exitCode: reason.exitCode } };
-    }
-    if (reason.kind === "timed-out")
-      return { kind: "not-run", reason };
-    return { kind: "not-run", reason: { kind: "unreadable-output" } };
-  }
-  const parsed = parseConftestReport(run.stdout);
-  if (parsed === undefined) {
-    return run.exitCode === 0 ? { kind: "not-run", reason: { kind: "unreadable-output" } } : { kind: "not-run", reason: { kind: "tool-error", exitCode: run.exitCode } };
-  }
-  return parsed.failures.length > 0 ? { kind: "failed", report: parsed } : { kind: "passed", report: parsed };
-}
-function policyRunFailureText(reason) {
-  switch (reason.kind) {
-    case "tool-missing":
-      return "conftest is not installed on the runner";
-    case "tool-error":
-      return reason.exitCode === null ? "conftest exited with an error" : `conftest exited with an error (exit code ${reason.exitCode})`;
-    case "timed-out":
-      return `conftest ran out of time (${reason.minutes} ${reason.minutes === 1 ? "minute" : "minutes"})`;
-    case "unreadable-output":
-      return "the report of conftest could not be read";
-    case "too-old":
-      return `conftest ${reason.found} is older than the ${CONFTEST_MINIMUM_VERSION} Sluiceway needs`;
-    case "no-version":
-      return "conftest did not say which version it is";
-    case "path-missing":
-      return `the policy path ${reason.path} is not in the repo`;
-    case "no-document":
-      return "the preview gave no document to test";
-  }
-}
-
-// src/render/cost.ts
-function amount(value) {
-  return Math.abs(value).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+function rangesOf(from) {
+  const seen = new Set;
+  return from.map((one) => typeof one === "string" ? { from: one } : one).filter(({ from: start, to }) => {
+    const key = `${start} ${to ?? ""}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
   });
 }
-function costLine({ monthly, currency }) {
-  if (monthly === 0)
-    return "about the same cost a month";
-  return `about **${amount(monthly)} ${currency}** ${monthly > 0 ? "more" : "less"} a month`;
+function commitsInRanges(walk, from) {
+  const wanted = new Set;
+  for (const { from: start, to } of rangesOf(from)) {
+    for (const commit of inRange(walk, start, to).commits ?? [])
+      wanted.add(commit.sha);
+  }
+  return wanted;
+}
+function directPushesToRead(walk, from) {
+  const wanted = commitsInRanges(walk, from);
+  return walk.commits.filter((commit) => wanted.has(commit.sha) && !pullRequestOf(commit, walk)).map(({ sha }) => sha);
+}
+function pullRequestsToRead(walk, from) {
+  const wanted = commitsInRanges(walk, from);
+  const numbers = [];
+  for (const commit of walk.commits) {
+    const pullRequest = wanted.has(commit.sha) ? pullRequestOf(commit, walk) : undefined;
+    if (pullRequest && (pullRequest.renamed || pullRequest.changedFiles > pullRequest.files.length) && !numbers.includes(pullRequest.number))
+      numbers.push(pullRequest.number);
+  }
+  return numbers;
+}
+function by(author) {
+  return author === undefined ? "" : ` by ${escapeText(author)}`;
+}
+function nameOf(merge2) {
+  return merge2.kind === "pull-request" ? `#${merge2.number}${by(merge2.author)}` : `[${merge2.sha.slice(0, 7)}](${merge2.url})${by(merge2.author)}`;
+}
+function htmlNameOf(merge2) {
+  return merge2.kind === "pull-request" ? `<a href="${merge2.url}">#${merge2.number}</a>${by(merge2.author)}` : `<a href="${merge2.url}">${merge2.sha.slice(0, 7)}</a>${by(merge2.author)}`;
+}
+function countOf(merges) {
+  const pushes = merges.filter((merge2) => merge2.kind === "push").length;
+  return [
+    merges.length - pushes && plural2(merges.length - pushes, "pull request"),
+    pushes && `${pushes} direct push${pushes === 1 ? "" : "es"}`
+  ].filter(Boolean).join(" and ");
+}
+function inLink(sha) {
+  return sha.slice(0, 12);
+}
+function outsideFold(outside) {
+  const named = outside.slice(0, OUTSIDE_NAMED).map((merge2) => `${htmlNameOf(merge2)}<br>`);
+  const more = outside.length - named.length;
+  return [
+    "<details><summary>changes outside this stack</summary>",
+    ...named,
+    ...more > 0 ? [`and ${more} more<br>`] : [],
+    "</details>"
+  ];
+}
+function attributor(input2) {
+  const { walk, repoUrl } = input2;
+  const names = input2.names ?? NAMED_ON_A_ROW;
+  const mergedBy = new Map;
+  const mergeOf = new Map;
+  const judge = (merge2, files) => {
+    if (files === undefined)
+      return { merge: merge2, claimedBy: new Set, outside: true };
+    const { claims, unclaimed } = claim2(input2.stacks, [...files], input2.unrelated);
+    return { merge: merge2, claimedBy: new Set(claims.keys()), outside: unclaimed.length > 0 };
+  };
+  for (const commit of walk.commits) {
+    const pullRequest = pullRequestOf(commit, walk);
+    const key = pullRequest ? `#${pullRequest.number}` : commit.sha;
+    let merged = mergedBy.get(key);
+    if (!merged && pullRequest) {
+      const known = input2.pullRequestFiles?.get(pullRequest.number) ?? (pullRequest.changedFiles <= pullRequest.files.length ? pullRequest.files : undefined);
+      merged = judge({
+        kind: "pull-request",
+        number: pullRequest.number,
+        title: pullRequest.title,
+        url: `${repoUrl}/pull/${pullRequest.number}`,
+        ...pullRequest.author === undefined ? {} : { author: pullRequest.author }
+      }, known);
+    } else if (!merged) {
+      const files = input2.pushFiles.get(commit.sha);
+      merged = judge({
+        kind: "push",
+        sha: commit.sha,
+        message: commit.message,
+        url: `${repoUrl}/commit/${commit.sha}`,
+        ...commit.author === undefined ? {} : { author: commit.author }
+      }, files);
+    }
+    mergedBy.set(key, merged);
+    mergeOf.set(commit.sha, merged);
+  }
+  const ranges = new Map;
+  const rangeOf = (from, to) => {
+    const key = `${from} ${to ?? ""}`;
+    const range = ranges.get(key) ?? inRange(walk, from, to);
+    ranges.set(key, range);
+    return range;
+  };
+  const explain = (stackId, from, to) => {
+    const range = rangeOf(from, to);
+    const merged = [...new Set((range.commits ?? []).flatMap(({ sha }) => mergeOf.get(sha) ?? []))];
+    const claimed = merged.filter(({ claimedBy }) => claimedBy.has(stackId)).map((m) => m.merge);
+    const outside = merged.filter((m) => !m.claimedBy.has(stackId) && m.outside).map((m) => m.merge);
+    const link = `[compare](${repoUrl}/compare/${inLink(from)}...${inLink(to ?? input2.scanSha)})`;
+    const line = (word, nothing, listed) => {
+      const parts = [...listed];
+      const and = () => parts.length > 0 ? "and " : "";
+      if (outside.length > 0)
+        parts.push(`${and()}${plural2(outside.length, "change")} outside this stack`);
+      if (range.earlier)
+        parts.push(`${and()}earlier changes`);
+      return `${parts.length > 0 ? `${word} ${parts.join(", ")}` : nothing} · ${link}`;
+    };
+    const named = claimed.slice(0, names).map(nameOf);
+    const more = claimed.length - named.length;
+    const full = [named.join(", "), more > 0 && named.length > 0 ? `and ${more} more` : ""].filter(Boolean);
+    return {
+      range,
+      claimed,
+      outside,
+      lines: (word, nothing) => {
+        const counted = line(word, nothing, claimed.length > 0 ? [countOf(claimed)] : []);
+        return {
+          full: named.length > 0 ? line(word, nothing, full) : counted,
+          counted
+        };
+      }
+    };
+  };
+  const one = (stackId, from) => {
+    if (from === undefined) {
+      return { lines: { full: NEVER_DEPLOYED, counted: NEVER_DEPLOYED }, merges: [] };
+    }
+    const { claimed, outside, lines } = explain(stackId, from, undefined);
+    return {
+      lines: {
+        ...lines("from", "nothing this stack claims has changed since its last deploy"),
+        ...outside.length > 0 ? { outside: outsideFold(outside) } : {}
+      },
+      merges: claimed
+    };
+  };
+  return Object.assign(one, {
+    shipped(stackId, from, to) {
+      const { range, claimed, outside, lines } = explain(stackId, from, to);
+      if (range.commits === undefined)
+        return;
+      if (claimed.length === 0 && outside.length === 0 && !range.earlier)
+        return;
+      return lines("shipped", "");
+    }
+  });
 }
 
-// src/render/images.ts
-var ACTION_REPO = "sluiceway/sluiceway";
-function urlPart(text) {
-  return encodeURIComponent(text).replace(/[()*!'~]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+// src/core/stack.ts
+function stackId(stack) {
+  if (stack.id !== undefined)
+    return stack.id;
+  return stack.name === undefined ? stack.path : `${stack.path}:${stack.name}`;
 }
-function mascotUrl(actionRef2, file2) {
-  return `https://raw.githubusercontent.com/${ACTION_REPO}/${urlPart(actionRef2)}/assets/mascot/${file2}`;
+
+// src/core/discovery.ts
+class DiscoveryError extends Error {
+  problems;
+  constructor(problems) {
+    super([
+      "Could not work out the stacks of this repo:",
+      ...problems.map((problem) => `- ${problem}`)
+    ].join(`
+`));
+    this.name = "DiscoveryError";
+    this.problems = problems;
+  }
+}
+function knownStacks(found, ignore) {
+  const ignored = globMatcher(ignore);
+  const known = found.filter((stack) => !ignored(stackId(stack)));
+  const byId = Map.groupBy(known, stackId);
+  const problems = [...byId].flatMap(([id, sharing]) => sharing.length < 2 ? [] : [
+    `two stacks have the id ${JSON.stringify(id)}: ${sharing.map(describe3).join(", and ")}. A stack id has to name one stack. Rename or move one of them.`
+  ]);
+  if (problems.length > 0)
+    throw new DiscoveryError(problems);
+  return known;
+}
+function describe3(stack) {
+  const path = JSON.stringify(stack.path);
+  const where2 = stack.name === undefined ? `in ${path}` : `${JSON.stringify(stack.name)} in ${path}`;
+  const { tool } = stack.options;
+  return typeof tool === "string" ? `the stack ${where2} that a stacks entry declares with tool: ${tool}` : `the Pulumi stack ${where2}`;
 }
 
 // src/render/marker.ts
@@ -47599,7 +47772,7 @@ function waitingMarker(facts) {
 function bulkMarker(facts) {
   const pairs = [["section", facts.section]];
   if (facts.kind === "confirm") {
-    pairs.push(["confirm", facts.by], ["stacks", encodeIds(facts.stacks.map(({ stackId }) => stackId))], ["hashes", facts.stacks.map(({ hash: hash2 }) => hash2).join(",")], ["scan-run", facts.scanRun]);
+    pairs.push(["confirm", facts.by], ["stacks", encodeIds(facts.stacks.map(({ stackId: stackId2 }) => stackId2))], ["hashes", facts.stacks.map(({ hash: hash2 }) => hash2).join(",")], ["scan-run", facts.scanRun]);
   } else if (facts.note) {
     pairs.push(["note", facts.note.kind]);
     if (facts.note.kind === "changed") {
@@ -47735,8 +47908,8 @@ function parseDashboard(body) {
     if (!match)
       continue;
     const pairs = readPairs(match[2] ?? "");
-    const stackId = pairs.get("stack");
-    if (stackId === undefined)
+    const stackId2 = pairs.get("stack");
+    if (stackId2 === undefined)
       continue;
     let end = index;
     for (let next = index + 1;next < lines.length; next++) {
@@ -47751,7 +47924,7 @@ function parseDashboard(body) {
     index = end;
     const state = pairs.get("state") ?? "";
     if (!isRowState(state)) {
-      rows.push({ known: false, stackId, state, text });
+      rows.push({ known: false, stackId: stackId2, state, text });
       continue;
     }
     const count = (key) => {
@@ -47764,7 +47937,7 @@ function parseDashboard(body) {
     const fingerprint = pairs.get("fingerprint");
     rows.push({
       known: true,
-      stackId,
+      stackId: stackId2,
       state,
       hash: pairs.get("hash"),
       destroys: count("destroys"),
@@ -47822,8 +47995,8 @@ function readBulk(line) {
   if (!isBulkSection(section))
     return;
   const ticked = match[1] === "x" || match[1] === "X";
-  const by = pairs.get("confirm");
-  if (by === undefined) {
+  const by2 = pairs.get("confirm");
+  if (by2 === undefined) {
     const note = pairs.get("note");
     if (note === "orphan" || note === "expired") {
       return { kind: "box", section, note: { kind: note }, ticked };
@@ -47837,14 +48010,14 @@ function readBulk(line) {
   const ids = readIds(pairs, "stacks");
   const hashes = (pairs.get("hashes") ?? "").split(",");
   const scanRun = pairs.get("scan-run") ?? "";
-  if (by === "" || scanRun === "" || ids.length === 0 || hashes.length !== ids.length || hashes.some((hash2) => hash2 === "")) {
+  if (by2 === "" || scanRun === "" || ids.length === 0 || hashes.length !== ids.length || hashes.some((hash2) => hash2 === "")) {
     return;
   }
   return {
     kind: "confirm",
     section,
-    by,
-    stacks: ids.map((stackId, index) => ({ stackId, hash: hashes[index] ?? "" })),
+    by: by2,
+    stacks: ids.map((stackId2, index) => ({ stackId: stackId2, hash: hashes[index] ?? "" })),
     scanRun,
     ticked
   };
@@ -47865,779 +48038,20 @@ function readOutside(line) {
   if (!match)
     return;
   const pairs = readPairs(match[1] ?? "");
-  const stackId = pairs.get("stack");
+  const stackId2 = pairs.get("stack");
   const kind = pairs.get("kind");
   const at = new Date(pairs.get("at") ?? "");
   const commit = pairs.get("commit");
-  if (stackId === undefined || kind !== "deploy" && kind !== "destroy" || Number.isNaN(at.getTime()) || commit !== undefined && !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(commit)) {
+  if (stackId2 === undefined || kind !== "deploy" && kind !== "destroy" || Number.isNaN(at.getTime()) || commit !== undefined && !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(commit)) {
     return;
   }
   return {
-    stackId,
+    stackId: stackId2,
     kind,
     at,
     ...commit === undefined ? {} : { commit },
     ...pairs.get("dirty") === "true" ? { dirty: true } : {}
   };
-}
-
-// src/render/time.ts
-var formats2 = new Map;
-function format2(timeZone) {
-  let found = formats2.get(timeZone);
-  if (found === undefined) {
-    found = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    });
-    formats2.set(timeZone, found);
-  }
-  return found;
-}
-function isUtc2(timeZone) {
-  return timeZone === undefined || timeZone === "UTC";
-}
-function wall2(at, timeZone) {
-  if (isUtc2(timeZone)) {
-    const iso = at.toISOString();
-    return {
-      year: at.getUTCFullYear(),
-      day: iso.slice(5, 10),
-      minute: iso.slice(11, 16),
-      offset: 0
-    };
-  }
-  const parts = {};
-  for (const part of format2(timeZone).formatToParts(at)) {
-    if (part.type !== "literal")
-      parts[part.type] = Number(part.value);
-  }
-  const { year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0 } = parts;
-  const shown = Date.UTC(year, month - 1, day, hour, minute, second);
-  const offset = Math.round((shown - Math.floor(at.getTime() / 1000) * 1000) / 60000);
-  const two = (value) => String(value).padStart(2, "0");
-  return {
-    year,
-    day: `${two(month)}-${two(day)}`,
-    minute: `${two(hour)}:${two(minute)}`,
-    offset
-  };
-}
-function fullDay(time3) {
-  return `${String(time3.year).padStart(4, "0")}-${time3.day}`;
-}
-function offsetName(offset) {
-  if (offset === 0)
-    return "UTC";
-  const sign = offset > 0 ? "+" : "-";
-  const hours = Math.floor(Math.abs(offset) / 60);
-  const minutes = Math.abs(offset) % 60;
-  return `UTC${sign}${hours}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`}`;
-}
-function minuteAt(at, timeZone) {
-  const time3 = wall2(at, timeZone);
-  return `${fullDay(time3)} ${time3.minute} ${offsetName(time3.offset)}`;
-}
-function yearIn(at, timeZone) {
-  return wall2(at, timeZone).year;
-}
-function trailMinute(at, year, timeZone) {
-  const time3 = wall2(at, timeZone);
-  return `${time3.year === year ? time3.day : fullDay(time3)} ${time3.minute}`;
-}
-function zoneLine(timeZone) {
-  return `Times are in ${timeZone ?? "UTC"}.`;
-}
-
-// src/render/row.ts
-var INDENT = "  ";
-function byCodeUnit(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-function isDestroy(change) {
-  return change.op === "replace" || change.op === "delete";
-}
-function plural2(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
-function changeCounts(changes) {
-  const of = (op) => changes.filter((change) => change.op === op).length;
-  return {
-    creates: of("create"),
-    updates: of("update"),
-    replaces: of("replace"),
-    deletes: of("delete"),
-    tracking: changes.filter((change) => change.op === "none" && change.tracking).length
-  };
-}
-function counts(changes) {
-  const { creates, updates, replaces, deletes, tracking } = changeCounts(changes);
-  return [
-    creates && plural2(creates, "create"),
-    updates && plural2(updates, "update"),
-    replaces && `**${plural2(replaces, "replace")}**`,
-    deletes && `**${plural2(deletes, "delete")}**`,
-    tracking && `${tracking} tracking only`
-  ].filter(Boolean).join(", ");
-}
-function valueSuffix(change, path, show2) {
-  const value = change.values?.find((one) => one.path === path);
-  if (value === undefined)
-    return "";
-  const side = (text) => text === undefined ? "nothing" : show2(text);
-  return ` ${side(value.old)} → ${side(value.new)}`;
-}
-function code(text) {
-  return `<code>${escapeText(text)}</code>`;
-}
-function sortedKeys(keys) {
-  return [...new Set(keys)].sort(byCodeUnit);
-}
-var ROW_PATH_LENGTH = 80;
-var ROW_PATHS_PER_CHANGE = 10;
-var HEAD_LENGTH = 24;
-function shortPath(path) {
-  const points = Array.from(path);
-  if (points.length <= ROW_PATH_LENGTH)
-    return path;
-  const first = /^(?:\["(?:[^"\\]|\\.)*"\]|[^.[]+)/.exec(path)?.[0] ?? "";
-  const head = Array.from(first).slice(0, HEAD_LENGTH);
-  const tail = points.slice(points.length - (ROW_PATH_LENGTH - head.length - 1));
-  const segment = tail.findIndex((point) => point === "." || point === "[");
-  const start = segment < 0 ? 0 : tail[segment] === "." ? segment + 1 : segment;
-  const end = start < tail.length ? tail.slice(start) : tail;
-  return `${head.join("")}…${end.join("")}`;
-}
-function changeLine(change, options = {}) {
-  const word = [change.op === "none" ? undefined : change.op, change.tracking].filter((part) => part !== undefined).join(" + ");
-  const cap = isDestroy(change) ? word.toUpperCase() : word;
-  const forcing = sortedKeys(change.replaceKeys);
-  const others = sortedKeys(change.changedKeys).filter((key) => !forcing.includes(key));
-  const capped = options.row === true && !isDestroy(change);
-  const listed = capped ? others.slice(0, ROW_PATHS_PER_CHANGE) : others;
-  const hidden = others.length - listed.length;
-  const show2 = (keys) => keys.map((key) => code(options.row ? shortPath(key) : key) + valueSuffix(change, key, code)).join(", ");
-  const parts = [
-    `<kbd>${cap}</kbd> <code>${escapeText(change.type)}</code> <b>${escapeText(change.name)}</b>`
-  ];
-  if (forcing.length > 0)
-    parts.push(`forced by ${show2(forcing)}`);
-  if (others.length > 0) {
-    const more = hidden > 0 ? `, and ${hidden} more` : "";
-    parts.push(`${forcing.length > 0 ? "also changes " : ""}${show2(listed)}${more}`);
-  }
-  return parts.join(" · ");
-}
-var ORPHAN_TICK_NOTE = ":information_source: a tick on this row was not picked up. Tick again to deploy.";
-var DEPLOYS_OFF_NOTE = ":information_source: deploys are turned off in `sluiceway.yaml`, so this tick started nothing.";
-var POLICY_FAILED_NOTE = ":information_source: this tick started nothing: a policy failed on this change, so its row has no box.";
-function dependencyNote(ids, phases = []) {
-  return `:information_source: this tick started nothing: ${waitsOnWords(ids, phases)}`;
-}
-function waitsOnWords(ids, phases) {
-  const names = ids.map((id) => `**${escapeText(id)}**`).join(" and ");
-  const one = ids.length === 1;
-  if (phases.length === 0) {
-    return `it depends on ${names}, which ${one ? "has a change" : "have changes"} waiting. Tick ${one ? "both" : "them all"} to deploy them in order, or deploy ${names} first.`;
-  }
-  const waiting = (count2) => count2 === 1 ? "has a change" : "have changes";
-  const clauses = [
-    ...ids.length === 0 ? [] : [`it depends on ${names}, which ${waiting(ids.length)} waiting`],
-    ...phases.map(({ phase, stackIds }) => `it waits on the **${escapeText(phase)}** phase: ${shortList(stackIds)} ${waiting(stackIds.length)} waiting`)
-  ];
-  const count = ids.length + phases.reduce((sum, { stackIds }) => sum + stackIds.length, 0);
-  const first = [
-    ...ids.map((id) => `**${escapeText(id)}**`),
-    ...phases.map(({ phase }) => `the **${escapeText(phase)}** phase`)
-  ];
-  return `${clauses.join(", and ")}. Tick ${count === 1 ? "both" : "them all"} to deploy them in order, or deploy ${listWords(first)} first.`;
-}
-function onMergeNote(wait) {
-  const lead = ":information_source: this stack deploys on merge";
-  const waits = `${lead}, and this change waits for a tick:`;
-  switch (wait.kind) {
-    case "deploys-off":
-      return `${lead}, and deploys are turned off in \`sluiceway.yaml\`.`;
-    case "destroy":
-      return `${waits} it deletes or replaces a resource.`;
-    case "drift":
-      return `${waits} the stack drifted, and a deploy would also put back what changed outside the code.`;
-    case "not-merged":
-      return `${waits} the scan that found it did not follow a merge.`;
-    case "cost":
-      return `${waits} it costs about **${amount(wait.monthly)} ${wait.currency}** more a month, above the threshold of ${amount(wait.threshold)} ${wait.currency}.`;
-    case "cost-unknown":
-      return `${waits} its cost could not be estimated, and \`cost.threshold\` is set to ${amount(wait.threshold)}.`;
-    case "depends-on":
-      return `${waits} ${waitsOnWords(wait.named, wait.phases)}`;
-  }
-}
-var NAMES_PER_PHASE = 5;
-function shortList(ids) {
-  const shown = ids.slice(0, NAMES_PER_PHASE).map((id) => `**${escapeText(id)}**`);
-  const more = ids.length - shown.length;
-  return more > 0 ? `${shown.join(", ")} and ${more} more` : listWords(shown);
-}
-function listWords(words) {
-  return words.length <= 1 ? words[0] ?? "" : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
-}
-var PENDING_AGAIN_NOTE = ":information_source: pending again right after a deploy of this same change, a value in the program may differ on every run.";
-var VALUE_EVERY_RUN_NOTE = ":information_source: a value this row does not show differed between two previews of the same commit, so a tick would be refused: a value in the program may differ on every run. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry.";
-function pendingAgainLine({ logUrl }) {
-  return logUrl === undefined ? PENDING_AGAIN_NOTE : `${PENDING_AGAIN_NOTE} Compare the tool's own diff in the [job log](${logUrl}).`;
-}
-function failureLine(failure2, timeZone) {
-  return `:x: last deploy failed: ${escapeText(failure2.reason)} · ${failure2.onMerge ? "merged" : "ticked"} by ${escapeText(failure2.ticker)} · ${minuteAt(failure2.at, timeZone)} · [run](${failure2.runUrl})`;
-}
-function destroyWords(deletes, replaces) {
-  return [deletes && `deletes ${deletes}`, replaces && `replaces ${replaces}`].filter(Boolean).join(", ");
-}
-var DRIFT_WORDS = { update: "changed", delete: "gone" };
-function driftWord(change) {
-  return DRIFT_WORDS[change.op] ?? change.op;
-}
-function driftCounts(drift) {
-  const of = (op) => drift.filter((change) => change.op === op).length;
-  const parts = [of("update") && `${of("update")} changed`, of("delete") && `${of("delete")} gone`];
-  return `${parts.filter(Boolean).join(", ")} outside the code`;
-}
-function driftLine(change, options = {}) {
-  const keys = sortedKeys(change.changedKeys);
-  const listed = options.row === true ? keys.slice(0, ROW_PATHS_PER_CHANGE) : keys;
-  const hidden = keys.length - listed.length;
-  const parts = [
-    `<kbd>${driftWord(change)}</kbd> <code>${escapeText(change.type)}</code> <b>${escapeText(change.name)}</b>`
-  ];
-  if (listed.length > 0) {
-    const more = hidden > 0 ? `, and ${hidden} more` : "";
-    parts.push(`${listed.map((key) => code(options.row ? shortPath(key) : key)).join(", ")}${more}`);
-  }
-  return parts.join(" · ");
-}
-function sortedDrift(diff) {
-  return [...diff.drift ?? []].sort((a, b) => byCodeUnit(a.address, b.address));
-}
-function driftLines(drift, summary2, options) {
-  if (drift.length === 0)
-    return [];
-  const inside = plural2(drift.length, "change");
-  if (options.redact)
-    return [`Changes outside the code are listed in the ${summary2}`];
-  if ((options.level ?? 0) >= 2) {
-    return [`${inside} outside the code not listed here, see the ${summary2}`];
-  }
-  return [
-    `<details><summary>${inside} outside the code</summary>`,
-    ...drift.map((change) => `${driftLine(change, { row: true })}<br>`),
-    "</details>"
-  ];
-}
-function driftRow(row, options) {
-  const level = options.level ?? 0;
-  const drift = sortedDrift(row.diff);
-  const summary2 = `[summary](${row.runUrl})`;
-  const box = options.readOnly ? "" : `[${row.ticked ? "x" : " "}] `;
-  const lines = [
-    `- ${box}**${escapeText(row.diff.stackId)}** · ${driftCounts(drift)} · [preview](${row.previewUrl ?? row.runUrl}) ${rowMarker({
-      stackId: row.diff.stackId,
-      state: "drift",
-      hash: row.hash,
-      failed: row.failure !== undefined,
-      shortened: level >= 2 ? level : 0,
-      drift: true,
-      gone: drift.filter((change) => change.op === "delete").length,
-      changed: drift.filter((change) => change.op === "update").length,
-      dependsOn: row.dependsOn,
-      fingerprint: row.fingerprint
-    })}`
-  ];
-  if (row.failure)
-    lines.push(failureLine(row.failure, options.timeZone));
-  if (row.valueEveryRun)
-    lines.push(VALUE_EVERY_RUN_NOTE);
-  if (row.orphanTick && !options.readOnly)
-    lines.push(ORPHAN_TICK_NOTE);
-  lines.push(...driftLines(drift, summary2, options));
-  return lines;
-}
-var FAILURES_ON_A_ROW = 5;
-var POLICY_MESSAGE_LENGTH = 200;
-function policyWords(count) {
-  return `${count} ${count === 1 ? "policy" : "policies"}`;
-}
-function policyFailureLine(failure2, whole = false) {
-  const points = Array.from(failure2.message);
-  const message = whole || points.length <= POLICY_MESSAGE_LENGTH ? failure2.message : `${points.slice(0, POLICY_MESSAGE_LENGTH).join("")}…`;
-  return `:no_entry: <code>${escapeText(failure2.namespace)}</code> · ${escapeText(message)}`;
-}
-function policiesNotRunLine(outcome, runUrl) {
-  return `:warning: the policies did not run: ${policyRunFailureText(outcome.reason)}. Nothing was checked, see the [run](${runUrl}).`;
-}
-function policyLines(row, options) {
-  const { policies } = row;
-  const short = (options.detail ?? "full") !== "full";
-  if (policies === undefined || policies.kind === "passed")
-    return [];
-  if (policies.kind === "not-run")
-    return short ? [] : [policiesNotRunLine(policies, row.runUrl)];
-  const { failures } = policies.report;
-  const lead = `:no_entry: **${policyWords(failures.length)} failed**, so this change has no box until it passes`;
-  const preview = `[preview](${row.previewUrl ?? row.runUrl})`;
-  if (options.redact || short || (options.level ?? 0) >= 2) {
-    return [`${lead}. They are named on the ${preview}.`];
-  }
-  const named = failures.slice(0, FAILURES_ON_A_ROW);
-  const rest = failures.length - named.length;
-  return [
-    `${lead}:`,
-    ...named.map((failure2) => policyFailureLine(failure2)),
-    ...rest > 0 ? [`:no_entry: and ${rest} more on the ${preview}`] : []
-  ];
-}
-function pendingRow(row, options) {
-  const level = options.level ?? 0;
-  const changes = [...row.diff.changes].sort((a, b) => byCodeUnit(a.address, b.address));
-  const deletes = changes.filter((change) => change.op === "delete");
-  const replaces = changes.filter((change) => change.op === "replace");
-  const folded = changes.filter((change) => !isDestroy(change));
-  const destroys = deletes.length + replaces.length;
-  const summary2 = `[summary](${row.runUrl})`;
-  const policyFailed = row.policies?.kind === "failed";
-  const box = options.readOnly || policyFailed ? "" : `[${row.ticked ? "x" : " "}] `;
-  const drift = sortedDrift(row.diff);
-  const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
-  const { creates, updates, tracking } = changeCounts(changes);
-  const detail = options.detail ?? "full";
-  const full = detail === "full";
-  const preview = detail === "names" ? "" : ` · [preview](${row.previewUrl ?? row.runUrl})`;
-  const lines = [
-    `- ${box}**${escapeText(row.diff.stackId)}** · ${counts(changes)}${driftCount}${preview} ${rowMarker({
-      stackId: row.diff.stackId,
-      state: "pending",
-      hash: row.hash,
-      destroys,
-      deletes: deletes.length,
-      failed: row.failure !== undefined,
-      shortened: level,
-      drift: drift.length > 0,
-      dependsOn: row.dependsOn,
-      fingerprint: row.fingerprint,
-      policyFailed,
-      creates,
-      updates,
-      replaces: replaces.length,
-      tracking,
-      driftUnchecked: row.driftUnchecked
-    })}`
-  ];
-  if (row.cost && full)
-    lines.push(costLine(row.cost));
-  if (row.attribution && full)
-    lines.push(level >= 1 ? row.attribution.counted : row.attribution.full);
-  if (row.failure)
-    lines.push(failureLine(row.failure, options.timeZone));
-  lines.push(...policyLines(row, options));
-  const notes = detail !== "names";
-  if (row.waitsOnMerge && notes)
-    lines.push(onMergeNote(row.waitsOnMerge));
-  if (row.valueEveryRun && notes)
-    lines.push(VALUE_EVERY_RUN_NOTE);
-  if (row.pendingAgain && full)
-    lines.push(pendingAgainLine(row.pendingAgain));
-  if (row.orphanTick && notes && !options.readOnly && !policyFailed)
-    lines.push(ORPHAN_TICK_NOTE);
-  if (options.redact || level >= 3) {
-    const words = destroyWords(deletes.length, replaces.length);
-    if (destroys > 0) {
-      const warning2 = options.redact ? `${words}.` : `${words}, too many to list here.`;
-      const read = options.readOnly ? `Read the ${summary2}.` : `Read the ${summary2} before you tick.`;
-      lines.push(`:warning: **${warning2}** ${read}`);
-    } else if (full) {
-      lines.push(`Changes ${options.redact ? "are listed in the" : "not listed here, see the"} ${summary2}`);
-    }
-    if (full)
-      lines.push(...driftLines(drift, summary2, options), ...outsideFold(row.attribution, level));
-    return lines;
-  }
-  for (const change of [...deletes, ...replaces])
-    lines.push(`:warning: ${changeLine(change, { row: true })}`);
-  if (!full)
-    return lines;
-  if (folded.length > 0) {
-    const inside = plural2(folded.length, destroys > 0 ? "other change" : "change");
-    if (level >= 2) {
-      lines.push(`${inside} not listed here, see the ${summary2}`);
-    } else {
-      lines.push(`<details><summary>${inside}</summary>`);
-      for (const change of folded)
-        lines.push(`${changeLine(change, { row: true })}<br>`);
-      lines.push("</details>");
-    }
-  }
-  lines.push(...driftLines(drift, summary2, options), ...outsideFold(row.attribution, level));
-  return lines;
-}
-function outsideFold(attribution, level) {
-  return level === 0 ? [...attribution?.outside ?? []] : [];
-}
-var SPINNER_WIDTH = 16;
-function spinner(actionRef2, queued) {
-  const name = queued ? "spinner-queued" : "spinner";
-  const file2 = (theme) => mascotUrl(actionRef2, `${name}-${theme}.svg`);
-  return `<picture><source media="(prefers-color-scheme: dark)" srcset="${file2("dark")}"><img alt="" width="${SPINNER_WIDTH}" height="${SPINNER_WIDTH}" src="${file2("light")}"></picture> `;
-}
-function windowWords(window, timeZone) {
-  const { freeze } = window;
-  if (freeze !== undefined) {
-    const reason = freeze.reason === undefined ? "" : ` (${escapeText(freeze.reason)})`;
-    const ends = `the end of the deploy freeze${reason} at ${minuteAt(freeze.ends, timeZone)}`;
-    return window.opens === undefined || window.opens.getTime() === freeze.ends.getTime() ? ends : `${ends}, and then for the deploy window, which opens ${minuteAt(window.opens, timeZone)}`;
-  }
-  if (window.opens === undefined) {
-    return window.anyTime ? "the next scheduled run, which starts it: nothing holds it now" : "the deploy window, which is open: the next scheduled run starts it";
-  }
-  return `the deploy window, which opens ${minuteAt(window.opens, timeZone)}`;
-}
-function deployingRow(row, options) {
-  const behind = row.behind ?? [];
-  const onMerge = row.onMerge ? " on merge" : "";
-  const word = behind.length > 0 ? `queued behind ${behind.map((id) => `**${escapeText(id)}**`).join(" and ")}${row.window ? `, and for ${windowWords(row.window, options.timeZone)}` : ""}` : row.window ? `queued for ${windowWords(row.window, options.timeZone)}` : row.waiting ? `waiting to start${onMerge}` : `deploying${onMerge}`;
-  const state = behind.length > 0 || row.window ? "queued" : "deploying";
-  const lines = [
-    `- ${options.actionRef === undefined ? "" : spinner(options.actionRef, state === "queued")}**${escapeText(row.stackId)}** · ${word} · ${row.onMerge ? "merged" : "ticked"} by ${escapeText(row.ticker)} · [run](${row.runUrl}) ${rowMarker({ stackId: row.stackId, state, destroys: row.destroys, deletes: row.deletes, behind })}`
-  ];
-  if (row.attribution)
-    lines.push(row.attribution.full, ...outsideFold(row.attribution, 0));
-  return lines;
-}
-var DRIFT_NOT_CHECKED = "drift not checked";
-var BUSY_ROW_WORDS = "the next scan previews it";
-function previewFailedRow(row, options) {
-  const words = row.busy ? `busy: ${escapeText(row.reason)}, ${BUSY_ROW_WORDS}` : `preview failed: ${escapeText(row.reason)}`;
-  const lines = [
-    `- **${escapeText(row.stackId)}** · ${words} · [run](${row.runUrl}) ${rowMarker({
-      stackId: row.stackId,
-      state: "preview-failed",
-      failed: row.failure !== undefined,
-      busy: row.busy
-    })}`
-  ];
-  if (row.failure)
-    lines.push(failureLine(row.failure, options.timeZone));
-  return lines;
-}
-function inSyncRow(row, options) {
-  const unchecked = row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
-  const lines = [
-    `- ${escapeText(row.stackId)}${unchecked} ${rowMarker({
-      stackId: row.stackId,
-      state: "in-sync",
-      failed: row.failure !== undefined,
-      dependsOn: row.dependsOn,
-      driftUnchecked: row.driftUnchecked
-    })}`
-  ];
-  if (row.failure)
-    lines.push(failureLine(row.failure, options.timeZone));
-  return lines;
-}
-function rowLines(row, options) {
-  switch (row.state) {
-    case "pending":
-      return pendingRow(row, options);
-    case "drift":
-      return driftRow(row, options);
-    case "deploying":
-      return deployingRow(row, options);
-    case "preview-failed":
-      return previewFailedRow(row, options);
-    case "in-sync":
-      return inSyncRow(row, options);
-  }
-}
-function renderRow(row, options = {}) {
-  const [first = "", ...rest] = rowLines(row, options);
-  return [first, ...[...rest, ROW_CLOSE_MARKER].map((line) => INDENT + line)].join(`
-`);
-}
-
-// src/core/glob.ts
-var import_picomatch = __toESM(require_picomatch2(), 1);
-function globMatcher(globs) {
-  if (globs.length === 0)
-    return () => false;
-  return import_picomatch.default(globs, { dot: true });
-}
-function globOf(text) {
-  return text.replace(/[\\*?[\]{}()!+@|]/g, "\\$&");
-}
-
-// src/core/claim.ts
-var DEFAULT_UNRELATED = [
-  "**/*.md",
-  "**/LICENSE*",
-  "**/.gitignore",
-  "**/.gitattributes",
-  ".editorconfig",
-  ".github/**"
-];
-var isDefaultUnrelated = globMatcher([...DEFAULT_UNRELATED]);
-function inside(directory, file2) {
-  return directory === "." || file2.startsWith(`${directory}/`);
-}
-function claim2(stacks, changed, unrelated) {
-  const isUnrelated = globMatcher(unrelated);
-  const matchers = stacks.map((stack) => ({ stack, matches: globMatcher(stack.inputs) }));
-  const claims = new Map;
-  const unclaimed = [];
-  for (const file2 of new Set(changed)) {
-    if (isUnrelated(file2))
-      continue;
-    const claimants = matchers.filter(({ stack, matches }) => inside(stack.path, file2) || matches(file2));
-    if (claimants.length === 0 && !isDefaultUnrelated(file2))
-      unclaimed.push(file2);
-    for (const { stack } of claimants)
-      claims.set(stack.id, [...claims.get(stack.id) ?? [], file2]);
-  }
-  return { claims, unclaimed };
-}
-
-// src/core/attribution.ts
-var LOOKBACK = 100;
-var NAMED_ON_A_ROW = 5;
-var OUTSIDE_NAMED = 20;
-function isCommitId(text) {
-  return /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(text);
-}
-var NEVER_DEPLOYED = "not deployed from this dashboard yet";
-function pullRequestOf(commit, walk) {
-  return commit.pullRequests.find((pullRequest) => pullRequest.merged && pullRequest.base === walk.defaultBranch);
-}
-function inRange(walk, from, to) {
-  const bySha = new Map(walk.commits.map((commit) => [commit.sha, commit]));
-  const reach = (start) => {
-    const reached2 = new Set;
-    const queue = bySha.has(start) ? [start] : [];
-    for (let sha = queue.pop();sha !== undefined; sha = queue.pop()) {
-      if (reached2.has(sha))
-        continue;
-      reached2.add(sha);
-      queue.push(...bySha.get(sha)?.parents.filter((parent) => bySha.has(parent)) ?? []);
-    }
-    return reached2;
-  };
-  if (to !== undefined && !bySha.has(to))
-    return { earlier: false };
-  const under = to === undefined ? undefined : reach(to);
-  const reached = reach(from);
-  return {
-    commits: walk.commits.filter(({ sha }) => !reached.has(sha) && (under?.has(sha) ?? true)),
-    earlier: !bySha.has(from)
-  };
-}
-function rangesOf(from) {
-  const seen = new Set;
-  return from.map((one) => typeof one === "string" ? { from: one } : one).filter(({ from: start, to }) => {
-    const key = `${start} ${to ?? ""}`;
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  });
-}
-function commitsInRanges(walk, from) {
-  const wanted = new Set;
-  for (const { from: start, to } of rangesOf(from)) {
-    for (const commit of inRange(walk, start, to).commits ?? [])
-      wanted.add(commit.sha);
-  }
-  return wanted;
-}
-function directPushesToRead(walk, from) {
-  const wanted = commitsInRanges(walk, from);
-  return walk.commits.filter((commit) => wanted.has(commit.sha) && !pullRequestOf(commit, walk)).map(({ sha }) => sha);
-}
-function pullRequestsToRead(walk, from) {
-  const wanted = commitsInRanges(walk, from);
-  const numbers = [];
-  for (const commit of walk.commits) {
-    const pullRequest = wanted.has(commit.sha) ? pullRequestOf(commit, walk) : undefined;
-    if (pullRequest && (pullRequest.renamed || pullRequest.changedFiles > pullRequest.files.length) && !numbers.includes(pullRequest.number))
-      numbers.push(pullRequest.number);
-  }
-  return numbers;
-}
-function by(author) {
-  return author === undefined ? "" : ` by ${escapeText(author)}`;
-}
-function nameOf(merge2) {
-  return merge2.kind === "pull-request" ? `#${merge2.number}${by(merge2.author)}` : `[${merge2.sha.slice(0, 7)}](${merge2.url})${by(merge2.author)}`;
-}
-function htmlNameOf(merge2) {
-  return merge2.kind === "pull-request" ? `<a href="${merge2.url}">#${merge2.number}</a>${by(merge2.author)}` : `<a href="${merge2.url}">${merge2.sha.slice(0, 7)}</a>${by(merge2.author)}`;
-}
-function countOf(merges) {
-  const pushes = merges.filter((merge2) => merge2.kind === "push").length;
-  return [
-    merges.length - pushes && plural2(merges.length - pushes, "pull request"),
-    pushes && `${pushes} direct push${pushes === 1 ? "" : "es"}`
-  ].filter(Boolean).join(" and ");
-}
-function inLink(sha) {
-  return sha.slice(0, 12);
-}
-function outsideFold2(outside) {
-  const named = outside.slice(0, OUTSIDE_NAMED).map((merge2) => `${htmlNameOf(merge2)}<br>`);
-  const more = outside.length - named.length;
-  return [
-    "<details><summary>changes outside this stack</summary>",
-    ...named,
-    ...more > 0 ? [`and ${more} more<br>`] : [],
-    "</details>"
-  ];
-}
-function attributor(input2) {
-  const { walk, repoUrl } = input2;
-  const names = input2.names ?? NAMED_ON_A_ROW;
-  const mergedBy = new Map;
-  const mergeOf = new Map;
-  const judge = (merge2, files) => {
-    if (files === undefined)
-      return { merge: merge2, claimedBy: new Set, outside: true };
-    const { claims, unclaimed } = claim2(input2.stacks, [...files], input2.unrelated);
-    return { merge: merge2, claimedBy: new Set(claims.keys()), outside: unclaimed.length > 0 };
-  };
-  for (const commit of walk.commits) {
-    const pullRequest = pullRequestOf(commit, walk);
-    const key = pullRequest ? `#${pullRequest.number}` : commit.sha;
-    let merged = mergedBy.get(key);
-    if (!merged && pullRequest) {
-      const known = input2.pullRequestFiles?.get(pullRequest.number) ?? (pullRequest.changedFiles <= pullRequest.files.length ? pullRequest.files : undefined);
-      merged = judge({
-        kind: "pull-request",
-        number: pullRequest.number,
-        title: pullRequest.title,
-        url: `${repoUrl}/pull/${pullRequest.number}`,
-        ...pullRequest.author === undefined ? {} : { author: pullRequest.author }
-      }, known);
-    } else if (!merged) {
-      const files = input2.pushFiles.get(commit.sha);
-      merged = judge({
-        kind: "push",
-        sha: commit.sha,
-        message: commit.message,
-        url: `${repoUrl}/commit/${commit.sha}`,
-        ...commit.author === undefined ? {} : { author: commit.author }
-      }, files);
-    }
-    mergedBy.set(key, merged);
-    mergeOf.set(commit.sha, merged);
-  }
-  const ranges = new Map;
-  const rangeOf = (from, to) => {
-    const key = `${from} ${to ?? ""}`;
-    const range = ranges.get(key) ?? inRange(walk, from, to);
-    ranges.set(key, range);
-    return range;
-  };
-  const explain = (stackId, from, to) => {
-    const range = rangeOf(from, to);
-    const merged = [...new Set((range.commits ?? []).flatMap(({ sha }) => mergeOf.get(sha) ?? []))];
-    const claimed = merged.filter(({ claimedBy }) => claimedBy.has(stackId)).map((m) => m.merge);
-    const outside = merged.filter((m) => !m.claimedBy.has(stackId) && m.outside).map((m) => m.merge);
-    const link = `[compare](${repoUrl}/compare/${inLink(from)}...${inLink(to ?? input2.scanSha)})`;
-    const line = (word, nothing, listed) => {
-      const parts = [...listed];
-      const and = () => parts.length > 0 ? "and " : "";
-      if (outside.length > 0)
-        parts.push(`${and()}${plural2(outside.length, "change")} outside this stack`);
-      if (range.earlier)
-        parts.push(`${and()}earlier changes`);
-      return `${parts.length > 0 ? `${word} ${parts.join(", ")}` : nothing} · ${link}`;
-    };
-    const named = claimed.slice(0, names).map(nameOf);
-    const more = claimed.length - named.length;
-    const full = [named.join(", "), more > 0 && named.length > 0 ? `and ${more} more` : ""].filter(Boolean);
-    return {
-      range,
-      claimed,
-      outside,
-      lines: (word, nothing) => {
-        const counted = line(word, nothing, claimed.length > 0 ? [countOf(claimed)] : []);
-        return {
-          full: named.length > 0 ? line(word, nothing, full) : counted,
-          counted
-        };
-      }
-    };
-  };
-  const one = (stackId, from) => {
-    if (from === undefined) {
-      return { lines: { full: NEVER_DEPLOYED, counted: NEVER_DEPLOYED }, merges: [] };
-    }
-    const { claimed, outside, lines } = explain(stackId, from, undefined);
-    return {
-      lines: {
-        ...lines("from", "nothing this stack claims has changed since its last deploy"),
-        ...outside.length > 0 ? { outside: outsideFold2(outside) } : {}
-      },
-      merges: claimed
-    };
-  };
-  return Object.assign(one, {
-    shipped(stackId, from, to) {
-      const { range, claimed, outside, lines } = explain(stackId, from, to);
-      if (range.commits === undefined)
-        return;
-      if (claimed.length === 0 && outside.length === 0 && !range.earlier)
-        return;
-      return lines("shipped", "");
-    }
-  });
-}
-
-// src/core/stack.ts
-function stackId(stack) {
-  if (stack.id !== undefined)
-    return stack.id;
-  return stack.name === undefined ? stack.path : `${stack.path}:${stack.name}`;
-}
-
-// src/core/discovery.ts
-class DiscoveryError extends Error {
-  problems;
-  constructor(problems) {
-    super([
-      "Could not work out the stacks of this repo:",
-      ...problems.map((problem) => `- ${problem}`)
-    ].join(`
-`));
-    this.name = "DiscoveryError";
-    this.problems = problems;
-  }
-}
-function knownStacks(found, ignore) {
-  const ignored = globMatcher(ignore);
-  const known = found.filter((stack) => !ignored(stackId(stack)));
-  const byId = Map.groupBy(known, stackId);
-  const problems = [...byId].flatMap(([id, sharing]) => sharing.length < 2 ? [] : [
-    `two stacks have the id ${JSON.stringify(id)}: ${sharing.map(describe3).join(", and ")}. A stack id has to name one stack. Rename or move one of them.`
-  ]);
-  if (problems.length > 0)
-    throw new DiscoveryError(problems);
-  return known;
-}
-function describe3(stack) {
-  const path = JSON.stringify(stack.path);
-  const where2 = stack.name === undefined ? `in ${path}` : `${JSON.stringify(stack.name)} in ${path}`;
-  const { tool } = stack.options;
-  return typeof tool === "string" ? `the stack ${where2} that a stacks entry declares with tool: ${tool}` : `the Pulumi stack ${where2}`;
 }
 
 // src/core/notify.ts
@@ -48671,27 +48085,24 @@ function repositoryOf(repoUrl) {
 // src/core/phases.ts
 function phaseKeysOf(config2) {
   return [
-    ...new Set(config2.stacks.flatMap((entry2) => typeof entry2.phase === "object" ? [entry2.phase.from] : []))
+    ...new Set(config2.stacks.flatMap((entry) => typeof entry.phase === "object" ? [entry.phase.from] : []))
   ];
 }
 var PHASE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-function byCodeUnit2(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function phaseGroups(phases, phaseOf) {
   return phases.map((phase) => ({
     phase,
-    stackIds: [...phaseOf].flatMap(([id, one]) => one === phase ? [id] : []).sort(byCodeUnit2)
+    stackIds: [...phaseOf].flatMap(([id, one]) => one === phase ? [id] : []).sort(byCodeUnit)
   }));
 }
 function phaseDependencies(phases, phaseOf) {
   const index = (id) => phases.indexOf(phaseOf.get(id) ?? "");
   const edges = new Map;
-  for (const id of [...phaseOf.keys()].sort(byCodeUnit2)) {
+  for (const id of [...phaseOf.keys()].sort(byCodeUnit)) {
     const at = index(id);
     if (at === -1)
       continue;
-    edges.set(id, [...phaseOf.keys()].filter((other) => index(other) !== -1 && index(other) < at).sort(byCodeUnit2));
+    edges.set(id, [...phaseOf.keys()].filter((other) => index(other) !== -1 && index(other) < at).sort(byCodeUnit));
   }
   return edges;
 }
@@ -48704,7 +48115,7 @@ function waitsByPhase(input2) {
   const { phases, phaseOf, stackId: stackId2 } = input2;
   const named = [];
   const grouped = new Map;
-  for (const id of [...new Set(input2.waitingOn)].sort(byCodeUnit2)) {
+  for (const id of [...new Set(input2.waitingOn)].sort(byCodeUnit)) {
     const phase = phaseOf.get(id);
     if (phase === undefined || !throughPhase(phases, phaseOf, stackId2, id))
       named.push(id);
@@ -48725,26 +48136,26 @@ function shownValues(dashboard) {
   return dashboard.redact ? [] : dashboard.showValues;
 }
 function isListedPath(list, path) {
-  return list.some((entry2) => entryPattern(entry2).test(path));
+  return list.some((entry) => entryPattern(entry).test(path));
 }
 var patterns = new Map;
-function entryPattern(entry2) {
-  let pattern = patterns.get(entry2);
+function entryPattern(entry) {
+  let pattern = patterns.get(entry);
   if (pattern === undefined) {
-    const parts = entry2.split("*").map((part) => part.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"));
+    const parts = entry.split("*").map((part) => part.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"));
     pattern = new RegExp(`^${parts.join("[^.[\\]]*")}$`, "u");
-    patterns.set(entry2, pattern);
+    patterns.set(entry, pattern);
   }
   return pattern;
 }
-function showValuesEntryProblem(entry2) {
-  const quoted = JSON.stringify(entry2);
-  if (entry2 === "")
+function showValuesEntryProblem(entry) {
+  const quoted = JSON.stringify(entry);
+  if (entry === "")
     return;
-  if (entry2.includes("**")) {
+  if (entry.includes("**")) {
     return `${quoted} uses "**". An entry matches one path, and "*" stands for part of one name. Write each path whose value may appear.`;
   }
-  if (!/[^*.[\]]/.test(entry2)) {
+  if (!/[^*.[\]]/.test(entry)) {
     return `${quoted} names no property. Write each path whose value may appear.`;
   }
   return;
@@ -48848,19 +48259,19 @@ var stackEntry = exports_external.strictObject({
       refuse(context, { kind: "cost-threshold-without-enabled" }, ["threshold"]);
   }).describe("The cost estimate of these stacks. Default: the top level cost.").exactOptional(),
   options: exports_external.record(exports_external.string(), exports_external.unknown()).describe("Named adapter options of the tool. Only an entry with tool takes them.").exactOptional()
-}).superRefine((entry2, context) => {
-  if (entry2.tool !== undefined)
+}).superRefine((entry, context) => {
+  if (entry.tool !== undefined)
     return;
-  for (const name of Object.keys(entry2.options ?? {})) {
+  for (const name of Object.keys(entry.options ?? {})) {
     refuse(context, { kind: "option-without-tool", option: name }, ["options"]);
   }
 });
 var stackEntries = exports_external.array(stackEntry).superRefine((entries, context) => {
   const seen = new Map;
-  entries.forEach((entry2, index) => {
+  entries.forEach((entry, index) => {
     const id = stackId({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name }
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name }
     });
     const first = seen.get(id);
     if (first === undefined)
@@ -48904,8 +48315,8 @@ var configSchema = exports_external.strictObject({
     redact: exports_external.boolean().describe("Keep resource types, resource names and property names out of the issue. The summary stays full. Not access control.").default(false),
     personality: exports_external.boolean().describe("Show the header image and use the voice. false removes both.").default(true),
     readOnly: exports_external.boolean().describe("Draw no boxes: pending rows have none, there is no rescan box, and a line under the Pending heading says so. For a workflow that only scans.").default(false),
-    showValues: exports_external.array(text.superRefine((entry2, context) => {
-      const problem = showValuesEntryProblem(entry2);
+    showValues: exports_external.array(text.superRefine((entry, context) => {
+      const problem = showValuesEntryProblem(entry);
       if (problem !== undefined)
         refuse(context, { kind: "worded", text: problem });
     })).describe('Property paths whose old and new value may appear on the dashboard, as "old → new". Exact paths, or "*" for part of one name. Never a value the tool marks secret, and none at all with redact on.').default([]),
@@ -48974,10 +48385,10 @@ var configSchema = exports_external.strictObject({
     if (first !== index)
       refuse(context, { kind: "phase-named-twice", phase, first }, ["phases", index]);
   });
-  config2.stacks.forEach((entry2, index) => {
-    if (typeof entry2.phase !== "string" || config2.phases.includes(entry2.phase))
+  config2.stacks.forEach((entry, index) => {
+    if (typeof entry.phase !== "string" || config2.phases.includes(entry.phase))
       return;
-    refuse(context, { kind: "unknown-phase", phase: entry2.phase, phases: config2.phases }, [
+    refuse(context, { kind: "unknown-phase", phase: entry.phase, phases: config2.phases }, [
       "stacks",
       index,
       "phase"
@@ -49001,12 +48412,12 @@ class ConfigError extends Error {
 }
 function parseConfig(text2) {
   const raw = text2 === undefined ? null : readYaml(text2);
-  const result2 = configSchema.safeParse(raw ?? {});
-  if (!result2.success) {
-    const found = result2.error.issues.flatMap((issue3) => classify(issue3, raw));
+  const result = configSchema.safeParse(raw ?? {});
+  if (!result.success) {
+    const found = result.error.issues.flatMap((issue3) => classify(issue3, raw));
     throw new ConfigError(inFileOrder(found, raw).map((one) => one.issue));
   }
-  return result2.data;
+  return result.data;
 }
 function readYaml(text2) {
   const lineCounter2 = new $LineCounter;
@@ -49183,26 +48594,26 @@ function unwrap(schema) {
   }
   return inner;
 }
-function ignoreGlob(entry2) {
-  return typeof entry2 === "string" ? entry2 : entry2.glob;
+function ignoreGlob(entry) {
+  return typeof entry === "string" ? entry : entry.glob;
 }
 function ignoredStacks(config2, found) {
   return found.map(stackId).sort((a, b) => a < b ? -1 : a > b ? 1 : 0).flatMap((id) => {
-    const entry2 = config2.ignore.find((one) => globMatcher([ignoreGlob(one)])(id));
-    return entry2 === undefined || typeof entry2 === "string" ? [] : [{ stackId: id, reason: entry2.reason }];
+    const entry = config2.ignore.find((one) => globMatcher([ignoreGlob(one)])(id));
+    return entry === undefined || typeof entry === "string" ? [] : [{ stackId: id, reason: entry.reason }];
   });
 }
 function withIds(config2, found) {
   const given = new Map;
   const issues = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.id === undefined)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.id === undefined)
       return;
     const path = ["stacks", index, "id"];
-    const covered = found.filter((stack) => covers(entry2, stack));
+    const covered = found.filter((stack) => covers(entry, stack));
     const [only] = covered;
     if (only === undefined) {
-      issues.push({ kind: "id-covers-no-stack", id: entry2.id, path });
+      issues.push({ kind: "id-covers-no-stack", id: entry.id, path });
     } else if (covered.length > 1) {
       issues.push({ kind: "id-covers-stacks", stackIds: covered.map(stackId), path });
     } else if (given.has(only)) {
@@ -49213,17 +48624,17 @@ function withIds(config2, found) {
         path
       });
     } else {
-      given.set(only, entry2.id);
+      given.set(only, entry.id);
     }
   });
   const taken = new Set(found.filter((stack) => !given.has(stack)).map(stackId));
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.id === undefined || ![...given.values()].includes(entry2.id))
+  config2.stacks.forEach((entry, index) => {
+    if (entry.id === undefined || ![...given.values()].includes(entry.id))
       return;
-    if (taken.has(entry2.id)) {
-      issues.push({ kind: "id-taken", id: entry2.id, path: ["stacks", index, "id"] });
+    if (taken.has(entry.id)) {
+      issues.push({ kind: "id-taken", id: entry.id, path: ["stacks", index, "id"] });
     }
-    taken.add(entry2.id);
+    taken.add(entry.id);
   });
   if (issues.length > 0)
     throw new ConfigError(once(issues));
@@ -49245,12 +48656,12 @@ function once(issues) {
 var DEFAULT_ENVIRONMENT = "sluiceway";
 function applyConfig(config2, found) {
   const stacks = knownStacks(found, config2.ignore.map(ignoreGlob));
-  const misses = config2.stacks.flatMap((entry2, index) => {
-    const inPath = stacks.filter((stack) => stack.path === entry2.path);
-    if (inPath.some((stack) => covers(entry2, stack)))
+  const misses = config2.stacks.flatMap((entry, index) => {
+    const inPath = stacks.filter((stack) => stack.path === entry.path);
+    if (inPath.some((stack) => covers(entry, stack)))
       return [];
-    const ignored = found.filter((stack) => covers(entry2, stack));
-    return [{ ...miss(entry2, inPath, ignored), path: ["stacks", index] }];
+    const ignored = found.filter((stack) => covers(entry, stack));
+    return [{ ...miss(entry, inPath, ignored), path: ["stacks", index] }];
   });
   if (misses.length > 0)
     throw new ConfigError(misses);
@@ -49267,29 +48678,29 @@ function applyConfig(config2, found) {
   return stacks.map((stack) => {
     const entries = entriesOf(config2, stack);
     const id = stackId(stack);
-    const previewTimeout = entries.findLast((entry2) => entry2.previewTimeout)?.previewTimeout;
-    const drift = entries.findLast((entry2) => entry2.drift)?.drift?.enabled;
-    const deploy = entries.findLast((entry2) => entry2.deploy)?.deploy;
-    const valueFingerprint = entries.findLast((entry2) => entry2.valueFingerprint !== undefined)?.valueFingerprint;
-    const envFile = entries.findLast((entry2) => entry2.envFile !== undefined)?.envFile;
-    const windows = entries.findLast((entry2) => entry2.deployWindows !== undefined)?.deployWindows ?? config2.deployWindows;
-    const createInBackend = entries.findLast((entry2) => entry2.createInBackend !== undefined)?.createInBackend;
+    const previewTimeout = entries.findLast((entry) => entry.previewTimeout)?.previewTimeout;
+    const drift = entries.findLast((entry) => entry.drift)?.drift?.enabled;
+    const deploy = entries.findLast((entry) => entry.deploy)?.deploy;
+    const valueFingerprint = entries.findLast((entry) => entry.valueFingerprint !== undefined)?.valueFingerprint;
+    const envFile = entries.findLast((entry) => entry.envFile !== undefined)?.envFile;
+    const windows = entries.findLast((entry) => entry.deployWindows !== undefined)?.deployWindows ?? config2.deployWindows;
+    const createInBackend = entries.findLast((entry) => entry.createInBackend !== undefined)?.createInBackend;
     const cost = costOf(entries);
     const phase = phases.phaseOf.get(id);
     const from = phases.from.get(id);
     const policies = [
-      ...new Set([...config2.policies, ...entries.flatMap((entry2) => entry2.policies ?? [])])
+      ...new Set([...config2.policies, ...entries.flatMap((entry) => entry.policies ?? [])])
     ];
     return {
       stack,
-      environment: entries.findLast((entry2) => entry2.environment)?.environment ?? DEFAULT_ENVIRONMENT,
-      tickers: entries.findLast((entry2) => entry2.tickers)?.tickers ?? config2.tickers,
-      inputs: [...new Set(entries.flatMap((entry2) => entry2.inputs ?? []))],
+      environment: entries.findLast((entry) => entry.environment)?.environment ?? DEFAULT_ENVIRONMENT,
+      tickers: entries.findLast((entry) => entry.tickers)?.tickers ?? config2.tickers,
+      inputs: [...new Set(entries.flatMap((entry) => entry.inputs ?? []))],
       ...previewTimeout === undefined ? {} : { previewTimeout },
       ...dependsOnOf(entries, derived2.get(id)),
       ...phase === undefined ? {} : { phase },
       ...from === undefined ? {} : { phaseFrom: from },
-      ...entries.some((entry2) => entry2.dependsOn === DEPENDS_ON_AUTO) ? { dependsOnAuto: true } : {},
+      ...entries.some((entry) => entry.dependsOn === DEPENDS_ON_AUTO) ? { dependsOnAuto: true } : {},
       ...drift === undefined ? {} : { drift },
       ...deploy === "on-merge" ? { deploy } : {},
       ...valueFingerprint === undefined ? {} : { valueFingerprint },
@@ -49303,8 +48714,8 @@ function applyConfig(config2, found) {
   });
 }
 function costOf(entries) {
-  const enabled = entries.findLast((entry2) => entry2.cost?.enabled !== undefined)?.cost?.enabled;
-  const threshold = entries.findLast((entry2) => entry2.cost?.threshold !== undefined)?.cost?.threshold;
+  const enabled = entries.findLast((entry) => entry.cost?.enabled !== undefined)?.cost?.enabled;
+  const threshold = entries.findLast((entry) => entry.cost?.threshold !== undefined)?.cost?.threshold;
   if (enabled === undefined && threshold === undefined)
     return;
   return {
@@ -49319,7 +48730,7 @@ function checkCostThresholds(config2, stacks) {
     const cost = costOf(entries);
     if (cost?.threshold === undefined || (cost.enabled ?? config2.cost.enabled))
       continue;
-    const setBy = entries.findLast((entry2) => entry2.cost?.threshold !== undefined);
+    const setBy = entries.findLast((entry) => entry.cost?.threshold !== undefined);
     if (setBy !== undefined)
       refused.add(config2.stacks.indexOf(setBy));
   }
@@ -49329,12 +48740,12 @@ function checkCostThresholds(config2, stacks) {
   }));
 }
 function entriesOf(config2, stack) {
-  return config2.stacks.filter((entry2) => covers(entry2, stack)).sort((a, b) => Number(a.name !== undefined) - Number(b.name !== undefined));
+  return config2.stacks.filter((entry) => covers(entry, stack)).sort((a, b) => Number(a.name !== undefined) - Number(b.name !== undefined));
 }
 function dependsOnOf(entries, fromPhases = []) {
   const ids = [
-    ...new Set([...entries.flatMap((entry2) => listed(entry2.dependsOn)), ...fromPhases])
-  ].sort(byCodeUnit3);
+    ...new Set([...entries.flatMap((entry) => listed(entry.dependsOn)), ...fromPhases])
+  ].sort(byCodeUnit);
   return ids.length === 0 ? {} : { dependsOn: ids };
 }
 function phasesOf(config2, stacks) {
@@ -49342,16 +48753,16 @@ function phasesOf(config2, stacks) {
   const from = new Map;
   const issues = [];
   for (const stack of stacks) {
-    const entry2 = entriesOf(config2, stack).findLast((one) => one.phase !== undefined);
-    if (entry2?.phase === undefined)
+    const entry = entriesOf(config2, stack).findLast((one) => one.phase !== undefined);
+    if (entry?.phase === undefined)
       continue;
     const id = stackId(stack);
-    if (typeof entry2.phase === "string") {
-      phaseOf.set(id, entry2.phase);
+    if (typeof entry.phase === "string") {
+      phaseOf.set(id, entry.phase);
       continue;
     }
-    const path = ["stacks", config2.stacks.indexOf(entry2), "phase"];
-    const key = entry2.phase.from;
+    const path = ["stacks", config2.stacks.indexOf(entry), "phase"];
+    const key = entry.phase.from;
     const read = stack.phaseKeys?.[key];
     if (read === undefined) {
       issues.push({ kind: "no-phase-key", stackId: id, key, path });
@@ -49367,13 +48778,10 @@ function phasesOf(config2, stacks) {
 function listed(dependsOn) {
   return Array.isArray(dependsOn) ? dependsOn : [];
 }
-function byCodeUnit3(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function checkDependsOn(config2, found, stacks, phaseOf) {
   const known = new Set(stacks.map(stackId));
   const all = new Set(found.map(stackId));
-  const issues = config2.stacks.flatMap((entry2, index) => listed(entry2.dependsOn).flatMap((id, at) => {
+  const issues = config2.stacks.flatMap((entry, index) => listed(entry.dependsOn).flatMap((id, at) => {
     const path = ["stacks", index, "dependsOn", at];
     if (all.has(id) && !known.has(id)) {
       const reason = ignoredStacks(config2, found).find((one) => one.stackId === id)?.reason;
@@ -49398,9 +48806,9 @@ function checkDependsOn(config2, found, stacks, phaseOf) {
       ];
     }
     const self = stacks.find((stack) => stackId(stack) === id);
-    if (self && covers(entry2, self))
+    if (self && covers(entry, self))
       return [{ kind: "depends-on-itself", stackId: id, path }];
-    const earlier = stacks.filter((stack) => covers(entry2, stack)).map(stackId).sort(byCodeUnit3).find((one) => throughPhase(config2.phases, phaseOf, id, one));
+    const earlier = stacks.filter((stack) => covers(entry, stack)).map(stackId).sort(byCodeUnit).find((one) => throughPhase(config2.phases, phaseOf, id, one));
     if (earlier !== undefined)
       return [
         {
@@ -49447,31 +48855,31 @@ function dependencyCircles(edges) {
         continue;
       }
       const circle = path.slice(at);
-      const start = circle.indexOf([...circle].sort(byCodeUnit3)[0] ?? "");
+      const start = circle.indexOf([...circle].sort(byCodeUnit)[0] ?? "");
       const turned = [...circle.slice(start), ...circle.slice(0, start)];
-      const key = [...turned].sort(byCodeUnit3).join(`
+      const key = [...turned].sort(byCodeUnit).join(`
 `);
       if (!circles.has(key))
         circles.set(key, [...turned, turned[0] ?? ""]);
     }
   };
-  for (const id of [...edges.keys()].sort(byCodeUnit3))
+  for (const id of [...edges.keys()].sort(byCodeUnit))
     walk([id]);
-  return [...circles.values()].sort((a, b) => byCodeUnit3(a[0] ?? "", b[0] ?? ""));
+  return [...circles.values()].sort((a, b) => byCodeUnit(a[0] ?? "", b[0] ?? ""));
 }
-function covers(entry2, stack) {
-  return entry2.path === stack.path && (entry2.name === undefined || entry2.name === stack.name);
+function covers(entry, stack) {
+  return entry.path === stack.path && (entry.name === undefined || entry.name === stack.name);
 }
-function miss(entry2, inPath, ignored) {
+function miss(entry, inPath, ignored) {
   if (ignored.length > 0)
     return { kind: "entry-only-ignored", stackIds: ignored.map(stackId) };
-  if (entry2.name === undefined || inPath.length === 0) {
-    return { kind: "entry-no-stack", stackPath: entry2.path };
+  if (entry.name === undefined || inPath.length === 0) {
+    return { kind: "entry-no-stack", stackPath: entry.path };
   }
   return {
     kind: "entry-no-named-stack",
-    name: entry2.name,
-    stackPath: entry2.path,
+    name: entry.name,
+    stackPath: entry.path,
     names: inPath.flatMap((stack) => stack.name === undefined ? [] : [stack.name])
   };
 }
@@ -49549,8 +48957,8 @@ var __awaiter2 = function(thisArg, _arguments, P, generator) {
         reject(e);
       }
     }
-    function step(result2) {
-      result2.done ? resolve(result2.value) : adopt(result2.value).then(fulfilled, rejected);
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -49642,12 +49050,12 @@ function addHook(state, kind, name, hook) {
   }
   if (kind === "after") {
     hook = (method, options) => {
-      let result2;
+      let result;
       return Promise.resolve().then(method.bind(null, options)).then((result_) => {
-        result2 = result_;
-        return orig(result2, options);
+        result = result_;
+        return orig(result, options);
       }).then(() => {
-        return result2;
+        return result;
       });
     };
   }
@@ -49744,18 +49152,18 @@ function isPlainObject2(value) {
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
 function mergeDeep(defaults, options) {
-  const result2 = Object.assign({}, defaults);
+  const result = Object.assign({}, defaults);
   Object.keys(options).forEach((key) => {
     if (isPlainObject2(options[key])) {
       if (!(key in defaults))
-        Object.assign(result2, { [key]: options[key] });
+        Object.assign(result, { [key]: options[key] });
       else
-        result2[key] = mergeDeep(defaults[key], options[key]);
+        result[key] = mergeDeep(defaults[key], options[key]);
     } else {
-      Object.assign(result2, { [key]: options[key] });
+      Object.assign(result, { [key]: options[key] });
     }
   });
-  return result2;
+  return result;
 }
 function removeUndefinedProperties(obj) {
   for (const key in obj) {
@@ -49809,13 +49217,13 @@ function extractUrlVariableNames(url2) {
   return matches.map(removeNonChars).reduce((a, b) => a.concat(b), []);
 }
 function omit2(object2, keysToOmit) {
-  const result2 = { __proto__: null };
+  const result = { __proto__: null };
   for (const key of Object.keys(object2)) {
     if (keysToOmit.indexOf(key) === -1) {
-      result2[key] = object2[key];
+      result[key] = object2[key];
     }
   }
-  return result2;
+  return result;
 }
 function encodeReserved(str) {
   return str.split(/(%[0-9A-Fa-f]{2})/g).map(function(part) {
@@ -49845,24 +49253,24 @@ function isKeyOperator(operator) {
   return operator === ";" || operator === "&" || operator === "?";
 }
 function getValues(context, operator, key, modifier) {
-  var value = context[key], result2 = [];
+  var value = context[key], result = [];
   if (isDefined(value) && value !== "") {
     if (typeof value === "string" || typeof value === "number" || typeof value === "bigint" || typeof value === "boolean") {
       value = value.toString();
       if (modifier && modifier !== "*") {
         value = value.substring(0, parseInt(modifier, 10));
       }
-      result2.push(encodeValue(operator, value, isKeyOperator(operator) ? key : ""));
+      result.push(encodeValue(operator, value, isKeyOperator(operator) ? key : ""));
     } else {
       if (modifier === "*") {
         if (Array.isArray(value)) {
           value.filter(isDefined).forEach(function(value2) {
-            result2.push(encodeValue(operator, value2, isKeyOperator(operator) ? key : ""));
+            result.push(encodeValue(operator, value2, isKeyOperator(operator) ? key : ""));
           });
         } else {
           Object.keys(value).forEach(function(k) {
             if (isDefined(value[k])) {
-              result2.push(encodeValue(operator, value[k], k));
+              result.push(encodeValue(operator, value[k], k));
             }
           });
         }
@@ -49881,24 +49289,24 @@ function getValues(context, operator, key, modifier) {
           });
         }
         if (isKeyOperator(operator)) {
-          result2.push(encodeUnreserved(key) + "=" + tmp.join(","));
+          result.push(encodeUnreserved(key) + "=" + tmp.join(","));
         } else if (tmp.length !== 0) {
-          result2.push(tmp.join(","));
+          result.push(tmp.join(","));
         }
       }
     }
   } else {
     if (operator === ";") {
       if (isDefined(value)) {
-        result2.push(encodeUnreserved(key));
+        result.push(encodeUnreserved(key));
       }
     } else if (value === "" && (operator === "&" || operator === "?")) {
-      result2.push(encodeUnreserved(key) + "=");
+      result.push(encodeUnreserved(key) + "=");
     } else if (value === "") {
-      result2.push("");
+      result.push("");
     }
   }
-  return result2;
+  return result;
 }
 function parseUrl(template) {
   return {
@@ -49963,14 +49371,14 @@ function parse5(options) {
   const isBinaryRequest = /application\/octet-stream/i.test(headers.accept);
   if (!isBinaryRequest) {
     if (options.mediaType.format) {
-      headers.accept = headers.accept.split(/,/).map((format3) => format3.replace(/application\/vnd(\.\w+)(\.v3)?(\.\w+)?(\+json)?$/, `application/vnd$1$2.${options.mediaType.format}`)).join(",");
+      headers.accept = headers.accept.split(/,/).map((format2) => format2.replace(/application\/vnd(\.\w+)(\.v3)?(\.\w+)?(\+json)?$/, `application/vnd$1$2.${options.mediaType.format}`)).join(",");
     }
     if (url2.endsWith("/graphql")) {
       if (options.mediaType.previews?.length) {
         const previewsFromAcceptHeader = headers.accept.match(/(?<![\w-])[\w-]+(?=-preview)/g) || [];
         headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
-          const format3 = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
-          return `application/vnd.github.${preview}-preview${format3}`;
+          const format2 = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
+          return `application/vnd.github.${preview}-preview${format2}`;
         }).join(",");
       }
     }
@@ -50034,20 +49442,20 @@ CHAR_MAP[HTAB] |= OWS;
 CHAR_MAP[SP] |= OWS;
 CHAR_MAP[SEMI] |= SEMI_FLAG;
 CHAR_MAP[COMMA] |= COMMA_FLAG;
-for (let code2 = 128;code2 <= 255; code2++) {
-  CHAR_MAP[code2] |= LOWER_CASE;
+for (let code = 128;code <= 255; code++) {
+  CHAR_MAP[code] |= LOWER_CASE;
 }
 for (const char of "!#$%&'*+-.^_`|~") {
   CHAR_MAP[char.charCodeAt(0)] |= TOKEN_FLAG;
 }
-for (let code2 = 48;code2 <= 57; code2++) {
-  CHAR_MAP[code2] |= TOKEN_FLAG;
+for (let code = 48;code <= 57; code++) {
+  CHAR_MAP[code] |= TOKEN_FLAG;
 }
-for (let code2 = 65;code2 <= 90; code2++) {
-  CHAR_MAP[code2] |= LOWER_CASE | TOKEN_FLAG;
+for (let code = 65;code <= 90; code++) {
+  CHAR_MAP[code] |= LOWER_CASE | TOKEN_FLAG;
 }
-for (let code2 = 97;code2 <= 122; code2++) {
-  CHAR_MAP[code2] |= TOKEN_FLAG;
+for (let code = 97;code <= 122; code++) {
+  CHAR_MAP[code] |= TOKEN_FLAG;
 }
 var NullObject = /* @__PURE__ */ (() => {
   const C = function() {};
@@ -50066,8 +49474,8 @@ function parse6(header, options) {
   let whitespace = -1;
   let stop = options?.parameters === false ? COMMA_FLAG : 0;
   while (index < len) {
-    const code2 = header.charCodeAt(index);
-    const flags = CHAR_MAP[code2];
+    const code = header.charCodeAt(index);
+    const flags = CHAR_MAP[code];
     if ((flags & stopFlags) !== 0) {
       stop |= flags & COMMA_FLAG;
       break;
@@ -50078,7 +49486,7 @@ function parse6(header, options) {
     } else {
       whitespace = -1;
     }
-    typeFlags |= code2 & NON_ASCII | flags;
+    typeFlags |= code & NON_ASCII | flags;
     index++;
   }
   const valueEnd = whitespace === -1 ? index : whitespace;
@@ -50101,14 +49509,14 @@ function parseParameters(header, type, index, len, stopFlags) {
       let keyFlags = 0;
       let keyWhitespace = -1;
       while (index < len) {
-        const code2 = header.charCodeAt(index);
-        const flags = CHAR_MAP[code2];
+        const code = header.charCodeAt(index);
+        const flags = CHAR_MAP[code];
         if ((flags & stopFlags) !== 0) {
           if ((flags & COMMA_FLAG) !== 0)
             break parameter;
           continue parameter;
         }
-        if (code2 === EQ) {
+        if (code === EQ) {
           const keyEnd = keyWhitespace === -1 ? index : keyWhitespace;
           const value = header.slice(keyStart, keyEnd);
           const key = (keyFlags & CASE_FLAGS) === 0 ? value : value.toLowerCase();
@@ -50120,16 +49528,16 @@ function parseParameters(header, type, index, len, stopFlags) {
             const quotedStart = ++index;
             let escaped = false;
             while (index < len) {
-              const code3 = header.charCodeAt(index);
-              if (code3 === DQUOTE) {
+              const code2 = header.charCodeAt(index);
+              if (code2 === DQUOTE) {
                 if (parameters[key] === undefined) {
                   parameters[key] = escaped ? unescapeQuotedPairs(header, quotedStart, index) : header.slice(quotedStart, index);
                 }
                 index++;
                 let stop2 = 0;
                 while (index < len) {
-                  const code4 = header.charCodeAt(index);
-                  const flags2 = CHAR_MAP[code4];
+                  const code3 = header.charCodeAt(index);
+                  const flags2 = CHAR_MAP[code3];
                   if ((flags2 & stopFlags) !== 0) {
                     stop2 = flags2 & COMMA_FLAG;
                     break;
@@ -50140,7 +49548,7 @@ function parseParameters(header, type, index, len, stopFlags) {
                   break parameter;
                 continue parameter;
               }
-              if (code3 === BSLASH && index + 1 < len) {
+              if (code2 === BSLASH && index + 1 < len) {
                 escaped = true;
                 index += 2;
                 continue;
@@ -50153,8 +49561,8 @@ function parseParameters(header, type, index, len, stopFlags) {
           let stop = 0;
           let valueWhitespace = -1;
           while (index < len) {
-            const code3 = header.charCodeAt(index);
-            const flags2 = CHAR_MAP[code3];
+            const code2 = header.charCodeAt(index);
+            const flags2 = CHAR_MAP[code2];
             if ((flags2 & stopFlags) !== 0) {
               stop = flags2 & COMMA_FLAG;
               break;
@@ -50181,21 +49589,21 @@ function parseParameters(header, type, index, len, stopFlags) {
         } else {
           keyWhitespace = -1;
         }
-        keyFlags |= code2 & NON_ASCII | flags;
+        keyFlags |= code & NON_ASCII | flags;
         index++;
       }
     }
   return { type, index, parameters };
 }
 function unescapeQuotedPairs(str, start, end) {
-  let result2 = "";
+  let result = "";
   for (let index = start;index < end; index++) {
     if (str.charCodeAt(index) === BSLASH) {
-      result2 += str.slice(start, index);
+      result += str.slice(start, index);
       start = ++index;
     }
   }
-  return result2 + str.slice(start, end);
+  return result + str.slice(start, end);
 }
 
 // node_modules/json-with-bigint/json-with-bigint.js
@@ -50430,9 +49838,9 @@ var isContextSourceSupported = () => {
     return featureCache.get(parseFingerprint);
   }
   try {
-    const result2 = JSON.parse("1", (_, __, context) => !!context?.source && context.source === "1");
-    featureCache.set(parseFingerprint, result2);
-    return result2;
+    const result = JSON.parse("1", (_, __, context) => !!context?.source && context.source === "1");
+    featureCache.set(parseFingerprint, result);
+    return result;
   } catch {
     featureCache.set(parseFingerprint, false);
     return false;
@@ -50790,16 +50198,16 @@ function graphql(request2, query, options) {
     }
   }
   const parsedOptions = typeof query === "string" ? Object.assign({ query }, options) : query;
-  const requestOptions = Object.keys(parsedOptions).reduce((result2, key) => {
+  const requestOptions = Object.keys(parsedOptions).reduce((result, key) => {
     if (NON_VARIABLE_OPTIONS.includes(key)) {
-      result2[key] = parsedOptions[key];
-      return result2;
+      result[key] = parsedOptions[key];
+      return result;
     }
-    if (!result2.variables) {
-      result2.variables = {};
+    if (!result.variables) {
+      result.variables = {};
     }
-    result2.variables[key] = parsedOptions[key];
-    return result2;
+    result.variables[key] = parsedOptions[key];
+    return result;
   }, {});
   const baseUrl = parsedOptions.baseUrl || request2.endpoint.DEFAULTS.baseUrl;
   if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
@@ -53491,15 +52899,15 @@ function paginate(octokit, route, parameters, mapFn) {
   return gather(octokit, [], iterator(octokit, route, parameters)[Symbol.asyncIterator](), mapFn);
 }
 function gather(octokit, results, iterator2, mapFn) {
-  return iterator2.next().then((result2) => {
-    if (result2.done) {
+  return iterator2.next().then((result) => {
+    if (result.done) {
       return results;
     }
     let earlyExit = false;
     function done() {
       earlyExit = true;
     }
-    results = results.concat(mapFn ? mapFn(result2.value, done) : result2.value.data);
+    results = results.concat(mapFn ? mapFn(result.value, done) : result.value.data);
     if (earlyExit) {
       return results;
     }
@@ -54200,7 +53608,7 @@ var PASSED_OR_RUNNING = new Set([
 ]);
 var FAILED_STATUS = new Set(["FAILURE", "ERROR"]);
 function anyFailed(contexts) {
-  const some = (counts2, failed) => (counts2 ?? []).some(({ state, count }) => count > 0 && failed(state));
+  const some = (counts, failed) => (counts ?? []).some(({ state, count }) => count > 0 && failed(state));
   return some(contexts?.checkRunCountsByState, (state) => !PASSED_OR_RUNNING.has(state)) || some(contexts?.statusContextCountsByState, (state) => FAILED_STATUS.has(state));
 }
 function checksOf(rollup) {
@@ -54487,7 +53895,7 @@ function createOctokitPort(octokit, repo) {
         recursive: "1"
       });
       return {
-        entries: data.tree.flatMap((entry2) => entry2.path === undefined || entry2.sha === undefined || entry2.type === undefined ? [] : [{ path: entry2.path, sha: entry2.sha, type: entry2.type }]),
+        entries: data.tree.flatMap((entry) => entry.path === undefined || entry.sha === undefined || entry.type === undefined ? [] : [{ path: entry.path, sha: entry.sha, type: entry.type }]),
         truncated: data.truncated
       };
     },
@@ -54696,10 +54104,10 @@ function read(file2) {
   try {
     return readFileSync2(file2, "utf8");
   } catch (error63) {
-    const code2 = error63.code;
-    if (code2 === "ENOENT")
+    const code = error63.code;
+    if (code === "ENOENT")
       return;
-    if (code2 === "EISDIR")
+    if (code === "EISDIR")
       throw new ConfigError([{ kind: "not-a-file", path: [] }]);
     throw error63;
   }
@@ -55036,10 +54444,10 @@ import { join as join3, posix } from "node:path";
 
 // src/adapters/opentofu/hcl.ts
 function readHcl(text4) {
-  const { tokens, code: code2 } = tokenize(text4);
+  const { tokens, code } = tokenize(text4);
   const reader = { tokens, at: 0 };
   const top = body(reader, false);
-  return { blocks: top.blocks, attributes: top.attributes, code: code2 };
+  return { blocks: top.blocks, attributes: top.attributes, code };
 }
 function body(reader, inner) {
   const block = { type: "", labels: [], strings: {}, attributes: [], blocks: [] };
@@ -55125,7 +54533,7 @@ function skipLine(reader) {
 }
 function tokenize(text4) {
   const tokens = [];
-  let code2 = "";
+  let code = "";
   let at = 0;
   while (at < text4.length) {
     const char = text4[at] ?? "";
@@ -55139,13 +54547,13 @@ function tokenize(text4) {
     if (rest === "/*") {
       const end = text4.indexOf("*/", at + 2);
       at = end < 0 ? text4.length : end + 2;
-      code2 += " ";
+      code += " ";
       continue;
     }
     if (char === `
 `) {
       tokens.push({ kind: "newline" });
-      code2 += char;
+      code += char;
       at++;
       continue;
     }
@@ -55153,7 +54561,7 @@ function tokenize(text4) {
       const end = stringEnd(text4, at);
       const raw = text4.slice(at + 1, end - 1);
       tokens.push({ kind: "string", literal: literalOf(raw) });
-      code2 += text4.slice(at, end);
+      code += text4.slice(at, end);
       at = end;
       continue;
     }
@@ -55170,7 +54578,7 @@ function tokenize(text4) {
           break;
       }
       tokens.push({ kind: "string", literal: undefined });
-      code2 += text4.slice(at, end);
+      code += text4.slice(at, end);
       tokens.push({ kind: "newline" });
       at = end;
       continue;
@@ -55178,7 +54586,7 @@ function tokenize(text4) {
     const word = /^[A-Za-z_][A-Za-z0-9_.-]*/.exec(text4.slice(at));
     if (word !== null) {
       tokens.push({ kind: "word", text: word[0] });
-      code2 += word[0];
+      code += word[0];
       at += word[0].length;
       continue;
     }
@@ -55193,14 +54601,14 @@ function tokenize(text4) {
     else if (!/\s/.test(char))
       tokens.push({ kind: "other" });
     if (char === "=" && (text4[at + 1] === "=" || text4[at + 1] === ">")) {
-      code2 += text4.slice(at, at + 2);
+      code += text4.slice(at, at + 2);
       at += 2;
       continue;
     }
-    code2 += char;
+    code += char;
     at++;
   }
-  return { tokens, code: code2 };
+  return { tokens, code };
 }
 function stringEnd(text4, start) {
   let at = start + 1;
@@ -55409,8 +54817,8 @@ function cdktfNeeds(root, path) {
     { what: "the backend the app sets in code", namedIn: file2, ways: [] }
   ];
   const named = new Map;
-  for (const entry2 of Array.isArray(listed2) ? listed2 : []) {
-    const spec = typeof entry2 === "string" ? entry2 : typeof entry2 === "object" && entry2 !== null && typeof entry2.name === "string" ? entry2.name : undefined;
+  for (const entry of Array.isArray(listed2) ? listed2 : []) {
+    const spec = typeof entry === "string" ? entry : typeof entry === "object" && entry !== null && typeof entry.name === "string" ? entry.name : undefined;
     if (spec === undefined)
       continue;
     const name = (spec.split("@")[0] ?? "").split("/").at(-1) ?? "";
@@ -55423,7 +54831,7 @@ function cdktfNeeds(root, path) {
 function readDirectory(root, path) {
   let names;
   try {
-    names = readdirSync(join3(root, path)).sort(byCodeUnit4);
+    names = readdirSync(join3(root, path)).sort(byCodeUnit);
   } catch {
     names = [];
   }
@@ -55547,9 +54955,6 @@ function text5(file2) {
   } catch {
     return "";
   }
-}
-function byCodeUnit4(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/credentials.ts
@@ -55829,9 +55234,6 @@ function isFile(path) {
 function repoPath(root, path) {
   return relative(root, path).split(sep2).join("/");
 }
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 // src/adapters/credentials.ts
 async function credentialNeeds3(root, stack) {
@@ -55857,17 +55259,17 @@ function discoverHelm(root, config2) {
   const stacks = [];
   const optionProblems = [];
   const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== HELM)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== HELM)
       return;
-    const parsed = parseHelmOptions(entry2.options, index);
+    const parsed = parseHelmOptions(entry.options, index);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
     }
     const { options } = parsed;
-    const dir = join5(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
+    const dir = join5(root, entry.path);
+    const shown = JSON.stringify(entry.path);
     if (!isDirectory2(dir)) {
       problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${WHAT_PATH_IS}`);
       return;
@@ -55919,8 +55321,8 @@ function discoverHelm(root, config2) {
       ...chart === undefined ? { builds: [] } : chart
     };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...bag }
     });
   });
@@ -56038,19 +55440,16 @@ function walk2(dir, recursive2, prefix = "") {
   } catch {
     return [];
   }
-  return entries.sort((a, b) => byCodeUnit5(a.name, b.name)).flatMap((entry2) => {
-    const path = prefix === "" ? entry2.name : `${prefix}/${entry2.name}`;
-    if (entry2.isDirectory())
+  return entries.sort((a, b) => byCodeUnit(a.name, b.name)).flatMap((entry) => {
+    const path = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory())
       return recursive2 ? walk2(dir, true, path) : [];
-    return entry2.isFile() ? [path] : [];
+    return entry.isFile() ? [path] : [];
   });
-}
-function byCodeUnit5(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 function filesIn(dir) {
   try {
-    return readdirSync3(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+    return readdirSync3(dir, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
   } catch {
     return;
   }
@@ -56062,16 +55461,16 @@ function discoverKubectl(root, config2) {
   const stacks = [];
   const optionProblems = [];
   const problems = [];
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== KUBECTL)
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== KUBECTL)
       return;
-    const parsed = parseKubectlOptions(entry2.options, index);
+    const parsed = parseKubectlOptions(entry.options, index);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
     }
-    const shown = JSON.stringify(entry2.path);
-    const dir = join7(root, entry2.path);
+    const shown = JSON.stringify(entry.path);
+    const dir = join7(root, entry.path);
     const files = filesIn(dir);
     if (files === undefined) {
       problems.push(`stacks[${index}]: ${shown} is not a directory of the repo. ${NAMES}`);
@@ -56085,7 +55484,7 @@ function discoverKubectl(root, config2) {
     const nested = recursive2 ? nestedKustomizations(dir) : [];
     if (nested.length > 0) {
       for (const sub of nested) {
-        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry2.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
+        problems.push(`stacks[${index}]: ${JSON.stringify(`${entry.path}/${sub}`)} holds a kustomization, which kubectl -R would read as a manifest. Declare it as a stack of its own, or keep it out of ${shown}.`);
       }
       return;
     }
@@ -56095,8 +55494,8 @@ function discoverKubectl(root, config2) {
     }
     const options = { tool: KUBECTL, ...parsed.options };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...options }
     });
   });
@@ -56124,11 +55523,11 @@ function discoverOpenTofu(root, config2) {
   const optionProblems = [];
   const problems = [];
   const declaredBy = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (!isFamilyTool(entry2.tool))
+  config2.stacks.forEach((entry, index) => {
+    if (!isFamilyTool(entry.tool))
       return;
-    const tool = entry2.tool;
-    const parsed = parseOpenTofuOptions(entry2.options, index, tool);
+    const tool = entry.tool;
+    const parsed = parseOpenTofuOptions(entry.options, index, tool);
     if (!parsed.ok) {
       optionProblems.push(...parsed.problems);
       return;
@@ -56138,23 +55537,23 @@ function discoverOpenTofu(root, config2) {
     if (wrapper !== undefined && parsed.options.varFiles.length > 0) {
       optionProblems.push(wrapper === TERRAGRUNT ? `stacks[${index}].options.varFiles: a Terragrunt unit passes its var files in its own terragrunt.hcl (extra_arguments), so the entry takes none.` : `stacks[${index}].options.varFiles: a CDK for Terraform app sets its variables in code, so the entry takes none.`);
     }
-    if (wrapper === CDKTF && entry2.name === undefined) {
+    if (wrapper === CDKTF && entry.name === undefined) {
       optionProblems.push(`stacks[${index}].name: an entry with wrapper: cdktf names the CDK for Terraform stack it deploys, as the app calls it.`);
     }
-    if (wrapper === CDKTF && entry2.name !== undefined && !CDKTF_STACK_NAME.test(entry2.name)) {
-      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry2.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
+    if (wrapper === CDKTF && entry.name !== undefined && !CDKTF_STACK_NAME.test(entry.name)) {
+      optionProblems.push(`stacks[${index}].name: ${JSON.stringify(entry.name)} is not a CDK for Terraform stack name: letters, digits, "-" and "_" only.`);
     }
     const kind = `tool: ${tool}${wrapper === undefined ? "" : ` and wrapper: ${wrapper}`}`;
-    const earlier = declaredBy.get(entry2.path);
+    const earlier = declaredBy.get(entry.path);
     if (earlier === undefined) {
-      declaredBy.set(entry2.path, { index, kind });
+      declaredBy.set(entry.path, { index, kind });
     } else if (earlier.kind !== kind) {
-      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry2.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
+      optionProblems.push(`stacks[${index}]: ${JSON.stringify(entry.path)} is declared with ${earlier.kind} by stacks[${earlier.index}]. The stacks of one directory share its init, so they name the same tool and wrapper.`);
     }
     if (optionProblems.length > before)
       return;
-    const dir = join8(root, entry2.path);
-    const shown = JSON.stringify(entry2.path);
+    const dir = join8(root, entry.path);
+    const shown = JSON.stringify(entry.path);
     const files = filesIn2(dir);
     const names = wrapper === TERRAGRUNT ? "the directory of one Terragrunt unit" : wrapper === CDKTF ? "the directory of a CDK for Terraform app" : "the directory of a root module";
     const about = wrapper === undefined ? `An entry with tool: ${tool}` : `An entry with wrapper: ${wrapper}`;
@@ -56194,8 +55593,8 @@ function discoverOpenTofu(root, config2) {
       return;
     const options = { tool, ...parsed.options };
     stacks.push({
-      path: entry2.path,
-      ...entry2.name === undefined ? {} : { name: entry2.name },
+      path: entry.path,
+      ...entry.name === undefined ? {} : { name: entry.name },
       options: { ...options }
     });
   });
@@ -56205,7 +55604,7 @@ function discoverOpenTofu(root, config2) {
 }
 function filesIn2(dir) {
   try {
-    return readdirSync4(dir, { withFileTypes: true }).filter((entry2) => entry2.isFile()).map((entry2) => entry2.name);
+    return readdirSync4(dir, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
   } catch {
     return;
   }
@@ -56250,9 +55649,9 @@ function explainRootModules(root, config2) {
 function judge(root, config2) {
   const repo = readRepo(root);
   const declared = new Map;
-  config2.stacks.forEach((entry2, index) => {
-    if (entry2.tool !== undefined && !declared.has(entry2.path))
-      declared.set(entry2.path, index);
+  config2.stacks.forEach((entry, index) => {
+    if (entry.tool !== undefined && !declared.has(entry.path))
+      declared.set(entry.path, index);
   });
   const namedBy = new Map;
   for (const directory of repo.directories) {
@@ -56294,7 +55693,7 @@ function judge(root, config2) {
     const chosen = [
       ...directory.chosenFiles,
       ...[...repo.varDirectories].filter(([under]) => posix3.dirname(under) === path).flatMap(([under, files]) => files.map((file2) => posix3.relative(path, `${under}/${file2}`)))
-    ].sort(byCodeUnit6);
+    ].sort(byCodeUnit);
     if (chosen.length > 0) {
       return left(`${listed2(chosen)} ${chosen.length === 1 ? "is a file" : "are files"} the tool loads only when told to: which one a stack takes is the repo's to say`);
     }
@@ -56320,39 +55719,39 @@ function readRepo(root) {
     } catch {
       return;
     }
-    const files = entries.filter((entry2) => entry2.isFile()).map((entry2) => entry2.name).sort(byCodeUnit6);
+    const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort(byCodeUnit);
     const path = relative4 || ".";
     const terragrunt = files.find((file2) => TERRAGRUNT_FILE.test(file2));
     if (terragrunt !== undefined && repo.terragrunt === undefined) {
       repo.terragrunt = relative4 === "" ? terragrunt : `${relative4}/${terragrunt}`;
     }
-    const code2 = files.filter((file2) => MODULE_FILE2.test(file2));
+    const code = files.filter((file2) => MODULE_FILE2.test(file2));
     const chosenFiles = files.filter((file2) => VAR_FILE.test(file2) && !AUTO_VAR_FILE2.test(file2) || BACKEND_FILE.test(file2));
-    if (code2.length > 0) {
-      repo.directories.push(readDirectory2(root, path, files, code2, chosenFiles));
+    if (code.length > 0) {
+      repo.directories.push(readDirectory2(root, path, files, code, chosenFiles));
     } else if (chosenFiles.length > 0) {
       repo.varDirectories.set(path, chosenFiles);
     }
-    for (const entry2 of entries) {
-      if (!entry2.isDirectory() || entry2.name.startsWith(".") || SKIPPED.has(entry2.name))
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".") || SKIPPED.has(entry.name))
         continue;
-      walk3(relative4 === "" ? entry2.name : `${relative4}/${entry2.name}`);
+      walk3(relative4 === "" ? entry.name : `${relative4}/${entry.name}`);
     }
   };
   walk3("");
-  repo.directories.sort((a, b) => byCodeUnit6(a.path, b.path));
+  repo.directories.sort((a, b) => byCodeUnit(a.path, b.path));
   return repo;
 }
-function readDirectory2(root, path, files, code2, chosenFiles) {
+function readDirectory2(root, path, files, code, chosenFiles) {
   const directory = {
     path,
-    files: code2,
+    files: code,
     sources: [],
     lockTools: [],
     hasLockFile: files.includes(LOCK_FILE2),
     chosenFiles
   };
-  for (const file2 of code2) {
+  for (const file2 of code) {
     const text7 = read3(join9(root, path, file2));
     const parsed = file2.endsWith(".json") ? readJson2(text7) : readNative(text7);
     if (parsed.state !== undefined)
@@ -56372,7 +55771,7 @@ function readDirectory2(root, path, files, code2, chosenFiles) {
   return directory;
 }
 function readNative(text7) {
-  const { blocks, code: code2 } = readHcl(text7);
+  const { blocks, code } = readHcl(text7);
   let state;
   for (const block of blocks.filter((one) => one.type === "terraform")) {
     for (const inner of block.blocks) {
@@ -56389,7 +55788,7 @@ function readNative(text7) {
   const sources = blocks.filter((block) => block.type === "module").flatMap((block) => block.strings.source === undefined ? [] : [block.strings.source]);
   return {
     ...state === undefined ? {} : { state },
-    readsWorkspace: READS_WORKSPACE.test(code2),
+    readsWorkspace: READS_WORKSPACE.test(code),
     sources
   };
 }
@@ -56426,15 +55825,12 @@ function readJson2(text7) {
   };
 }
 function field(value, name) {
-  return isObject2(value) ? value[name] : undefined;
+  return isRecord(value) ? value[name] : undefined;
 }
 function objects(value) {
   if (Array.isArray(value))
-    return value.filter(isObject2);
-  return isObject2(value) ? [value] : [];
-}
-function isObject2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+    return value.filter(isRecord);
+  return isRecord(value) ? [value] : [];
 }
 function localSource2(from, source) {
   if (!source.startsWith("./") && !source.startsWith("../"))
@@ -56455,9 +55851,6 @@ function read3(file2) {
   } catch {
     return "";
   }
-}
-function byCodeUnit6(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/discover.ts
@@ -56494,15 +55887,15 @@ async function discover(root, config2) {
         problems.push(`${slashed(relative4(root, projectFile))}: ${error63.message}`);
       }
     }
-    for (const entry2 of entries) {
-      if (entry2.isDirectory() && !SKIPPED2.has(entry2.name))
-        await walk3(join10(dir, entry2.name));
+    for (const entry of entries) {
+      if (entry.isDirectory() && !SKIPPED2.has(entry.name))
+        await walk3(join10(dir, entry.name));
     }
   };
   await walk3(root);
   if (problems.length > 0)
-    throw new DiscoveryError(problems.sort(compare));
-  return stacks.sort((a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""));
+    throw new DiscoveryError(problems.sort(byCodeUnit));
+  return stacks.sort((a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? ""));
 }
 
 class ProjectFileProblem extends Error {
@@ -56540,12 +55933,12 @@ function keysOf(project, keys) {
   }
   return Object.keys(read4).length === 0 ? undefined : read4;
 }
-function configText(entry2) {
-  if (typeof entry2 === "string")
-    return entry2;
-  if (!isMapping2(entry2) || entry2.secret === true)
+function configText(entry) {
+  if (typeof entry === "string")
+    return entry;
+  if (!isMapping2(entry) || entry.secret === true)
     return;
-  const text7 = entry2.value ?? entry2.default;
+  const text7 = entry.value ?? entry.default;
   return typeof text7 === "string" ? text7 : undefined;
 }
 function isMapping2(value) {
@@ -56583,14 +55976,14 @@ function stackNames(files, extension) {
   return files.filter((file2) => file2.startsWith(prefix) && file2.endsWith(extension)).map((file2) => file2.slice(prefix.length, -extension.length)).filter((name) => name !== "");
 }
 function fileNames(entries) {
-  return entries.filter((entry2) => !entry2.isDirectory()).map((entry2) => entry2.name);
+  return entries.filter((entry) => !entry.isDirectory()).map((entry) => entry.name);
 }
 async function fileNamesIn(dir) {
   try {
     return fileNames(await readdir2(dir, { withFileTypes: true }));
   } catch (error63) {
-    const code2 = error63.code;
-    if (code2 === "ENOENT" || code2 === "ENOTDIR")
+    const code = error63.code;
+    if (code === "ENOENT" || code === "ENOTDIR")
       return [];
     throw error63;
   }
@@ -56598,31 +55991,28 @@ async function fileNamesIn(dir) {
 function slashed(path) {
   return path.split(sep5).join("/");
 }
-function compare(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 // src/adapters/discover-all.ts
 var TOOLS = [OPENTOFU, TERRAFORM, HELM, KUBECTL];
 var DISCOVERY_SWITCHES = [ROOT_MODULES];
 async function discoverAll(root, config2) {
-  const toolProblems = config2.stacks.flatMap((entry2, index) => {
-    if (entry2.tool === undefined)
+  const toolProblems = config2.stacks.flatMap((entry, index) => {
+    if (entry.tool === undefined)
       return [];
-    if (!TOOLS.includes(entry2.tool)) {
+    if (!TOOLS.includes(entry.tool)) {
       return [
-        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry2.tool)}. Known tools: ${TOOLS.join(", ")}.`
+        `stacks[${index}].tool: unknown tool ${JSON.stringify(entry.tool)}. Known tools: ${TOOLS.join(", ")}.`
       ];
     }
     return [
-      ...entry2.dependsOn === DEPENDS_ON_AUTO ? [
-        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry2.tool} stack has none. Name the stack ids instead.`
+      ...entry.dependsOn === DEPENDS_ON_AUTO ? [
+        `stacks[${index}].dependsOn: ${DEPENDS_ON_AUTO} reads the stack references of a Pulumi program, and an ${entry.tool} stack has none. Name the stack ids instead.`
       ] : [],
-      ...typeof entry2.phase === "object" ? [
-        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry2.tool} stack has none. Name the phase instead.`
+      ...typeof entry.phase === "object" ? [
+        `stacks[${index}].phase: from reads a key of a Pulumi project file, and an ${entry.tool} stack has none. Name the phase instead.`
       ] : [],
-      ...entry2.createInBackend !== undefined ? [
-        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry2.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
+      ...entry.createInBackend !== undefined ? [
+        `stacks[${index}].createInBackend: the scan creates a Pulumi stack the backend lacks, and an ${entry.tool} stack has no such stack: its first scan makes what it needs. Leave the key out.`
       ] : []
     ];
   });
@@ -56655,7 +56045,7 @@ async function discoverAll(root, config2) {
   const discovered = await discover(root, config2);
   if (declared.length === 0)
     return withIds(config2, discovered);
-  return withIds(config2, [...discovered, ...declared].sort((a, b) => compare2(a.path, b.path) || compare2(a.name ?? "", b.name ?? "")));
+  return withIds(config2, [...discovered, ...declared].sort((a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? "")));
 }
 function tryDiscover(discover2) {
   try {
@@ -56667,9 +56057,6 @@ function tryDiscover(discover2) {
 function byEntry(a, b) {
   const index = (text7) => Number(/^stacks\[(\d+)\]/.exec(text7)?.[1] ?? 0);
   return index(a) - index(b);
-}
-function compare2(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/helm/file-references.ts
@@ -56703,7 +56090,7 @@ async function readsFiles2(root, stack) {
     return [];
   const projectPath = join12(projectDir, `Pulumi${extension}`);
   const project = read4(projectPath);
-  if (!isRecord2(project))
+  if (!isRecord(project))
     return [];
   const keep = (path, from, namedIn, want) => {
     if (isAbsolute4(path) || path.includes("${"))
@@ -56738,12 +56125,12 @@ ${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
     }
   }
   const pathLike = (value) => value.includes("/") || value.startsWith(".");
-  if (isRecord2(project.config)) {
+  if (isRecord(project.config)) {
     for (const declared of Object.values(project.config)) {
       if (typeof declared === "string" && pathLike(declared)) {
         keep(declared, projectDir, projectPath, "any");
       }
-      if (!isRecord2(declared) || declared.secret === true)
+      if (!isRecord(declared) || declared.secret === true)
         continue;
       for (const value of [declared.default, declared.value]) {
         if (typeof value === "string" && pathLike(value))
@@ -56755,23 +56142,23 @@ ${kind}`, { path: slashed2, kind, namedIn: repoPath2(root, namedIn) });
     const stackDir = typeof project.stackConfigDir === "string" ? join12(projectDir, project.stackConfigDir) : projectDir;
     const stackPath2 = join12(stackDir, `Pulumi.${stack.name}${extension}`);
     const stackFile = read4(stackPath2);
-    if (isRecord2(stackFile) && isRecord2(stackFile.config)) {
+    if (isRecord(stackFile) && isRecord(stackFile.config)) {
       plainStrings(stackFile.config, (value) => {
         if (pathLike(value))
           keep(value, projectDir, stackPath2, "any");
       });
     }
   }
-  return [...found.values()].sort((a, b) => compare3(a.path, b.path));
+  return [...found.values()].sort((a, b) => byCodeUnit(a.path, b.path));
 }
 function runtimeName2(runtime) {
-  return isRecord2(runtime) ? runtime.name : runtime;
+  return isRecord(runtime) ? runtime.name : runtime;
 }
 function walk3(value, visit3) {
   if (Array.isArray(value)) {
     for (const item of value)
       walk3(item, visit3);
-  } else if (isRecord2(value)) {
+  } else if (isRecord(value)) {
     for (const [key, inner] of Object.entries(value)) {
       visit3(key, inner);
       walk3(inner, visit3);
@@ -56784,7 +56171,7 @@ function plainStrings(value, visit3) {
   else if (Array.isArray(value))
     for (const item of value)
       plainStrings(item, visit3);
-  else if (isRecord2(value) && !("secure" in value)) {
+  else if (isRecord(value) && !("secure" in value)) {
     for (const inner of Object.values(value))
       plainStrings(inner, visit3);
   }
@@ -56810,12 +56197,6 @@ function isFile4(path) {
 function repoPath2(root, path) {
   return relative5(root, path).split(sep6).join("/");
 }
-function isRecord2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function compare3(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 
 // src/adapters/file-references.ts
 async function readsFiles3(root, stack) {
@@ -56832,36 +56213,36 @@ import { join as join13 } from "node:path";
 // src/adapters/tool-run.ts
 async function runTool(runner, spec) {
   const { timeoutMinutes, exitCodes = {}, ...command } = spec;
-  const result2 = await runner({ ...command, timeoutMs: timeoutMinutes * 60000 });
-  if (result2.status === "not-started") {
+  const result = await runner({ ...command, timeoutMs: timeoutMinutes * 60000 });
+  if (result.status === "not-started") {
     return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
   }
-  const { stdout, stderr } = result2;
-  if (result2.status === "timed-out") {
+  const { stdout, stderr } = result;
+  if (result.status === "timed-out") {
     return { ok: false, reason: { kind: "timed-out", minutes: timeoutMinutes }, stdout, stderr };
   }
-  const { exitCode } = result2;
+  const { exitCode } = result;
   if (exitCode !== null && (exitCodes.success ?? [0]).includes(exitCode)) {
     return {
       ok: true,
       exitCode,
       stdout,
       stderr,
-      ...result2.outputCutAt === undefined ? {} : { outputCutAt: result2.outputCutAt }
+      ...result.outputCutAt === undefined ? {} : { outputCutAt: result.outputCutAt }
     };
   }
   const own2 = exitCode === null ? undefined : exitCodes.reasons?.[exitCode];
   return { ok: false, reason: own2 ?? { kind: "tool-error", exitCode }, stdout, stderr };
 }
 async function runDeploy(runner, command) {
-  const result2 = await runner(command);
-  if (result2.status === "not-started") {
+  const result = await runner(command);
+  if (result.status === "not-started") {
     return { ok: false, reason: { kind: "tool-error", exitCode: null }, stdout: "", stderr: "" };
   }
-  const { stdout, stderr } = result2;
-  if (result2.status === "exited" && result2.exitCode === 0)
+  const { stdout, stderr } = result;
+  if (result.status === "exited" && result.exitCode === 0)
     return { ok: true, stdout, stderr };
-  const exitCode = result2.status === "exited" ? result2.exitCode : null;
+  const exitCode = result.status === "exited" ? result.exitCode : null;
   return { ok: false, reason: { kind: "tool-error", exitCode }, stdout, stderr };
 }
 var ANSI_ESCAPES = new RegExp([
@@ -57075,9 +56456,9 @@ async function apply(stack, context3, plan, options) {
     cwd: join13(context3.root, stack.path),
     env: helmEnvironment(context3.env)
   });
-  const failed = (result2, toolLog2) => ({
+  const failed = (result, toolLog2) => ({
     ok: false,
-    reason: result2.ok ? { kind: "tool-error", exitCode: 0 } : result2.reason,
+    reason: result.ok ? { kind: "tool-error", exitCode: 0 } : result.reason,
     toolLog: toolLog2
   });
   const rendered = await run(renderCommand(helm));
@@ -57120,14 +56501,11 @@ import { join as join14 } from "node:path";
 // src/core/value-fingerprint.ts
 import { createHash as createHash2 } from "node:crypto";
 var SECRET_MARK = Symbol("sluiceway:secret");
-function byCodeUnit7(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function canonicalJson(value) {
   if (Array.isArray(value))
     return `[${value.map(canonicalJson).join(",")}]`;
   if (typeof value === "object" && value !== null) {
-    const members2 = Object.keys(value).sort(byCodeUnit7).flatMap((key) => {
+    const members2 = Object.keys(value).sort(byCodeUnit).flatMap((key) => {
       const member = value[key];
       return member === undefined ? [] : [`${JSON.stringify(key)}:${canonicalJson(member)}`];
     });
@@ -57148,8 +56526,8 @@ function hiddenDocument(values2) {
       return [];
     return [{ path: value.path, text: canonicalJson({ path: value.path, ...old, ...next }) }];
   });
-  entries.sort((a, b) => byCodeUnit7(a.path, b.path) || byCodeUnit7(a.text, b.text));
-  return `[${entries.map((entry2) => entry2.text).join(",")}]`;
+  entries.sort((a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.text, b.text));
+  return `[${entries.map((entry) => entry.text).join(",")}]`;
 }
 function first16(text7) {
   return createHash2("sha256").update(text7, "utf8").digest("hex").slice(0, 16);
@@ -57219,7 +56597,7 @@ function differingLeaves(before, after, options = {}) {
   return found;
 }
 function valueFingerprint(diff) {
-  const list = (changes2) => (changes2 ?? []).flatMap((change) => change.fingerprint === undefined ? [] : [{ address: change.address, fingerprint: change.fingerprint }]).sort((a, b) => byCodeUnit7(a.address, b.address) || byCodeUnit7(a.fingerprint, b.fingerprint)).map((entry2) => canonicalJson(entry2));
+  const list = (changes2) => (changes2 ?? []).flatMap((change) => change.fingerprint === undefined ? [] : [{ address: change.address, fingerprint: change.fingerprint }]).sort((a, b) => byCodeUnit(a.address, b.address) || byCodeUnit(a.fingerprint, b.fingerprint)).map((entry) => canonicalJson(entry));
   const changes = list(diff.changes);
   const drift = list(diff.drift);
   if (changes.length === 0 && drift.length === 0)
@@ -57231,7 +56609,7 @@ function differsEveryRun(approved, fresh, sameCommit) {
   return sameCommit && approved.hash === fresh.hash && approved.fingerprint !== undefined && fresh.fingerprint !== undefined && approved.fingerprint !== fresh.fingerprint;
 }
 
-// src/adapters/opentofu/paths.ts
+// src/adapters/paths.ts
 function changedPaths(sides, showValues) {
   const paths2 = [];
   const values2 = [];
@@ -57263,11 +56641,11 @@ function changedPaths(sides, showValues) {
       changed(path);
       return;
     }
-    if (isObject3(before) && isObject3(after)) {
+    if (isRecord(before) && isRecord(after)) {
       const keys = new Set([
         ...Object.keys(before),
         ...Object.keys(after),
-        ...isObject3(unknown2) ? Object.keys(unknown2) : []
+        ...isRecord(unknown2) ? Object.keys(unknown2) : []
       ]);
       for (const key of keys) {
         walk4(before[key], after[key], child(unknown2, key), child(beforeSensitive, key), child(afterSensitive, key), path + segment2(key, path === ""));
@@ -57294,7 +56672,7 @@ function maskSensitive(value, sensitive) {
   if (Array.isArray(value)) {
     return value.map((item, index) => maskSensitive(item, child(sensitive, index)));
   }
-  if (isObject3(value)) {
+  if (isRecord(value)) {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskSensitive(item, child(sensitive, key))]));
   }
   return value;
@@ -57324,7 +56702,7 @@ function segment2(key, top) {
 function child(node2, key) {
   if (typeof key === "number")
     return Array.isArray(node2) ? node2[key] : undefined;
-  return isObject3(node2) ? node2[key] : undefined;
+  return isRecord(node2) ? node2[key] : undefined;
 }
 function arrayLength(node2) {
   return Array.isArray(node2) ? node2.length : 0;
@@ -57334,12 +56712,9 @@ function holdsUnknown(node2) {
     return true;
   if (Array.isArray(node2))
     return node2.some(holdsUnknown);
-  if (isObject3(node2))
+  if (isRecord(node2))
     return Object.values(node2).some(holdsUnknown);
   return false;
-}
-function isObject3(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
 }
 function equal(a, b) {
   if (a === undefined || a === null)
@@ -57347,8 +56722,8 @@ function equal(a, b) {
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((item, index) => equal(item, b[index]));
   }
-  if (isObject3(a)) {
-    if (!isObject3(b))
+  if (isRecord(a)) {
+    if (!isRecord(b))
       return false;
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
     return [...keys].every((key) => equal(a[key], b[key]));
@@ -57366,6 +56741,11 @@ function shown(value) {
     return "refused";
   return shortValue(value);
 }
+function place(path) {
+  if (path.length === 0)
+    return "the top";
+  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
+}
 
 // src/adapters/helm/fold.ts
 var OPS = {
@@ -57378,27 +56758,27 @@ function foldEntries(entries, namespace, showValues, fingerprint = false) {
   const unknown2 = [];
   const unreadable = [];
   const firstAt = new Map;
-  entries.forEach((entry2, index) => {
+  entries.forEach((entry, index) => {
     const at = `The tool's output, at [${index}]`;
-    const op = Object.hasOwn(OPS, entry2.changeType) ? OPS[entry2.changeType] : undefined;
+    const op = Object.hasOwn(OPS, entry.changeType) ? OPS[entry.changeType] : undefined;
     if (op === undefined) {
       unknown2.push(`${at}.changeType: expected ADD, MODIFY or REMOVE.`);
       return;
     }
-    if (entry2.changesSuppressed === true) {
+    if (entry.changesSuppressed === true) {
       unreadable.push(`${at}.changesSuppressed: expected every change to be shown.`);
       return;
     }
-    const type = typeOf(entry2);
-    const where2 = entry2.namespace ?? "";
-    const address = addressOf(entry2);
+    const type = typeOf(entry);
+    const where2 = entry.namespace ?? "";
+    const address = addressOf(entry);
     const earlier = firstAt.get(address);
     if (earlier !== undefined) {
       unreadable.push(`${at}: expected an object that no earlier entry has, and [${earlier}] has it.`);
       return;
     }
     firstAt.set(address, index);
-    const found = op === "update" ? keys(entry2, showValues, fingerprint) : { changedKeys: [] };
+    const found = op === "update" ? keys(entry, showValues, fingerprint) : { changedKeys: [] };
     if (found === undefined) {
       unreadable.push(`${at}.changes: expected the paths that change on a MODIFY.`);
       return;
@@ -57406,7 +56786,7 @@ function foldEntries(entries, namespace, showValues, fingerprint = false) {
     changes.push({
       address,
       type,
-      name: where2 === "" || where2 === namespace ? entry2.name : `${where2}/${entry2.name}`,
+      name: where2 === "" || where2 === namespace ? entry.name : `${where2}/${entry.name}`,
       op,
       replaceKeys: [],
       ...found
@@ -57416,21 +56796,21 @@ function foldEntries(entries, namespace, showValues, fingerprint = false) {
     return { ok: false, reason: "unreadable-output", detail: unreadable };
   if (unknown2.length > 0)
     return { ok: false, reason: "unknown-step", detail: unknown2 };
-  changes.sort((a, b) => byCodeUnit8(a.address, b.address));
+  changes.sort((a, b) => byCodeUnit(a.address, b.address));
   return { ok: true, changes };
 }
-function addressOf(entry2) {
-  return `${typeOf(entry2)}/${entry2.namespace ?? ""}/${entry2.name}`;
+function addressOf(entry) {
+  return `${typeOf(entry)}/${entry.namespace ?? ""}/${entry.name}`;
 }
-function typeOf(entry2) {
-  const slash = entry2.apiVersion.lastIndexOf("/");
-  return slash < 0 ? entry2.kind : `${entry2.kind}.${entry2.apiVersion.slice(0, slash)}`;
+function typeOf(entry) {
+  const slash = entry.apiVersion.lastIndexOf("/");
+  return slash < 0 ? entry.kind : `${entry.kind}.${entry.apiVersion.slice(0, slash)}`;
 }
-function keys(entry2, showValues, fingerprint) {
-  const found = entry2.changes ?? [];
+function keys(entry, showValues, fingerprint) {
+  const found = entry.changes ?? [];
   if (found.length === 0)
     return;
-  const secret = entry2.kind === "Secret" && !entry2.apiVersion.includes("/");
+  const secret = entry.kind === "Secret" && !entry.apiVersion.includes("/");
   const values2 = [];
   const paths2 = found.map((change) => {
     const path = propertyPath(change);
@@ -57441,8 +56821,8 @@ function keys(entry2, showValues, fingerprint) {
     }
     return path;
   });
-  const changedKeys = [...new Set(paths2.filter((path) => path !== ""))].sort(byCodeUnit8);
-  const shown2 = values2.filter((value, index) => values2.findIndex((one) => one.path === value.path) === index).sort((a, b) => byCodeUnit8(a.path, b.path));
+  const changedKeys = [...new Set(paths2.filter((path) => path !== ""))].sort(byCodeUnit);
+  const shown2 = values2.filter((value, index) => values2.findIndex((one) => one.path === value.path) === index).sort((a, b) => byCodeUnit(a.path, b.path));
   const shownPaths = new Set(shown2.map((value) => value.path));
   const hidden = found.flatMap((change) => {
     const path = propertyPath(change);
@@ -57496,89 +56876,21 @@ function shown2(value) {
     return "refused";
   return shortValue(value);
 }
-function byCodeUnit8(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// src/adapters/opentofu/schema.ts
-var formatVersion = exports_external.string().regex(/^1\.\d+$/);
-var change = exports_external.object({
-  actions: exports_external.array(exports_external.string()),
-  before: exports_external.unknown().optional(),
-  after: exports_external.unknown().optional(),
-  after_unknown: exports_external.unknown().optional(),
-  before_sensitive: exports_external.unknown().optional(),
-  after_sensitive: exports_external.unknown().optional(),
-  replace_paths: exports_external.array(exports_external.array(exports_external.union([exports_external.string(), exports_external.number()]))).optional(),
-  importing: exports_external.unknown().optional().transform((importing) => importing != null)
-});
-var resourceChange = exports_external.object({
-  address: exports_external.string().min(1),
-  previous_address: exports_external.string().min(1).optional(),
-  module_address: exports_external.string().min(1).optional(),
-  mode: exports_external.string(),
-  type: exports_external.string().min(1),
-  name: exports_external.string().min(1),
-  deposed: exports_external.string().min(1).optional(),
-  change
-});
-var planDocument = exports_external.object({
-  format_version: formatVersion,
-  errored: exports_external.literal(false).optional(),
-  complete: exports_external.literal(true).optional(),
-  resource_changes: exports_external.array(resourceChange).default([])
-});
-function parsePlan(stdout) {
-  let json2;
-  try {
-    json2 = JSON.parse(stdout);
-  } catch {
-    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
-  }
-  const parsed = planDocument.safeParse(json2);
-  if (!parsed.success)
-    return { ok: false, problems: parsed.error.issues.map(problem) };
-  return { ok: true, changes: parsed.data.resource_changes };
-}
-var EXPECTED2 = {
-  string: "text",
-  array: "a list",
-  object: "an object",
-  boolean: "true or false"
-};
-function problem(issue3) {
-  const at = place(issue3.path);
-  if (at === "format_version") {
-    return `The tool's output, at format_version: expected a plan format version 1.x, which Sluiceway reads.`;
-  }
-  if (at === "errored")
-    return "The tool's output, at errored: expected a plan that did not fail.";
-  if (at === "complete") {
-    return "The tool's output, at complete: expected a plan that holds every change, not one with changes left for later.";
-  }
-  const expected = issue3.code === "invalid_type" ? EXPECTED2[issue3.expected] : undefined;
-  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
-}
-function place(path) {
-  if (path.length === 0)
-    return "the top";
-  return path.map((part, index) => typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`).join("");
-}
 
 // src/adapters/helm/schema.ts
-var change2 = exports_external.object({
+var change = exports_external.object({
   path: exports_external.string().optional(),
   field: exports_external.string(),
   oldValue: exports_external.unknown().optional(),
   newValue: exports_external.unknown().optional()
 });
-var entry2 = exports_external.object({
+var entry = exports_external.object({
   apiVersion: exports_external.string().min(1),
   kind: exports_external.string().min(1),
   namespace: exports_external.string().optional(),
   name: exports_external.string().min(1),
   changeType: exports_external.string(),
-  changes: exports_external.array(change2).optional(),
+  changes: exports_external.array(change).optional(),
   changesSuppressed: exports_external.boolean().optional()
 });
 function parseEntries(stdout) {
@@ -57588,20 +56900,20 @@ function parseEntries(stdout) {
   } catch {
     return { ok: false, problems: ["The tool's output: expected one JSON document."] };
   }
-  const parsed = exports_external.array(entry2).safeParse(json2);
+  const parsed = exports_external.array(entry).safeParse(json2);
   if (!parsed.success)
-    return { ok: false, problems: parsed.error.issues.map(problem2) };
+    return { ok: false, problems: parsed.error.issues.map(problem) };
   return { ok: true, entries: parsed.data };
 }
-var EXPECTED3 = {
+var EXPECTED2 = {
   string: "text",
   array: "a list",
   object: "an object",
   boolean: "true or false"
 };
-function problem2(issue3) {
+function problem(issue3) {
   const at = place(issue3.path);
-  const expected = issue3.code === "invalid_type" ? EXPECTED3[issue3.expected] : issue3.code === "too_small" ? "text" : undefined;
+  const expected = issue3.code === "invalid_type" ? EXPECTED2[issue3.expected] : issue3.code === "too_small" ? "text" : undefined;
   return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
 }
 
@@ -57618,11 +56930,11 @@ async function detectDrift(stack, options) {
   const outputs = [];
   let words = "";
   for (const argv of [diffCommand(helm), threeWayDiffCommand(helm)]) {
-    const result2 = await run(argv);
-    words += stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return failed(result2.reason, words);
-    outputs.push(result2.stdout);
+    const result = await run(argv);
+    words += stripAnsi(result.stderr);
+    if (!result.ok)
+      return failed(result.reason, words);
+    outputs.push(result.stdout);
   }
   const [plain, threeWay] = outputs.map(parseEntries);
   for (const parsed of [plain, threeWay]) {
@@ -57638,30 +56950,30 @@ async function detectDrift(stack, options) {
   return { ok: true, drift: found.changes, toolLog: words };
 }
 function driftOf(plain, threeWay, namespace) {
-  const code2 = foldEntries(plain, namespace, []);
-  if (!code2.ok)
-    return code2;
+  const code = foldEntries(plain, namespace, []);
+  if (!code.ok)
+    return code;
   const live = foldEntries(threeWay, namespace, []);
   if (!live.ok)
     return live;
-  const byAddress = new Map(code2.changes.map((change3) => [change3.address, change3]));
-  const at = new Map(threeWay.map((entry3, index) => [addressOf(entry3), index]));
+  const byAddress = new Map(code.changes.map((change2) => [change2.address, change2]));
+  const at = new Map(threeWay.map((entry2, index) => [addressOf(entry2), index]));
   const drift = [];
   const unreadable = [];
-  for (const change3 of live.changes) {
-    const known = byAddress.get(change3.address);
-    if (change3.op === "delete") {
+  for (const change2 of live.changes) {
+    const known = byAddress.get(change2.address);
+    if (change2.op === "delete") {
       if (known?.op !== "delete") {
-        unreadable.push(`The tool's output of the three-way diff, at [${at.get(change3.address)}].changeType: expected a removal the plain diff has too.`);
+        unreadable.push(`The tool's output of the three-way diff, at [${at.get(change2.address)}].changeType: expected a removal the plain diff has too.`);
       }
-    } else if (change3.op === "create") {
+    } else if (change2.op === "create") {
       if (known?.op !== "create")
-        drift.push({ ...change3, op: "delete", changedKeys: [] });
+        drift.push({ ...change2, op: "delete", changedKeys: [] });
     } else {
-      const code3 = new Set(known?.changedKeys ?? []);
-      const changedKeys = change3.changedKeys.filter((path) => !code3.has(path));
+      const code2 = new Set(known?.changedKeys ?? []);
+      const changedKeys = change2.changedKeys.filter((path) => !code2.has(path));
       if (changedKeys.length > 0)
-        drift.push({ ...change3, changedKeys });
+        drift.push({ ...change2, changedKeys });
     }
   }
   if (unreadable.length > 0)
@@ -57684,14 +56996,14 @@ function prepare(stacks) {
     title: chartDir,
     stacks: grouped,
     run: async (context3) => {
-      const result2 = await runTool(context3.run, {
+      const result = await runTool(context3.run, {
         argv: dependencyCommand(),
         cwd: join15(context3.root, chartDir),
         env: helmEnvironment(context3.env),
         timeoutMinutes: context3.timeoutMinutes
       });
-      const toolLog = stripAnsi(result2.stdout + result2.stderr);
-      return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+      const toolLog = stripAnsi(result.stdout + result.stderr);
+      return result.ok ? { ok: true, toolLog } : { ok: false, reason: result.reason, toolLog };
     }
   }));
 }
@@ -57736,16 +57048,16 @@ async function preview(stack, options) {
 // src/adapters/helm/tool-diff.ts
 import { join as join17 } from "node:path";
 async function toolDiff(stack, options) {
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: toolDiffCommand(optionsOf(stack)),
     cwd: join17(options.root, stack.path),
     env: helmEnvironment(options.env),
     timeoutMinutes: options.timeoutMinutes
   });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  if (!result.ok) {
+    return { ok: false, reason: result.reason, toolLog: stripAnsi(result.stdout + result.stderr) };
   }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+  return { ok: true, text: stripAnsi(result.stdout), toolLog: stripAnsi(result.stderr) };
 }
 
 // src/adapters/helm/index.ts
@@ -57866,7 +57178,7 @@ function objectsOf(text7) {
     if ("errors" in document && document.errors.length > 0)
       continue;
     const node2 = document.toJS();
-    const items2 = isObject4(node2) && node2.kind === "List" && Array.isArray(node2.items);
+    const items2 = isRecord(node2) && node2.kind === "List" && Array.isArray(node2.items);
     for (const item of items2 ? node2.items : [node2]) {
       const object2 = listed3(item);
       if (object2 !== undefined && !objects2.some((known) => sameObject(known, object2))) {
@@ -57877,7 +57189,7 @@ function objectsOf(text7) {
   return objects2;
 }
 function listed3(node2) {
-  if (!isObject4(node2) || !isObject4(node2.metadata))
+  if (!isRecord(node2) || !isRecord(node2.metadata))
     return;
   const { apiVersion, kind } = node2;
   const { name, namespace } = node2.metadata;
@@ -57893,7 +57205,7 @@ function listed3(node2) {
   };
 }
 function inventoryManifest(name, stackId2, objects2) {
-  const lines = [...new Set(objects2.map((object2) => JSON.stringify(listedLine(object2))))].sort(byCodeUnit9);
+  const lines = [...new Set(objects2.map((object2) => JSON.stringify(listedLine(object2))))].sort(byCodeUnit);
   return [
     "apiVersion: v1",
     "kind: ConfigMap",
@@ -57919,7 +57231,7 @@ function readInventory(stdout) {
   } catch {
     return { ok: false, problems: [`${at}: expected the ConfigMap as JSON.`] };
   }
-  const data = isObject4(printed) && isObject4(printed.data) ? printed.data : undefined;
+  const data = isRecord(printed) && isRecord(printed.data) ? printed.data : undefined;
   const text7 = typeof data?.objects === "string" ? data.objects : undefined;
   if (text7 === undefined)
     return { ok: false, problems: [`${at}: expected a list of objects.`] };
@@ -57945,7 +57257,7 @@ function readInventory(stdout) {
   return { ok: true, objects: objects2 };
 }
 function listedLine(node2) {
-  if (!isObject4(node2))
+  if (!isRecord(node2))
     return;
   const { apiVersion, kind, namespace, name } = node2;
   if (typeof apiVersion !== "string" || typeof kind !== "string")
@@ -57986,7 +57298,7 @@ function readLive(stdout) {
   } catch {
     printed = undefined;
   }
-  if (!isObject4(printed)) {
+  if (!isRecord(printed)) {
     return {
       ok: false,
       problems: ["The live objects: expected one object or a List, as JSON."]
@@ -57995,22 +57307,16 @@ function readLive(stdout) {
   if (printed.kind !== "List")
     return { ok: true, objects: [printed] };
   const items2 = Array.isArray(printed.items) ? printed.items : [];
-  return { ok: true, objects: items2.filter(isObject4) };
+  return { ok: true, objects: items2.filter(isRecord) };
 }
 function appliedBy(object2, manager) {
-  const metadata = isObject4(object2.metadata) ? object2.metadata : {};
+  const metadata = isRecord(object2.metadata) ? object2.metadata : {};
   const entries = Array.isArray(metadata.managedFields) ? metadata.managedFields : [];
-  return entries.some((entry3) => isObject4(entry3) && entry3.manager === manager && entry3.operation === "Apply");
+  return entries.some((entry2) => isRecord(entry2) && entry2.manager === manager && entry2.operation === "Apply");
 }
 function groupOf(apiVersion) {
   const slash = apiVersion.indexOf("/");
   return slash < 0 ? "" : apiVersion.slice(0, slash);
-}
-function isObject4(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-function byCodeUnit9(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 function withInventory(text7, name, stackId2, pruned) {
   const manifests = text7 === "" || text7.endsWith(`
@@ -58024,7 +57330,7 @@ ${inventoryManifest(name, stackId2, [...objectsOf(text7), ...pruned])}`;
 function ownedPaths(object2, fields) {
   const paths2 = [];
   const walk4 = (node2, set2, path) => {
-    if (!isObject5(set2))
+    if (!isRecord(set2))
       return;
     for (const [key, below] of Object.entries(set2)) {
       if (key === ".") {
@@ -58035,7 +57341,7 @@ function ownedPaths(object2, fields) {
       const step = stepOf(node2, key, path);
       if (step === undefined)
         continue;
-      if (isObject5(below) && Object.keys(below).length === 0)
+      if (isRecord(below) && Object.keys(below).length === 0)
         paths2.push(step.path);
       else
         walk4(step.node, below, step.path);
@@ -58050,7 +57356,7 @@ function stepOf(node2, key, path) {
   const rest = key.slice(colon + 1);
   if (kind === "f") {
     return {
-      node: isObject5(node2) ? node2[rest] : undefined,
+      node: isRecord(node2) ? node2[rest] : undefined,
       path: path + segment2(rest, path === "")
     };
   }
@@ -58066,8 +57372,8 @@ function stepOf(node2, key, path) {
     } catch {
       return;
     }
-    if (kind === "k" && isObject5(wanted)) {
-      index = node2.findIndex((item) => isObject5(item) && Object.entries(wanted).every(([name, value]) => same(item[name], value)));
+    if (kind === "k" && isRecord(wanted)) {
+      index = node2.findIndex((item) => isRecord(item) && Object.entries(wanted).every(([name, value]) => same(item[name], value)));
     } else if (kind === "v") {
       index = node2.findIndex((item) => same(item, wanted));
     }
@@ -58077,13 +57383,13 @@ function stepOf(node2, key, path) {
   return { node: node2[index], path: `${path}[${index}]` };
 }
 function heldByOthers(object2, paths2, manager) {
-  const metadata = isObject5(object2.metadata) ? object2.metadata : {};
-  const entries = (Array.isArray(metadata.managedFields) ? metadata.managedFields : []).filter(isObject5);
+  const metadata = isRecord(object2.metadata) ? object2.metadata : {};
+  const entries = (Array.isArray(metadata.managedFields) ? metadata.managedFields : []).filter(isRecord);
   const ours = [];
   const others = [];
-  for (const entry3 of entries) {
-    const held = ownedPaths(object2, entry3.fieldsV1);
-    if (entry3.manager === manager && entry3.operation === "Apply")
+  for (const entry2 of entries) {
+    const held = ownedPaths(object2, entry2.fieldsV1);
+    if (entry2.manager === manager && entry2.operation === "Apply")
       ours.push(...held);
     else
       others.push(...held);
@@ -58100,9 +57406,6 @@ function within(path, held) {
 }
 function same(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
-}
-function isObject5(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
 }
 
 // src/adapters/kubectl/fold.ts
@@ -58164,10 +57467,10 @@ function foldObjects2(pairs, showValues, inventory, fingerprint = false) {
       beforeSensitive: sensitive,
       afterSensitive: sensitive
     }, showValues);
-    const changedKeys = [...new Set(paths2)].sort(byCodeUnit10);
+    const changedKeys = [...new Set(paths2)].sort(byCodeUnit);
     if (changedKeys.length === 0)
       return;
-    const shown3 = values2.sort((a, b) => byCodeUnit10(a.path, b.path));
+    const shown3 = values2.sort((a, b) => byCodeUnit(a.path, b.path));
     const hidden = fingerprint ? hiddenFingerprint({
       before: withoutServerFields(live),
       after: withoutServerFields(merged),
@@ -58184,7 +57487,7 @@ function foldObjects2(pairs, showValues, inventory, fingerprint = false) {
   });
   if (problems.length > 0)
     return { ok: false, reason: "unreadable-output", detail: problems };
-  changes.sort((a, b) => byCodeUnit10(a.address, b.address));
+  changes.sort((a, b) => byCodeUnit(a.address, b.address));
   return { ok: true, changes };
 }
 function yamlObject(text7) {
@@ -58194,7 +57497,7 @@ function yamlObject(text7) {
     const parsed = $parse(text7);
     if (parsed === null)
       return;
-    return isObject6(parsed) ? parsed : "unreadable";
+    return isRecord(parsed) ? parsed : "unreadable";
   } catch {
     return "unreadable";
   }
@@ -58205,7 +57508,7 @@ function identityOf(object2) {
   const { apiVersion, kind, metadata } = object2;
   if (typeof apiVersion !== "string" || typeof kind !== "string" || kind === "")
     return;
-  if (!isObject6(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
+  if (!isRecord(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
     return;
   }
   const slash = apiVersion.indexOf("/");
@@ -58260,21 +57563,15 @@ function foldDrift(pairs, context3) {
   });
   if (problems.length > 0)
     return { ok: false, reason: "unreadable-output", detail: problems };
-  drift.sort((a, b) => byCodeUnit10(a.address, b.address));
+  drift.sort((a, b) => byCodeUnit(a.address, b.address));
   return { ok: true, changes: drift };
 }
 function withoutServerFields(object2) {
   const { status: _status, metadata, ...rest } = object2;
-  if (!isObject6(metadata))
+  if (!isRecord(metadata))
     return rest;
   const kept = Object.fromEntries(Object.entries(metadata).filter(([key]) => !SERVER_FIELDS.includes(key)));
   return { ...rest, metadata: kept };
-}
-function isObject6(node2) {
-  return typeof node2 === "object" && node2 !== null && !Array.isArray(node2);
-}
-function byCodeUnit10(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/kubectl/rendered-set.ts
@@ -58336,16 +57633,16 @@ async function renderSet(stack, context3) {
   if (sourceOf(dir) === "manifests") {
     text7 = bundleManifests(dir, options.recursive === true);
   } else {
-    const result2 = await runTool(context3.run, {
+    const result = await runTool(context3.run, {
       argv: kustomizeCommand(),
       cwd: dir,
       env: kubectlEnvironment(context3.env),
       timeoutMinutes: context3.timeoutMinutes
     });
-    toolLog = stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, detail: [], toolLog };
-    text7 = result2.stdout;
+    toolLog = stripAnsi(result.stderr);
+    if (!result.ok)
+      return { ok: false, reason: result.reason, detail: [], toolLog };
+    text7 = result.stdout;
   }
   if (options.prune !== true) {
     return { ok: true, set: await RenderedSet.create(stackId(stack), text7), toolLog };
@@ -58424,14 +57721,14 @@ async function apply2(stack, context3, plan) {
   if (!await plan.intact()) {
     throw new Error(`The rendered set of ${stackId(stack)} changed after its preview. Nothing was deployed.`);
   }
-  const result2 = await runDeploy(context3.run, {
+  const result = await runDeploy(context3.run, {
     argv: applyCommand(plan.path, optionsOf2(stack)),
     cwd: join19(context3.root, stack.path),
     env: kubectlEnvironment(context3.env)
   });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  if (!result2.ok)
-    return { ok: false, reason: result2.reason, toolLog };
+  const toolLog = stripAnsi(result.stdout + result.stderr);
+  if (!result.ok)
+    return { ok: false, reason: result.reason, toolLog };
   if (plan.prunePath === undefined)
     return { ok: true, toolLog };
   const deleted = await runDeploy(context3.run, {
@@ -58454,7 +57751,7 @@ function readDiff(stdout) {
   if (lines.at(-1) === "")
     lines.pop();
   const pairs = [];
-  const problem3 = (at, expected) => ({
+  const problem2 = (at, expected) => ({
     ok: false,
     problems: [`The tool's output, at line ${at + 1}: expected ${expected}.`]
   });
@@ -58466,18 +57763,18 @@ function readDiff(stdout) {
       continue;
     }
     if (!line.startsWith("--- "))
-      return problem3(index, "the start of a file");
+      return problem2(index, "the start of a file");
     if (!(lines[index + 1] ?? "").startsWith("+++ "))
-      return problem3(index + 1, "a +++ line");
+      return problem2(index + 1, "a +++ line");
     const header = HUNK.exec(lines[index + 2] ?? "");
     if (header === null)
-      return problem3(index + 2, "a hunk");
+      return problem2(index + 2, "a hunk");
     const liveStart = Number(header[1]);
     const liveCount = header[2] === undefined ? 1 : Number(header[2]);
     const mergedStart = Number(header[3]);
     const mergedCount = header[4] === undefined ? 1 : Number(header[4]);
     if (liveStart !== (liveCount === 0 ? 0 : 1) || mergedStart !== (mergedCount === 0 ? 0 : 1)) {
-      return problem3(index + 2, "a hunk that holds the whole object");
+      return problem2(index + 2, "a hunk that holds the whole object");
     }
     index += 3;
     const live = [];
@@ -58486,7 +57783,7 @@ function readDiff(stdout) {
     let mergedLeft = mergedCount;
     while (liveLeft > 0 || mergedLeft > 0) {
       if (index >= lines.length)
-        return problem3(index, "more lines of the hunk");
+        return problem2(index, "more lines of the hunk");
       const hunkLine = lines[index] ?? "";
       const text7 = hunkLine.slice(1);
       if (hunkLine.startsWith(" ") && liveLeft > 0 && mergedLeft > 0) {
@@ -58501,14 +57798,14 @@ function readDiff(stdout) {
         merged.push(text7);
         mergedLeft--;
       } else if (!hunkLine.startsWith("\\")) {
-        return problem3(index, "a line of the hunk");
+        return problem2(index, "a line of the hunk");
       }
       index++;
     }
     while ((lines[index] ?? "").startsWith("\\"))
       index++;
     if (HUNK.test(lines[index] ?? ""))
-      return problem3(index, "one hunk per object");
+      return problem2(index, "one hunk per object");
     pairs.push({ live: joined(live), merged: joined(merged) });
   }
   return { ok: true, pairs };
@@ -58528,17 +57825,17 @@ async function detectDrift2(stack, options) {
   if (!rendered.ok)
     return rendered;
   try {
-    const result2 = await runTool(options.run, {
+    const result = await runTool(options.run, {
       argv: diffCommand2(rendered.set.path, stackOptions, { managedFields: true }),
       cwd: join20(options.root, stack.path),
       env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
       timeoutMinutes: options.timeoutMinutes,
       exitCodes: DIFF_EXIT_CODES
     });
-    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, detail: [], toolLog };
-    const read5 = readDiff(result2.stdout);
+    const toolLog = rendered.toolLog + stripAnsi(result.stderr);
+    if (!result.ok)
+      return { ok: false, reason: result.reason, detail: [], toolLog };
+    const read5 = readDiff(result.stdout);
     if (!read5.ok) {
       return { ok: false, reason: { kind: "unreadable-output" }, detail: read5.problems, toolLog };
     }
@@ -58571,12 +57868,12 @@ async function preview2(stack, options) {
   }
   let kept = false;
   try {
-    const result2 = await diff(stack, options, rendered);
-    if (result2.ok && options.savePlan) {
+    const result = await diff(stack, options, rendered);
+    if (result.ok && options.savePlan) {
       kept = true;
-      return { ...result2, plan: rendered.set };
+      return { ...result, plan: rendered.set };
     }
-    return result2;
+    return result;
   } finally {
     if (!kept)
       await rendered.set.dispose();
@@ -58584,20 +57881,20 @@ async function preview2(stack, options) {
 }
 async function diff(stack, options, { set: set2, toolLog: renderLog, pruning }) {
   const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: diffCommand2(set2.path, optionsOf2(stack)),
     cwd: join21(options.root, stack.path),
     env: kubectlEnvironment(options.env, { KUBECTL_EXTERNAL_DIFF: PREVIEW_DIFF }),
     timeoutMinutes: options.timeoutMinutes,
     exitCodes: DIFF_EXIT_CODES
   });
-  const log = renderLog + stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return failed(result2.reason, log);
-  const read5 = readDiff(result2.stdout);
+  const log = renderLog + stripAnsi(result.stderr);
+  if (!result.ok)
+    return failed(result.reason, log);
+  const read5 = readDiff(result.stdout);
   if (!read5.ok)
     return failed({ kind: "unreadable-output" }, log, read5.problems);
-  if (result2.exitCode === 1 && read5.pairs.length === 0) {
+  if (result.exitCode === 1 && read5.pairs.length === 0) {
     return failed({ kind: "unreadable-output" }, log, [
       "The tool's output: expected the objects that differ, as the exit code says there are."
     ]);
@@ -58617,17 +57914,17 @@ async function toolDiff2(stack, options) {
   if (!rendered.ok)
     return { ok: false, reason: rendered.reason, toolLog: rendered.toolLog };
   try {
-    const result2 = await runTool(options.run, {
+    const result = await runTool(options.run, {
       argv: diffCommand2(rendered.set.path, optionsOf2(stack)),
       cwd: join22(options.root, stack.path),
       env: kubectlEnvironment(options.env),
       timeoutMinutes: options.timeoutMinutes,
       exitCodes: DIFF_EXIT_CODES
     });
-    const toolLog = rendered.toolLog + stripAnsi(result2.stderr);
-    if (!result2.ok)
-      return { ok: false, reason: result2.reason, toolLog };
-    return { ok: true, text: stripAnsi(result2.stdout), toolLog };
+    const toolLog = rendered.toolLog + stripAnsi(result.stderr);
+    if (!result.ok)
+      return { ok: false, reason: result.reason, toolLog };
+    return { ok: true, text: stripAnsi(result.stdout), toolLog };
   } finally {
     await rendered.set.dispose();
   }
@@ -58638,19 +57935,19 @@ var MINIMUM_VERSION2 = [1, 34, 0];
 var NEEDS2 = `Sluiceway needs kubectl v${MINIMUM_VERSION2.join(".")} or newer`;
 var TIME_LIMIT_MS2 = 60000;
 async function checkVersion2(context3, _stacks) {
-  const result2 = await context3.run({
+  const result = await context3.run({
     argv: versionCommand2(),
     cwd: context3.root,
     env: kubectlEnvironment(context3.env),
     timeoutMs: TIME_LIMIT_MS2
   });
-  if (result2.status === "not-started") {
+  if (result.status === "not-started") {
     throw new ToolVersionError(`Could not start kubectl. ${NEEDS2} on PATH and does not install it. Add a workflow step that installs kubectl before the step that runs Sluiceway.`);
   }
-  const version2 = result2.status === "exited" && result2.exitCode === 0 ? readVersion2(result2.stdout) : undefined;
+  const version2 = result.status === "exited" && result.exitCode === 0 ? readVersion2(result.stdout) : undefined;
   const found = version2 === undefined ? null : /^v(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
   if (found === null || version2 === undefined) {
-    throw new ToolVersionError(`"${versionCommand2().join(" ")}" did not print a version Sluiceway can read. ${NEEDS2}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+    throw new ToolVersionError(`"${versionCommand2().join(" ")}" did not print a version Sluiceway can read. ${NEEDS2}. The job log holds what the tool printed.`, stripAnsi(result.stdout + result.stderr));
   }
   const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
   const older2 = MINIMUM_VERSION2.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
@@ -58828,13 +58125,13 @@ function unreadable() {
 }
 async function estimateCost(planJson, plan, options) {
   await writeFile4(plan.jsonPath, planJson);
-  const result2 = await options.run({
+  const result = await options.run({
     argv: costArgs(),
     cwd: plan.dir,
     env: infracostEnvironment(options.env),
     timeoutMs: options.timeoutMinutes * 60000
   });
-  if (result2.status === "not-started") {
+  if (result.status === "not-started") {
     return {
       ok: false,
       reason: { kind: "not-started" },
@@ -58844,8 +58141,8 @@ async function estimateCost(planJson, plan, options) {
       toolLog: ""
     };
   }
-  const toolLog = stripAnsi(result2.stderr);
-  if (result2.status === "timed-out") {
+  const toolLog = stripAnsi(result.stderr);
+  if (result.status === "timed-out") {
     return {
       ok: false,
       reason: { kind: "timed-out", minutes: options.timeoutMinutes },
@@ -58853,11 +58150,11 @@ async function estimateCost(planJson, plan, options) {
       toolLog
     };
   }
-  if (result2.exitCode !== 0) {
-    const reason = { kind: "exited", exitCode: result2.exitCode };
+  if (result.exitCode !== 0) {
+    const reason = { kind: "exited", exitCode: result.exitCode };
     return { ok: false, reason, detail: [], toolLog };
   }
-  return { ...readCostOutput(result2.stdout), toolLog };
+  return { ...readCostOutput(result.stdout), toolLog };
 }
 
 // src/adapters/opentofu/plan-file.ts
@@ -58930,20 +58227,20 @@ async function apply3(stack, context3, plan) {
   if (!(plan instanceof PlanFile) || plan.stackId !== stackId(stack)) {
     throw new Error("An OpenTofu stack deploys only the plan its fresh preview saved.");
   }
-  const result2 = await runDeploy(context3.run, {
+  const result = await runDeploy(context3.run, {
     argv: command(stack, applyArgs(plan.path)),
     cwd: workingDirectory(context3.root, stack),
     env: tofuEnvironment(context3.env, stack)
   });
-  const toolLog = stripAnsi(result2.stderr) + jsonLogWords(result2.stdout);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+  const toolLog = stripAnsi(result.stderr) + jsonLogWords(result.stdout);
+  return result.ok ? { ok: true, toolLog } : { ok: false, reason: result.reason, toolLog };
 }
 
 // src/adapters/opentofu/prepare.ts
 import { join as join25 } from "node:path";
 function prepare2(stacks) {
   const byPath = Map.groupBy(stacks, (stack) => stack.path);
-  return [...byPath].sort(([a], [b]) => byCodeUnit11(a, b)).map(([path, grouped]) => ({
+  return [...byPath].sort(([a], [b]) => byCodeUnit(a, b)).map(([path, grouped]) => ({
     title: path,
     stacks: grouped,
     run: async (context3) => {
@@ -58955,7 +58252,7 @@ function prepare2(stacks) {
       if (!synth.ok)
         return synth;
       let toolLog = synth.toolLog;
-      const named = [...grouped].sort((a, b) => byCodeUnit11(a.name ?? "", b.name ?? ""));
+      const named = [...grouped].sort((a, b) => byCodeUnit(a.name ?? "", b.name ?? ""));
       for (const stack of named) {
         const init = await step(context3, command(stack, initArgs()), workingDirectory(context3.root, stack));
         toolLog += init.toolLog;
@@ -58967,17 +58264,14 @@ function prepare2(stacks) {
   }));
 }
 async function step(context3, argv, cwd) {
-  const result2 = await runTool(context3.run, {
+  const result = await runTool(context3.run, {
     argv,
     cwd,
     env: tofuEnvironment(context3.env),
     timeoutMinutes: context3.timeoutMinutes
   });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
-}
-function byCodeUnit11(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+  const toolLog = stripAnsi(result.stdout + result.stderr);
+  return result.ok ? { ok: true, toolLog } : { ok: false, reason: result.reason, toolLog };
 }
 
 // src/adapters/opentofu/fold.ts
@@ -59044,7 +58338,7 @@ function foldChanges(found, showValues, fingerprint = false) {
     return { ok: false, reason: "unreadable-output", detail: unreadable2 };
   if (unknown2.length > 0)
     return { ok: false, reason: "unknown-step", detail: unknown2 };
-  changes.sort((a, b) => byCodeUnit12(a.address, b.address));
+  changes.sort((a, b) => byCodeUnit(a.address, b.address));
   return { ok: true, changes };
 }
 function withTracking(known, tracking) {
@@ -59062,12 +58356,12 @@ function displayName(resource) {
   return resource.deposed === undefined ? name : `${name} (deposed ${resource.deposed})`;
 }
 function keys2(resource, op, showValues, fingerprint) {
-  const { change: change3 } = resource;
+  const { change: change2 } = resource;
   const sides = {
-    before: change3.before,
-    after: change3.after,
-    beforeSensitive: change3.before_sensitive,
-    afterSensitive: change3.after_sensitive
+    before: change2.before,
+    after: change2.after,
+    beforeSensitive: change2.before_sensitive,
+    afterSensitive: change2.after_sensitive
   };
   if (op === "create" && fingerprint) {
     const created = hiddenFingerprint({ ...sides, before: undefined }, []);
@@ -59080,15 +58374,15 @@ function keys2(resource, op, showValues, fingerprint) {
   if (op !== "update" && op !== "replace")
     return { changedKeys: [], replaceKeys: [] };
   const { paths: paths2, values: values2 } = changedPaths({
-    before: change3.before,
-    after: change3.after,
-    afterUnknown: change3.after_unknown,
-    beforeSensitive: change3.before_sensitive,
-    afterSensitive: change3.after_sensitive
+    before: change2.before,
+    after: change2.after,
+    afterUnknown: change2.after_unknown,
+    beforeSensitive: change2.before_sensitive,
+    afterSensitive: change2.after_sensitive
   }, showValues);
-  const replaceKeys = op === "replace" ? sortedSet((change3.replace_paths ?? []).map((steps) => replacePath(steps, change3.before_sensitive, change3.after_sensitive))) : [];
+  const replaceKeys = op === "replace" ? sortedSet((change2.replace_paths ?? []).map((steps) => replacePath(steps, change2.before_sensitive, change2.after_sensitive))) : [];
   const changedKeys = sortedSet([...paths2, ...replaceKeys]);
-  const shown3 = values2.filter((value) => changedKeys.includes(value.path)).sort((a, b) => byCodeUnit12(a.path, b.path));
+  const shown3 = values2.filter((value) => changedKeys.includes(value.path)).sort((a, b) => byCodeUnit(a.path, b.path));
   const hidden = fingerprint ? hiddenFingerprint(sides, shown3.map((value) => value.path)) : undefined;
   return {
     changedKeys,
@@ -59098,10 +58392,67 @@ function keys2(resource, op, showValues, fingerprint) {
   };
 }
 function sortedSet(names) {
-  return [...new Set(names.filter((name) => name !== ""))].sort(byCodeUnit12);
+  return [...new Set(names.filter((name) => name !== ""))].sort(byCodeUnit);
 }
-function byCodeUnit12(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+
+// src/adapters/opentofu/schema.ts
+var formatVersion = exports_external.string().regex(/^1\.\d+$/);
+var change2 = exports_external.object({
+  actions: exports_external.array(exports_external.string()),
+  before: exports_external.unknown().optional(),
+  after: exports_external.unknown().optional(),
+  after_unknown: exports_external.unknown().optional(),
+  before_sensitive: exports_external.unknown().optional(),
+  after_sensitive: exports_external.unknown().optional(),
+  replace_paths: exports_external.array(exports_external.array(exports_external.union([exports_external.string(), exports_external.number()]))).optional(),
+  importing: exports_external.unknown().optional().transform((importing) => importing != null)
+});
+var resourceChange = exports_external.object({
+  address: exports_external.string().min(1),
+  previous_address: exports_external.string().min(1).optional(),
+  module_address: exports_external.string().min(1).optional(),
+  mode: exports_external.string(),
+  type: exports_external.string().min(1),
+  name: exports_external.string().min(1),
+  deposed: exports_external.string().min(1).optional(),
+  change: change2
+});
+var planDocument = exports_external.object({
+  format_version: formatVersion,
+  errored: exports_external.literal(false).optional(),
+  complete: exports_external.literal(true).optional(),
+  resource_changes: exports_external.array(resourceChange).default([])
+});
+function parsePlan(stdout) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return { ok: false, problems: ["The tool's output: expected one JSON document."] };
+  }
+  const parsed = planDocument.safeParse(json2);
+  if (!parsed.success)
+    return { ok: false, problems: parsed.error.issues.map(problem2) };
+  return { ok: true, changes: parsed.data.resource_changes };
+}
+var EXPECTED3 = {
+  string: "text",
+  array: "a list",
+  object: "an object",
+  boolean: "true or false"
+};
+function problem2(issue3) {
+  const at = place(issue3.path);
+  if (at === "format_version") {
+    return `The tool's output, at format_version: expected a plan format version 1.x, which Sluiceway reads.`;
+  }
+  if (at === "errored")
+    return "The tool's output, at errored: expected a plan that did not fail.";
+  if (at === "complete") {
+    return "The tool's output, at complete: expected a plan that holds every change, not one with changes left for later.";
+  }
+  const expected = issue3.code === "invalid_type" ? EXPECTED3[issue3.expected] : undefined;
+  return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
 }
 
 // src/adapters/opentofu/state-lock.ts
@@ -59131,12 +58482,12 @@ async function preview3(stack, options) {
   const plan = await PlanFile.create(stackId(stack));
   let kept = false;
   try {
-    const result2 = await planAndShow(stack, options, plan);
-    if (result2.ok && options.savePlan) {
+    const result = await planAndShow(stack, options, plan);
+    if (result.ok && options.savePlan) {
       kept = true;
-      return { ...result2, plan };
+      return { ...result, plan };
     }
-    return result2;
+    return result;
   } finally {
     if (!kept)
       await plan.dispose();
@@ -59179,16 +58530,16 @@ async function planAndShow(stack, options, plan) {
 
 // src/adapters/opentofu/tool-diff.ts
 async function toolDiff3(stack, options) {
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: command(stack, toolDiffArgs(optionsOf3(stack).varFiles)),
     cwd: workingDirectory(options.root, stack),
     env: tofuEnvironment(options.env, stack),
     timeoutMinutes: options.timeoutMinutes
   });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  if (!result.ok) {
+    return { ok: false, reason: result.reason, toolLog: stripAnsi(result.stdout + result.stderr) };
   }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+  return { ok: true, text: stripAnsi(result.stdout), toolLog: stripAnsi(result.stderr) };
 }
 
 // src/adapters/opentofu/version.ts
@@ -59239,19 +58590,19 @@ async function checkVersion3(context3, stacks) {
 async function checkOne(context3, check2) {
   const { name, floor } = check2;
   const needs = `Sluiceway needs ${name} v${floor.join(".")} or newer`;
-  const result2 = await context3.run({
+  const result = await context3.run({
     argv: check2.argv,
     cwd: context3.root,
     env: tofuEnvironment(context3.env),
     timeoutMs: TIME_LIMIT_MS3
   });
-  if (result2.status === "not-started") {
+  if (result.status === "not-started") {
     throw new ToolVersionError(`Could not start ${name}. ${needs} on PATH and does not install it. Add a workflow step that installs ${name} before the step that runs Sluiceway.`);
   }
-  const version2 = result2.status === "exited" && result2.exitCode === 0 ? check2.read(result2.stdout) : undefined;
+  const version2 = result.status === "exited" && result.exitCode === 0 ? check2.read(result.stdout) : undefined;
   const found = version2 === undefined ? null : /^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?$/.exec(version2);
   if (found === null || version2 === undefined) {
-    throw new ToolVersionError(`"${check2.argv.join(" ")}" did not print a version Sluiceway can read. ${needs}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+    throw new ToolVersionError(`"${check2.argv.join(" ")}" did not print a version Sluiceway can read. ${needs}. The job log holds what the tool printed.`, stripAnsi(result.stdout + result.stderr));
   }
   const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
   const older2 = floor.map((least, index) => (numbers[index] ?? 0) - least).find((difference) => difference !== 0);
@@ -59313,13 +58664,13 @@ function upCommand(name, repairDrift) {
 async function apply4(stack, context3, _plan, options = {}) {
   if (stack.name === undefined)
     throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runDeploy(context3.run, {
+  const result = await runDeploy(context3.run, {
     argv: upCommand(stack.name, options.repairDrift === true),
     cwd: join26(context3.root, stack.path),
     env: pulumiEnvironment(context3.env)
   });
-  const toolLog = stripAnsi(result2.stdout + result2.stderr);
-  return result2.ok ? { ok: true, toolLog } : { ok: false, reason: result2.reason, toolLog };
+  const toolLog = stripAnsi(result.stdout + result.stderr);
+  return result.ok ? { ok: true, toolLog } : { ok: false, reason: result.reason, toolLog };
 }
 
 // src/adapters/pulumi/backend.ts
@@ -59343,17 +58694,17 @@ async function findInBackend(stacks, context3) {
   return { answers, toolLog: logs.join("") };
 }
 async function listStacks(context3, path, timeoutMinutes, exitCodes) {
-  const result2 = await runTool(context3.run, {
+  const result = await runTool(context3.run, {
     argv: LIST,
     cwd: join27(context3.root, path),
     env: pulumiEnvironment(context3.env),
     timeoutMinutes,
     exitCodes
   });
-  const toolLog = stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return { ok: false, reason: result2.reason, toolLog };
-  const parsed = parseList(result2.stdout);
+  const toolLog = stripAnsi(result.stderr);
+  if (!result.ok)
+    return { ok: false, reason: result.reason, toolLog };
+  const parsed = parseList(result.stdout);
   if (parsed === undefined)
     return { ok: false, reason: { kind: "unreadable-output" }, toolLog };
   return { ok: true, names: new Set(parsed.map(({ name }) => name.split("/").at(-1))), toolLog };
@@ -59438,7 +58789,7 @@ function foldSteps(steps) {
     return { ok: false, reason: "unknown-step", detail: unknown2 };
   if (rootCreate !== undefined && changes.length === 0)
     changes.push(rootCreate);
-  changes.sort((a, b) => byCodeUnit13(a.address, b.address));
+  changes.sort((a, b) => byCodeUnit(a.address, b.address));
   return { ok: true, changes };
 }
 var ROOT_STACK_TYPE = "pulumi:pulumi:Stack";
@@ -59465,10 +58816,7 @@ function keys3(step2, op) {
   return { changedKeys, replaceKeys, ...values2.length === 0 ? {} : { values: values2 }, ...fingerprint };
 }
 function sortedSet2(names) {
-  return [...new Set(names)].sort(byCodeUnit13);
-}
-function byCodeUnit13(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+  return [...new Set(names)].sort(byCodeUnit);
 }
 
 // src/adapters/pulumi/drift.ts
@@ -59517,7 +58865,7 @@ function fingerprintOf(hidden) {
 async function detectDrift3(stack, options) {
   if (stack.name === undefined)
     throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: driftCommand(stack.name),
     cwd: join28(options.root, stack.path),
     env: { ...pulumiEnvironment(options.env), ...STREAM_EVENTS },
@@ -59525,13 +58873,13 @@ async function detectDrift3(stack, options) {
     exitCodes: PULUMI_EXIT_CODES
   });
   const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  if (!result2.ok && result2.reason.kind === "timed-out") {
-    return failed(result2.reason, stripAnsi(result2.stderr));
+  if (!result.ok && result.reason.kind === "timed-out") {
+    return failed(result.reason, stripAnsi(result.stderr));
   }
-  const read5 = readEvents(result2.stdout, options.valueFingerprint === true);
-  const words = stripAnsi([result2.stderr, ...typeof read5 === "string" ? [] : read5.diagnostics].join(""));
-  if (!result2.ok)
-    return failed(result2.reason, words);
+  const read5 = readEvents(result.stdout, options.valueFingerprint === true);
+  const words = stripAnsi([result.stderr, ...typeof read5 === "string" ? [] : read5.diagnostics].join(""));
+  if (!result.ok)
+    return failed(result.reason, words);
   if (typeof read5 === "string")
     return failed({ kind: "unreadable-output" }, words, [read5]);
   if (read5.unknown.length > 0)
@@ -59619,7 +58967,7 @@ function historyCommand(name, limit) {
     name
   ];
 }
-var entry3 = exports_external.object({
+var entry2 = exports_external.object({
   kind: exports_external.string(),
   result: exports_external.string(),
   endTime: exports_external.string(),
@@ -59637,7 +58985,7 @@ var RUN_ID = /^[1-9]\d*$/;
 async function deployHistory(stack, options) {
   if (stack.name === undefined)
     throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: historyCommand(stack.name, options.limit),
     cwd: join29(options.root, stack.path),
     env: pulumiEnvironment(options.env),
@@ -59645,10 +58993,10 @@ async function deployHistory(stack, options) {
     exitCodes: HISTORY_EXIT_CODES
   });
   const failed = (reason, toolLog, detail = []) => ({ ok: false, reason, detail, toolLog });
-  const words = stripAnsi(result2.stderr);
-  if (!result2.ok)
-    return failed(result2.reason, words);
-  const read5 = readHistory(result2.stdout);
+  const words = stripAnsi(result.stderr);
+  if (!result.ok)
+    return failed(result.reason, words);
+  const read5 = readHistory(result.stdout);
   if (typeof read5 === "string")
     return failed({ kind: "unreadable-output" }, words, [read5]);
   return { ok: true, deploys: read5, toolLog: words };
@@ -59664,17 +59012,17 @@ function readHistory(stdout) {
     return "The tool's output: expected a list of updates.";
   const deploys = [];
   for (const [index, raw] of json2.entries()) {
-    const parsed = entry3.safeParse(raw);
+    const parsed = entry2.safeParse(raw);
     const at = `The tool's output, at update ${index + 1}`;
     if (!parsed.success)
       return `${at}: expected a kind, a result and an end time.`;
-    const { kind, result: result2, endTime, resourceChanges, environment } = parsed.data;
+    const { kind, result, endTime, resourceChanges, environment } = parsed.data;
     const endedAt = new Date(endTime);
     if (Number.isNaN(endedAt.getTime()))
       return `${at}: expected an end time.`;
     const deployKind = Object.hasOwn(KINDS, kind) ? KINDS[kind] : undefined;
     const changed = Object.entries(resourceChanges ?? {}).some(([op, count]) => op !== "same" && count > 0);
-    if (deployKind === undefined || result2 !== "succeeded" || !changed)
+    if (deployKind === undefined || result !== "succeeded" || !changed)
       continue;
     const sha = environment?.["git.head"] ?? "";
     const runId = environment?.["ci.build.id"] ?? "";
@@ -59692,7 +59040,7 @@ function readHistory(stdout) {
 import { join as join30 } from "node:path";
 function prepare3(stacks, options) {
   const asked = new Set((options?.createInBackend ?? []).map(stackId));
-  return stacks.filter((stack) => asked.has(stackId(stack))).sort((a, b) => byCodeUnit14(stackId(a), stackId(b))).map((stack) => ({
+  return stacks.filter((stack) => asked.has(stackId(stack))).sort((a, b) => byCodeUnit(stackId(a), stackId(b))).map((stack) => ({
     title: `the stack ${stackId(stack)} in the backend`,
     stacks: [stack],
     run: (context3) => createIfMissing(stack, context3)
@@ -59732,9 +59080,6 @@ async function createIfMissing(stack, context3) {
       `The backend did not hold ${id}, so the stack was created. Its preview shows every resource as a create.`
     ]
   };
-}
-function byCodeUnit14(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/preview.ts
@@ -59883,9 +59228,9 @@ function stepWithValues(list, fingerprint) {
     detailedDiff: exports_external.record(exports_external.string(), exports_external.unknown()).nullish()
   }).transform(({ oldState: old, newState, detailedDiff, ...rest }) => {
     const stackReference = stackReferenceOf(rest.urn, referenceState.safeParse(newState).data ?? undefined);
-    const paths2 = Object.entries(detailedDiff ?? {}).map(([path, entry4]) => ({
+    const paths2 = Object.entries(detailedDiff ?? {}).map(([path, entry3]) => ({
       path,
-      inputDiff: typeof entry4 === "object" && entry4 !== null && "inputDiff" in entry4 ? entry4.inputDiff === true : false
+      inputDiff: typeof entry3 === "object" && entry3 !== null && "inputDiff" in entry3 ? entry3.inputDiff === true : false
     }));
     const sources = {
       paths: paths2,
@@ -59966,7 +59311,7 @@ function previewCommand(name) {
 async function previewWithReferences(stack, options) {
   if (stack.name === undefined)
     throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: previewCommand(stack.name),
     cwd: join31(options.root, stack.path),
     env: pulumiEnvironment(options.env),
@@ -59977,18 +59322,18 @@ async function previewWithReferences(stack, options) {
     result: { ok: false, reason, detail, toolLog },
     references: []
   });
-  if (!result2.ok) {
-    const finished = result2.reason.kind !== "timed-out";
-    return failed(result2.reason, toolLog(result2.stderr, finished ? parseDiagnostics(result2.stdout) : []));
+  if (!result.ok) {
+    const finished = result.reason.kind !== "timed-out";
+    return failed(result.reason, toolLog(result.stderr, finished ? parseDiagnostics(result.stdout) : []));
   }
-  if (result2.outputCutAt !== undefined) {
-    return failed({ kind: "output-too-large", megabytes: Math.floor(result2.outputCutAt / 1024 / 1024) }, toolLog(result2.stderr));
+  if (result.outputCutAt !== undefined) {
+    return failed({ kind: "output-too-large", megabytes: Math.floor(result.outputCutAt / 1024 / 1024) }, toolLog(result.stderr));
   }
-  const parsed = parsePreview(result2.stdout, options.showValues, options.valueFingerprint === true);
+  const parsed = parsePreview(result.stdout, options.showValues, options.valueFingerprint === true);
   if (!parsed.ok) {
-    return failed({ kind: "unreadable-output" }, toolLog(result2.stderr), parsed.problems);
+    return failed({ kind: "unreadable-output" }, toolLog(result.stderr), parsed.problems);
   }
-  const log = toolLog(result2.stderr, parsed.diagnostics);
+  const log = toolLog(result.stderr, parsed.diagnostics);
   const folded = foldSteps(parsed.steps);
   if (!folded.ok)
     return failed({ kind: folded.reason }, log, folded.detail);
@@ -59997,7 +59342,7 @@ async function previewWithReferences(stack, options) {
       ok: true,
       diff: { stackId: stackId(stack), changes: folded.changes },
       toolLog: log,
-      ...options.keepDocument ? { document: { text: result2.stdout, format: "json" } } : {}
+      ...options.keepDocument ? { document: { text: result.stdout, format: "json" } } : {}
     },
     references: parsed.steps.flatMap((step3) => step3.stackReference ?? [])
   };
@@ -60033,13 +59378,10 @@ async function readDependencies(stack, names, root, candidates) {
     else if (one.id !== self)
       found.add(one.id);
   }
-  return { stackIds: [...found].sort(byCodeUnit15), elsewhere };
+  return { stackIds: [...found].sort(byCodeUnit), elsewhere };
 }
 function orElse(first, second) {
   return first.length > 0 ? first : second();
-}
-function byCodeUnit15(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/adapters/pulumi/tool-diff.ts
@@ -60060,17 +59402,17 @@ function toolDiffCommand2(name) {
 async function toolDiff4(stack, options) {
   if (stack.name === undefined)
     throw new Error("A Pulumi stack always has a name.");
-  const result2 = await runTool(options.run, {
+  const result = await runTool(options.run, {
     argv: toolDiffCommand2(stack.name),
     cwd: join32(options.root, stack.path),
     env: pulumiEnvironment(options.env),
     timeoutMinutes: options.timeoutMinutes,
     exitCodes: PULUMI_EXIT_CODES
   });
-  if (!result2.ok) {
-    return { ok: false, reason: result2.reason, toolLog: stripAnsi(result2.stdout + result2.stderr) };
+  if (!result.ok) {
+    return { ok: false, reason: result.reason, toolLog: stripAnsi(result.stdout + result.stderr) };
   }
-  return { ok: true, text: stripAnsi(result2.stdout), toolLog: stripAnsi(result2.stderr) };
+  return { ok: true, text: stripAnsi(result.stdout), toolLog: stripAnsi(result.stderr) };
 }
 
 // src/adapters/pulumi/version.ts
@@ -60078,33 +59420,33 @@ var MINIMUM_VERSION4 = [3, 229, 0];
 var NEEDS3 = `Sluiceway needs pulumi v${MINIMUM_VERSION4.join(".")} or newer`;
 var TIME_LIMIT_MS4 = 60000;
 async function checkVersion4(context3) {
-  const result2 = await context3.run({
+  const result = await context3.run({
     argv: ["pulumi", "version"],
     cwd: context3.root,
     env: pulumiEnvironment(context3.env),
     timeoutMs: TIME_LIMIT_MS4
   });
-  if (result2.status === "not-started") {
+  if (result.status === "not-started") {
     throw new ToolVersionError(`Could not start pulumi. ${NEEDS3} on PATH and does not install it. Add a workflow step that installs pulumi before the step that runs Sluiceway.`);
   }
-  const found = result2.status === "exited" && result2.exitCode === 0 ? /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?\s*$/.exec(result2.stdout) : null;
+  const found = result.status === "exited" && result.exitCode === 0 ? /^v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.+-]*)?\s*$/.exec(result.stdout) : null;
   if (found === null) {
-    throw new ToolVersionError(`"pulumi version" did not print a version Sluiceway can read. ${NEEDS3}. The job log holds what the tool printed.`, stripAnsi(result2.stdout + result2.stderr));
+    throw new ToolVersionError(`"pulumi version" did not print a version Sluiceway can read. ${NEEDS3}. The job log holds what the tool printed.`, stripAnsi(result.stdout + result.stderr));
   }
   const numbers = [Number(found[1]), Number(found[2]), Number(found[3])];
   const older2 = MINIMUM_VERSION4.map((floor, index) => (numbers[index] ?? 0) - floor).find((difference) => difference !== 0);
   if (older2 !== undefined && older2 < 0) {
-    throw new ToolVersionError(`Found pulumi ${result2.stdout.trim()}. ${NEEDS3}. Change the workflow step that installs pulumi so it installs a newer version.`);
+    throw new ToolVersionError(`Found pulumi ${result.stdout.trim()}. ${NEEDS3}. Change the workflow step that installs pulumi so it installs a newer version.`);
   }
 }
 
 // src/adapters/pulumi/index.ts
 var preview4 = async (stack, options) => {
-  const { result: result2, references } = await previewWithReferences(stack, options);
-  if (!result2.ok || options.dependencies === undefined)
-    return result2;
+  const { result, references } = await previewWithReferences(stack, options);
+  if (!result.ok || options.dependencies === undefined)
+    return result;
   const dependencies = await readDependencies(stack, references, options.root, options.dependencies);
-  return { ...result2, dependencies };
+  return { ...result, dependencies };
 };
 var pulumi = {
   discover,
@@ -60167,11 +59509,11 @@ var tools = {
     const answers = [];
     const logs = [];
     for (const [adapter, own2] of Map.groupBy(stacks, adapterOf)) {
-      const result2 = await adapter.findInBackend?.(own2, context3);
-      if (result2 === undefined)
+      const result = await adapter.findInBackend?.(own2, context3);
+      if (result === undefined)
         continue;
-      answers.push(...result2.answers);
-      logs.push(result2.toolLog);
+      answers.push(...result.answers);
+      logs.push(result.toolLog);
     }
     return { answers, toolLog: logs.join("") };
   }
@@ -60378,8 +59720,8 @@ function readEnvFile(input2, root, who) {
   try {
     text7 = readFileSync10(path, "utf8");
   } catch (error63) {
-    const code2 = error63.code;
-    if (code2 === "ENOENT") {
+    const code = error63.code;
+    if (code === "ENOENT") {
       return {
         ok: false,
         problem: `${who} names ${input2}, and there is no such file${isAbsolute5(input2) ? "" : " in the checkout"}.`
@@ -60387,7 +59729,7 @@ function readEnvFile(input2, root, who) {
     }
     return {
       ok: false,
-      problem: `${who} names ${input2}, and it could not be read as a file (${typeof code2 === "string" ? code2 : "unknown error"}).`
+      problem: `${who} names ${input2}, and it could not be read as a file (${typeof code === "string" ? code : "unknown error"}).`
     };
   }
   const parsed = parseEnvFile(text7);
@@ -60498,16 +59840,13 @@ function qualify(pullRequest, options) {
   const { claims, unclaimed } = claim2(options.stacks, pullRequest.files, options.unrelated);
   if (unclaimed.length > 0)
     return { qualifies: false, why: "unclaimed" };
-  const stackIds = [...claims.keys()].sort(byCodeUnit16);
+  const stackIds = [...claims.keys()].sort(byCodeUnit);
   if (stackIds.length === 0)
     return { qualifies: false, why: "no-stack" };
   if (dependOnEachOther(stackIds, options.dependsOn)) {
     return { qualifies: false, why: "stacks-depend" };
   }
   return { qualifies: true, stackIds };
-}
-function byCodeUnit16(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 function dependOnEachOther(ids, dependsOn) {
   if (!dependsOn || ids.length < 2)
@@ -60573,9 +59912,6 @@ function mergeMethod(allowed, strategy) {
 
 // src/core/bulk.ts
 var BULK_MIN_ROWS = 2;
-function byCodeUnit17(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function bulkRows(rows, section) {
   const seen = new Set;
   const found = [];
@@ -60587,14 +59923,14 @@ function bulkRows(rows, section) {
       found.push({ stackId: row.stackId, hash: row.hash });
     }
   }
-  return found.sort((a, b) => byCodeUnit17(a.stackId, b.stackId));
+  return found.sort((a, b) => byCodeUnit(a.stackId, b.stackId));
 }
 function sectionChanges(named, now) {
   const before = new Map(named.map(({ stackId: stackId2, hash: hash2 }) => [stackId2, hash2]));
   const after = new Map(now.map(({ stackId: stackId2, hash: hash2 }) => [stackId2, hash2]));
-  const added = [...after.keys()].filter((id) => !before.has(id)).sort(byCodeUnit17);
-  const gone = [...before.keys()].filter((id) => !after.has(id)).sort(byCodeUnit17);
-  const moved = [...after].filter(([id, hash2]) => before.has(id) && before.get(id) !== hash2).map(([id]) => id).sort(byCodeUnit17);
+  const added = [...after.keys()].filter((id) => !before.has(id)).sort(byCodeUnit);
+  const gone = [...before.keys()].filter((id) => !after.has(id)).sort(byCodeUnit);
+  const moved = [...after].filter(([id, hash2]) => before.has(id) && before.get(id) !== hash2).map(([id]) => id).sort(byCodeUnit);
   return added.length + gone.length + moved.length === 0 ? undefined : { added, gone, moved };
 }
 function holdsBulkTick(live, tick) {
@@ -60876,6 +60212,89 @@ var HEADER_DOT = {
   "in-sync": COUNT_DOT["in-sync"]
 };
 
+// src/render/images.ts
+var ACTION_REPO = "sluiceway/sluiceway";
+function urlPart(text8) {
+  return encodeURIComponent(text8).replace(/[()*!'~]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+function mascotUrl(actionRef2, file2) {
+  return `https://raw.githubusercontent.com/${ACTION_REPO}/${urlPart(actionRef2)}/assets/mascot/${file2}`;
+}
+
+// src/render/time.ts
+var formats2 = new Map;
+function format2(timeZone) {
+  let found = formats2.get(timeZone);
+  if (found === undefined) {
+    found = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    formats2.set(timeZone, found);
+  }
+  return found;
+}
+function isUtc2(timeZone) {
+  return timeZone === undefined || timeZone === "UTC";
+}
+function wall2(at, timeZone) {
+  if (isUtc2(timeZone)) {
+    const iso = at.toISOString();
+    return {
+      year: at.getUTCFullYear(),
+      day: iso.slice(5, 10),
+      minute: iso.slice(11, 16),
+      offset: 0
+    };
+  }
+  const parts = {};
+  for (const part of format2(timeZone).formatToParts(at)) {
+    if (part.type !== "literal")
+      parts[part.type] = Number(part.value);
+  }
+  const { year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0 } = parts;
+  const shown3 = Date.UTC(year, month - 1, day, hour, minute, second);
+  const offset = Math.round((shown3 - Math.floor(at.getTime() / 1000) * 1000) / 60000);
+  const two = (value) => String(value).padStart(2, "0");
+  return {
+    year,
+    day: `${two(month)}-${two(day)}`,
+    minute: `${two(hour)}:${two(minute)}`,
+    offset
+  };
+}
+function fullDay(time3) {
+  return `${String(time3.year).padStart(4, "0")}-${time3.day}`;
+}
+function offsetName(offset) {
+  if (offset === 0)
+    return "UTC";
+  const sign = offset > 0 ? "+" : "-";
+  const hours = Math.floor(Math.abs(offset) / 60);
+  const minutes = Math.abs(offset) % 60;
+  return `UTC${sign}${hours}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`}`;
+}
+function minuteAt(at, timeZone) {
+  const time3 = wall2(at, timeZone);
+  return `${fullDay(time3)} ${time3.minute} ${offsetName(time3.offset)}`;
+}
+function yearIn(at, timeZone) {
+  return wall2(at, timeZone).year;
+}
+function trailMinute(at, year, timeZone) {
+  const time3 = wall2(at, timeZone);
+  return `${time3.year === year ? time3.day : fullDay(time3)} ${time3.minute}`;
+}
+function zoneLine(timeZone) {
+  return `Times are in ${timeZone ?? "UTC"}.`;
+}
+
 // src/render/failed-run.ts
 function runUrl(run, repoUrl) {
   return `${repoUrl}/actions/runs/${urlPart(run)}`;
@@ -60923,6 +60342,521 @@ function freezeLine(freeze, timeZone) {
   const reason = freeze.reason === undefined ? "" : ` (${escapeText(freeze.reason)})`;
   const ends = minuteAt(freeze.ends, timeZone);
   return freeze.holds ? `Deploy freeze until ${ends}${reason}: every deploy waits for it to end.` : `Deploy freeze from ${minuteAt(freeze.starts, timeZone)} until ${ends}${reason}: every deploy waits while it holds.`;
+}
+
+// src/core/policy.ts
+var CONFTEST_MINIMUM_VERSION = "0.50.0";
+var CONFTEST_VERSION_ARGV = ["conftest", "--version"];
+function conftestArgv(policies, document) {
+  return [
+    "conftest",
+    "test",
+    "--output",
+    "json",
+    "--all-namespaces",
+    "--no-color",
+    ...policies.flatMap((path) => ["--policy", path]),
+    document
+  ];
+}
+function parseConftestVersion(stdout) {
+  return /^Conftest: v?(\d+\.\d+\.\d+)\s*$/m.exec(stdout)?.[1];
+}
+function conftestVersionProblem(found) {
+  if (found === undefined)
+    return { kind: "no-version" };
+  const parts = (version2) => version2.split(".").map(Number);
+  const [a = 0, b = 0, c = 0] = parts(found);
+  const [x = 0, y = 0, w = 0] = parts(CONFTEST_MINIMUM_VERSION);
+  const older2 = a < x || a === x && (b < y || b === y && c < w);
+  return older2 ? { kind: "too-old", found } : undefined;
+}
+var CONFTEST_EXIT_CODES = { success: [0, 1] };
+var result = exports_external.object({ msg: exports_external.string() });
+var entry3 = exports_external.object({
+  namespace: exports_external.string(),
+  successes: exports_external.number().int().nonnegative().optional(),
+  failures: exports_external.array(result).optional(),
+  warnings: exports_external.array(result).optional()
+});
+var report = exports_external.array(entry3);
+function parseConftestReport(stdout) {
+  let json2;
+  try {
+    json2 = JSON.parse(stdout);
+  } catch {
+    return;
+  }
+  const parsed = report.safeParse(json2);
+  if (!parsed.success)
+    return;
+  const byNamespace = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  const entries = [...parsed.data].sort((a, b) => byNamespace(a.namespace, b.namespace));
+  const found = (key) => entries.flatMap((one) => (one[key] ?? []).map(({ msg }) => ({ namespace: one.namespace, message: msg })));
+  return {
+    failures: found("failures"),
+    warnings: found("warnings"),
+    passed: entries.reduce((sum, one) => sum + (one.successes ?? 0), 0),
+    namespaces: [...new Set(entries.map((one) => one.namespace))].sort(byNamespace)
+  };
+}
+function policyOutcome(run) {
+  if (!run.ok) {
+    const { reason } = run;
+    if (reason.kind === "tool-error" && reason.exitCode === null) {
+      return { kind: "not-run", reason: { kind: "tool-missing" } };
+    }
+    if (reason.kind === "tool-error") {
+      return { kind: "not-run", reason: { kind: "tool-error", exitCode: reason.exitCode } };
+    }
+    if (reason.kind === "timed-out")
+      return { kind: "not-run", reason };
+    return { kind: "not-run", reason: { kind: "unreadable-output" } };
+  }
+  const parsed = parseConftestReport(run.stdout);
+  if (parsed === undefined) {
+    return run.exitCode === 0 ? { kind: "not-run", reason: { kind: "unreadable-output" } } : { kind: "not-run", reason: { kind: "tool-error", exitCode: run.exitCode } };
+  }
+  return parsed.failures.length > 0 ? { kind: "failed", report: parsed } : { kind: "passed", report: parsed };
+}
+function policyRunFailureText(reason) {
+  switch (reason.kind) {
+    case "tool-missing":
+      return "conftest is not installed on the runner";
+    case "tool-error":
+      return reason.exitCode === null ? "conftest exited with an error" : `conftest exited with an error (exit code ${reason.exitCode})`;
+    case "timed-out":
+      return `conftest ran out of time (${reason.minutes} ${reason.minutes === 1 ? "minute" : "minutes"})`;
+    case "unreadable-output":
+      return "the report of conftest could not be read";
+    case "too-old":
+      return `conftest ${reason.found} is older than the ${CONFTEST_MINIMUM_VERSION} Sluiceway needs`;
+    case "no-version":
+      return "conftest did not say which version it is";
+    case "path-missing":
+      return `the policy path ${reason.path} is not in the repo`;
+    case "no-document":
+      return "the preview gave no document to test";
+  }
+}
+
+// src/render/cost.ts
+function amount(value) {
+  return Math.abs(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+function costLine({ monthly, currency }) {
+  if (monthly === 0)
+    return "about the same cost a month";
+  return `about **${amount(monthly)} ${currency}** ${monthly > 0 ? "more" : "less"} a month`;
+}
+
+// src/render/row.ts
+var INDENT = "  ";
+function isDestroy(change3) {
+  return change3.op === "replace" || change3.op === "delete";
+}
+function changeCounts(changes) {
+  const of = (op) => changes.filter((change3) => change3.op === op).length;
+  return {
+    creates: of("create"),
+    updates: of("update"),
+    replaces: of("replace"),
+    deletes: of("delete"),
+    tracking: changes.filter((change3) => change3.op === "none" && change3.tracking).length
+  };
+}
+function counts(changes) {
+  const { creates, updates, replaces, deletes, tracking } = changeCounts(changes);
+  return [
+    creates && plural2(creates, "create"),
+    updates && plural2(updates, "update"),
+    replaces && `**${plural2(replaces, "replace")}**`,
+    deletes && `**${plural2(deletes, "delete")}**`,
+    tracking && `${tracking} tracking only`
+  ].filter(Boolean).join(", ");
+}
+function valueSuffix(change3, path, show2) {
+  const value = change3.values?.find((one) => one.path === path);
+  if (value === undefined)
+    return "";
+  const side2 = (text8) => text8 === undefined ? "nothing" : show2(text8);
+  return ` ${side2(value.old)} → ${side2(value.new)}`;
+}
+function code(text8) {
+  return `<code>${escapeText(text8)}</code>`;
+}
+function sortedKeys(keys4) {
+  return [...new Set(keys4)].sort(byCodeUnit);
+}
+var ROW_PATH_LENGTH = 80;
+var ROW_PATHS_PER_CHANGE = 10;
+var HEAD_LENGTH = 24;
+function shortPath(path) {
+  const points = Array.from(path);
+  if (points.length <= ROW_PATH_LENGTH)
+    return path;
+  const first = /^(?:\["(?:[^"\\]|\\.)*"\]|[^.[]+)/.exec(path)?.[0] ?? "";
+  const head = Array.from(first).slice(0, HEAD_LENGTH);
+  const tail = points.slice(points.length - (ROW_PATH_LENGTH - head.length - 1));
+  const segment3 = tail.findIndex((point) => point === "." || point === "[");
+  const start = segment3 < 0 ? 0 : tail[segment3] === "." ? segment3 + 1 : segment3;
+  const end = start < tail.length ? tail.slice(start) : tail;
+  return `${head.join("")}…${end.join("")}`;
+}
+function changeLine(change3, options = {}) {
+  const word = [change3.op === "none" ? undefined : change3.op, change3.tracking].filter((part) => part !== undefined).join(" + ");
+  const cap = isDestroy(change3) ? word.toUpperCase() : word;
+  const forcing = sortedKeys(change3.replaceKeys);
+  const others = sortedKeys(change3.changedKeys).filter((key) => !forcing.includes(key));
+  const capped = options.row === true && !isDestroy(change3);
+  const listed5 = capped ? others.slice(0, ROW_PATHS_PER_CHANGE) : others;
+  const hidden = others.length - listed5.length;
+  const show2 = (keys4) => keys4.map((key) => code(options.row ? shortPath(key) : key) + valueSuffix(change3, key, code)).join(", ");
+  const parts = [
+    `<kbd>${cap}</kbd> <code>${escapeText(change3.type)}</code> <b>${escapeText(change3.name)}</b>`
+  ];
+  if (forcing.length > 0)
+    parts.push(`forced by ${show2(forcing)}`);
+  if (others.length > 0) {
+    const more = hidden > 0 ? `, and ${hidden} more` : "";
+    parts.push(`${forcing.length > 0 ? "also changes " : ""}${show2(listed5)}${more}`);
+  }
+  return parts.join(" · ");
+}
+var ORPHAN_TICK_NOTE = ":information_source: a tick on this row was not picked up. Tick again to deploy.";
+var DEPLOYS_OFF_NOTE = ":information_source: deploys are turned off in `sluiceway.yaml`, so this tick started nothing.";
+var POLICY_FAILED_NOTE = ":information_source: this tick started nothing: a policy failed on this change, so its row has no box.";
+function dependencyNote(ids2, phases = []) {
+  return `:information_source: this tick started nothing: ${waitsOnWords(ids2, phases)}`;
+}
+function waitsOnWords(ids2, phases) {
+  const names = ids2.map((id) => `**${escapeText(id)}**`).join(" and ");
+  const one = ids2.length === 1;
+  if (phases.length === 0) {
+    return `it depends on ${names}, which ${one ? "has a change" : "have changes"} waiting. Tick ${one ? "both" : "them all"} to deploy them in order, or deploy ${names} first.`;
+  }
+  const waiting = (count2) => count2 === 1 ? "has a change" : "have changes";
+  const clauses = [
+    ...ids2.length === 0 ? [] : [`it depends on ${names}, which ${waiting(ids2.length)} waiting`],
+    ...phases.map(({ phase, stackIds }) => `it waits on the **${escapeText(phase)}** phase: ${shortList(stackIds)} ${waiting(stackIds.length)} waiting`)
+  ];
+  const count = ids2.length + phases.reduce((sum, { stackIds }) => sum + stackIds.length, 0);
+  const first = [
+    ...ids2.map((id) => `**${escapeText(id)}**`),
+    ...phases.map(({ phase }) => `the **${escapeText(phase)}** phase`)
+  ];
+  return `${clauses.join(", and ")}. Tick ${count === 1 ? "both" : "them all"} to deploy them in order, or deploy ${listWords(first)} first.`;
+}
+function onMergeNote(wait) {
+  const lead = ":information_source: this stack deploys on merge";
+  const waits = `${lead}, and this change waits for a tick:`;
+  switch (wait.kind) {
+    case "deploys-off":
+      return `${lead}, and deploys are turned off in \`sluiceway.yaml\`.`;
+    case "destroy":
+      return `${waits} it deletes or replaces a resource.`;
+    case "drift":
+      return `${waits} the stack drifted, and a deploy would also put back what changed outside the code.`;
+    case "not-merged":
+      return `${waits} the scan that found it did not follow a merge.`;
+    case "cost":
+      return `${waits} it costs about **${amount(wait.monthly)} ${wait.currency}** more a month, above the threshold of ${amount(wait.threshold)} ${wait.currency}.`;
+    case "cost-unknown":
+      return `${waits} its cost could not be estimated, and \`cost.threshold\` is set to ${amount(wait.threshold)}.`;
+    case "depends-on":
+      return `${waits} ${waitsOnWords(wait.named, wait.phases)}`;
+  }
+}
+var NAMES_PER_PHASE = 5;
+function shortList(ids2) {
+  const shown3 = ids2.slice(0, NAMES_PER_PHASE).map((id) => `**${escapeText(id)}**`);
+  const more = ids2.length - shown3.length;
+  return more > 0 ? `${shown3.join(", ")} and ${more} more` : listWords(shown3);
+}
+function listWords(words) {
+  return words.length <= 1 ? words[0] ?? "" : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+var PENDING_AGAIN_NOTE = ":information_source: pending again right after a deploy of this same change, a value in the program may differ on every run.";
+var VALUE_EVERY_RUN_NOTE = ":information_source: a value this row does not show differed between two previews of the same commit, so a tick would be refused: a value in the program may differ on every run. Turn the value fingerprint off for this stack with `valueFingerprint: false` on its `stacks` entry.";
+function pendingAgainLine({ logUrl }) {
+  return logUrl === undefined ? PENDING_AGAIN_NOTE : `${PENDING_AGAIN_NOTE} Compare the tool's own diff in the [job log](${logUrl}).`;
+}
+function failureLine(failure2, timeZone) {
+  return `:x: last deploy failed: ${escapeText(failure2.reason)} · ${failure2.onMerge ? "merged" : "ticked"} by ${escapeText(failure2.ticker)} · ${minuteAt(failure2.at, timeZone)} · [run](${failure2.runUrl})`;
+}
+function destroyWords(deletes, replaces) {
+  return [deletes && `deletes ${deletes}`, replaces && `replaces ${replaces}`].filter(Boolean).join(", ");
+}
+var DRIFT_WORDS = { update: "changed", delete: "gone" };
+function driftWord(change3) {
+  return DRIFT_WORDS[change3.op] ?? change3.op;
+}
+function driftCounts(drift) {
+  const of = (op) => drift.filter((change3) => change3.op === op).length;
+  const parts = [of("update") && `${of("update")} changed`, of("delete") && `${of("delete")} gone`];
+  return `${parts.filter(Boolean).join(", ")} outside the code`;
+}
+function driftLine(change3, options = {}) {
+  const keys4 = sortedKeys(change3.changedKeys);
+  const listed5 = options.row === true ? keys4.slice(0, ROW_PATHS_PER_CHANGE) : keys4;
+  const hidden = keys4.length - listed5.length;
+  const parts = [
+    `<kbd>${driftWord(change3)}</kbd> <code>${escapeText(change3.type)}</code> <b>${escapeText(change3.name)}</b>`
+  ];
+  if (listed5.length > 0) {
+    const more = hidden > 0 ? `, and ${hidden} more` : "";
+    parts.push(`${listed5.map((key) => code(options.row ? shortPath(key) : key)).join(", ")}${more}`);
+  }
+  return parts.join(" · ");
+}
+function sortedDrift(diff2) {
+  return [...diff2.drift ?? []].sort((a, b) => byCodeUnit(a.address, b.address));
+}
+function driftLines(drift, summary2, options) {
+  if (drift.length === 0)
+    return [];
+  const inside2 = plural2(drift.length, "change");
+  if (options.redact)
+    return [`Changes outside the code are listed in the ${summary2}`];
+  if ((options.level ?? 0) >= 2) {
+    return [`${inside2} outside the code not listed here, see the ${summary2}`];
+  }
+  return [
+    `<details><summary>${inside2} outside the code</summary>`,
+    ...drift.map((change3) => `${driftLine(change3, { row: true })}<br>`),
+    "</details>"
+  ];
+}
+function driftRow(row, options) {
+  const level = options.level ?? 0;
+  const drift = sortedDrift(row.diff);
+  const summary2 = `[summary](${row.runUrl})`;
+  const box = options.readOnly ? "" : `[${row.ticked ? "x" : " "}] `;
+  const lines = [
+    `- ${box}**${escapeText(row.diff.stackId)}** · ${driftCounts(drift)} · [preview](${row.previewUrl ?? row.runUrl}) ${rowMarker({
+      stackId: row.diff.stackId,
+      state: "drift",
+      hash: row.hash,
+      failed: row.failure !== undefined,
+      shortened: level >= 2 ? level : 0,
+      drift: true,
+      gone: drift.filter((change3) => change3.op === "delete").length,
+      changed: drift.filter((change3) => change3.op === "update").length,
+      dependsOn: row.dependsOn,
+      fingerprint: row.fingerprint
+    })}`
+  ];
+  if (row.failure)
+    lines.push(failureLine(row.failure, options.timeZone));
+  if (row.valueEveryRun)
+    lines.push(VALUE_EVERY_RUN_NOTE);
+  if (row.orphanTick && !options.readOnly)
+    lines.push(ORPHAN_TICK_NOTE);
+  lines.push(...driftLines(drift, summary2, options));
+  return lines;
+}
+var FAILURES_ON_A_ROW = 5;
+var POLICY_MESSAGE_LENGTH = 200;
+function policyWords(count) {
+  return `${count} ${count === 1 ? "policy" : "policies"}`;
+}
+function policyFailureLine(failure2, whole = false) {
+  const points = Array.from(failure2.message);
+  const message = whole || points.length <= POLICY_MESSAGE_LENGTH ? failure2.message : `${points.slice(0, POLICY_MESSAGE_LENGTH).join("")}…`;
+  return `:no_entry: <code>${escapeText(failure2.namespace)}</code> · ${escapeText(message)}`;
+}
+function policiesNotRunLine(outcome, runUrl2) {
+  return `:warning: the policies did not run: ${policyRunFailureText(outcome.reason)}. Nothing was checked, see the [run](${runUrl2}).`;
+}
+function policyLines(row, options) {
+  const { policies } = row;
+  const short = (options.detail ?? "full") !== "full";
+  if (policies === undefined || policies.kind === "passed")
+    return [];
+  if (policies.kind === "not-run")
+    return short ? [] : [policiesNotRunLine(policies, row.runUrl)];
+  const { failures } = policies.report;
+  const lead = `:no_entry: **${policyWords(failures.length)} failed**, so this change has no box until it passes`;
+  const preview5 = `[preview](${row.previewUrl ?? row.runUrl})`;
+  if (options.redact || short || (options.level ?? 0) >= 2) {
+    return [`${lead}. They are named on the ${preview5}.`];
+  }
+  const named2 = failures.slice(0, FAILURES_ON_A_ROW);
+  const rest = failures.length - named2.length;
+  return [
+    `${lead}:`,
+    ...named2.map((failure2) => policyFailureLine(failure2)),
+    ...rest > 0 ? [`:no_entry: and ${rest} more on the ${preview5}`] : []
+  ];
+}
+function pendingRow(row, options) {
+  const level = options.level ?? 0;
+  const changes = [...row.diff.changes].sort((a, b) => byCodeUnit(a.address, b.address));
+  const deletes = changes.filter((change3) => change3.op === "delete");
+  const replaces = changes.filter((change3) => change3.op === "replace");
+  const folded = changes.filter((change3) => !isDestroy(change3));
+  const destroys = deletes.length + replaces.length;
+  const summary2 = `[summary](${row.runUrl})`;
+  const policyFailed = row.policies?.kind === "failed";
+  const box = options.readOnly || policyFailed ? "" : `[${row.ticked ? "x" : " "}] `;
+  const drift = sortedDrift(row.diff);
+  const driftCount = drift.length > 0 ? ` · ${driftCounts(drift)}` : row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
+  const { creates, updates, tracking } = changeCounts(changes);
+  const detail = options.detail ?? "full";
+  const full = detail === "full";
+  const preview5 = detail === "names" ? "" : ` · [preview](${row.previewUrl ?? row.runUrl})`;
+  const lines = [
+    `- ${box}**${escapeText(row.diff.stackId)}** · ${counts(changes)}${driftCount}${preview5} ${rowMarker({
+      stackId: row.diff.stackId,
+      state: "pending",
+      hash: row.hash,
+      destroys,
+      deletes: deletes.length,
+      failed: row.failure !== undefined,
+      shortened: level,
+      drift: drift.length > 0,
+      dependsOn: row.dependsOn,
+      fingerprint: row.fingerprint,
+      policyFailed,
+      creates,
+      updates,
+      replaces: replaces.length,
+      tracking,
+      driftUnchecked: row.driftUnchecked
+    })}`
+  ];
+  if (row.cost && full)
+    lines.push(costLine(row.cost));
+  if (row.attribution && full)
+    lines.push(level >= 1 ? row.attribution.counted : row.attribution.full);
+  if (row.failure)
+    lines.push(failureLine(row.failure, options.timeZone));
+  lines.push(...policyLines(row, options));
+  const notes = detail !== "names";
+  if (row.waitsOnMerge && notes)
+    lines.push(onMergeNote(row.waitsOnMerge));
+  if (row.valueEveryRun && notes)
+    lines.push(VALUE_EVERY_RUN_NOTE);
+  if (row.pendingAgain && full)
+    lines.push(pendingAgainLine(row.pendingAgain));
+  if (row.orphanTick && notes && !options.readOnly && !policyFailed)
+    lines.push(ORPHAN_TICK_NOTE);
+  if (options.redact || level >= 3) {
+    const words = destroyWords(deletes.length, replaces.length);
+    if (destroys > 0) {
+      const warning2 = options.redact ? `${words}.` : `${words}, too many to list here.`;
+      const read5 = options.readOnly ? `Read the ${summary2}.` : `Read the ${summary2} before you tick.`;
+      lines.push(`:warning: **${warning2}** ${read5}`);
+    } else if (full) {
+      lines.push(`Changes ${options.redact ? "are listed in the" : "not listed here, see the"} ${summary2}`);
+    }
+    if (full)
+      lines.push(...driftLines(drift, summary2, options), ...outsideFold2(row.attribution, level));
+    return lines;
+  }
+  for (const change3 of [...deletes, ...replaces])
+    lines.push(`:warning: ${changeLine(change3, { row: true })}`);
+  if (!full)
+    return lines;
+  if (folded.length > 0) {
+    const inside2 = plural2(folded.length, destroys > 0 ? "other change" : "change");
+    if (level >= 2) {
+      lines.push(`${inside2} not listed here, see the ${summary2}`);
+    } else {
+      lines.push(`<details><summary>${inside2}</summary>`);
+      for (const change3 of folded)
+        lines.push(`${changeLine(change3, { row: true })}<br>`);
+      lines.push("</details>");
+    }
+  }
+  lines.push(...driftLines(drift, summary2, options), ...outsideFold2(row.attribution, level));
+  return lines;
+}
+function outsideFold2(attribution, level) {
+  return level === 0 ? [...attribution?.outside ?? []] : [];
+}
+var SPINNER_WIDTH = 16;
+function spinner(actionRef2, queued) {
+  const name = queued ? "spinner-queued" : "spinner";
+  const file2 = (theme) => mascotUrl(actionRef2, `${name}-${theme}.svg`);
+  return `<picture><source media="(prefers-color-scheme: dark)" srcset="${file2("dark")}"><img alt="" width="${SPINNER_WIDTH}" height="${SPINNER_WIDTH}" src="${file2("light")}"></picture> `;
+}
+function windowWords(window, timeZone) {
+  const { freeze } = window;
+  if (freeze !== undefined) {
+    const reason = freeze.reason === undefined ? "" : ` (${escapeText(freeze.reason)})`;
+    const ends = `the end of the deploy freeze${reason} at ${minuteAt(freeze.ends, timeZone)}`;
+    return window.opens === undefined || window.opens.getTime() === freeze.ends.getTime() ? ends : `${ends}, and then for the deploy window, which opens ${minuteAt(window.opens, timeZone)}`;
+  }
+  if (window.opens === undefined) {
+    return window.anyTime ? "the next scheduled run, which starts it: nothing holds it now" : "the deploy window, which is open: the next scheduled run starts it";
+  }
+  return `the deploy window, which opens ${minuteAt(window.opens, timeZone)}`;
+}
+function deployingRow(row, options) {
+  const behind = row.behind ?? [];
+  const onMerge = row.onMerge ? " on merge" : "";
+  const word = behind.length > 0 ? `queued behind ${behind.map((id) => `**${escapeText(id)}**`).join(" and ")}${row.window ? `, and for ${windowWords(row.window, options.timeZone)}` : ""}` : row.window ? `queued for ${windowWords(row.window, options.timeZone)}` : row.waiting ? `waiting to start${onMerge}` : `deploying${onMerge}`;
+  const state2 = behind.length > 0 || row.window ? "queued" : "deploying";
+  const lines = [
+    `- ${options.actionRef === undefined ? "" : spinner(options.actionRef, state2 === "queued")}**${escapeText(row.stackId)}** · ${word} · ${row.onMerge ? "merged" : "ticked"} by ${escapeText(row.ticker)} · [run](${row.runUrl}) ${rowMarker({ stackId: row.stackId, state: state2, destroys: row.destroys, deletes: row.deletes, behind })}`
+  ];
+  if (row.attribution)
+    lines.push(row.attribution.full, ...outsideFold2(row.attribution, 0));
+  return lines;
+}
+var DRIFT_NOT_CHECKED = "drift not checked";
+var BUSY_ROW_WORDS = "the next scan previews it";
+function previewFailedRow(row, options) {
+  const words = row.busy ? `busy: ${escapeText(row.reason)}, ${BUSY_ROW_WORDS}` : `preview failed: ${escapeText(row.reason)}`;
+  const lines = [
+    `- **${escapeText(row.stackId)}** · ${words} · [run](${row.runUrl}) ${rowMarker({
+      stackId: row.stackId,
+      state: "preview-failed",
+      failed: row.failure !== undefined,
+      busy: row.busy
+    })}`
+  ];
+  if (row.failure)
+    lines.push(failureLine(row.failure, options.timeZone));
+  return lines;
+}
+function inSyncRow(row, options) {
+  const unchecked = row.driftUnchecked ? ` · ${DRIFT_NOT_CHECKED}` : "";
+  const lines = [
+    `- ${escapeText(row.stackId)}${unchecked} ${rowMarker({
+      stackId: row.stackId,
+      state: "in-sync",
+      failed: row.failure !== undefined,
+      dependsOn: row.dependsOn,
+      driftUnchecked: row.driftUnchecked
+    })}`
+  ];
+  if (row.failure)
+    lines.push(failureLine(row.failure, options.timeZone));
+  return lines;
+}
+function rowLines(row, options) {
+  switch (row.state) {
+    case "pending":
+      return pendingRow(row, options);
+    case "drift":
+      return driftRow(row, options);
+    case "deploying":
+      return deployingRow(row, options);
+    case "preview-failed":
+      return previewFailedRow(row, options);
+    case "in-sync":
+      return inSyncRow(row, options);
+  }
+}
+function renderRow(row, options = {}) {
+  const [first = "", ...rest] = rowLines(row, options);
+  return [first, ...[...rest, ROW_CLOSE_MARKER].map((line) => INDENT + line)].join(`
+`);
 }
 
 // src/render/merge-row.ts
@@ -61056,15 +60990,12 @@ function carriedWaitingRun(facts, ownRunId) {
 }
 
 // src/render/waiting-run.ts
-function plural3(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
 function duration3(minutes) {
   if (minutes < 60)
-    return plural3(minutes, "minute");
-  const hours = plural3(Math.floor(minutes / 60), "hour");
+    return plural2(minutes, "minute");
+  const hours = plural2(Math.floor(minutes / 60), "hour");
   const rest = minutes % 60;
-  return rest === 0 ? hours : `${hours} and ${plural3(rest, "minute")}`;
+  return rest === 0 ? hours : `${hours} and ${plural2(rest, "minute")}`;
 }
 function waited(facts, scanAt) {
   const minutes = Math.floor((new Date(scanAt).getTime() - new Date(facts.since).getTime()) / 60000);
@@ -61091,7 +61022,7 @@ function waitingRunLine(root, repoUrl, timeZone) {
 }
 function waitingRunLogLine(facts, scanAt, workflow, repoUrl) {
   const minutes = waited(facts, scanAt) ?? RUN_WAIT_MINUTES;
-  const more = facts.more === 0 ? "" : ` ${plural3(facts.more, "more run")} of it waited ${RUN_WAIT_MINUTES} minutes or more too.`;
+  const more = facts.more === 0 ? "" : ` ${plural2(facts.more, "more run")} of it waited ${RUN_WAIT_MINUTES} minutes or more too.`;
   return `Run ${facts.run} of ${workflow} has been waiting for a runner for ${duration3(minutes)}.${more} The dashboard says so under the scan line until it starts (record 0086): ${runUrl3(facts, repoUrl)}`;
 }
 
@@ -61135,12 +61066,6 @@ function signed(state2, signs) {
   const suffix = `${signs.deletes ? "-deletes" : ""}${signs.replaces ? "-replaces" : ""}`;
   const subject = state2 === "pending" ? "some" : "some changes";
   return { suffix, fact: suffix === "" ? "" : `, ${subject} ${verb} resources` };
-}
-function byCodeUnit18(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-function plural4(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 function rowBlock(row, options = {}) {
   const [block] = parseDashboard(renderRow(row, options)).rows;
@@ -61188,7 +61113,7 @@ function countsLine(counts2, dots, zeros = true) {
     parts.push(`:warning: **${destroying} pending ${words} resources**`);
   }
   if (failed > 0)
-    parts.push(`${dot("failed", failed)}${plural4(failed, "failed deploy")}`);
+    parts.push(`${dot("failed", failed)}${plural2(failed, "failed deploy")}`);
   return parts.join(" · ");
 }
 function time3(iso, timeZone) {
@@ -61244,7 +61169,7 @@ ${INDENT}${short ? deploy.shipped.counted : deploy.shipped.full}` : "";
   return `- ${dot}${escapeText(deploy.stackId)}${result2} · ${who} · ${trailMinute(deploy.at, year, timeZone)} · [run](${deploy.runUrl})${shipped}`;
 }
 function newestTrail(deploys, length) {
-  return [...deploys].sort((a, b) => b.at.getTime() - a.at.getTime() || byCodeUnit18(a.stackId, b.stackId)).slice(0, length ?? RECENTLY_DEPLOYED);
+  return [...deploys].sort((a, b) => b.at.getTime() - a.at.getTime() || byCodeUnit(a.stackId, b.stackId)).slice(0, length ?? RECENTLY_DEPLOYED);
 }
 function outsideLine(deploy, repoUrl, dots, year, timeZone) {
   const dot = dots ? `${RESULT_DOT.deployed}&nbsp;` : "";
@@ -61336,7 +61261,7 @@ function inSyncSection(input2, facts, layout, off) {
   const out = [];
   const shown3 = layout.inSyncSection ?? "fold";
   const { inSync } = facts;
-  const ignored = shown3 === "off" ? [] : [...input2.ignored ?? []].sort((a, b) => byCodeUnit18(a.stackId, b.stackId));
+  const ignored = shown3 === "off" ? [] : [...input2.ignored ?? []].sort((a, b) => byCodeUnit(a.stackId, b.stackId));
   const loud = inSync.filter((row) => row.failed);
   const quiet = inSync.filter((row) => !row.failed);
   if (shown3 === "off")
@@ -61351,12 +61276,12 @@ function inSyncSection(input2, facts, layout, off) {
     if (loud.length > 0)
       out.push(blocks(loud));
     if (quiet.length > 0 && shown3 === "fold") {
-      const summary2 = loud.length > 0 ? `${quiet.length} more in sync` : `${plural4(quiet.length, "stack")} in sync`;
+      const summary2 = loud.length > 0 ? `${quiet.length} more in sync` : `${plural2(quiet.length, "stack")} in sync`;
       out.push(`<details><summary>${summary2}</summary>`, blocks(quiet), "</details>");
     }
   }
   if (ignored.length > 0) {
-    out.push(`<details><summary>${plural4(ignored.length, "stack")} left out by ignore</summary>`, ignored.map(({ stackId: stackId2, reason }) => `- ${escapeText(stackId2)} · ${escapeText(reason)}`).join(`
+    out.push(`<details><summary>${plural2(ignored.length, "stack")} left out by ignore</summary>`, ignored.map(({ stackId: stackId2, reason }) => `- ${escapeText(stackId2)} · ${escapeText(reason)}`).join(`
 `), "</details>");
   }
   return out;
@@ -61427,7 +61352,7 @@ function renderBody(input2) {
   for (const name of sectionOrder(layout))
     out.push(...draw[name]());
   if (off.length > 0) {
-    out.push(`<details><summary>${plural4(off.length, "stack")} in sections this dashboard does not show</summary>`, blocks(off), "</details>");
+    out.push(`<details><summary>${plural2(off.length, "stack")} in sections this dashboard does not show</summary>`, blocks(off), "</details>");
   }
   const { unknown: unknown2 } = facts;
   const rescan = !input2.readOnly && layout.rescanBox !== false;
@@ -61591,9 +61516,6 @@ async function editWentOver(github, number4, body2, replaced) {
     return;
   return before.body;
 }
-function byteLength(text8) {
-  return new TextEncoder().encode(text8).length;
-}
 function count(n) {
   return n.toLocaleString("en-US");
 }
@@ -61690,10 +61612,7 @@ async function tryPin(github, issue3) {
 }
 async function newestClosedMatch(github, label) {
   const closed = await github.listRecentlyClosedIssues(label);
-  return closed.filter((issue3) => isDashboard(issue3, label)).sort((a, b) => compare4(b.closedAt ?? "", a.closedAt ?? "") || b.number - a.number)[0];
-}
-function compare4(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+  return closed.filter((issue3) => isDashboard(issue3, label)).sort((a, b) => byCodeUnit(b.closedAt ?? "", a.closedAt ?? "") || b.number - a.number)[0];
 }
 async function openMatches(github, label) {
   const open2 = await github.listIssues({ label, state: "open" });
@@ -61899,18 +61818,15 @@ function stepNotifier(getInput2, log, mask) {
 
 // src/core/diff-hash.ts
 import { createHash as createHash5 } from "node:crypto";
-function byCodeUnit19(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function sortedSet3(keys4) {
-  return [...new Set(keys4)].sort(byCodeUnit19);
+  return [...new Set(keys4)].sort(byCodeUnit);
 }
 function canonicalJson2(value) {
   if (typeof value === "string")
     return JSON.stringify(value);
   if (Array.isArray(value))
     return `[${value.map(canonicalJson2).join(",")}]`;
-  const members2 = Object.keys(value).sort(byCodeUnit19).flatMap((key) => {
+  const members2 = Object.keys(value).sort(byCodeUnit).flatMap((key) => {
     const member = value[key];
     return member === undefined ? [] : [`${JSON.stringify(key)}:${canonicalJson2(member)}`];
   });
@@ -61932,14 +61848,14 @@ function canonicalChange(change3) {
 function canonicalValues(values2) {
   if (values2 === undefined || values2.length === 0)
     return;
-  return [...values2].sort((a, b) => byCodeUnit19(a.path, b.path)).map((value) => ({ path: value.path, old: value.old, new: value.new }));
+  return [...values2].sort((a, b) => byCodeUnit(a.path, b.path)).map((value) => ({ path: value.path, old: value.old, new: value.new }));
 }
 function canonicalDiff(diff2) {
   const drift = diff2.drift === undefined || diff2.drift.length === 0 ? "" : `"drift":[${canonicalChanges(diff2.drift).join(",")}],`;
   return `{"changes":[${canonicalChanges(diff2.changes).join(",")}],${drift}"stackId":${JSON.stringify(diff2.stackId)}}`;
 }
 function canonicalChanges(changes) {
-  return changes.map((change3) => ({ address: change3.address, text: canonicalJson2(canonicalChange(change3)) })).sort((a, b) => byCodeUnit19(a.address, b.address) || byCodeUnit19(a.text, b.text)).map((change3) => change3.text);
+  return changes.map((change3) => ({ address: change3.address, text: canonicalJson2(canonicalChange(change3)) })).sort((a, b) => byCodeUnit(a.address, b.address) || byCodeUnit(a.text, b.text)).map((change3) => change3.text);
 }
 function diffHash(diff2) {
   return createHash5("sha256").update(canonicalDiff(diff2), "utf8").digest("hex").slice(0, 16);
@@ -62516,7 +62432,7 @@ function openRepo(root, discovery) {
     const found = await discovery.discover(root, loaded);
     const ignored = ignoredStacks(loaded, found);
     return {
-      stacks: applyConfig(loaded, found).sort((a, b) => byCodeUnit20(stackId(a.stack), stackId(b.stack))),
+      stacks: applyConfig(loaded, found).sort((a, b) => byCodeUnit(stackId(a.stack), stackId(b.stack))),
       ignored
     };
   };
@@ -62527,9 +62443,6 @@ function openRepo(root, discovery) {
       return stacks2;
     }
   };
-}
-function byCodeUnit20(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/github/attribution.ts
@@ -63004,11 +62917,8 @@ async function doesItFit(write) {
 }
 
 // src/core/dependencies.ts
-function byCodeUnit21(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
 function planDeploys(input2) {
-  const ids2 = [...new Set(input2.allowed)].sort(byCodeUnit21);
+  const ids2 = [...new Set(input2.allowed)].sort(byCodeUnit);
   const going = new Set(ids2);
   const refused = new Map;
   for (let changed = true;changed; ) {
@@ -63019,7 +62929,7 @@ function planDeploys(input2) {
       const waitingOn = (input2.dependsOn.get(id) ?? []).filter((dependency) => !input2.open.has(dependency) && !going.has(dependency) && (input2.pending.has(dependency) || refused.has(dependency)));
       if (waitingOn.length === 0)
         continue;
-      refused.set(id, [...waitingOn].sort(byCodeUnit21));
+      refused.set(id, [...waitingOn].sort(byCodeUnit));
       going.delete(id);
       changed = true;
     }
@@ -63029,7 +62939,7 @@ function planDeploys(input2) {
   for (const id of ids2) {
     if (refused.has(id))
       continue;
-    const behind = (input2.dependsOn.get(id) ?? []).filter((dependency) => going.has(dependency) || input2.open.has(dependency)).sort(byCodeUnit21);
+    const behind = (input2.dependsOn.get(id) ?? []).filter((dependency) => going.has(dependency) || input2.open.has(dependency)).sort(byCodeUnit);
     if (behind.length === 0)
       start.push(id);
     else
@@ -63075,11 +62985,11 @@ function withReadDependencies(input2) {
     return walk4(from);
   };
   const dropped = [];
-  for (const id of [...input2.auto].sort(byCodeUnit21)) {
+  for (const id of [...input2.auto].sort(byCodeUnit)) {
     const list = dependsOn.get(id);
     if (list === undefined)
       continue;
-    for (const dependency of [...input2.read.get(id) ?? []].sort(byCodeUnit21)) {
+    for (const dependency of [...input2.read.get(id) ?? []].sort(byCodeUnit)) {
       if (dependency === id || !dependsOn.has(dependency) || list.includes(dependency))
         continue;
       if (reaches(dependency, id))
@@ -63087,7 +62997,7 @@ function withReadDependencies(input2) {
       else
         list.push(dependency);
     }
-    list.sort(byCodeUnit21);
+    list.sort(byCodeUnit);
   }
   return { dependsOn, dropped };
 }
@@ -63674,9 +63584,6 @@ class ApplyFailedError extends Error {
     this.name = "ApplyFailedError";
   }
 }
-function message(error63) {
-  return error63 instanceof Error ? error63.message : String(error63);
-}
 function lines2(text8) {
   const all = text8.split(/\r?\n/);
   if (all.at(-1) === "")
@@ -63742,7 +63649,7 @@ async function applying(context3, repo, report2) {
   const claim3 = await claimRecord(context3, id);
   if (claim3.kind === "unread") {
     report2.outcome = "failed";
-    throw new ApplyFailedError(`Deployment record ${id} could not be read: ${message(claim3.error)}. ${RECORD_PERMISSIONS}`);
+    throw new ApplyFailedError(`Deployment record ${id} could not be read: ${errorMessage(claim3.error)}. ${RECORD_PERMISSIONS}`);
   }
   report2.outcome = "refused";
   if (claim3.kind === "ended") {
@@ -63774,7 +63681,7 @@ ${ALREADY_ENDED}
   report2.outcome = "failed";
   const runUrl5 = runUrl4(context3.repoUrl, context3.runId, context3.runAttempt);
   if (claim3.kind === "unclaimed") {
-    throw new ApplyFailedError(`Deployment record ${id} of ${name} could not be marked in progress: ${message(claim3.error)}. Nothing was deployed. ${RECORD_PERMISSIONS}`);
+    throw new ApplyFailedError(`Deployment record ${id} of ${name} could not be marked in progress: ${errorMessage(claim3.error)}. Nothing was deployed. ${RECORD_PERMISSIONS}`);
   }
   log.info(`Deployment record ${id}: ${name}, ${payload.onMerge ? "merged" : "ticked"} by ${payload.ticker}, approved diff hash ${payload.hash}. It is in progress.`);
   const progress = { deploying: false };
@@ -63785,7 +63692,7 @@ ${ALREADY_ENDED}
     const end = unplannedEnd(progress.deploying);
     attempt2 = {
       end,
-      failed: `${name} was not deployed: ${deployFailureText(end.reason)}. ${message(error63)}`
+      failed: `${name} was not deployed: ${deployFailureText(end.reason)}. ${errorMessage(error63)}`
     };
   }
   const reason = reasonOf(attempt2);
@@ -63802,7 +63709,7 @@ ${ALREADY_ENDED}
     ended = true;
     log.info(`${RESULT_DOT[report2.outcome]} Deployment record ${id} ended as ${state2}.`);
   } catch (error63) {
-    failures.push(`Deployment record ${id} of ${name} could not be given its result (${state2}): ${message(error63)}. The \`settle\` job of this run ends it. ${RECORD_PERMISSIONS}`);
+    failures.push(`Deployment record ${id} of ${name} could not be given its result (${state2}): ${errorMessage(error63)}. The \`settle\` job of this run ends it. ${RECORD_PERMISSIONS}`);
   }
   if (attempt2.summary) {
     await writeSummary(context3, renderApplySummary({
@@ -63832,7 +63739,7 @@ ${ALREADY_ENDED}
         return row.state === "pending" ? { ...row, attribution } : row;
       });
     } catch (error63) {
-      failures.push(`The dashboard could not be written: ${message(error63)}`);
+      failures.push(`The dashboard could not be written: ${errorMessage(error63)}`);
     }
     if (written !== undefined && (reason?.kind === "moved" || reason?.kind === "value-changed")) {
       const tick = {
@@ -63843,7 +63750,7 @@ ${ALREADY_ENDED}
       try {
         await github.createComment(written, reason.kind === "moved" ? movedComment(tick) : valueChangedComment({ ...tick, everyRun: reason.everyRun }));
       } catch (error63) {
-        failures.push(`The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${message(error63)}. The job needs the permission \`issues: write\`.`);
+        failures.push(`The comment to ${payload.ticker} about the ${reason.kind === "moved" ? "moved change" : "changed value"} could not be written: ${errorMessage(error63)}. The job needs the permission \`issues: write\`.`);
       }
     }
   }
@@ -63852,7 +63759,7 @@ ${ALREADY_ENDED}
     try {
       await dispatchScan(context3);
     } catch (error63) {
-      failures.push(message(error63));
+      failures.push(errorMessage(error63));
     }
     try {
       const dashboard = await findDashboard(github, setup.config.dashboard.label);
@@ -63864,7 +63771,7 @@ ${ALREADY_ENDED}
         }));
       }
     } catch (error63) {
-      failures.push(`The comment to ${payload.ticker} about the newer commit could not be written: ${message(error63)}. The job needs the permission \`issues: write\`.`);
+      failures.push(`The comment to ${payload.ticker} about the newer commit could not be written: ${errorMessage(error63)}. The job needs the permission \`issues: write\`.`);
     }
   }
   if (attempt2.failed)
@@ -63881,7 +63788,7 @@ async function dispatchScan(context3) {
     await context3.github.dispatchWorkflow(workflow.file, workflow.ref);
     context3.log.info("A full scan was started, which shows the change as it is now on the row.");
   } catch (error63) {
-    throw new Error(`A full scan could not be started: ${message(error63)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`);
+    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The apply job needs the permission \`actions: write\`, and the workflow (${workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The record is ended, and the next scan writes its row again.`);
   }
 }
 function reasonOf(attempt2) {
@@ -63930,7 +63837,10 @@ async function deploy(context3, repo, id, payload, runUrl5, progress) {
     };
   } catch (error63) {
     const reason = { kind: "not-started" };
-    return { end: { kind: "failed", reason }, failed: notDeployed(reason, ` ${message(error63)}`) };
+    return {
+      end: { kind: "failed", reason },
+      failed: notDeployed(reason, ` ${errorMessage(error63)}`)
+    };
   }
   const moved = await sinceCheckout(context3, setup, id);
   if (moved)
@@ -63986,7 +63896,7 @@ async function sinceCheckout(context3, setup, id) {
   try {
     comparison = await context3.github.compareCommits(context3.sha, ref);
   } catch (error63) {
-    return refused({ kind: "not-started" }, `Comparing ${checkout}, the commit this run checked out, with ${ref} failed: ${message(error63)}. Without it nothing says the branch did not move since the tick. The job needs the permission \`contents: read\`.`);
+    return refused({ kind: "not-started" }, `Comparing ${checkout}, the commit this run checked out, with ${ref} failed: ${errorMessage(error63)}. Without it nothing says the branch did not move since the tick. The job needs the permission \`contents: read\`.`);
   }
   const found = movedSinceCheckout({
     comparison,
@@ -64117,7 +64027,7 @@ async function afterFreshPreview(context3, id, payload, runUrl5, progress, setup
       ...payload.onMerge ? { onMerge: true } : {}
     }));
   } catch (error63) {
-    log.info(`The dashboard could not be written before the deploy: ${message(error63)}`);
+    log.info(`The dashboard could not be written before the deploy: ${errorMessage(error63)}`);
   }
   progress.deploying = true;
   const deployStarted = context3.now();
@@ -64200,7 +64110,7 @@ async function writeSummary(context3, text8) {
   try {
     await context3.log.writeSummary(text8);
   } catch (error63) {
-    context3.log.info(`Writing the summary failed: ${message(error63)}`);
+    context3.log.info(`Writing the summary failed: ${errorMessage(error63)}`);
     context3.log.warning("The summary of this run could not be written. The job log holds what happened.", "Summary not written");
   }
 }
@@ -64449,8 +64359,8 @@ async function nameTickers(ticks, readPage) {
 
 // src/core/json5.ts
 class Json5Error extends Error {
-  constructor(message2, at) {
-    super(`${message2} at character ${at + 1}.`);
+  constructor(message, at) {
+    super(`${message} at character ${at + 1}.`);
     this.name = "Json5Error";
   }
 }
@@ -64475,8 +64385,8 @@ var IDENTIFIER_START = /[\p{L}\p{Nl}$_]/u;
 var IDENTIFIER_PART = /[\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}$_\u200c\u200d]/u;
 function parseJson5(text8) {
   let at = 0;
-  const fail = (message2) => {
-    throw new Json5Error(message2, at);
+  const fail = (message) => {
+    throw new Json5Error(message, at);
   };
   const skip = () => {
     for (;; ) {
@@ -65200,7 +65110,7 @@ function readWorkflowFiles(root) {
   } catch {
     return [];
   }
-  return names2.sort(byCodeUnit22).map((name) => ({
+  return names2.sort(byCodeUnit).map((name) => ({
     path: `${WORKFLOW_DIRECTORY}/${name}`,
     text: readFileSync12(join34(root, WORKFLOW_DIRECTORY, name), "utf8")
   }));
@@ -65249,13 +65159,10 @@ function refKind(ref) {
     return "commit";
   return "other";
 }
-function isRecord3(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 function permissionsOf(value) {
   if (value === "read-all" || value === "write-all")
     return value;
-  if (!isRecord3(value))
+  if (!isRecord(value))
     return;
   return Object.fromEntries(Object.entries(value).map(([key, level]) => [key, String(level)]));
 }
@@ -65264,12 +65171,12 @@ function triggersOf(value) {
     return { [value]: null };
   if (Array.isArray(value))
     return Object.fromEntries(value.map((event) => [String(event), null]));
-  return isRecord3(value) ? value : {};
+  return isRecord(value) ? value : {};
 }
 function environmentOf(value) {
   if (typeof value === "string" || typeof value === "number")
     return String(value);
-  if (!isRecord3(value) || value.name === undefined || value.name === null)
+  if (!isRecord(value) || value.name === undefined || value.name === null)
     return;
   return String(value.name);
 }
@@ -65277,7 +65184,7 @@ function concurrencyOf(value) {
   if (typeof value === "string" || typeof value === "number") {
     return { group: String(value), queue: "", cancels: false };
   }
-  if (!isRecord3(value) || value.group === undefined)
+  if (!isRecord(value) || value.group === undefined)
     return;
   const cancels = value["cancel-in-progress"];
   return {
@@ -65293,11 +65200,11 @@ function parseWorkflow(text8) {
   } catch {
     return "unreadable";
   }
-  if (!isRecord3(document) || !isRecord3(document.jobs))
+  if (!isRecord(document) || !isRecord(document.jobs))
     return;
   const jobs = {};
   for (const [name, job] of Object.entries(document.jobs)) {
-    if (!isRecord3(job))
+    if (!isRecord(job))
       continue;
     jobs[name] = {
       permissions: permissionsOf(job.permissions),
@@ -65305,7 +65212,7 @@ function parseWorkflow(text8) {
       concurrency: concurrencyOf(job.concurrency),
       condition: job.if === undefined || job.if === null ? "" : String(job.if),
       needs: typeof job.needs === "string" ? [job.needs] : Array.isArray(job.needs) ? job.needs.map(String) : [],
-      outputs: isRecord3(job.outputs) ? Object.keys(job.outputs) : [],
+      outputs: isRecord(job.outputs) ? Object.keys(job.outputs) : [],
       strategy: job.strategy === undefined ? "" : JSON.stringify(job.strategy),
       environment: environmentOf(job.environment),
       env: envNames(job.env)
@@ -65319,24 +65226,24 @@ function parseWorkflow(text8) {
   };
 }
 function envNames(value) {
-  return isRecord3(value) ? Object.keys(value) : [];
+  return isRecord(value) ? Object.keys(value) : [];
 }
 function handedSecret(step3) {
-  return [step3.with, step3.env].some((block) => isRecord3(block) && Object.values(block).some((value) => /secrets\./.test(String(value))));
+  return [step3.with, step3.env].some((block) => isRecord(block) && Object.values(block).some((value) => /secrets\./.test(String(value))));
 }
 function actionOf(uses) {
   return uses.trim().split("@")[0] ?? "";
 }
 function providesOf(steps, at, workflowEnv, jobEnv) {
   const own2 = steps[at];
-  const stepEnv = isRecord3(own2) ? envNames(own2.env) : [];
+  const stepEnv = isRecord(own2) ? envNames(own2.env) : [];
   const names2 = [
     ...workflowEnv.map((name) => ({ name, where: "env: on the workflow" })),
     ...jobEnv.map((name) => ({ name, where: "env: on the job" })),
     ...stepEnv.map((name) => ({ name, where: "env: on the step" }))
   ];
   const others = steps.flatMap((step3, index) => {
-    if (index === at || !isRecord3(step3))
+    if (index === at || !isRecord(step3))
       return [];
     const uses = typeof step3.uses === "string" ? actionOf(step3.uses) : undefined;
     const run2 = typeof step3.run === "string" ? step3.run : undefined;
@@ -65356,17 +65263,17 @@ function providesOf(steps, at, workflowEnv, jobEnv) {
 function sluicewayJob(job, parsed, workflowEnv, auto) {
   const { steps } = parsed;
   for (const [index, step3] of steps.entries()) {
-    if (!isRecord3(step3) || typeof step3.uses !== "string")
+    if (!isRecord(step3) || typeof step3.uses !== "string")
       continue;
     const ref = SLUICEWAY_STEP.exec(step3.uses.trim())?.[1];
     if (ref === undefined)
       continue;
-    const written = isRecord3(step3.with) ? String(step3.with.mode ?? "").trim() : "";
+    const written = isRecord(step3.with) ? String(step3.with.mode ?? "").trim() : "";
     const named2 = written === "" ? "auto" : written;
     const mode = isMode(named2) ? named2 : undefined;
     const runs = mode === undefined ? [] : mode === "auto" ? auto : [mode];
     const provides = providesOf(steps, index, workflowEnv, parsed.env);
-    const preview5 = isRecord3(step3.with) ? step3.with["pull-request-preview"] : undefined;
+    const preview5 = isRecord(step3.with) ? step3.with["pull-request-preview"] : undefined;
     const previews = preview5 === true || String(preview5 ?? "").trim() === "true";
     return {
       job,
@@ -65406,7 +65313,7 @@ function missing(granted, wanted) {
   }).map(([scope, level]) => `${scope}: ${level}`);
 }
 function has(granted, scope) {
-  return granted === "write-all" || isRecord3(granted) && granted[scope] === "write";
+  return granted === "write-all" || isRecord(granted) && granted[scope] === "write";
 }
 function checkWorkflows(files, config2) {
   const report2 = { workflows: [], warnings: [], notes: [] };
@@ -65588,13 +65495,10 @@ function checkJobs(path, workflow, found, config2, warnings) {
 function listensToEdits(issues, present3) {
   if (!present3)
     return false;
-  if (!isRecord3(issues) || issues.types === undefined)
+  if (!isRecord(issues) || issues.types === undefined)
     return true;
   const types = issues.types;
   return Array.isArray(types) ? types.includes("edited") : types === "edited";
-}
-function byCodeUnit22(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // src/core/tick-rule.ts
@@ -65862,13 +65766,10 @@ async function writeRunSummary(context3, report2) {
       scanStarted: report2.scanStarted
     }));
   } catch (error63) {
-    context3.log.info(`The job summary could not be written: ${message2(error63)}`);
+    context3.log.info(`The job summary could not be written: ${errorMessage(error63)}`);
   }
 }
 var MAX_READS = 3;
-function message2(error63) {
-  return error63 instanceof Error ? error63.message : String(error63);
-}
 async function resolveTicks(context3, handOn, report2, watch) {
   const { log, github } = context3;
   const repo = timedRepo(openRepo(context3.root, context3.adapter), watch);
@@ -65986,7 +65887,7 @@ async function resolveTicks(context3, handOn, report2, watch) {
         throw record3.unfinished;
       log.info(behind ? `${logGroupTitle(id)}: deployment record ${record3.deployment} is queued behind ${behind.map(logGroupTitle).join(" and ")}. A later run starts it once ${behind.length === 1 ? "that stack" : "those stacks"} went out.` : window ? config2.freezes.length > 0 ? `${logGroupTitle(id)}: deployment record ${record3.deployment} is queued for the deploy window or the end of a deploy freeze. The first run when both allow starts it.` : `${logGroupTitle(id)}: deployment record ${record3.deployment} is queued for the deploy window. A run inside the window starts it.` : `${logGroupTitle(id)}: deployment record ${record3.deployment} is queued.`);
     } catch (error63) {
-      failures.push(`The deployment record of ${logGroupTitle(id)} could not be written: ${message2(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the ticks that are left stay for the next run.`);
+      failures.push(`The deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the ticks that are left stay for the next run.`);
       break;
     }
   }
@@ -66011,7 +65912,7 @@ async function resolveTicks(context3, handOn, report2, watch) {
       const at = scanUrl === undefined ? "." : `: ${scanUrl}`;
       log.info(scan.kind === "rescan" ? `Started a full scan for the rescan box${at}` : narrow ? `Started the scan after the merge of ${scan.prs.map((pr) => `#${pr}`).join(", ")}. It previews what changed since the last scan and hands the merged change to apply.` : `Started a full scan, which previews the merged change and hands it to apply. It is narrowed to the merged change when ${logGroupTitle(context3.workflow?.file ?? "the workflow")} declares the workflow_dispatch input ${MERGE_SCAN_INPUT} (record 0064).`);
     } catch (error63) {
-      failures.push(message2(error63));
+      failures.push(errorMessage(error63));
     }
   }
   let written = true;
@@ -66027,14 +65928,14 @@ async function resolveTicks(context3, handOn, report2, watch) {
       log.info(result2.written ? `Wrote the dashboard (#${issue3.number}).` : `The dashboard (#${issue3.number}) already says all of this. Nothing was written.`);
     } catch (error63) {
       written = false;
-      failures.push(message2(error63));
+      failures.push(errorMessage(error63));
     }
   }
   if (written) {
     try {
       await commentOnRefusedTicks(github, issue3.number, outcomes, merging.problems);
     } catch (error63) {
-      failures.push(`The comment about the refused ticks could not be written: ${message2(error63)}.`);
+      failures.push(`The comment about the refused ticks could not be written: ${errorMessage(error63)}.`);
     }
     const refused = refusedTicks(outcomes, merging.problems);
     if (refused.length > 0) {
@@ -66092,7 +65993,7 @@ function findingText(finding, timeZone = "UTC") {
     case "refused":
       return `${targetName(finding.target)} was ticked by ${finding.login}, who may not tick it (${finding.reason}). The box is cleared.`;
     case "unverified":
-      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${message2(finding.error)}. The box is cleared.`;
+      return `${targetName(finding.target)} was ticked by ${finding.login}, and GitHub gave no answer about their access: ${errorMessage(finding.error)}. The box is cleared.`;
     case "over-cap": {
       const one = finding.over === 1;
       return `One run starts at most ${finding.started} deploys. ${plural2(finding.over, "tick")} beyond that ${one ? "is" : "are"} cleared and ${one ? "needs" : "need"} a fresh tick.`;
@@ -66189,13 +66090,13 @@ async function mergeAll(context3, config2, read5, ticks) {
     open2 = await github.listOpenPullRequests();
   } catch (error63) {
     const needs = error63 instanceof TokenRefused && error63.permission !== undefined ? ` The resolve job needs the permission \`${error63.permission}\` (record 0119).` : "";
-    result2.failure = `The open pull requests could not be read: ${message2(error63)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
+    result2.failure = `The open pull requests could not be read: ${errorMessage(error63)}.${needs} Nothing was merged, and the boxes stay ticked for the next run.`;
     return result2;
   }
   try {
     method = mergeMethod(await github.allowedMergeMethods(), await renovateStrategyOf(context3));
   } catch (error63) {
-    result2.failure = `The merge settings of the repo could not be read: ${message2(error63)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
+    result2.failure = `The merge settings of the repo could not be read: ${errorMessage(error63)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing was merged, and the boxes stay ticked for the next run.`;
     return result2;
   }
   const { stacks: stacks2 } = read5;
@@ -66231,7 +66132,7 @@ async function mergeAll(context3, config2, read5, ticks) {
     try {
       answer = await github.mergePullRequest(tick.pr, { head: tick.head, method: verdict.method });
     } catch (error63) {
-      result2.failure = `#${tick.pr} could not be merged: ${message2(error63)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing more was merged, and the boxes that are left stay ticked for the next run.`;
+      result2.failure = `#${tick.pr} could not be merged: ${errorMessage(error63)}. The resolve job needs the permission \`contents: write\` to merge (record 0054). Nothing more was merged, and the boxes that are left stay ticked for the next run.`;
       return result2;
     }
     if (!answer.merged) {
@@ -66263,7 +66164,7 @@ async function mergeAll(context3, config2, read5, ticks) {
           throw record3.unfinished;
         log.info(`${logGroupTitle(id)}: deployment record ${record3.deployment} is queued and deploys after the scan of the merge.`);
       } catch (error63) {
-        result2.failure = `#${tick.pr} is merged, and the deployment record of ${logGroupTitle(id)} could not be written: ${message2(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). Nothing deploys for it: the scan shows the stack as pending, and a tick on its row deploys it. Nothing more was merged.`;
+        result2.failure = `#${tick.pr} is merged, and the deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). Nothing deploys for it: the scan shows the stack as pending, and a tick on its row deploys it. Nothing more was merged.`;
         return result2;
       }
     }
@@ -66349,14 +66250,14 @@ async function dispatchScan2(context3, inputs) {
   try {
     return await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref, inputs);
   } catch (error63) {
-    throw new Error(`A full scan could not be started: ${message2(error63)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`);
+    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The resolve job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017).`);
   }
 }
 async function readRecords(context3, environments, fallBack) {
   try {
     return await readDeploymentRecords(context3.github, environments, fallBack.map(({ stack, environment }) => ({ stackId: stackId(stack), environment })));
   } catch (error63) {
-    throw new Error(`The deployment records could not be read: ${message2(error63)}. The resolve job needs the permissions \`deployments: write\` and \`actions: read\` next to \`contents: read\` and \`issues: write\` (record 0003).`);
+    throw new Error(`The deployment records could not be read: ${errorMessage(error63)}. The resolve job needs the permissions \`deployments: write\` and \`actions: read\` next to \`contents: read\` and \`issues: write\` (record 0003).`);
   }
 }
 async function openDeployments(context3, ticked) {
@@ -66607,7 +66508,7 @@ async function startQueued(context3, repo, handOn, watch, report2) {
         throw record3.unfinished;
       log.info(`${logGroupTitle(id)}: ${fact.behind ? "what it waited behind went out" : (stack.deployWindows ?? []).length > 0 ? "its deploy window is open" : "no deploy window or freeze holds it now"}, so it starts now. Deployment record ${record3.deployment} is queued and takes over from record ${fact.deployment}.`);
     } catch (error63) {
-      failures.push(`The deployment record of ${logGroupTitle(id)} could not be written: ${message2(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the queued stacks that are left wait for the next run.`);
+      failures.push(`The deployment record of ${logGroupTitle(id)} could not be written: ${errorMessage(error63)}. The resolve job needs the permission \`deployments: write\` (record 0003). No further deploy was started, and the queued stacks that are left wait for the next run.`);
       break;
     }
   }
@@ -66626,7 +66527,7 @@ async function startQueued(context3, repo, handOn, watch, report2) {
       }));
       log.info(result2.written ? `Wrote the dashboard (#${dashboard.number}).` : `The dashboard (#${dashboard.number}) already says all of this. Nothing was written.`);
     } catch (error63) {
-      failures.push(message2(error63));
+      failures.push(errorMessage(error63));
     }
   }
   if (failures.length > 0)
@@ -66658,9 +66559,6 @@ function readOnly(root) {
   } catch {
     return false;
   }
-}
-function message3(error63) {
-  return error63 instanceof Error ? error63.message : String(error63);
 }
 async function auto(context3) {
   const event = autoEvent(context3.eventName, context3.event);
@@ -66714,7 +66612,7 @@ async function auto(context3) {
     } catch (error63) {
       if (error63 instanceof ConfigError)
         configProblem ??= error63;
-      failures.push(`${what2}: ${message3(error63)}`);
+      failures.push(`${what2}: ${errorMessage(error63)}`);
     }
   };
   let skipScan;
@@ -66825,7 +66723,7 @@ var SHARED_FILES = new Set([
   "Directory.Packages.props"
 ]);
 function sharedFiles(files) {
-  return files.filter((file2) => SHARED_FILES.has(file2.slice(file2.lastIndexOf("/") + 1))).sort(byCodeUnit23);
+  return files.filter((file2) => SHARED_FILES.has(file2.slice(file2.lastIndexOf("/") + 1))).sort(byCodeUnit);
 }
 function checkSetup(config2, found, files, references = new Map) {
   const stacks2 = applyConfig(config2, found);
@@ -66855,7 +66753,7 @@ function readsOf(claimants, files, unclaimed, references) {
     const matches = globMatcher(inputs);
     const claims = (file2) => path === "." || file2.startsWith(`${path}/`) || matches(file2);
     const read5 = references.get(id) ?? [];
-    return [...read5].sort((a, b) => byCodeUnit23(a.path, b.path)).flatMap((reference) => {
+    return [...read5].sort((a, b) => byCodeUnit(a.path, b.path)).flatMap((reference) => {
       const under = reference.kind === "file" ? [reference.path] : files.filter((file2) => file2.startsWith(`${reference.path}/`));
       const left = under.filter((file2) => !claims(file2));
       if (left.length === 0)
@@ -66909,11 +66807,8 @@ function groups(files) {
     const slash = file2.indexOf("/");
     return slash === -1 ? "." : file2.slice(0, slash);
   };
-  const byDirectory = Map.groupBy([...files].sort(byCodeUnit23), top);
-  return [...byDirectory].sort(([a], [b]) => a === "." ? -1 : b === "." ? 1 : byCodeUnit23(a, b)).map(([directory, grouped]) => ({ directory, files: grouped }));
-}
-function byCodeUnit23(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
+  const byDirectory = Map.groupBy([...files].sort(byCodeUnit), top);
+  return [...byDirectory].sort(([a], [b]) => a === "." ? -1 : b === "." ? 1 : byCodeUnit(a, b)).map(([directory, grouped]) => ({ directory, files: grouped }));
 }
 
 // src/core/repo-files.ts
@@ -67823,10 +67718,6 @@ var PREVIEW_PAGE_FIELD_LIMIT = 65535;
 function previewPageName(stackId2) {
   return `sluiceway / ${stackId2}`;
 }
-var ENCODER = new TextEncoder;
-function byteLength2(text9) {
-  return ENCODER.encode(text9).length;
-}
 function jobLog(links2) {
   return links2.log === undefined ? "job log of the scan" : `[job log](${links2.log})`;
 }
@@ -67919,12 +67810,12 @@ function renderPreviewPage(diff2, links2, options = {}) {
 `)}
 
 `;
-  const limit = (options.limit ?? PREVIEW_PAGE_FIELD_LIMIT) - byteLength2(head);
-  const sizes = lines3.map(byteLength2);
+  const limit = (options.limit ?? PREVIEW_PAGE_FIELD_LIMIT) - byteLength(head);
+  const sizes = lines3.map(byteLength);
   const whole = sizes.reduce((sum, size) => sum + size, 0);
   let kept = lines3.length;
   if (whole > limit) {
-    const room = limit - byteLength2(`
+    const room = limit - byteLength(`
 ${pointer(lines3.length, id, links2)}
 `);
     let used = 0;
@@ -67948,15 +67839,12 @@ ${pointer(unlisted, id, links2)}
 function statusOf2(error63) {
   return error63?.status;
 }
-function messageOf2(error63) {
-  return error63 instanceof Error ? error63.message : String(error63);
-}
 function refusal(error63) {
   const status = statusOf2(error63);
   if (status !== 403 && status !== 429)
     return;
-  const message4 = messageOf2(error63);
-  return { message: message4, permission: /not accessible by integration/i.test(message4) };
+  const message = errorMessage(error63);
+  return { message, permission: /not accessible by integration/i.test(message) };
 }
 function previewPages(github, sha) {
   let known;
@@ -67987,7 +67875,7 @@ function previewPages(github, sha) {
         try {
           known = new Map((await github.listCheckRuns(sha)).map((run2) => [run2.name, run2]));
         } catch (error63) {
-          refused = refusal(error63) ?? { message: messageOf2(error63), permission: false };
+          refused = refusal(error63) ?? { message: errorMessage(error63), permission: false };
           written.refused = refused;
           return skipRest(0);
         }
@@ -68016,7 +67904,7 @@ function previewPages(github, sha) {
           const stopped = refuse2(error63, index);
           if (stopped)
             return stopped;
-          written.failed.push({ stackId: stackId2, message: messageOf2(error63) });
+          written.failed.push({ stackId: stackId2, message: errorMessage(error63) });
         }
       }
       return written;
@@ -68124,8 +68012,8 @@ function previewedPart(pullRequest, outcome) {
     })),
     ...written === undefined ? [] : [{ info: written }],
     ...pages.refused === undefined ? [] : [{ info: noPagesText(pages.refused, false) }],
-    ...pages.failed.map(({ stackId: stackId2, message: message4 }) => ({
-      info: `The preview page of ${logGroupTitle(stackId2)} could not be written: ${message4}`
+    ...pages.failed.map(({ stackId: stackId2, message }) => ({
+      info: `The preview page of ${logGroupTitle(stackId2)} could not be written: ${message}`
     })),
     ...unclaimedText2(outcome.unclaimed, logGroupTitle).map((info2) => ({ info: info2 }))
   ];
@@ -68813,8 +68701,8 @@ function jobLog3(options) {
   return options.jobLogUrl === undefined ? "job log" : `[job log](${options.jobLogUrl})`;
 }
 var LEVELS2 = [0, 1, 2, 3];
-function firstLine(message4) {
-  return message4.split(/\r?\n/, 1)[0] ?? "";
+function firstLine(message) {
+  return message.split(/\r?\n/, 1)[0] ?? "";
 }
 function mergeLine(merge3) {
   const label = merge3.kind === "pull-request" ? `#${merge3.number} ${escapeText(merge3.title)}` : `${merge3.sha.slice(0, 7)} ${escapeText(firstLine(merge3.message))}`;
@@ -68895,12 +68783,8 @@ function failedLine(stack, options) {
 function stackIdOf2(stack) {
   return stack.kind === "diff" ? stack.diff.stackId : stack.stackId;
 }
-var ENCODER2 = new TextEncoder;
-function byteLength3(text9) {
-  return ENCODER2.encode(text9).length;
-}
 function cost(parts) {
-  return parts.reduce((sum, part) => sum + byteLength3(part) + 2, 0);
+  return parts.reduce((sum, part) => sum + byteLength(part) + 2, 0);
 }
 function note(shortened, pending, options) {
   const shows = shortened === 1 ? "shows less than its" : "show less than their";
@@ -69029,7 +68913,7 @@ function renderSummary(stacks2, options = {}) {
 
 `)}
 `;
-  const bytes = byteLength3(text9);
+  const bytes = byteLength(text9);
   return { text: text9, bytes, shortened, fits: bytes <= (options.budget ?? SUMMARY_BUDGET) };
 }
 
@@ -69176,8 +69060,8 @@ async function readHistories(context3, stacks2, limit, envs) {
 
 // src/modes/scan.ts
 class ScanFailedError extends Error {
-  constructor(message4) {
-    super(message4);
+  constructor(message) {
+    super(message);
     this.name = "ScanFailedError";
   }
 }
@@ -69292,7 +69176,7 @@ async function scanning(context3, report2) {
     scanSha: context3.sha,
     ...config2.attribution,
     trailLength: config2.dashboard.recentlyDeployed
-  }, (message4) => log.info(`Attribution was left off the rows: ${message4}. It only explains a row, so the scan goes on without it (record 0026).`));
+  }, (message) => log.info(`Attribution was left off the rows: ${message}. It only explains a row, so the scan goes on without it (record 0026).`));
   let versionChecked = false;
   if (next.length > 0) {
     await checkVersion5(context3, stacks2.map(({ stack }) => stack));
@@ -69940,8 +69824,8 @@ function policyLogLines(outcome) {
   const headline2 = outcome.kind === "failed" ? `policies: ${failures.length} failed, ${one(warnings.length, "warning")}, ${passed} passed` : `policies: every policy passed (${one(passed, "rule")}${warnings.length > 0 ? `, ${one(warnings.length, "warning")}` : ""})`;
   return [
     headline2,
-    ...failures.map(({ namespace, message: message4 }) => `  failed: ${namespace}: ${lines5(message4).join(" ")}`),
-    ...warnings.map(({ namespace, message: message4 }) => `  warning: ${namespace}: ${lines5(message4).join(" ")}`)
+    ...failures.map(({ namespace, message }) => `  failed: ${namespace}: ${lines5(message).join(" ")}`),
+    ...warnings.map(({ namespace, message }) => `  warning: ${namespace}: ${lines5(message).join(" ")}`)
   ];
 }
 function liveRun(run2, id, log) {
@@ -70030,8 +69914,8 @@ async function writePages(context3, pages, round, urls, options) {
   if (written.urls.size > 0) {
     log.info(`Wrote the preview pages of ${plural2(written.urls.size, "stack")} on ${short(context3.sha)}: ${written.created} created, ${written.updated} updated.`);
   }
-  for (const { stackId: id, message: message4 } of written.failed) {
-    log.info(`The preview page of ${logGroupTitle(id)} could not be written: ${message4}. Its preview link lands on ${fallBack}.`);
+  for (const { stackId: id, message } of written.failed) {
+    log.info(`The preview page of ${logGroupTitle(id)} could not be written: ${message}. Its preview link lands on ${fallBack}.`);
   }
   const { refused } = written;
   if (!refused)
@@ -70447,9 +70331,6 @@ function settledRow(live, failure2, options = {}) {
 }
 
 // src/modes/settle.ts
-function message4(error63) {
-  return error63 instanceof Error ? error63.message : String(error63);
-}
 async function settle3(context3) {
   const { log } = context3;
   const url2 = eventDashboardUrl(context3.repoUrl, context3.event);
@@ -70541,7 +70422,7 @@ async function writeFailureLines(context3, config2, repo, ended) {
       return;
     }
   } catch (error63) {
-    log.info(`The failure line could not be written on the row: ${message4(error63)}. The full scan writes the row.`);
+    log.info(`The failure line could not be written on the row: ${errorMessage(error63)}. The full scan writes the row.`);
     return;
   }
   for (const id of written) {
@@ -70557,7 +70438,7 @@ async function settleOwnRun(context3, records) {
     if (!(error63 instanceof RecordNotEnded))
       throw error63;
     logEnded(context3.log, error63.settled.ended);
-    throw new Error(`The deployment record of ${logGroupTitle(error63.stackId)} could not be given its result: ${message4(error63.cause)}. The settle job needs the permission \`deployments: write\` (record 0003).`);
+    throw new Error(`The deployment record of ${logGroupTitle(error63.stackId)} could not be given its result: ${errorMessage(error63.cause)}. The settle job needs the permission \`deployments: write\` (record 0003).`);
   }
 }
 function logEnded(log, ended) {
@@ -70569,7 +70450,7 @@ async function readRecords2(context3, stacks2) {
   try {
     return await readDeploymentRecords(context3.github, stacks2.map(({ environment }) => environment), () => startedHere(context3, stacks2));
   } catch (error63) {
-    throw new Error(`The deployment records could not be read: ${message4(error63)}. The settle job needs the permission \`deployments: write\` (record 0003).`);
+    throw new Error(`The deployment records could not be read: ${errorMessage(error63)}. The settle job needs the permission \`deployments: write\` (record 0003).`);
   }
 }
 async function startedHere(context3, stacks2) {
@@ -70588,7 +70469,7 @@ async function dispatchScan3(context3) {
   try {
     await context3.github.dispatchWorkflow(context3.workflow.file, context3.workflow.ref);
   } catch (error63) {
-    throw new Error(`A full scan could not be started: ${message4(error63)}. The settle job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`);
+    throw new Error(`A full scan could not be started: ${errorMessage(error63)}. The settle job needs the permission \`actions: write\`, and the workflow (${context3.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`);
   }
 }
 
@@ -70651,7 +70532,7 @@ function terminalLog(write2 = console.log) {
       for (const line3 of lines6)
         write2(`  ${line3}`);
     },
-    warning: (message5, title) => write2(`${title}: ${message5}`),
+    warning: (message, title) => write2(`${title}: ${message}`),
     writeSummary: async () => {}
   };
 }
@@ -70690,9 +70571,9 @@ function openTofuRoots(files, read5) {
   const code2 = files.filter((file2) => /\.(tf|tofu)$/.test(file2) && !SKIPPED4.test(file2));
   const directories = [...new Set(code2.map(directoryOf))];
   const called = new Set(code2.flatMap((file2) => [...(read5(file2) ?? "").matchAll(/^\s*source\s*=\s*"(\.\.?\/[^"]*)"/gm)].map((match) => normal(posix4.join(directoryOf(file2), match[1] ?? "")))));
-  return directories.filter((path) => !called.has(path) && !path.split("/").includes("modules")).sort(byCodeUnit24).map((path) => ({
+  return directories.filter((path) => !called.has(path) && !path.split("/").includes("modules")).sort(byCodeUnit).map((path) => ({
     path,
-    varFiles: files.filter((file2) => directoryOf(file2) === path).map((file2) => posix4.basename(file2)).filter((name) => /\.tfvars(\.json)?$/.test(name)).filter((name) => !/^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/.test(name)).sort(byCodeUnit24)
+    varFiles: files.filter((file2) => directoryOf(file2) === path).map((file2) => posix4.basename(file2)).filter((name) => /\.tfvars(\.json)?$/.test(name)).filter((name) => !/^terraform\.tfvars(\.json)?$|\.auto\.tfvars(\.json)?$/.test(name)).sort(byCodeUnit)
   }));
 }
 function helmCharts(files, read5) {
@@ -70709,7 +70590,7 @@ function helmCharts(files, read5) {
       return [];
     const release2 = releaseName(typeof chart.name === "string" ? chart.name : "", path);
     return release2 === undefined ? [] : [{ path, release: release2 }];
-  }).sort((a, b) => byCodeUnit24(a.path, b.path));
+  }).sort((a, b) => byCodeUnit(a.path, b.path));
 }
 function releaseName(name, path) {
   for (const candidate of [name, posix4.basename(path)]) {
@@ -70740,7 +70621,7 @@ function findForWorkflow(stacks2, files, read5) {
     helm: stacks2.some((stack) => tool(stack) === HELM),
     kubectl: stacks2.some((stack) => tool(stack) === KUBECTL),
     node: nodePaths.length === 0 ? undefined : nodeFindings(nodePaths, files, read5),
-    otherRuntimes: [...other].map(([runtime, found]) => ({ runtime, paths: found.map(({ path }) => path) })).sort((a, b) => byCodeUnit24(a.runtime, b.runtime)),
+    otherRuntimes: [...other].map(([runtime, found]) => ({ runtime, paths: found.map(({ path }) => path) })).sort((a, b) => byCodeUnit(a.runtime, b.runtime)),
     helmRepositories: helmRepositories(stacks2, read5),
     envFiles: envFiles(files, read5)
   };
@@ -70771,7 +70652,7 @@ function nodeFindings(paths2, files, read5) {
   const managers = new Set(installs.values());
   const manifest = yamlObject2(read5("package.json"));
   return {
-    installs: [...installs].map(([directory, manager]) => ({ directory, manager })).sort((a, b) => byCodeUnit24(a.directory, b.directory)),
+    installs: [...installs].map(([directory, manager]) => ({ directory, manager })).sort((a, b) => byCodeUnit(a.directory, b.directory)),
     withoutLockfile,
     versionFile: [".nvmrc", ".node-version"].find((file2) => files.includes(file2)),
     yarnBerry: managers.has("yarn") && files.includes(".yarnrc.yml"),
@@ -70790,7 +70671,7 @@ function helmRepositories(stacks2, read5) {
       return typeof repository === "string" && /^https?:\/\//.test(repository) ? [repository] : [];
     });
   });
-  return [...new Set(repositories)].sort(byCodeUnit24);
+  return [...new Set(repositories)].sort(byCodeUnit);
 }
 function envFiles(files, read5) {
   const found = files.filter((file2) => /(^|\/)(\.env(\.[^/]+)?|[^/]+\.env)$/.test(file2)).filter((file2) => /^[\w./-]+$/.test(file2)).filter((file2) => (read5(file2) ?? "").split(`
@@ -70833,9 +70714,6 @@ function directoryOf(file2) {
 function normal(path) {
   const joined2 = posix4.normalize(path).replace(/\/$/, "");
   return joined2 === "" ? "." : joined2;
-}
-function byCodeUnit24(a, b) {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // examples/workflows/export-env.sh
@@ -71360,7 +71238,7 @@ var handlers = {
   check: () => runCheck(backendContext, undefined, pullRequestPreviewContext),
   init: runInit
 };
-async function run2(mode, directory, getInput2 = getInput, warn = (message5, title) => warning(message5, { title }), failure2 = jobFailure(getInput2)) {
+async function run2(mode, directory, getInput2 = getInput, warn = (message, title) => warning(message, { title }), failure2 = jobFailure(getInput2)) {
   refuseDeploymentId(mode, getInput2);
   const unused = unusedNotifyInputs(mode, getInput2);
   if (unused.length > 0) {

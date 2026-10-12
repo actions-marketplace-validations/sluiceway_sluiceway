@@ -17,6 +17,7 @@ import { ToolVersionError } from "../adapters/adapter.ts";
 import type { ProcessRunner } from "../adapters/process.ts";
 import { stripAnsi } from "../adapters/tool-run.ts";
 import type { Attribution } from "../core/attribution.ts";
+import { byCodeUnit, plural } from "../core/basics.ts";
 import { sharedFiles, suggestedUnrelated } from "../core/check.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { type CostSettings, costFailureText, costSettings } from "../core/cost.ts";
@@ -139,7 +140,7 @@ import type { BranchPreview } from "../render/merge-row.ts";
 import { renderPreviewPage } from "../render/preview-page.ts";
 import { previewOutcome, previewSummary } from "../render/preview-result.ts";
 import { type DashboardCounts, scanResultFile } from "../render/result-file.ts";
-import { byCodeUnit, driftCounts, onMergeNote, plural } from "../render/row.ts";
+import { driftCounts, onMergeNote } from "../render/row.ts";
 import { scanRunningLogLine } from "../render/scan-running.ts";
 import {
   type PullRequestsUnread,

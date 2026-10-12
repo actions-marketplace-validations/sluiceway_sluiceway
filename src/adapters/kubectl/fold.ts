@@ -1,7 +1,8 @@
 import { parse } from "yaml";
+import { byCodeUnit, isRecord } from "../../core/basics.ts";
 import type { Change, Op } from "../../core/diff.ts";
 import type { Folded } from "../folded.ts";
-import { changedPaths, hiddenFingerprint } from "../opentofu/paths.ts";
+import { changedPaths, hiddenFingerprint } from "../paths.ts";
 import { groupOf, type ListedObject, lists } from "./inventory.ts";
 import { heldByOthers } from "./ownership.ts";
 import type { ObjectPair } from "./unified.ts";
@@ -154,7 +155,7 @@ function yamlObject(text: string): Record<string, unknown> | undefined | "unread
   try {
     const parsed: unknown = parse(text);
     if (parsed === null) return undefined;
-    return isObject(parsed) ? parsed : "unreadable";
+    return isRecord(parsed) ? parsed : "unreadable";
   } catch {
     return "unreadable";
   }
@@ -168,7 +169,7 @@ export function identityOf(object: Record<string, unknown> | undefined): Identit
   if (object === undefined) return undefined;
   const { apiVersion, kind, metadata } = object;
   if (typeof apiVersion !== "string" || typeof kind !== "string" || kind === "") return undefined;
-  if (!isObject(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
+  if (!isRecord(metadata) || typeof metadata.name !== "string" || metadata.name === "") {
     return undefined;
   }
   const slash = apiVersion.indexOf("/");
@@ -251,17 +252,9 @@ export function foldDrift(
 
 function withoutServerFields(object: Record<string, unknown>): Record<string, unknown> {
   const { status: _status, metadata, ...rest } = object;
-  if (!isObject(metadata)) return rest;
+  if (!isRecord(metadata)) return rest;
   const kept = Object.fromEntries(
     Object.entries(metadata).filter(([key]) => !SERVER_FIELDS.includes(key)),
   );
   return { ...rest, metadata: kept };
-}
-
-function isObject(node: unknown): node is Record<string, unknown> {
-  return typeof node === "object" && node !== null && !Array.isArray(node);
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

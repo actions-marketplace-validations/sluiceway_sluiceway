@@ -3,22 +3,14 @@
 // full version to link to. It is rendered from the same diffs as the rows and
 // shows nothing a row could not show. It is never redacted (record 0023).
 
+import { byCodeUnit, byteLength, plural } from "../core/basics.ts";
 import type { Diff } from "../core/diff.ts";
 import type { PolicyOutcome } from "../core/policy.ts";
 import { orderChanges } from "./changes.ts";
 import { PASTE_NOTE, unrelatedBlock, whereFilesBelong } from "./check.ts";
 import { escapeText } from "./escape.ts";
 import { policySummaryLine, policyTextLines } from "./preview-page.ts";
-import {
-  byCodeUnit,
-  changeLine,
-  counts,
-  destroyWords,
-  driftCounts,
-  driftLine,
-  plural,
-  sortedDrift,
-} from "./row.ts";
+import { changeLine, counts, destroyWords, driftCounts, driftLine, sortedDrift } from "./row.ts";
 
 // A merged pull request or a direct push that a stack claims since its last
 // successful deploy (record 0026). The core works them out and the glue hands
@@ -257,12 +249,6 @@ function failedLine(stack: FailedStack, options: SummaryOptions): string {
 
 function stackIdOf(stack: SummaryStack): string {
   return stack.kind === "diff" ? stack.diff.stackId : stack.stackId;
-}
-
-const ENCODER = new TextEncoder();
-
-function byteLength(text: string): number {
-  return ENCODER.encode(text).length;
 }
 
 // Parts are joined by a blank line, so each part costs its own bytes and two.

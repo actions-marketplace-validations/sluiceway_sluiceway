@@ -2,10 +2,11 @@
 // before pending rows are shortened. An issue body that is too large is dropped
 // without an error, so a body over the hard limit is never handed to a writer.
 
+import { byCodeUnit } from "../core/basics.ts";
 import { MAX_UPDATES } from "../core/merge-and-deploy.ts";
 import { type BodyInput, renderBody, rowBlock } from "./body.ts";
 import type { ParsedMerge, ParsedRow } from "./marker.ts";
-import { byCodeUnit, type Row, type RowLevel } from "./row.ts";
+import type { Row, RowLevel } from "./row.ts";
 
 export interface BudgetInput extends Omit<BodyInput, "rows"> {
   // The rows this writer has a diff for, in any order.

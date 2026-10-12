@@ -1,3 +1,4 @@
+import { byCodeUnit } from "../core/basics.ts";
 import { BODY_LIMIT } from "../render/budget.ts";
 import type { GitHubPort, Issue } from "./port.ts";
 import { BodyTooLargeError, type BuildBody, type WriteResult, writeBody } from "./write-loop.ts";
@@ -169,11 +170,7 @@ async function newestClosedMatch(github: GitHubPort, label: string): Promise<Iss
   const closed = await github.listRecentlyClosedIssues(label);
   return closed
     .filter((issue) => isDashboard(issue, label))
-    .sort((a, b) => compare(b.closedAt ?? "", a.closedAt ?? "") || b.number - a.number)[0];
-}
-
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+    .sort((a, b) => byCodeUnit(b.closedAt ?? "", a.closedAt ?? "") || b.number - a.number)[0];
 }
 
 async function openMatches(github: GitHubPort, label: string): Promise<Issue[]> {

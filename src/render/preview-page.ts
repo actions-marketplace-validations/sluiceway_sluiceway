@@ -5,6 +5,7 @@
 // never a value (record 0021). The runner's masks do not reach a check run, so
 // nothing from the tool's text ever goes on it.
 
+import { byteLength } from "../core/basics.ts";
 import type { Diff } from "../core/diff.ts";
 import { type PolicyOutcome, policyRunFailureText } from "../core/policy.ts";
 import { orderChanges } from "./changes.ts";
@@ -61,12 +62,6 @@ export interface PreviewPage {
   text: string;
   // How many changes the text leaves out to stay inside the limit.
   unlisted: number;
-}
-
-const ENCODER = new TextEncoder();
-
-function byteLength(text: string): number {
-  return ENCODER.encode(text).length;
 }
 
 function jobLog(links: PreviewPageLinks): string {

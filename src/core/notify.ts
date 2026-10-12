@@ -3,7 +3,7 @@
 // sending is glue in src/notify/. Nothing here knows a channel or a secret.
 
 import { parseDashboard } from "../render/marker.ts";
-import { byCodeUnit } from "../render/row.ts";
+import { byCodeUnit } from "./basics.ts";
 
 // In the order a stack meets them: a change waits, reality drifted, a deploy
 // went out, a deploy failed, a tick was refused.

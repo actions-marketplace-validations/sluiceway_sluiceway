@@ -1,6 +1,7 @@
 // The one row renderer every writer uses (records 0009 and 0027). A row block
 // is a pure function of plain data: no clock, no environment, no GitHub.
 
+import { byCodeUnit, plural } from "../core/basics.ts";
 import type { CostEstimate } from "../core/cost.ts";
 import type { QueuedWindow } from "../core/deploy-window.ts";
 import type { Change, Diff } from "../core/diff.ts";
@@ -203,16 +204,8 @@ export type PendingDetail = "full" | "compact" | "names";
 
 export const INDENT = "  ";
 
-export function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
 export function isDestroy(change: Change): boolean {
   return change.op === "replace" || change.op === "delete";
-}
-
-export function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 // How many changes of each kind a diff holds: the numbers of the first line,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { place } from "../paths.ts";
 
 // The plan JSON that `tofu show -json <plan file>` prints (OpenTofu docs,
 // "JSON Output Format"), and `terraform show -json` in the same format
@@ -90,15 +91,4 @@ function problem(issue: z.core.$ZodIssue): string {
   }
   const expected = issue.code === "invalid_type" ? EXPECTED[issue.expected] : undefined;
   return `The tool's output, at ${at}: expected ${expected ?? "something else"}.`;
-}
-
-// A path is made of this schema's field names and of indexes, so it holds
-// nothing the tool wrote.
-export function place(path: PropertyKey[]): string {
-  if (path.length === 0) return "the top";
-  return path
-    .map((part, index) =>
-      typeof part === "number" ? `[${part}]` : `${index === 0 ? "" : "."}${String(part)}`,
-    )
-    .join("");
 }

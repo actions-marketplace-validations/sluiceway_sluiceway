@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { byCodeUnit } from "../../core/basics.ts";
 import { type Stack, stackId } from "../../core/stack.ts";
 import type { Preparation, PrepareOptions, PrepareResult, ToolContext } from "../adapter.ts";
 import { runTool, stripAnsi } from "../tool-run.ts";
@@ -68,8 +69,4 @@ async function createIfMissing(
       `The backend did not hold ${id}, so the stack was created. Its preview shows every resource as a create.`,
     ],
   };
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

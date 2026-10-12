@@ -1,8 +1,9 @@
+import { byCodeUnit } from "../../core/basics.ts";
 import type { Change, Op, ShownValue } from "../../core/diff.ts";
 import { isListedPath, shortValue } from "../../core/show-values.ts";
 import { changeFingerprint, type HiddenValue } from "../../core/value-fingerprint.ts";
 import type { Folded } from "../folded.ts";
-import { segment } from "../opentofu/paths.ts";
+import { segment } from "../paths.ts";
 import type { Entry, FieldChange } from "./schema.ts";
 
 // From the plugin's change types to what a change says (records 0007 and
@@ -171,8 +172,4 @@ function shown(value: unknown): string | "refused" | undefined {
   if (typeof value !== "string") return "refused";
   if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value)) return "refused";
   return shortValue(value);
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

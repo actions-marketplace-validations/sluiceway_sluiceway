@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { parseAllDocuments } from "yaml";
+import { byCodeUnit, isRecord } from "../../core/basics.ts";
 
 // The inventory of a stack with pruning (record 0070): one ConfigMap, next to
 // the stack's objects, that lists what the stack deployed. kubectl's own
@@ -38,7 +39,7 @@ export function objectsOf(text: string): ListedObject[] {
   for (const document of parseAllDocuments(text)) {
     if ("errors" in document && document.errors.length > 0) continue;
     const node: unknown = document.toJS();
-    const items = isObject(node) && node.kind === "List" && Array.isArray(node.items);
+    const items = isRecord(node) && node.kind === "List" && Array.isArray(node.items);
     for (const item of items ? (node.items as unknown[]) : [node]) {
       const object = listed(item);
       if (object !== undefined && !objects.some((known) => sameObject(known, object))) {
@@ -50,7 +51,7 @@ export function objectsOf(text: string): ListedObject[] {
 }
 
 function listed(node: unknown): ListedObject | undefined {
-  if (!isObject(node) || !isObject(node.metadata)) return undefined;
+  if (!isRecord(node) || !isRecord(node.metadata)) return undefined;
   const { apiVersion, kind } = node;
   const { name, namespace } = node.metadata;
   if (typeof apiVersion !== "string" || typeof kind !== "string") return undefined;
@@ -103,7 +104,7 @@ export function readInventory(stdout: string): Read<ListedObject> {
   } catch {
     return { ok: false, problems: [`${at}: expected the ConfigMap as JSON.`] };
   }
-  const data = isObject(printed) && isObject(printed.data) ? printed.data : undefined;
+  const data = isRecord(printed) && isRecord(printed.data) ? printed.data : undefined;
   const text = typeof data?.objects === "string" ? data.objects : undefined;
   if (text === undefined) return { ok: false, problems: [`${at}: expected a list of objects.`] };
   const objects: ListedObject[] = [];
@@ -127,7 +128,7 @@ export function readInventory(stdout: string): Read<ListedObject> {
 }
 
 function listedLine(node: unknown): ListedObject | undefined {
-  if (!isObject(node)) return undefined;
+  if (!isRecord(node)) return undefined;
   const { apiVersion, kind, namespace, name } = node;
   if (typeof apiVersion !== "string" || typeof kind !== "string") return undefined;
   if (typeof name !== "string" || name === "") return undefined;
@@ -198,7 +199,7 @@ export function readLive(stdout: string): Read<Record<string, unknown>> {
   } catch {
     printed = undefined;
   }
-  if (!isObject(printed)) {
+  if (!isRecord(printed)) {
     return {
       ok: false,
       problems: ["The live objects: expected one object or a List, as JSON."],
@@ -206,17 +207,17 @@ export function readLive(stdout: string): Read<Record<string, unknown>> {
   }
   if (printed.kind !== "List") return { ok: true, objects: [printed] };
   const items = Array.isArray(printed.items) ? printed.items : [];
-  return { ok: true, objects: items.filter(isObject) };
+  return { ok: true, objects: items.filter(isRecord) };
 }
 
 // Whether the stack's field manager applied the object: its managed fields
 // hold an Apply by that manager. Pruning deletes nothing else, so an object
 // that another stack or tool took over stays.
 export function appliedBy(object: Record<string, unknown>, manager: string): boolean {
-  const metadata = isObject(object.metadata) ? object.metadata : {};
+  const metadata = isRecord(object.metadata) ? object.metadata : {};
   const entries = Array.isArray(metadata.managedFields) ? metadata.managedFields : [];
   return entries.some(
-    (entry) => isObject(entry) && entry.manager === manager && entry.operation === "Apply",
+    (entry) => isRecord(entry) && entry.manager === manager && entry.operation === "Apply",
   );
 }
 
@@ -224,14 +225,6 @@ export function appliedBy(object: Record<string, unknown>, manager: string): boo
 export function groupOf(apiVersion: string): string {
   const slash = apiVersion.indexOf("/");
   return slash < 0 ? "" : apiVersion.slice(0, slash);
-}
-
-function isObject(node: unknown): node is Record<string, unknown> {
-  return typeof node === "object" && node !== null && !Array.isArray(node);
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 // The rendered set of a stack with pruning: its manifests, then its inventory,

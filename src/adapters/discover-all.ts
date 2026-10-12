@@ -1,3 +1,4 @@
+import { byCodeUnit } from "../core/basics.ts";
 import type { Config } from "../core/config.ts";
 import { ConfigError, DEPENDS_ON_AUTO, withIds } from "../core/config.ts";
 import { DiscoveryError } from "../core/discovery.ts";
@@ -96,7 +97,7 @@ export async function discoverAll(root: string, config: Config): Promise<Stack[]
   return withIds(
     config,
     [...discovered, ...declared].sort(
-      (a, b) => compare(a.path, b.path) || compare(a.name ?? "", b.name ?? ""),
+      (a, b) => byCodeUnit(a.path, b.path) || byCodeUnit(a.name ?? "", b.name ?? ""),
     ),
   );
 }
@@ -119,9 +120,4 @@ function tryDiscover(discover: () => { stacks: Stack[]; optionProblems: string[]
 function byEntry(a: string, b: string): number {
   const index = (text: string) => Number(/^stacks\[(\d+)\]/.exec(text)?.[1] ?? 0);
   return index(a) - index(b);
-}
-
-// By code unit, so the order is the same on every machine.
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

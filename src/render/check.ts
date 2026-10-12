@@ -5,6 +5,7 @@
 // are, as they did before they passed through here.
 
 import { MODES } from "../core/auto-mode.ts";
+import { plural } from "../core/basics.ts";
 import type {
   BackendCheck,
   CheckReport,
@@ -34,7 +35,6 @@ import type {
 } from "../core/workflow-check.ts";
 import { escapeText } from "./escape.ts";
 import { logGroupTitle } from "./log-text.ts";
-import { plural } from "./row.ts";
 import { minuteAt } from "./time.ts";
 
 const VALID = "The setup is valid.";

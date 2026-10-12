@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
+import { byCodeUnit } from "../../core/basics.ts";
 import { type Cloud, type CredentialNeed, cloudWays, regionWays } from "../../core/credentials.ts";
 import type { Stack } from "../../core/stack.ts";
 import { type HclBlock, readHcl } from "./hcl.ts";
@@ -299,8 +300,4 @@ function text(file: string): string {
   } catch {
     return "";
   }
-}
-
-function byCodeUnit(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

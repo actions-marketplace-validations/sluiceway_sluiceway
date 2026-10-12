@@ -9,6 +9,7 @@
 // row after it (record 0113).
 
 import type { Adapter } from "../adapters/adapter.ts";
+import { errorMessage } from "../core/basics.ts";
 import type { Config, ConfiguredStack, IgnoredStack } from "../core/config.ts";
 import { queueState } from "../core/dependencies.ts";
 import { deployState, shownFreezes } from "../core/deploy-window.ts";
@@ -67,10 +68,6 @@ export interface SettleContext {
   actionRef: string;
   // Only a test has a reason to set this.
   limits?: { body?: BudgetOptions } | undefined;
-}
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export async function settle(context: SettleContext): Promise<void> {
@@ -245,7 +242,7 @@ async function writeFailureLines(
     }
   } catch (error) {
     log.info(
-      `The failure line could not be written on the row: ${message(error)}. The full scan writes the row.`,
+      `The failure line could not be written on the row: ${errorMessage(error)}. The full scan writes the row.`,
     );
     return;
   }
@@ -271,7 +268,7 @@ async function settleOwnRun(
     if (!(error instanceof RecordNotEnded)) throw error;
     logEnded(context.log, error.settled.ended);
     throw new Error(
-      `The deployment record of ${logGroupTitle(error.stackId)} could not be given its result: ${message(error.cause)}. The settle job needs the permission \`deployments: write\` (record 0003).`,
+      `The deployment record of ${logGroupTitle(error.stackId)} could not be given its result: ${errorMessage(error.cause)}. The settle job needs the permission \`deployments: write\` (record 0003).`,
     );
   }
 }
@@ -304,7 +301,7 @@ async function readRecords(
     );
   } catch (error) {
     throw new Error(
-      `The deployment records could not be read: ${message(error)}. The settle job needs the permission \`deployments: write\` (record 0003).`,
+      `The deployment records could not be read: ${errorMessage(error)}. The settle job needs the permission \`deployments: write\` (record 0003).`,
     );
   }
 }
@@ -337,7 +334,7 @@ async function dispatchScan(context: SettleContext): Promise<void> {
     await context.github.dispatchWorkflow(context.workflow.file, context.workflow.ref);
   } catch (error) {
     throw new Error(
-      `A full scan could not be started: ${message(error)}. The settle job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`,
+      `A full scan could not be started: ${errorMessage(error)}. The settle job needs the permission \`actions: write\`, and the workflow (${context.workflow.file}) needs a \`workflow_dispatch\` trigger that runs the scan (record 0017). The records are ended, and the next scan writes their rows again.`,
     );
   }
 }

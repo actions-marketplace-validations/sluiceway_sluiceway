@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { isAbsolute, join, normalize, relative, sep } from "node:path";
 import { parse } from "yaml";
+import { byCodeUnit, isRecord } from "../../core/basics.ts";
 import type { Stack } from "../../core/stack.ts";
 import type { FileReference } from "../adapter.ts";
 
@@ -110,7 +111,7 @@ export async function readsFiles(root: string, stack: Stack): Promise<FileRefere
     }
   }
 
-  return [...found.values()].sort((a, b) => compare(a.path, b.path));
+  return [...found.values()].sort((a, b) => byCodeUnit(a.path, b.path));
 }
 
 function runtimeName(runtime: unknown): unknown {
@@ -162,12 +163,4 @@ function isFile(path: string): boolean {
 
 function repoPath(root: string, path: string): string {
   return relative(root, path).split(sep).join("/");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }
